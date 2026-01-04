@@ -348,7 +348,6 @@ body > h2:first-of-type {
 
 
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Disponibilidad – Nannys y Peques</title>
   <style>
     :root { --radius: 14px; --border: #e5e7eb; --muted: #6b7280; --ok:#059669; --err:#dc2626; --primary:#2563eb; --bg-soft:#f8fafc;
@@ -2130,20 +2129,14 @@ body > h2:first-of-type {
 }
 
 
-
-
-
-
-.vista{
-  display:none;
-  padding-bottom:80px; /* espacio para menú inferior */
-}
-.vista.activa{
-  display:block;
-}
 .vista {
-  overflow-x: hidden;
+  display: none;
 }
+
+.vista.activa {
+  display: block;
+}
+
 
 
 .bottom-nav{
@@ -2201,16 +2194,7 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* =========================
-   SCROLL INTERNO POR VISTA
-   ========================= */
 
-.vista {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 90px;
-}
 
 /* =========================
    UX TIPO APP
@@ -2258,7 +2242,114 @@ body {
   overflow-x: hidden;
 }
 
+/* ====== APP NATIVA: sin scroll de página, scroll interno ====== */
+html, body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+}
 
+/* evita scroll lateral */
+body { overflow-x: hidden; }
+
+/* En modo app: el body NO scrollea */
+body.app-mode{
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+}
+
+/* En modo login: normal */
+body.auth-mode{
+  position: relative;
+  overflow: auto;
+}
+
+/* El contenedor general NO debe meter altura extra */
+.container{
+  padding: 0 !important;
+}
+
+/* App ocupa exactamente el viewport */
+#app{
+  position: fixed;
+  inset: 0;
+  height: 100dvh;                /* clave en iOS */
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  background: linear-gradient(180deg, #ffffff 0%, var(--pink-soft) 100%);
+}
+
+/* El scroll solo ocurre aquí */
+.app-scroll{
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom)); /* menú + safe area */
+}
+
+/* Tus vistas ya no deben agregar “padding-bottom” extra */
+.vista{
+  display:none;
+  padding-bottom: 0 !important;
+}
+.vista.activa{ display:block; }
+
+/* Menú fijo abajo respetando safe area */
+.bottom-nav{
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ⛔️ NUNCA scrollear el body */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* App ocupa TODO el viewport real (iOS safe) */
+#app {
+  position: fixed;
+  inset: 0;
+  height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, var(--pink-soft) 100%);
+}
+
+/* 🔑 ÚNICO SCROLL DE TODA LA APP */
+.app-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+}
+
+/* Las vistas NO scrollean */
+.vista {
+  display: none;
+}
+
+.vista.activa {
+  display: block;
+}
+
+/* Menú fijo respetando safe area */
+.bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
 
 
 
@@ -2269,54 +2360,6 @@ body {
   </style>
 </head>
 <body>
-  <h2>Disponibilidad – Nannys y Peques</h2>
-  <div class="container">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     <!-- LOGIN -->
@@ -2483,39 +2526,14 @@ body {
     </div>
 
 
+<!-- APP -->
+<div id="app" style="display:none;">
 
+  <!-- CONTENEDOR ÚNICO DE SCROLL -->
+  <div id="appScroll" class="app-scroll">
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    <!-- APP -->
-    <div id="app" style="display:none;">
-        <div id="vista-perfil" class="vista">
+    <!-- PERFIL -->
+    <div id="vista-perfil" class="vista">
       <div class="card" id="perfilCard">
         <h3>Mi perfil</h3>
 
@@ -2542,20 +2560,18 @@ body {
       </div>
     </div>
 
-
+    <!-- SERVICIOS -->
     <div id="vista-servicios" class="vista">
+
       <!-- HEADER PANEL NIÑERA -->
       <div class="card panel-header">
         <div class="panel-header-row">
-        <div id="saludo" class="panel-saludo">¡Hola!</div>
-        <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
+          <div id="saludo" class="panel-saludo">¡Hola!</div>
+          <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
+        </div>
       </div>
-    </div>
 
-
-
-
-      <!-- SERVICIOS PRÓXIMOS (niñera) – VA PRIMERO -->
+      <!-- SERVICIOS PRÓXIMOS -->
       <div class="card" id="svcCard">
         <div class="row" style="justify-content:space-between;">
           <h3>Servicios próximos (2 semanas)</h3>
@@ -2564,30 +2580,28 @@ body {
         <div id="cal" class="calendar"></div>
         <div id="calMsg" class="muted" style="margin-top:8px;"></div>
       </div>
+
     </div>
 
-
-
-
-
-
-
-
+    <!-- PUNTOS -->
     <div id="vista-puntos" class="vista">
-      <!-- MIS PUNTOS (solo niñeras) -->
       <div class="card" id="puntosNineraCard">
         <h3>Mis puntos</h3>
-        <p class="muted" style="margin-top:0;">Sistema de niveles: Pink, Yellow, Blue, Golden Nanny.</p>
+        <p class="muted" style="margin-top:0;">
+          Sistema de niveles: Pink, Yellow, Blue, Golden Nanny.
+        </p>
+
         <div class="row" style="margin-bottom:6px;">
           <div><b>Nivel actual:</b> <span id="pt_nivel">—</span></div>
           <div><b>Puntos totales:</b> <span id="pt_total">0</span></div>
           <div><b>Servicios eventuales:</b> <span id="pt_servicios">0</span></div>
         </div>
+
         <p id="pt_msg" class="muted"></p>
       </div>
     </div>
 
-
+    <!-- COMUNIDAD -->
     <div id="vista-comunidad" class="vista">
       <div class="card">
         <h3>Comunidad</h3>
@@ -2595,25 +2609,11 @@ body {
       </div>
     </div>
 
+    <!-- DISPONIBILIDAD -->
+    <div id="vista-disponibilidad" class="vista">
 
-
-
-
-
-
-
-
-
-    <div id="vista-disponibilidad" class="vista"> 
-      <!-- PANEL (solo niñeras) -->
       <div class="card" id="panel">
-        <div class="row" style="justify-content:space-between;align-items:center;">
-      </div>
-
-
-
-
-
+        <div class="row" style="justify-content:space-between;align-items:center;"></div>
 
         <div class="row">
           <div><b>Semana base:</b></div>
@@ -2622,10 +2622,10 @@ body {
           <button class="btn-ghost" onclick="cargarSiguiente()">Cargar semana siguiente</button>
           <button class="btn-primary" onclick="guardar()">Guardar</button>
         </div>
+
         <p class="muted">Selecciona Matutino (07–15) y/o Vespertino (15–22) por día.</p>
         <p id="msgApp"></p>
       </div>
-
 
       <!-- SEMANA ACTUAL -->
       <div class="card" id="tablaActualCard">
@@ -2638,13 +2638,6 @@ body {
         </div>
         <div id="tabla"></div>
       </div>
-
-
-
-
-
-
-
 
       <!-- SEMANA SIGUIENTE -->
       <div class="card" id="tablaSiguienteCard" style="display:none;">
@@ -2659,11 +2652,6 @@ body {
         <div id="tabla2"></div>
       </div>
 
-
-
-
-
-
       <!-- RESÚMENES -->
       <div class="card" id="resumenCard">
         <details open>
@@ -2671,369 +2659,115 @@ body {
           <div id="resumen"></div>
         </details>
       </div>
+
       <div class="card" id="resumenCard2" style="display:none;">
         <details open>
           <summary><b>Resumen de la semana siguiente (turnos)</b></summary>
           <div id="resumen2"></div>
         </details>
       </div>
+
     </div>
 
+    <!-- ADMIN: SUGERIDOR -->
+    <div id="adminCard" class="card" style="display:none;">
+      <h3>Administrador – Sugerir niñeras</h3>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      <!-- ADMIN: Sugeridor -->
-      <div id="adminCard" class="card" style="display:none;">
-        <h3>Administrador – Sugerir niñeras</h3>
-        <div class="row">
-          <div><label>Fecha</label><br><input id="sv_fecha" type="date"></div>
-          <div><label>Inicio</label><br><input id="sv_hi" type="time" step="1800" value="09:00"></div>
-          <div><label>Fin</label><br><input id="sv_hf" type="time" step="1800" value="12:00"></div>
-          <div><label>Edad (años)</label><br><input id="sv_edad" type="number" step="0.1" value="1"></div>
-        </div>
-        <div class="row" style="margin-top:8px%;">
-          <label style="width:100%;">Ubicación (dirección)</label>
-          <input id="sv_ubic" type="text" placeholder="Ej. Parque México, CDMX" style="max-width:580px; width:100%;">
-        </div>
-        <div class="row" style="margin-top:8px;">
-          <button id="btnSugerir" class="btn-primary" onclick="sugerir()">Sugerir niñeras</button>
-          <span id="admMsg" class="muted"></span>
-        </div>
-        <div id="admResultados" style="margin-top:12px; overflow:auto;"></div>
+      <div class="row">
+        <div><label>Fecha</label><br><input id="sv_fecha" type="date"></div>
+        <div><label>Inicio</label><br><input id="sv_hi" type="time" step="1800" value="09:00"></div>
+        <div><label>Fin</label><br><input id="sv_hf" type="time" step="1800" value="12:00"></div>
+        <div><label>Edad (años)</label><br><input id="sv_edad" type="number" step="0.1" value="1"></div>
       </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      <!-- ADMIN: Agenda semanal (L–D) -->
-      <div id="adminAgendaCard" class="card" style="display:none;">
-        <div class="week-head">
-          <h3>Administrador – Servicios (semana L–D)</h3>
-          <div class="nav-weeks">
-            <button class="btn-ghost" onclick="semanaAnterior()">◀ Semana anterior</button>
-            <button class="btn-ghost" onclick="semanaActual()">Semana actual</button>
-            <button class="btn-ghost" onclick="semanaSiguiente()">Semana siguiente ▶</button>
-          </div>
-        </div>
-        <div class="muted" id="admWeekLabel" style="margin-bottom:8px;"></div>
-        <div id="adminAgenda"></div>
+      <div class="row" style="margin-top:8px;">
+        <label style="width:100%;">Ubicación (dirección)</label>
+        <input id="sv_ubic" type="text" placeholder="Ej. Parque México, CDMX" style="max-width:580px; width:100%;">
       </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      <!-- ADMIN: Puntaje de niñeras -->
-      <div id="adminPuntosCard" class="card" style="display:none;">
-        <h3>Administrador – Puntaje de niñeras</h3>
-        <div class="row">
-          <div style="min-width:220px;">
-            <label>Nombre de niñera</label><br/>
-            <input
-              id="pt_admin_nombre"
-              type="text"
-              list="lista_nineras"
-              placeholder="Escriba el nombre de la niñera"
-            />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            <datalist id="lista_nineras"></datalist>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-          </div>
-          <div>
-            <label>Acción de puntos</label><br/>
-            <select id="pt_admin_tipo">
-              <option value="">Seleccionar...</option>
-              <option value="SERVICIO_ULTIMO_MINUTO">Servicio de último minuto (+2)</option>
-              <option value="FAMILIA_REPITE">La familia pide de nuevo la misma nanny (+1)</option>
-              <option value="CAPACITACION_NO_OBLIGATORIA">Capacitación no obligatoria (+7)</option>
-              <option value="INICIAR_SERVICIO_FIJO">Iniciar un servicio fijo (+20)</option>
-              <option value="GANAR_INSIGNIA">Ganar una insignia (+10)</option>
-              <option value="ENTRENAMIENTO_NANNY_STAR">Entrenamiento Nanny Star (+25)</option>
-              <option value="RECOMENDAR_NANNY">Recomendar a otra nanny y que tome servicio (+20)</option>
-              <option value="NO_CONECTARSE_REUNION">No conectarse a reunión programada (−10)</option>
-              <option value="FALTA_SERVICIO">Falta a servicio (−10)</option>
-              <option value="REPORTE_NEGATIVO">Reporte negativo de la familia (−10)</option>
-              <option value="MALA_ACTITUD">Mala actitud con la agencia (−10)</option>
-            </select>
-          </div>
-        </div>
-        <div class="row" style="margin-top:8px;">
-          <button class="btn-ghost" onclick="adminVerPuntaje()">Ver puntaje</button>
-          <button class="btn-primary" onclick="adminAgregarPuntos()">Agregar puntos</button>
-          <span id="pt_admin_msg" class="muted"></span>
-        </div>
-        <div id="pt_admin_resultado" style="margin-top:8px;" class="muted"></div>
+      <div class="row" style="margin-top:8px;">
+        <button id="btnSugerir" class="btn-primary" onclick="sugerir()">Sugerir niñeras</button>
+        <span id="admMsg" class="muted"></span>
       </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-      <!-- ADMIN: Resumen de disponibilidad semanal -->
-      <div id="adminResumenDispCard" class="card" style="display:none;">
-        <div class="row" style="justify-content:space-between;align-items:center;">
-          <h3>Resumen de disponibilidad – semana actual</h3>
-          <button class="btn-ghost" onclick="cargarResumenDisponibilidadAdmin()">🔄 Actualizar</button>
-        </div>
-        <p class="muted">Verde: ya capturó horarios · Rojo: no ha capturado horarios.</p>
-        <div id="adminResumenDisp"></div>
-      </div>
-
-
-
-
-      <nav class="bottom-nav">
-        <button onclick="irVista('perfil')">
-          👤<span>Perfil</span>
-        </button>
-
-        <button onclick="irVista('servicios')" class="activo">
-          🏠<span>Servicios</span>
-        </button>
-
-        <button onclick="irVista('disponibilidad')">
-          📅<span>Disponibilidad</span>
-        </button>
-
-        <button onclick="irVista('comunidad')">
-          💬<span>Comunidad</span>
-        </button>
-      </nav>
-
-
+      <div id="admResultados" style="margin-top:12px; overflow:auto;"></div>
     </div>
+
+    <!-- ADMIN: AGENDA -->
+    <div id="adminAgendaCard" class="card" style="display:none;">
+      <div class="week-head">
+        <h3>Administrador – Servicios (semana L–D)</h3>
+        <div class="nav-weeks">
+          <button class="btn-ghost" onclick="semanaAnterior()">◀ Semana anterior</button>
+          <button class="btn-ghost" onclick="semanaActual()">Semana actual</button>
+          <button class="btn-ghost" onclick="semanaSiguiente()">Semana siguiente ▶</button>
+        </div>
+      </div>
+
+      <div class="muted" id="admWeekLabel" style="margin-bottom:8px;"></div>
+      <div id="adminAgenda"></div>
+    </div>
+
+    <!-- ADMIN: PUNTAJE -->
+    <div id="adminPuntosCard" class="card" style="display:none;">
+      <h3>Administrador – Puntaje de niñeras</h3>
+
+      <div class="row">
+        <div style="min-width:220px;">
+          <label>Nombre de niñera</label><br>
+          <input id="pt_admin_nombre" type="text" list="lista_nineras" placeholder="Escriba el nombre de la niñera">
+          <datalist id="lista_nineras"></datalist>
+        </div>
+
+        <div>
+          <label>Acción de puntos</label><br>
+          <select id="pt_admin_tipo">
+            <option value="">Seleccionar...</option>
+            <option value="SERVICIO_ULTIMO_MINUTO">Servicio de último minuto (+2)</option>
+            <option value="FAMILIA_REPITE">La familia pide de nuevo la misma nanny (+1)</option>
+            <option value="CAPACITACION_NO_OBLIGATORIA">Capacitación no obligatoria (+7)</option>
+            <option value="INICIAR_SERVICIO_FIJO">Iniciar un servicio fijo (+20)</option>
+            <option value="GANAR_INSIGNIA">Ganar una insignia (+10)</option>
+            <option value="ENTRENAMIENTO_NANNY_STAR">Entrenamiento Nanny Star (+25)</option>
+            <option value="RECOMENDAR_NANNY">Recomendar a otra nanny y que tome servicio (+20)</option>
+            <option value="NO_CONECTARSE_REUNION">No conectarse a reunión programada (−10)</option>
+            <option value="FALTA_SERVICIO">Falta a servicio (−10)</option>
+            <option value="REPORTE_NEGATIVO">Reporte negativo de la familia (−10)</option>
+            <option value="MALA_ACTITUD">Mala actitud con la agencia (−10)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px;">
+        <button class="btn-ghost" onclick="adminVerPuntaje()">Ver puntaje</button>
+        <button class="btn-primary" onclick="adminAgregarPuntos()">Agregar puntos</button>
+        <span id="pt_admin_msg" class="muted"></span>
+      </div>
+
+      <div id="pt_admin_resultado" style="margin-top:8px;" class="muted"></div>
+    </div>
+
+    <!-- ADMIN: RESUMEN DISPONIBILIDAD -->
+    <div id="adminResumenDispCard" class="card" style="display:none;">
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <h3>Resumen de disponibilidad – semana actual</h3>
+        <button class="btn-ghost" onclick="cargarResumenDisponibilidadAdmin()">🔄 Actualizar</button>
+      </div>
+      <p class="muted">Verde: ya capturó horarios · Rojo: no ha capturado horarios.</p>
+      <div id="adminResumenDisp"></div>
+    </div>
+
   </div>
 
+  <!-- MENÚ INFERIOR FIJO -->
+  <nav class="bottom-nav">
+    <button onclick="irVista('perfil')">👤<span>Perfil</span></button>
+    <button onclick="irVista('servicios')" class="activo">🏠<span>Servicios</span></button>
+    <button onclick="irVista('disponibilidad')">📅<span>Disponibilidad</span></button>
+    <button onclick="irVista('comunidad')">💬<span>Comunidad</span></button>
+  </nav>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+</div>
 
 
 
@@ -6279,6 +6013,10 @@ function logout(){
   // volver al paso login
   document.getElementById('paso-login').style.display = 'block';
   document.getElementById('paso-olvide').style.display = 'none';
+
+  document.body.classList.remove('app-mode');
+document.body.classList.add('auth-mode');
+
 }
 
 
