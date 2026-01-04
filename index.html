@@ -4,127 +4,20 @@
   <!-- Tipografías Nannys y Peques -->
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#E84C9A">
+
+        
+    <!-- iOS PWA -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Nannys y Peques">
+
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="apple-touch-icon" sizes="180x180" href="/nannys-peques-pwa/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/nannys-peques-pwa/icons/icon-192.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="/nannys-peques-pwa/icons/icon-192.png">
 
 
 
@@ -141,55 +34,8 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   --blue-main: #3BB6C4;      /* azul/turquesa marca */
   --blue-soft: #E6F7FA;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -198,96 +44,14 @@
   --yellow-soft: #FEF9C3;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   --dark-main: #374151;
   --gray-soft: #F9FAFB;
   --gray-border: #E5E7EB;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   --success: #22C55E;
   --warning: #F59E0B;
   --error: #EF4444;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   --radius-card: 18px;
@@ -297,61 +61,9 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   /* =========================
    LOGIN – ESTILO NANNYS
    ========================= */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 .auth-wrapper {
   min-height: 100vh;
@@ -361,36 +73,6 @@
   justify-content: center;
   padding: 24px;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 .auth-card {
@@ -404,28 +86,6 @@
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .auth-card h2,
 .auth-card p,
 .auth-card label {
@@ -435,59 +95,9 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .auth-card p.muted {
   font-family: 'Nunito Sans', sans-serif;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -500,52 +110,6 @@
   font-size: 15px;
   font-family: 'Nunito Sans', sans-serif;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 .auth-card input:focus {
@@ -6898,7 +6462,11 @@ async function api(action, payload = {}) {
 
 
 
-
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js')
+    .then(() => console.log('Service Worker registrado'))
+    .catch(err => console.error('SW error', err));
+}
 
 
 
