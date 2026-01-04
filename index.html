@@ -2141,6 +2141,9 @@ body > h2:first-of-type {
 .vista.activa{
   display:block;
 }
+.vista {
+  overflow-x: hidden;
+}
 
 
 .bottom-nav{
@@ -2222,8 +2225,38 @@ input, textarea {
 }
 
 
+/* =========================
+   CONTROL DE SCROLL POR MODO
+   ========================= */
+
+/* MODO LOGIN (web) */
+body.auth-mode {
+  overflow: auto;
+  position: relative;
+}
+
+/* MODO APP (nativo) */
+body.app-mode {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/* En modo app, el auth nunca debe scrollear */
+body.app-mode #auth {
+  overflow: hidden;
+}
+
+/* En modo login, el app no debe existir visualmente */
+body.auth-mode #app {
+  display: none !important;
+}
 
 
+body {
+  overflow-x: hidden;
+}
 
 
 
@@ -3069,6 +3102,12 @@ input, textarea {
 
 
 <script>
+
+    // Estado inicial: login
+document.body.classList.add('auth-mode');
+document.body.classList.remove('app-mode');
+
+
   let SESION = { email:null, nombre:'', admin:false };
   // 🔁 Restaurar sesión si existe
 /*
@@ -3315,6 +3354,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mostrar app
     document.getElementById('auth').style.display = 'none';
     document.getElementById('app').style.display  = 'block';
+    // 🔒 Cambiar a modo app (sin scroll global)
+    document.body.classList.remove('auth-mode');
+    document.body.classList.add('app-mode');
+
     document.querySelector('.bottom-nav').style.display = 'flex';
 
     document.getElementById('saludo').innerHTML =
@@ -6222,6 +6265,10 @@ function logout(){
   document.getElementById('app').style.display = 'none';
   document.getElementById('auth').style.display = 'flex';
   document.querySelector('.bottom-nav').style.display = 'none';
+  // 🔓 Volver a modo login (scroll permitido)
+  document.body.classList.remove('app-mode');
+  document.body.classList.add('auth-mode');
+
 
   // limpiar inputs
   const email = document.getElementById('email');
