@@ -2139,38 +2139,71 @@ body > h2:first-of-type {
 
 
 
+/* =========================
+   BOTTOM NAV – ESTILO APP NATIVA
+   ========================= */
+
 .bottom-nav{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  height:64px;
-  background:#ffffff;
-  border-top:1px solid var(--gray-border);
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  z-index:999;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  height: 72px;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  background: #ffffff;
+  border-top: 1px solid #E5E7EB;
+
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  z-index: 1000;
 }
 
-
+/* Botones */
 .bottom-nav button{
-  background:none;
-  border:none;
-  font-size:14px;
-  color:#6B7280;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:2px;
-  font-family:'Nunito Sans', sans-serif;
+  flex: 1;
+  height: 100%;
+
+  background: none;
+  border: none;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 11px;
+  color: #9CA3AF;
+
+  cursor: pointer;
 }
 
+/* Íconos */
+.bottom-nav button .icon{
+  font-size: 22px;
+  line-height: 1;
+}
 
+/* Activo */
 .bottom-nav button.activo{
-  color:var(--pink-main);
-  font-weight:600;
+  color: var(--pink-main);
+  font-weight: 600;
 }
+
+/* Quitar efectos raros */
+.bottom-nav button:focus{
+  outline: none;
+}
+
+.bottom-nav button:active{
+  transform: scale(0.96);
+}
+
 
 
 /* =========================
@@ -2761,11 +2794,27 @@ html, body {
 
   <!-- MENÚ INFERIOR FIJO -->
   <nav class="bottom-nav">
-    <button onclick="irVista('perfil')">👤<span>Perfil</span></button>
-    <button onclick="irVista('servicios')" class="activo">🏠<span>Servicios</span></button>
-    <button onclick="irVista('disponibilidad')">📅<span>Disponibilidad</span></button>
-    <button onclick="irVista('comunidad')">💬<span>Comunidad</span></button>
-  </nav>
+    <button onclick="irVista('perfil')">
+        <span class="icon">👤</span>
+        <span>Perfil</span>
+    </button>
+
+    <button onclick="irVista('servicios')" class="activo">
+        <span class="icon">🏠</span>
+        <span>Servicios</span>
+    </button>
+
+    <button onclick="irVista('disponibilidad')">
+        <span class="icon">📅</span>
+        <span>Disponibilidad</span>
+    </button>
+
+    <button onclick="irVista('comunidad')">
+        <span class="icon">💬</span>
+        <span>Comunidad</span>
+    </button>
+    </nav>
+
 
 </div>
 
