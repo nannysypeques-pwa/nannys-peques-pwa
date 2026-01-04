@@ -14,7 +14,9 @@
     <meta name="apple-mobile-web-app-title" content="Nannys y Peques">
 
     <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <link rel="apple-touch-icon" sizes="180x180" href="/nannys-peques-pwa/icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="152x152" href="/nannys-peques-pwa/icons/icon-192.png">
     <link rel="apple-touch-icon" sizes="120x120" href="/nannys-peques-pwa/icons/icon-192.png">
@@ -2175,7 +2177,49 @@ body > h2:first-of-type {
 }
 
 
+/* =========================
+   APP NATIVA – BLOQUEO SCROLL GLOBAL
+   ========================= */
 
+html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+/* Contenedor raíz */
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* =========================
+   SCROLL INTERNO POR VISTA
+   ========================= */
+
+.vista {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 90px;
+}
+
+/* =========================
+   UX TIPO APP
+   ========================= */
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea {
+  user-select: text;
+}
 
 
 
