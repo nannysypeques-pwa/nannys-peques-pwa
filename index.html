@@ -2381,6 +2381,24 @@ html, body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+.nav-icon{
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
+.bottom-nav button{
+  color: #9CA3AF;
+}
+
+.bottom-nav button.activo{
+  color: var(--pink-main);
+}
+
+.bottom-nav button span{
+  font-size: 11px;
+  margin-top: 2px;
+}
 
 
 
@@ -2790,27 +2808,38 @@ html, body {
   </div>
 
   <!-- MENÚ INFERIOR FIJO -->
-  <nav class="bottom-nav">
-    <button onclick="irVista('perfil')">
-        <span class="icon">👤</span>
+    <nav class="bottom-nav">
+
+    <button onclick="irVista('perfil')" class="activo">
+        <svg viewBox="0 0 24 24" class="nav-icon">
+        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8V22h19.2v-2.8c0-3.2-6.4-4.8-9.6-4.8z"/>
+        </svg>
         <span>Perfil</span>
     </button>
 
-    <button onclick="irVista('servicios')" class="activo">
-        <span class="icon">🏠</span>
+    <button onclick="irVista('servicios')">
+        <svg viewBox="0 0 24 24" class="nav-icon">
+        <path d="M3 12l9-9 9 9h-3v9h-12v-9h-3z"/>
+        </svg>
         <span>Servicios</span>
     </button>
 
     <button onclick="irVista('disponibilidad')">
-        <span class="icon">📅</span>
+        <svg viewBox="0 0 24 24" class="nav-icon">
+        <path d="M7 2v2h10v-2h2v20h-14v-20h2zm0 6v12h10v-12h-10z"/>
+        </svg>
         <span>Disponibilidad</span>
     </button>
 
     <button onclick="irVista('comunidad')">
-        <span class="icon">💬</span>
+        <svg viewBox="0 0 24 24" class="nav-icon">
+        <path d="M4 4h16v12h-5l-3 3-3-3h-5z"/>
+        </svg>
         <span>Comunidad</span>
     </button>
+
     </nav>
+
 
 
 </div>
