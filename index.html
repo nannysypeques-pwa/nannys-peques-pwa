@@ -3018,18 +3018,28 @@ function irVista(nombre){
 
 
 
-function cargarPerfil(){
-  google.script.run
-    .withSuccessHandler(p => {
-      document.getElementById('perfil_nombre').textContent   = p.nombre || '—';
-      document.getElementById('perfil_email').textContent    = p.email || '—';
-      document.getElementById('perfil_tel').textContent = p.telefono || '—';
-    })
-    .withFailureHandler(err => {
-      console.error(err.message);
-    })
-    .obtenerPerfilCompleto(SESION.email);
+async function cargarPerfil(){
+  try{
+    // Nota: esto pega a tu doPost(action="getProfile")
+    const p = await api('getProfile', { email: SESION.email });
+
+    document.getElementById('perfil_nombre').textContent = p?.nombre || '—';
+    document.getElementById('perfil_email').textContent  = p?.email || '—';
+    document.getElementById('perfil_tel').textContent    = p?.telefono || '—';
+
+    // opcional: refrescar saludo si quieres
+    if(p?.nombre){
+      SESION.nombre = p.nombre;
+      localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
+      const saludo = document.getElementById('saludo');
+      if(saludo) saludo.innerHTML = `<b>¡Hola, ${SESION.nombre || SESION.email}!</b>`;
+    }
+
+  }catch(err){
+    console.error('Error cargarPerfil:', err?.message || err);
+  }
 }
+
 
 
 let SERVICIO_PLANEACION = null;
