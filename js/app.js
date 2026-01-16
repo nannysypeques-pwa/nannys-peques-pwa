@@ -3,17 +3,20 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbwp4QRsxLj51iMbZkAlcP4O
 async function api(action, payload = {}) {
   const res = await fetch(API_URL, {
     method: 'POST',
-    body: JSON.stringify({ action, ...payload })
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      action,
+      ...payload
+    })
   });
 
-  const text = await res.text();
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error('Respuesta inválida del servidor');
+  const data = await res.json();
+
+  if (data.error) {
+    throw new Error(data.error);
   }
 
-  if (data.error) throw new Error(data.error);
   return data;
 }

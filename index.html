@@ -4,27 +4,6 @@
   <!-- Tipografías Nannys y Peques -->
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
 
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#E84C9A">
-
-        
-    <!-- iOS PWA -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Nannys y Peques">
-
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <link rel="apple-touch-icon" sizes="180x180" href="/nannys-peques-pwa/icons/icon-192.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="/nannys-peques-pwa/icons/icon-192.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="/nannys-peques-pwa/icons/icon-192.png">
-
-
-
-
-
 
   <style>
   :root {
@@ -32,29 +11,19 @@
   --pink-main: #E84C9A;
   --pink-soft: #FFE4F1;
 
-
-
-
-
   --blue-main: #3BB6C4;      /* azul/turquesa marca */
   --blue-soft: #E6F7FA;
 
-
-
-
   --yellow-main: #FACC15;
   --yellow-soft: #FEF9C3;
-
 
   --dark-main: #374151;
   --gray-soft: #F9FAFB;
   --gray-border: #E5E7EB;
 
-
   --success: #22C55E;
   --warning: #F59E0B;
   --error: #EF4444;
-
 
   --radius-card: 18px;
   --radius-btn: 999px;
@@ -62,13 +31,13 @@
   }
 
 
-
   /* =========================
    LOGIN – ESTILO NANNYS
    ========================= */
 
+
 .auth-wrapper {
-  min-height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   background: linear-gradient(180deg, var(--pink-soft), #ffffff);
   display: flex;
   align-items: center;
@@ -76,6 +45,10 @@
   padding: 24px;
 }
 
+html{
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 
 .auth-card {
   background: #ffffff;
@@ -95,13 +68,9 @@
   color: var(--dark-main);
 }
 
-
-
 .auth-card p.muted {
   font-family: 'Nunito Sans', sans-serif;
 }
-
-
 
 .auth-card input {
   width: 100%;
@@ -113,49 +82,10 @@
   font-family: 'Nunito Sans', sans-serif;
 }
 
-
 .auth-card input:focus {
   outline: none;
   border-color: var(--pink-main);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 .auth-card .btn-primary {
@@ -176,47 +106,9 @@ body > h2:first-of-type {
    ========================= */
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .brand-title {
   font-family: 'DM Serif Display', serif;
-  font-size: 40px;
+  font-size: clamp(28px, 6vw, 40px);
   font-weight: 400;
   color: var(--pink-main);
   margin-bottom: 26px;
@@ -226,44 +118,12 @@ body > h2:first-of-type {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .login-subtitle {
   font-family: 'Nunito Sans', sans-serif;
   font-size: 15px;
   color: #6B7280;
   margin-bottom: 16px;
 }
-
-
 
 
 .perfil-card{
@@ -275,20 +135,24 @@ body > h2:first-of-type {
   box-shadow:0 12px 30px rgba(232,76,154,.12);
 }
 
+
 .perfil-item{
   margin-bottom:18px;
 }
+
 
 .perfil-item .label{
   font-size:13px;
   color:#9CA3AF;
 }
 
+
 .perfil-item span{
   font-size:16px;
   font-weight:600;
   color:#374151;
 }
+
 
 .btn-cerrar{
   margin-top:20px;
@@ -302,49 +166,23 @@ body > h2:first-of-type {
 }
 
 
+.bottom-nav{
+  display: none;
+}
+
+
+
 
   </style>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   <meta charset="utf-8" />
+  <meta name="viewport"
+    content="width=device-width,
+            initial-scale=1,
+            maximum-scale=1,
+            user-scalable=no,
+            viewport-fit=cover">
+
   <title>Disponibilidad – Nannys y Peques</title>
   <style>
     :root { --radius: 14px; --border: #e5e7eb; --muted: #6b7280; --ok:#059669; --err:#dc2626; --primary:#2563eb; --bg-soft:#f8fafc;
@@ -366,132 +204,9 @@ body > h2:first-of-type {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /* =========================
    PANEL NIÑERA – MIS PUNTOS
    ========================= */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #puntosNineraCard{
@@ -505,269 +220,19 @@ body > h2:first-of-type {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #puntosNineraCard h3{
   font-family: 'DM Serif Display', serif;
   color: var(--blue-main);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #puntosNineraCard .muted{
   font-size: 14px;
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     /* =========================
    PANEL NIÑERA – ESTILO MARCA
    ========================= */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #app{
   background: linear-gradient(
@@ -776,68 +241,6 @@ body > h2:first-of-type {
     var(--pink-soft) 100%
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 /* Cards más suaves */
@@ -849,68 +252,6 @@ body > h2:first-of-type {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Títulos */
 #app h3{
   font-family: 'DM Serif Display', serif;
@@ -919,69 +260,6 @@ body > h2:first-of-type {
   color: var(--pink-main);
   margin-bottom: 10px;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* Botón principal */
 #app .btn-primary{
@@ -997,44 +275,6 @@ body > h2:first-of-type {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Botón secundario */
 #app .btn-ghost{
   color: var(--pink-main);
@@ -1042,112 +282,13 @@ body > h2:first-of-type {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Calendario – marca Nannys */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 .day{
   border-radius: 18px;
   border: none;
   box-shadow: 0 8px 18px rgba(0,0,0,0.08);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 .day.today{
@@ -1161,62 +302,11 @@ body > h2:first-of-type {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .svc-pill.conflict{
   background:#fee2e2;
   border-color:#ef4444;
   color:#b91c1c;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1228,78 +318,11 @@ body > h2:first-of-type {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .svc-pill.confirmed{
   background: var(--blue-soft);
   border-color: var(--blue-main);
   color: #036672;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 .svc-pill.pending{
@@ -1310,85 +333,10 @@ body > h2:first-of-type {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .svc-pill.completed{
   background: var(--gray-soft);
   color: #374151;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
@@ -1404,101 +352,8 @@ body > h2:first-of-type {
     font-weight: 600;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     .muted{ color:var(--muted); font-size:12px; }
     .ok{ color:var(--ok); } .err{ color:var(--err); }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     table{ border-collapse:collapse; width:100%; }
@@ -1507,91 +362,9 @@ body > h2:first-of-type {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     .week-title{ margin:6px 0 10px; font-weight:700; display:flex; align-items:center; justify-content:space-between; gap:8px; }
     .day-actions{ margin-top:6px; }
     .pill{ border:1px solid var(--border); border-radius:999px; padding:2px 8px; font-size:12px; background:#fff; }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1605,59 +378,6 @@ body > h2:first-of-type {
     .svc-pill.completed{ background:var(--done-bg); border-color:var(--done-bd); }
     .today{ border-color:var(--primary); background:#eff6ff; }
     .no-svc{ color:#9ca3af; font-size:12px; }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1680,91 +400,12 @@ body > h2:first-of-type {
   }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     .no-data{ color:#9ca3af; font-size:13px; }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
     @media (max-width:960px){ .calendar,.week-grid{ grid-template-columns: repeat(2,1fr); } }
     @media (max-width:560px){ .calendar,.week-grid{ grid-template-columns:1fr; } .svc-pill{ font-size:14px; padding:8px 12px; } }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1775,26 +416,6 @@ body > h2:first-of-type {
     #puntosNineraCard{
     background: #ffffff !important;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1812,51 +433,9 @@ body > h2:first-of-type {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   button.btn-primary:hover{
   background: #2563EB !important;
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1868,36 +447,6 @@ body > h2:first-of-type {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .panel-header-row{
   display: flex;
   justify-content: space-between;
@@ -1906,53 +455,11 @@ body > h2:first-of-type {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .panel-saludo{
-  font-size: 22px;
+  font-size: clamp(18px, 4.5vw, 22px);
   font-weight: 600;
   color: var(--dark-main);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1963,57 +470,9 @@ body > h2:first-of-type {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* =========================
    MODAL – SOLO FINALIZAR SERVICIO EN AZUL
    ========================= */
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2032,42 +491,10 @@ body > h2:first-of-type {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Hover solo para finalizar */
 #modalBackdrop .actions .btn-ghost:first-of-type:hover{
   background: #2563EB;
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2083,9 +510,6 @@ body > h2:first-of-type {
 
 
 
-
-
-
 /* 🔴 SERVICIO EMPALMADO – CALENDARIO NIÑERA */
 .svc-pill.conflict{
   background: #fee2e2 !important;
@@ -2093,10 +517,6 @@ body > h2:first-of-type {
   color: #b91c1c !important;
   font-weight: 700;
 }
-
-
-
-
 
 
 
@@ -2116,298 +536,358 @@ body > h2:first-of-type {
 
 
 
-
-
-
-
 .svc-hidden-admin{
   background: #4dd0e1; /* cian / azul celeste */
   color: #00363a;
 }
 
 
-.vista {
-  display: none;
+
+
+.vista{
+  display:none;
+  padding-bottom:80px; /* espacio para menú inferior */
+}
+.vista.activa{
+  display:block;
 }
 
-.vista.activa {
-  display: block;
-}
 
 
-
-/* =========================
-   BOTTOM NAV – ESTILO APP NATIVA
-   ========================= */
 
 .bottom-nav{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  height:64px;
+  background:#ffffff;
+  border-top:1px solid var(--gray-border);
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  z-index:999;
+}
+
+
+
+
+.bottom-nav button{
+  background:none;
+  border:none;
+  font-size:14px;
+  color:#6B7280;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  font-family:'Nunito Sans', sans-serif;
+}
+
+
+
+
+.bottom-nav button.activo{
+  color:var(--pink-main);
+  font-weight:600;
+}
+
+
+.btn-pink{
+  background: #E84C9A;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-pink:hover{
+  background: #d63f86;
+}
+
+
+
+
+
+
+.modal-backdrop{
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-
-  height: 72px;
-  padding-bottom: env(safe-area-inset-bottom);
-
-  background: #ffffff;
-  border-top: 1px solid #E5E7EB;
-
+  inset: 0;
+  background: rgba(0,0,0,.35);
   display: flex;
-  justify-content: space-around;
   align-items: center;
-
+  justify-content: center;
+  padding: 16px;
   z-index: 1000;
 }
 
-/* Botones */
-.bottom-nav button{
-  flex: 1;
-  height: 100%;
 
-  background: none;
-  border: none;
+.modal-card{
+  background: #fff;
+  border-radius: 18px;
+  max-width: 640px;
+  width: 100%;
+  padding: 22px;
 
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-
-  font-family: 'Nunito Sans', sans-serif;
-  font-size: 11px;
-  color: #9CA3AF;
-
-  cursor: pointer;
+  max-height: 85vh;          /* 👈 límite de alto */
+  overflow-y: auto;          /* 👈 SCROLL INTERNO */
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Íconos */
-.bottom-nav button .icon{
-  font-size: 22px;
-  line-height: 1;
+
+
+.modal-planeacion textarea{
+  min-height: 80px;
+  resize: none;
 }
 
-/* Activo */
-.bottom-nav button.activo{
-  color: var(--pink-main);
+
+
+.modal-title{
+  margin-bottom: 16px;
+}
+.modal-title.pink{
+  color: #E84C9A;
+}
+
+
+.form-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+
+.form-group label{
+  display: block;
   font-weight: 600;
+  margin-bottom: 6px;
 }
 
-/* Quitar efectos raros */
-.bottom-nav button:focus{
+
+.form-group input,
+.form-group textarea{
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  font-family: inherit;
+}
+
+
+.form-group input:focus,
+.form-group textarea:focus{
   outline: none;
+  border-color: #E84C9A;
 }
 
-.bottom-nav button:active{
-  transform: scale(0.96);
+
+.modal-actions{
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 18px;
 }
 
+
+
+
+.toast{
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #E84C9A;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s, transform .3s;
+  z-index: 2000;
+}
+.toast.show{
+  opacity: 1;
+  transform: translateX(-50%) translateY(-6px);
+}
 
 
 /* =========================
-   APP NATIVA – BLOQUEO SCROLL GLOBAL
+   SUPERVISIÓN – PLANEACIONES
    ========================= */
 
-html, body {
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-  touch-action: manipulation;
+.supervision-card{
+  background:#ffffff;
+  border-radius:20px;
+  padding:24px;
+  box-shadow:0 12px 30px rgba(232,76,154,.12);
+  margin-bottom:24px;
 }
 
-/* Contenedor raíz */
-#app {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+.supervision-title{
+  font-family:'DM Serif Display', serif;
+  font-size:26px;
+  color:var(--pink-main);
+  margin-bottom:14px;
+}
+
+/* Ciudad */
+.pl-ciudad{
+  margin-top:14px;
+}
+
+.pl-ciudad-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  cursor:pointer;
+  font-weight:600;
+  font-size:16px;
+  color:#374151;
+}
+
+.pl-ciudad-header span{
+  font-size:18px;
+  color:var(--pink-main);
+}
+
+/* Lista de planeaciones */
+.pl-lista{
+  margin-left:28px;
+  margin-top:10px;
+}
+
+/* Item */
+.pl-item{
+  background:linear-gradient(180deg,#ECFDF5,#D1FAE5);
+  border:1px solid #86EFAC;
+  border-radius:14px;
+  padding:12px 16px;
+  margin-bottom:8px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:pointer;
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+
+.pl-item:hover{
+  transform:translateY(-1px);
+  box-shadow:0 8px 18px rgba(16,185,129,.18);
+}
+
+.pl-item strong{
+  font-weight:600;
+  color:#065F46;
+}
+
+.pl-item small{
+  color:#047857;
+  font-size:13px;
+}
+
+html, body{
+  height:100%;
+  overflow:auto;
+}
+
+#app{
+  height: calc(var(--vh, 1vh) * 100);
+  overflow-y:auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#app{
+  padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-
-
-/* =========================
-   UX TIPO APP
-   ========================= */
-
-* {
-  -webkit-tap-highlight-color: transparent;
-}
-
-input, textarea {
-  user-select: text;
-}
-
-
-/* =========================
-   CONTROL DE SCROLL POR MODO
-   ========================= */
-
-/* MODO LOGIN (web) */
-body.auth-mode {
-  overflow: auto;
-  position: relative;
-}
-
-/* MODO APP (nativo) */
-body.app-mode {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-}
-
-/* En modo app, el auth nunca debe scrollear */
-body.app-mode #auth {
-  overflow: hidden;
-}
-
-/* En modo login, el app no debe existir visualmente */
-body.auth-mode #app {
-  display: none !important;
-}
-
-
-body {
-  overflow-x: hidden;
-}
-
-/* ====== APP NATIVA: sin scroll de página, scroll interno ====== */
-html, body {
-  height: 100%;
-  width: 100%;
-  margin: 0;
-}
-
-/* evita scroll lateral */
-body { overflow-x: hidden; }
-
-/* En modo app: el body NO scrollea */
-body.app-mode{
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-}
-
-/* En modo login: normal */
-body.auth-mode{
-  position: relative;
-  overflow: auto;
-}
-
-/* El contenedor general NO debe meter altura extra */
-.container{
-  padding: 0 !important;
-}
-
-/* App ocupa exactamente el viewport */
-#app{
-  position: fixed;
-  inset: 0;
-  height: 100dvh;                /* clave en iOS */
-  width: 100%;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  padding-top: env(safe-area-inset-top);
-  background: linear-gradient(180deg, #ffffff 0%, var(--pink-soft) 100%);
-}
-
-/* El scroll solo ocurre aquí */
-.app-scroll{
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 16px;
-  padding-bottom: calc(90px + env(safe-area-inset-bottom)); /* menú + safe area */
-}
-
-/* Tus vistas ya no deben agregar “padding-bottom” extra */
-.vista{
-  display:none;
-  padding-bottom: 0 !important;
-}
-.vista.activa{ display:block; }
-
-/* Menú fijo abajo respetando safe area */
 .bottom-nav{
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ⛔️ NUNCA scrollear el body */
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
+input, textarea, button{
+  font-size: 16px;
 }
 
-/* App ocupa TODO el viewport real (iOS safe) */
-#app {
-  position: fixed;
-  inset: 0;
-  height: 100dvh;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, var(--pink-soft) 100%);
+.modal-backdrop{
+  backdrop-filter: blur(6px);
 }
 
-/* 🔑 ÚNICO SCROLL DE TODA LA APP */
-.app-scroll {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  padding: 16px;
-  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+.vista{
+  transition: opacity .18s ease, transform .18s ease;
 }
 
-/* Las vistas NO scrollean */
-.vista {
-  display: none;
-}
-
-.vista.activa {
-  display: block;
-}
-
-/* Menú fijo respetando safe area */
-.bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.nav-icon{
-  width: 24px;
-  height: 24px;
-  fill: currentColor;
-}
-
-.bottom-nav button{
-  color: #9CA3AF;
-}
-
-.bottom-nav button.activo{
-  color: var(--pink-main);
-}
-
-.bottom-nav button span{
-  font-size: 11px;
-  margin-top: 2px;
+.vista.activa{
+  transform: translateY(0);
+  opacity:1;
 }
 
 
+body.ninera .modal-planeacion{
+  scrollbar-gutter: stable;
+}
 
+/* ✅ SOLO NIÑERA: hacer el scrollbar del modal más delgado (sin tocar supervisión) */
+body.ninera #planeacionBackdrop .modal-card{
+  scrollbar-width: thin;                 /* Firefox */
+  scrollbar-color: rgba(0,0,0,.35) transparent; /* Firefox */
+}
+
+body.ninera #planeacionBackdrop .modal-card::-webkit-scrollbar{
+  width: 8px;                            /* Chrome/Edge */
+}
+
+body.ninera #planeacionBackdrop .modal-card::-webkit-scrollbar-track{
+  background: transparent;               /* sin color */
+}
+
+body.ninera #planeacionBackdrop .modal-card::-webkit-scrollbar-thumb{
+  background: rgba(0,0,0,.25);
+  border-radius: 999px;
+  border: 2px solid transparent;         /* hace que se vea más “fina” */
+  background-clip: content-box;
+}
+
+/* =========================================
+   SCROLL MODAL PLANEACIÓN – NIÑERA
+   (copiado del comportamiento de supervisión)
+   ========================================= */
+
+body.ninera .modal-planeacion {
+  scrollbar-width: thin;                 /* Firefox */
+  scrollbar-color: rgba(0,0,0,0.25) transparent;
+}
+
+/* Chrome / Edge / Safari */
+body.ninera .modal-planeacion::-webkit-scrollbar {
+  width: 6px;
+}
+
+body.ninera .modal-planeacion::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.25);
+  border-radius: 999px;
+}
+
+/* Hover → se nota más (como supervisión) */
+body.ninera .modal-planeacion:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.45);
+}
 
 
 
   </style>
 </head>
 <body>
+  <h2>Disponibilidad – Nannys y Peques</h2>
+  <div class="container">
+
 
 
     <!-- LOGIN -->
@@ -2416,58 +896,7 @@ html, body {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       <div id="paso-login">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
       <!-- MARCA -->
@@ -2475,42 +904,8 @@ html, body {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       <!-- SUBTÍTULO -->
       <p class="login-subtitle">Iniciar sesión</p>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2524,34 +919,6 @@ html, body {
         <p id="msgLogin"></p>
         </div>
       </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2574,31 +941,41 @@ html, body {
     </div>
 
 
-<!-- APP -->
-<div id="app" style="display:none;">
 
-  <!-- CONTENEDOR ÚNICO DE SCROLL -->
-  <div id="appScroll" class="app-scroll">
 
-    <!-- PERFIL -->
-    <div id="vista-perfil" class="vista">
+    <!-- APP -->
+     
+    <div id="app" style="display:none;">
+      <!-- HEADER ADMIN / SUPERVISIÓN -->
+      <div id="header-admin" class="card panel-header" style="display:none;">
+        <div class="panel-header-row">
+          <div id="saludo-admin" class="panel-saludo">¡Hola!</div>
+          <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+
+        <div id="vista-perfil" class="vista">
       <div class="card" id="perfilCard">
         <h3>Mi perfil</h3>
 
+
         <div class="perfil-item">
-          <span class="perfil-label">Nombre: </span>
+          <span class="perfil-label">Nombre</span>
           <span id="perfil_nombre" class="perfil-valor">—</span>
         </div>
 
+
         <div class="perfil-item">
-          <span class="perfil-label">Email: </span>
+          <span class="perfil-label">Email</span>
           <span id="perfil_email" class="perfil-valor">—</span>
         </div>
 
+
         <div class="perfil-item">
-          <span class="perfil-label">Teléfono: </span>
+          <span class="perfil-label">Teléfono</span>
           <span id="perfil_tel" class="perfil-valor">—</span>
         </div>
+
 
         <div style="margin-top:20px;">
           <button class="btn-primary" onclick="logout()" style="width:100%;">
@@ -2608,18 +985,20 @@ html, body {
       </div>
     </div>
 
-    <!-- SERVICIOS -->
+
+
+
     <div id="vista-servicios" class="vista">
-
       <!-- HEADER PANEL NIÑERA -->
-      <div class="card panel-header">
-        <div class="panel-header-row">
-          <div id="saludo" class="panel-saludo">¡Hola!</div>
-          <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
-        </div>
+          <div class="card panel-header">
+      <div class="panel-header-row">
+        <div id="saludo" class="panel-saludo">¡Hola!</div>
+        <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
       </div>
+    </div>
 
-      <!-- SERVICIOS PRÓXIMOS -->
+
+      <!-- SERVICIOS PRÓXIMOS (niñera) – VA PRIMERO -->
       <div class="card" id="svcCard">
         <div class="row" style="justify-content:space-between;">
           <h3>Servicios próximos (2 semanas)</h3>
@@ -2628,28 +1007,42 @@ html, body {
         <div id="cal" class="calendar"></div>
         <div id="calMsg" class="muted" style="margin-top:8px;"></div>
       </div>
+    
+
+    <div class="card" id="planeacionesNineraCard">
+      <div class="row" style="justify-content:space-between;align-items:center;">
+        <h3>Planeaciones de actividades</h3>
+        <button class="btn-ghost" onclick="actualizarPlaneaciones()">🔄 Actualizar</button>
+      </div>
+      <div id="listaPlaneacionesNinera"></div>
+    </div>
+
+    <div class="card" id="planeacionesNineraCardSiguiente">
+      <h3>Planeaciones de actividades – semana siguiente</h3>
+      <div id="listaPlaneacionesNineraSiguiente"></div>
+    </div>
 
     </div>
 
-    <!-- PUNTOS -->
+
+
     <div id="vista-puntos" class="vista">
+      <!-- MIS PUNTOS (solo niñeras) -->
       <div class="card" id="puntosNineraCard">
         <h3>Mis puntos</h3>
-        <p class="muted" style="margin-top:0;">
-          Sistema de niveles: Pink, Yellow, Blue, Golden Nanny.
-        </p>
-
+        <p class="muted" style="margin-top:0;">Sistema de niveles: Pink, Yellow, Blue, Golden Nanny.</p>
         <div class="row" style="margin-bottom:6px;">
           <div><b>Nivel actual:</b> <span id="pt_nivel">—</span></div>
           <div><b>Puntos totales:</b> <span id="pt_total">0</span></div>
           <div><b>Servicios eventuales:</b> <span id="pt_servicios">0</span></div>
         </div>
-
         <p id="pt_msg" class="muted"></p>
       </div>
     </div>
 
-    <!-- COMUNIDAD -->
+
+
+
     <div id="vista-comunidad" class="vista">
       <div class="card">
         <h3>Comunidad</h3>
@@ -2657,11 +1050,44 @@ html, body {
       </div>
     </div>
 
-    <!-- DISPONIBILIDAD -->
-    <div id="vista-disponibilidad" class="vista">
+    <div id="vista-supervision" class="vista">
 
+      <!-- CARD SEMANA ACTUAL -->
+      <div class="supervision-card">
+        <div class="row" style="justify-content:space-between;align-items:center;">
+          <div class="supervision-title">
+            Resumen de planeaciones – semana actual
+          </div>
+          <button class="btn-ghost" onclick="actualizarPlaneacionesSupervision()">
+            🔄 Actualizar
+          </button>
+        </div>
+
+        <div id="resumenPlaneacionesActual"></div>
+      </div>
+
+      <!-- CARD SEMANA SIGUIENTE -->
+      <div class="supervision-card">
+        <div class="supervision-title">
+          Resumen de planeaciones – semana siguiente
+        </div>
+
+        <div id="resumenPlaneacionesSiguiente"></div>
+      </div>
+
+    </div>
+
+
+
+
+    <div id="vista-disponibilidad" class="vista"> 
+      <!-- PANEL (solo niñeras) -->
       <div class="card" id="panel">
-        <div class="row" style="justify-content:space-between;align-items:center;"></div>
+        <div class="row" style="justify-content:space-between;align-items:center;">
+      </div>
+
+
+
 
         <div class="row">
           <div><b>Semana base:</b></div>
@@ -2670,10 +1096,12 @@ html, body {
           <button class="btn-ghost" onclick="cargarSiguiente()">Cargar semana siguiente</button>
           <button class="btn-primary" onclick="guardar()">Guardar</button>
         </div>
-
         <p class="muted">Selecciona Matutino (07–15) y/o Vespertino (15–22) por día.</p>
         <p id="msgApp"></p>
       </div>
+
+
+
 
       <!-- SEMANA ACTUAL -->
       <div class="card" id="tablaActualCard">
@@ -2686,6 +1114,8 @@ html, body {
         </div>
         <div id="tabla"></div>
       </div>
+
+
 
       <!-- SEMANA SIGUIENTE -->
       <div class="card" id="tablaSiguienteCard" style="display:none;">
@@ -2700,6 +1130,9 @@ html, body {
         <div id="tabla2"></div>
       </div>
 
+
+
+
       <!-- RESÚMENES -->
       <div class="card" id="resumenCard">
         <details open>
@@ -2707,142 +1140,141 @@ html, body {
           <div id="resumen"></div>
         </details>
       </div>
-
       <div class="card" id="resumenCard2" style="display:none;">
         <details open>
           <summary><b>Resumen de la semana siguiente (turnos)</b></summary>
           <div id="resumen2"></div>
         </details>
       </div>
-
     </div>
 
-    <!-- ADMIN: SUGERIDOR -->
-    <div id="adminCard" class="card" style="display:none;">
-      <h3>Administrador – Sugerir niñeras</h3>
 
-      <div class="row">
-        <div><label>Fecha</label><br><input id="sv_fecha" type="date"></div>
-        <div><label>Inicio</label><br><input id="sv_hi" type="time" step="1800" value="09:00"></div>
-        <div><label>Fin</label><br><input id="sv_hf" type="time" step="1800" value="12:00"></div>
-        <div><label>Edad (años)</label><br><input id="sv_edad" type="number" step="0.1" value="1"></div>
-      </div>
 
-      <div class="row" style="margin-top:8px;">
-        <label style="width:100%;">Ubicación (dirección)</label>
-        <input id="sv_ubic" type="text" placeholder="Ej. Parque México, CDMX" style="max-width:580px; width:100%;">
-      </div>
-
-      <div class="row" style="margin-top:8px;">
-        <button id="btnSugerir" class="btn-primary" onclick="sugerir()">Sugerir niñeras</button>
-        <span id="admMsg" class="muted"></span>
-      </div>
-
-      <div id="admResultados" style="margin-top:12px; overflow:auto;"></div>
-    </div>
-
-    <!-- ADMIN: AGENDA -->
-    <div id="adminAgendaCard" class="card" style="display:none;">
-      <div class="week-head">
-        <h3>Administrador – Servicios (semana L–D)</h3>
-        <div class="nav-weeks">
-          <button class="btn-ghost" onclick="semanaAnterior()">◀ Semana anterior</button>
-          <button class="btn-ghost" onclick="semanaActual()">Semana actual</button>
-          <button class="btn-ghost" onclick="semanaSiguiente()">Semana siguiente ▶</button>
+      <!-- ADMIN: Sugeridor -->
+      <div id="adminCard" class="card" style="display:none;">
+        <h3>Administrador – Sugerir niñeras</h3>
+        <div class="row">
+          <div><label>Fecha</label><br><input id="sv_fecha" type="date"></div>
+          <div><label>Inicio</label><br><input id="sv_hi" type="time" step="1800" value="09:00"></div>
+          <div><label>Fin</label><br><input id="sv_hf" type="time" step="1800" value="12:00"></div>
+          <div><label>Edad (años)</label><br><input id="sv_edad" type="number" step="0.1" value="1"></div>
         </div>
-      </div>
-
-      <div class="muted" id="admWeekLabel" style="margin-bottom:8px;"></div>
-      <div id="adminAgenda"></div>
-    </div>
-
-    <!-- ADMIN: PUNTAJE -->
-    <div id="adminPuntosCard" class="card" style="display:none;">
-      <h3>Administrador – Puntaje de niñeras</h3>
-
-      <div class="row">
-        <div style="min-width:220px;">
-          <label>Nombre de niñera</label><br>
-          <input id="pt_admin_nombre" type="text" list="lista_nineras" placeholder="Escriba el nombre de la niñera">
-          <datalist id="lista_nineras"></datalist>
+        <div class="row" style="margin-top:8px%;">
+          <label style="width:100%;">Ubicación (dirección)</label>
+          <input id="sv_ubic" type="text" placeholder="Ej. Parque México, CDMX" style="max-width:580px; width:100%;">
         </div>
-
-        <div>
-          <label>Acción de puntos</label><br>
-          <select id="pt_admin_tipo">
-            <option value="">Seleccionar...</option>
-            <option value="SERVICIO_ULTIMO_MINUTO">Servicio de último minuto (+2)</option>
-            <option value="FAMILIA_REPITE">La familia pide de nuevo la misma nanny (+1)</option>
-            <option value="CAPACITACION_NO_OBLIGATORIA">Capacitación no obligatoria (+7)</option>
-            <option value="INICIAR_SERVICIO_FIJO">Iniciar un servicio fijo (+20)</option>
-            <option value="GANAR_INSIGNIA">Ganar una insignia (+10)</option>
-            <option value="ENTRENAMIENTO_NANNY_STAR">Entrenamiento Nanny Star (+25)</option>
-            <option value="RECOMENDAR_NANNY">Recomendar a otra nanny y que tome servicio (+20)</option>
-            <option value="NO_CONECTARSE_REUNION">No conectarse a reunión programada (−10)</option>
-            <option value="FALTA_SERVICIO">Falta a servicio (−10)</option>
-            <option value="REPORTE_NEGATIVO">Reporte negativo de la familia (−10)</option>
-            <option value="MALA_ACTITUD">Mala actitud con la agencia (−10)</option>
-          </select>
+        <div class="row" style="margin-top:8px;">
+          <button id="btnSugerir" class="btn-primary" onclick="sugerir()">Sugerir niñeras</button>
+          <span id="admMsg" class="muted"></span>
         </div>
+        <div id="admResultados" style="margin-top:12px; overflow:auto;"></div>
       </div>
 
-      <div class="row" style="margin-top:8px;">
-        <button class="btn-ghost" onclick="adminVerPuntaje()">Ver puntaje</button>
-        <button class="btn-primary" onclick="adminAgregarPuntos()">Agregar puntos</button>
-        <span id="pt_admin_msg" class="muted"></span>
+
+      <!-- ADMIN: Agenda semanal (L–D) -->
+      <div id="adminAgendaCard" class="card" style="display:none;">
+        <div class="week-head">
+          <h3>Administrador – Servicios (semana L–D)</h3>
+          <div class="nav-weeks">
+            <button class="btn-ghost" onclick="semanaAnterior()">◀ Semana anterior</button>
+            <button class="btn-ghost" onclick="semanaActual()">Semana actual</button>
+            <button class="btn-ghost" onclick="semanaSiguiente()">Semana siguiente ▶</button>
+          </div>
+        </div>
+        <div class="muted" id="admWeekLabel" style="margin-bottom:8px;"></div>
+        <div id="adminAgenda"></div>
       </div>
 
-      <div id="pt_admin_resultado" style="margin-top:8px;" class="muted"></div>
+
+
+
+      <!-- ADMIN: Puntaje de niñeras -->
+      <div id="adminPuntosCard" class="card" style="display:none;">
+        <h3>Administrador – Puntaje de niñeras</h3>
+        <div class="row">
+          <div style="min-width:220px;">
+            <label>Nombre de niñera</label><br/>
+            <input
+              id="pt_admin_nombre"
+              type="text"
+              list="lista_nineras"
+              placeholder="Escriba el nombre de la niñera"
+            />
+
+
+            <datalist id="lista_nineras"></datalist>
+
+
+
+          </div>
+          <div>
+            <label>Acción de puntos</label><br/>
+            <select id="pt_admin_tipo">
+              <option value="">Seleccionar...</option>
+              <option value="SERVICIO_ULTIMO_MINUTO">Servicio de último minuto (+2)</option>
+              <option value="FAMILIA_REPITE">La familia pide de nuevo la misma nanny (+1)</option>
+              <option value="CAPACITACION_NO_OBLIGATORIA">Capacitación no obligatoria (+7)</option>
+              <option value="INICIAR_SERVICIO_FIJO">Iniciar un servicio fijo (+20)</option>
+              <option value="GANAR_INSIGNIA">Ganar una insignia (+10)</option>
+              <option value="ENTRENAMIENTO_NANNY_STAR">Entrenamiento Nanny Star (+25)</option>
+              <option value="RECOMENDAR_NANNY">Recomendar a otra nanny y que tome servicio (+20)</option>
+              <option value="NO_CONECTARSE_REUNION">No conectarse a reunión programada (−10)</option>
+              <option value="FALTA_SERVICIO">Falta a servicio (−10)</option>
+              <option value="REPORTE_NEGATIVO">Reporte negativo de la familia (−10)</option>
+              <option value="MALA_ACTITUD">Mala actitud con la agencia (−10)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn-ghost" onclick="adminVerPuntaje()">Ver puntaje</button>
+          <button class="btn-primary" onclick="adminAgregarPuntos()">Agregar puntos</button>
+          <span id="pt_admin_msg" class="muted"></span>
+        </div>
+        <div id="pt_admin_resultado" style="margin-top:8px;" class="muted"></div>
+      </div>
+
+
+
+
+      <!-- ADMIN: Resumen de disponibilidad semanal -->
+      <div id="adminResumenDispCard" class="card" style="display:none;">
+        <div class="row" style="justify-content:space-between;align-items:center;">
+          <h3>Resumen de disponibilidad – semana actual</h3>
+          <button class="btn-ghost" onclick="cargarResumenDisponibilidadAdmin()">🔄 Actualizar</button>
+        </div>
+        <p class="muted">Verde: ya capturó horarios · Rojo: no ha capturado horarios.</p>
+        <div id="adminResumenDisp"></div>
+      </div>
+
+
+
+
+      <nav class="bottom-nav">
+        <button onclick="irVista('perfil')">
+          👤<span>Perfil</span>
+        </button>
+
+
+        <button onclick="irVista('servicios')" class="activo">
+          🏠<span>Servicios</span>
+        </button>
+
+
+        <button onclick="irVista('disponibilidad')">
+          📅<span>Disponibilidad</span>
+        </button>
+
+
+        <button onclick="irVista('comunidad')">
+          💬<span>Comunidad</span>
+        </button>
+      </nav>
+
+
+
+
     </div>
-
-    <!-- ADMIN: RESUMEN DISPONIBILIDAD -->
-    <div id="adminResumenDispCard" class="card" style="display:none;">
-      <div class="row" style="justify-content:space-between;align-items:center;">
-        <h3>Resumen de disponibilidad – semana actual</h3>
-        <button class="btn-ghost" onclick="cargarResumenDisponibilidadAdmin()">🔄 Actualizar</button>
-      </div>
-      <p class="muted">Verde: ya capturó horarios · Rojo: no ha capturado horarios.</p>
-      <div id="adminResumenDisp"></div>
-    </div>
-
   </div>
-
-  <!-- MENÚ INFERIOR FIJO -->
-    <nav class="bottom-nav">
-
-    <button onclick="irVista('perfil')" class="activo">
-        <svg viewBox="0 0 24 24" class="nav-icon">
-        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8V22h19.2v-2.8c0-3.2-6.4-4.8-9.6-4.8z"/>
-        </svg>
-        <span>Perfil</span>
-    </button>
-
-    <button onclick="irVista('servicios')">
-        <svg viewBox="0 0 24 24" class="nav-icon">
-        <path d="M3 12l9-9 9 9h-3v9h-12v-9h-3z"/>
-        </svg>
-        <span>Servicios</span>
-    </button>
-
-    <button onclick="irVista('disponibilidad')">
-        <svg viewBox="0 0 24 24" class="nav-icon">
-        <path d="M7 2v2h10v-2h2v20h-14v-20h2zm0 6v12h10v-12h-10z"/>
-        </svg>
-        <span>Disponibilidad</span>
-    </button>
-
-    <button onclick="irVista('comunidad')">
-        <svg viewBox="0 0 24 24" class="nav-icon">
-        <path d="M4 4h16v12h-5l-3 3-3-3h-5z"/>
-        </svg>
-        <span>Comunidad</span>
-    </button>
-
-    </nav>
-
-
-
-</div>
 
 
 
@@ -2866,60 +1298,205 @@ html, body {
 
 
 
+ <!-- MODAL Planeación Neuronanny -->
+<div id="planeacionBackdrop" class="modal-backdrop" style="display:none;">
+  <div class="modal-card modal-planeacion">
+
+    <!-- HEADER: TÍTULO + CLIENTE + NIÑERA -->
+    <div
+      id="planeacionHeader"
+      style="
+        margin-bottom:14px;
+        padding-bottom:10px;
+        border-bottom:1px solid #f0f0f0;
+      "
+    >
+      <h3 class="modal-title pink" id="pl_titulo">
+        Planeación de actividades
+      </h3>
+
+      <div class="muted" id="pl_info_cliente" style="margin-top:4px;"></div>
+      <div class="muted" id="pl_info_ninera"></div>
+      <!-- 📅 FECHAS DE REVISIÓN / CORRECCIÓN -->
+      <div
+        id="pl_fechas_revision"
+        class="muted"
+        style="
+          margin-top:6px;
+          font-size:13px;
+          display:none;
+          display:flex;
+          gap:12px;
+          flex-wrap:wrap;
+        "
+      >
+        <span id="pl_fecha_revision"></span>
+        <span id="pl_fecha_correccion"></span>
+      </div>
+    </div>
+
+    <!-- NAVEGACIÓN ENTRE DÍAS -->
+    <div
+      class="row"
+      style="
+        display:grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items:center;
+        margin-bottom:18px;
+      "
+    >
+      <div style="justify-self:start;">
+        <button class="btn-ghost" onclick="planeacionAnterior()">⬅️ Día anterior</button>
+      </div>
+
+      <span
+        id="pl_fecha_actual"
+        class="muted"
+        style="font-weight:600; justify-self:center;"
+      >
+        Fecha del servicio
+      </span>
+
+      <div style="justify-self:end;">
+        <button class="btn-ghost" onclick="planeacionSiguiente()">Día siguiente ➡️</button>
+      </div>
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="form-grid">
+
+      <div class="form-group full">
+        <label>Área de desarrollo</label>
+        <input id="pl_area" type="text" placeholder="Ej. Motricidad fina" />
+      </div>
+
+      <div class="form-group full">
+        <label>Objetivo de la actividad</label>
+        <textarea id="pl_objetivo" placeholder="¿Qué se busca estimular?"></textarea>
+      </div>
+
+      <div class="form-group full">
+        <label>Descripción de la actividad</label>
+        <textarea id="pl_descripcion" placeholder="Describe paso a paso la actividad"></textarea>
+      </div>
+
+      <div class="form-group full">
+        <label>Materiales requeridos</label>
+        <textarea id="pl_materiales" placeholder="Ej. hojas, colores, bloques"></textarea>
+      </div>
+
+      <div class="form-group full">
+        <label>Imagen de referencia (link)</label>
+        <input id="pl_imagen" type="text" placeholder="https://..." />
+      </div>
+
+      <!-- OBSERVACIONES DE SUPERVISIÓN -->
+      <div
+        id="obsSupervisionContainer"
+        class="form-group full"
+        style="display:none;"
+      >
+        <label>Observaciones de supervisión</label>
+
+        <!-- Supervisión escribe -->
+        <textarea
+          id="obsSupervision"
+          placeholder="Escriba aquí las observaciones para la niñera"
+          rows="4"
+          style="display:none;"
+        ></textarea>
+
+        <!-- Niñera solo lectura -->
+        <textarea
+          id="obsSupervisionNinera"
+          rows="4"
+          readonly
+          disabled
+          style="display:none; background:#f9fafb; color:#6b7280;"
+        ></textarea>
+      </div>
+
+    </div> <!-- ✅ CIERRE CORRECTO DE form-grid -->
+
+    <!-- ACCIONES DEL MODAL -->
+    <div class="modal-actions">
+
+      <button
+        id="btnGuardarPlaneacion"
+        class="btn-pink"
+        onclick="guardarPlaneacionNeuronanny()"
+      >
+        Guardar planeación
+      </button>
+
+      <button
+        id="btnEnviarCorreccion"
+        class="btn-ghost"
+        style="display:none;"
+        onclick="enviarACorreccion()"
+      >
+        🟠 Enviar a corrección
+      </button>
+
+      <button
+        id="btnMarcarRevisada"
+        class="btn-pink"
+        style="display:none;"
+        onclick="marcarPlaneacionRevisada()"
+      >
+        🟢 Marcar como revisada
+      </button>
+
+      <button
+        id="btnReenviarPlaneacion"
+        class="btn-pink"
+        style="display:none;"
+        onclick="reenviarPlaneacionCorregida()"
+      >
+        🔄 Reenviar planeación
+      </button>
 
 
+      <button
+        class="btn-ghost"
+        onclick="cerrarPlaneacionNeuronanny()"
+      >
+        Cancelar
+      </button>
 
+    </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  </div>
+</div>
 
 
 
 
 <script>
+  let PLANEACION_EXISTENTE = null; // aquí guardaremos la planeación leída
 
-    // Estado inicial: login
-document.body.classList.add('auth-mode');
-document.body.classList.remove('app-mode');
+  let SESION = { email:null, nombre:'', admin:false, supervision:false };
+
+  const API_URL = 'https://script.google.com/macros/s/AKfycbwp4QRsxLj51iMbZkAlcP4OqH-3EVCcbFIqkA0sFUzAq8l9HhKnsJDADUv-WnbtEvM/exec';
+
+async function api(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, payload })
+  });
+
+  const json = await res.json();
+
+  if (!json.ok) {
+    throw new Error(json.error || 'Error desconocido');
+  }
+
+  return json.data;
+}
 
 
-  let SESION = { email:null, nombre:'', admin:false };
   // 🔁 Restaurar sesión si existe
-/*
 document.addEventListener('DOMContentLoaded', () => {
   const guardada = localStorage.getItem('nyp_sesion');
   if(guardada){
@@ -2928,147 +1505,106 @@ document.addEventListener('DOMContentLoaded', () => {
       SESION.email = data.email;
       SESION.nombre = data.nombre;
       SESION.admin = data.admin;
+      SESION.supervision = data.supervision || false;
+
+      document.body.classList.remove('admin','supervision','ninera');
+
+      if(SESION.admin){
+        document.body.classList.add('admin');
+      }
+      else if(SESION.supervision){
+        document.body.classList.add('supervision');
+      }
+      else{
+        document.body.classList.add('ninera');
+      }
 
 
       // Mostrar app directamente
       document.getElementById('auth').style.display = 'none';
       document.getElementById('app').style.display = 'block';
 
+
       // 👇 MOSTRAR MENÚ SOLO SI NO ES ADMIN
-      if (!SESION.admin) {
-        document.querySelector('.bottom-nav').style.display = 'flex';
-      } else {
+      if (SESION.admin || SESION.supervision) {
         document.querySelector('.bottom-nav').style.display = 'none';
+      } else {
+        document.querySelector('.bottom-nav').style.display = 'flex';
       }
+
+
 
       document.getElementById('saludo').innerHTML =
         `<b>¡Hola, ${SESION.nombre || SESION.email}!</b>` +
         (SESION.admin ? ' <span class="pill">Admin</span>' : '');
 
-      if(SESION.admin){
+
+      const headerAdmin = document.getElementById('header-admin');
+      if (headerAdmin) headerAdmin.style.display = 'none';
+
+      // 👑 ADMIN
+      if (SESION.admin) {
+        if (headerAdmin) {
+          headerAdmin.style.display = 'block';
+          document.getElementById('saludo-admin').innerHTML =
+            `<b>¡Hola, ${SESION.nombre || SESION.email}!</b> <span class="pill">Admin</span>`;
+        }
         mostrarVistaAdmin();
-      } else {
-        mostrarVistaNinera();
       }
+
+      // 👀 SUPERVISIÓN
+      else if (SESION.supervision) {
+        if (headerAdmin) {
+          headerAdmin.style.display = 'block';
+          document.getElementById('saludo-admin').innerHTML =
+            `<b>¡Hola, ${SESION.nombre || SESION.email}!</b> <span class="pill">Supervisión</span>`;
+        }
+        ocultarTodo();
+        document.getElementById('vista-supervision').style.display = 'block';
+        cargarResumenPlaneaciones();
+      }
+
+      // 👶 NIÑERA
+      else {
+        mostrarVistaNinera();
+        irVista('servicios'); // ← fuerza vista activa al cargar
+      }
+
+
+
 
     }catch(e){
       localStorage.removeItem('nyp_sesion');
     }
   }
 });
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
   let SEM1 = { dias:[], baseISO:null };
   let SEM2 = { dias:[], baseISO:null, cargada:false };
   let CAL_SERVICIOS = [];
+  let CAL_SERVICIOS_SIG = [];
+  let PLANEACIONES_FECHAS = [];   // fechas del cliente
+  let PLANEACION_INDEX = 0;      // índice actual
+  let PLANEACION_CLIENTE = null; // cliente activo
+  let PLANEACION_FUENTE = []; // ← fuente fija de la semana activa
+  let CACHE_PLANEACIONES = {}; // clave: cliente|fecha → valor: planeación o null
+  let SEMANA_CALENDARIO_BASE = null;
+
+  let CACHE_PLANEACION_MODAL = {};
+
+  let MODO_SOLO_LECTURA = false;
+
+  let PLANEACION_SESSION_ID = 0;
+
+  const RESUMEN_PLANEACIONES_SUP = {};
   let ADMIN_WEEK_START_ISO = null;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  const TIPOS_CON_PLANEACION = [
+    'neuronanny',
+    'nanny educativa',
+    'miss nanny'
+  ];
 
 
 
@@ -3090,56 +1626,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   function mostrarOlvide(){ document.getElementById('paso-login').style.display='none'; document.getElementById('paso-olvide').style.display='block'; }
   function volverLogin(){ document.getElementById('paso-login').style.display='block'; document.getElementById('paso-olvide').style.display='none'; }
 
 
-  async function loginPWA(){
+
+  async function login(){
   const email = document.getElementById('email').value.trim().toLowerCase();
   const pass  = document.getElementById('pass').value;
   const msg   = document.getElementById('msgLogin');
@@ -3149,108 +1641,67 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     const res = await api('login', { email, pass });
 
-    SESION.email  = res.email;
+    SESION.email = email;
     SESION.nombre = res.nombre || '';
-    SESION.admin  = !!res.admin;
+    SESION.admin = !!res.admin;
+    SESION.supervision = !!res.supervision;
 
-    // Guardar sesión
-    localStorage.setItem('nyp_sesion', JSON.stringify({
-      email: SESION.email,
-      nombre: SESION.nombre,
-      admin: SESION.admin
-    }));
+    document.body.classList.remove('admin','supervision','ninera');
+    document.body.classList.add(
+      SESION.admin ? 'admin' :
+      SESION.supervision ? 'supervision' : 'ninera'
+    );
 
-    // Mostrar app
+    localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
+
     document.getElementById('auth').style.display = 'none';
-    document.getElementById('app').style.display  = 'block';
-    // 🔒 Cambiar a modo app (sin scroll global)
-    document.body.classList.remove('auth-mode');
-    document.body.classList.add('app-mode');
+    document.getElementById('app').style.display = 'block';
 
-    document.querySelector('.bottom-nav').style.display = 'flex';
-
-    document.getElementById('saludo').innerHTML =
-      `<b>¡Hola, ${SESION.nombre || SESION.email}!</b>` +
-      (SESION.admin ? ' <span class="pill">Admin</span>' : '');
-
-    if (SESION.admin) {
+    if (SESION.admin || SESION.supervision) {
+      document.querySelector('.bottom-nav').style.display = 'none';
       mostrarVistaAdmin();
     } else {
+      document.querySelector('.bottom-nav').style.display = 'flex';
       mostrarVistaNinera();
     }
 
     msg.textContent = '';
+
   } catch (err) {
     msg.innerHTML = `<span class="err">${err.message}</span>`;
   }
 }
-window.login = loginPWA;
 
 
 
+async function enviarOTP(){
+  const email = document.getElementById('email2').value.trim().toLowerCase();
+  const msg = document.getElementById('msgOlvide');
+  msg.textContent = 'Enviando código...';
 
-
-
-  function enviarOTP(){
-    const email=document.getElementById('email2').value.trim().toLowerCase();
-    const msg=document.getElementById('msgOlvide'); msg.textContent='Enviando código...';
-    google.script.run.withSuccessHandler(res=>{
-      msg.innerHTML='<span class="ok">Código enviado a '+email+'. (Cuota restante hoy: '+(res?.restante ?? '—')+')</span>';
-    }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).solicitarOTP(email);
+  try {
+    await api('solicitarOTP', { email });
+    msg.innerHTML = `<span class="ok">Código enviado a ${email}</span>`;
+  } catch (err) {
+    msg.innerHTML = `<span class="err">${err.message}</span>`;
   }
-  function guardarNueva(){
-    const email=document.getElementById('email2').value.trim().toLowerCase();
-    const otp=document.getElementById('otp').value.trim();
-    const npass=document.getElementById('npass').value;
-    const msg=document.getElementById('msgOlvide'); msg.textContent='Guardando...';
-    google.script.run.withSuccessHandler(_=>{
-      msg.innerHTML='<span class="ok">Contraseña actualizada. Ahora puedes iniciar sesión.</span>';
-    }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).establecerContrasena(email, otp, npass);
+}
+
+async function guardarNueva(){
+  const email = document.getElementById('email2').value.trim().toLowerCase();
+  const otp   = document.getElementById('otp').value.trim();
+  const nueva = document.getElementById('npass').value;
+  const msg   = document.getElementById('msgOlvide');
+
+  msg.textContent = 'Guardando...';
+
+  try {
+    await api('establecerContrasena', { email, otp, nueva });
+    msg.innerHTML = `<span class="ok">Contraseña actualizada. Ya puedes iniciar sesión.</span>`;
+  } catch (err) {
+    msg.innerHTML = `<span class="err">${err.message}</span>`;
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}
 
 
 
@@ -3283,59 +1734,6 @@ window.login = loginPWA;
     ctx.dias.forEach(d=>{ d.Matutino=!!val; d.Vespertino=!!val; });
     renderTablaTurnos(targetId, ctx);
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3403,43 +1801,123 @@ window.login = loginPWA;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   /* ---------- SERVICIOS PRÓXIMOS ---------- */
   function refreshServicios(){
-    const btn=document.getElementById('btnRefreshSvc'); const msg=document.getElementById('calMsg');
-    btn.textContent='Actualizando...'; msg.textContent='';
-    google.script.run.withSuccessHandler(lista=>{
-      CAL_SERVICIOS=Array.isArray(lista)?lista:[];
-      renderCalendario2Semanas();
-      btn.textContent='🔄 Actualizar'; msg.textContent='Actualizado'; setTimeout(()=>msg.textContent='',1200);
-    }).withFailureHandler(err=>{ btn.textContent='🔄 Actualizar'; msg.innerHTML='<span class="err">'+err.message+'</span>'; }).obtenerServiciosProximosPorNombre(SESION.email, 14);
+    const btn = document.getElementById('btnRefreshSvc');
+    const msg = document.getElementById('calMsg');
+
+    btn.textContent = 'Actualizando...';
+    msg.textContent = '';
+
+    google.script.run
+      .withSuccessHandler(lista => {
+        CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
+
+        if(!SEMANA_CALENDARIO_BASE){
+          SEMANA_CALENDARIO_BASE = new Date();
+        }
+
+        // 🔁 Render calendario
+        renderCalendario2Semanas();
+
+        // ✅ AHORA recalcular planeaciones Neuronanny
+        cargarResumenPlaneacionesNinera();
+
+        btn.textContent = '🔄 Actualizar';
+        msg.textContent = 'Actualizado';
+        setTimeout(() => msg.textContent = '', 1200);
+      })
+      .withFailureHandler(err => {
+        btn.textContent = '🔄 Actualizar';
+        msg.innerHTML = '<span class="err">' + err.message + '</span>';
+      })
+      .obtenerServiciosProximosPorNombre(SESION.email, 14);
   }
+
+  function actualizarPlaneaciones(){
+    // ⛔ si hay un modal abierto, no interferir
+    if(document.getElementById('planeacionBackdrop').style.display === 'flex'){
+      cerrarPlaneacionNeuronanny();
+    }
+
+    // 🧹 limpiar cache y sesiones
+    CACHE_PLANEACIONES = {};
+    PLANEACION_SESSION_ID++;
+
+    // Feedback visual
+    const c1 = document.getElementById('listaPlaneacionesNinera');
+    const c2 = document.getElementById('listaPlaneacionesNineraSiguiente');
+    if(c1) c1.innerHTML = 'Actualizando planeaciones...';
+    if(c2) c2.innerHTML = 'Actualizando planeaciones...';
+
+    // 🔄 recargar datos
+    cargarResumenPlaneacionesNinera();
+
+  }
+
+  function actualizarPlaneacionesSupervision(){
+    // 🔄 limpiar cache de planeaciones
+    CACHE_PLANEACIONES = {};
+    PLANEACION_SESSION_ID++;
+
+    // feedback visual inmediato
+    const c1 = document.getElementById('resumenPlaneacionesActual');
+    const c2 = document.getElementById('resumenPlaneacionesSiguiente');
+
+    if(c1) c1.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+    if(c2) c2.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+
+    // 🔁 recargar ambas semanas
+    cargarResumenPlaneaciones();
+  }
+
   function cargarServicios(){
-    const cont=document.getElementById('cal'); const msg=document.getElementById('calMsg');
-    cont.innerHTML=''; msg.textContent='Cargando...';
-    google.script.run.withSuccessHandler(lista=>{
-      CAL_SERVICIOS=Array.isArray(lista)?lista:[]; msg.textContent=''; renderCalendario2Semanas();
-    }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).obtenerServiciosProximosPorNombre(SESION.email, 14);
+    const cont=document.getElementById('cal');
+    const msg=document.getElementById('calMsg');
+
+    cont.innerHTML='';
+    msg.textContent='Cargando...';
+
+    google.script.run
+      .withSuccessHandler(lista=>{
+        CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
+        msg.textContent='';
+        if(!SEMANA_CALENDARIO_BASE){
+          SEMANA_CALENDARIO_BASE = new Date();
+        }
+        renderCalendario2Semanas();
+
+        // ✅ AHORA SÍ: planeaciones
+        cargarResumenPlaneacionesNinera();
+      })
+      .withFailureHandler(err=>{
+        msg.innerHTML='<span class="err">'+err.message+'</span>';
+      })
+      .obtenerServiciosProximosPorNombre(SESION.email, 14);
   }
+
+  function cargarServiciosSiguienteSemana(){
+    google.script.run
+      .withSuccessHandler(lista=>{
+        const todos = Array.isArray(lista) ? lista : [];
+
+        // ⬇️ filtrar solo semana siguiente (mismo criterio del calendario)
+        const base = SEMANA_CALENDARIO_BASE || new Date();
+        const lunesActual = startMonday(base);
+
+        const lunesSiguiente = new Date(lunesActual);
+        lunesSiguiente.setDate(lunesSiguiente.getDate() + 7);
+        const lunesSigISO = toISO(lunesSiguiente);
+
+        CAL_SERVICIOS_SIG = todos.filter(s => s.fecha >= lunesSigISO);
+
+      })
+      .obtenerServiciosProximosPorNombre(SESION.email, 14);
+  }
+
+
+
+
   function _hmToMinutes(hm){ if(!hm) return Number.POSITIVE_INFINITY; const m=String(hm).match(/^(\d{1,2})(?::(\d{1,2}))?$/); if(!m) return Number.POSITIVE_INFINITY; const h=parseInt(m[1],10); const mi=m[2]?parseInt(m[2],10):0; return h*60+mi; }
   function compararServicios(a,b){ const ai=_hmToMinutes(a.hora_inicio), bi=_hmToMinutes(b.hora_inicio); if(ai!==bi) return ai-bi; const af=_hmToMinutes(a.hora_fin), bf=_hmToMinutes(b.hora_fin); if(af!==bf) return af-bf; return (a.cliente||'').localeCompare(b.cliente||''); }
   function stateClass(estado){
@@ -3452,36 +1930,21 @@ window.login = loginPWA;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   function renderCalendario2Semanas(){
     const cont=document.getElementById('cal'); cont.innerHTML='';
-    const hoy=new Date(); const start=startMonday(hoy);
+    const hoy = new Date();
+
+    // 🔒 FIJAR SEMANA COMPLETA
+    const start = startMonday(
+      SEMANA_CALENDARIO_BASE || hoy
+    );
+
     const map={}; CAL_SERVICIOS.forEach(s=>{ if(!map[s.fecha]) map[s.fecha]=[]; map[s.fecha].push(s); });
     for(let i=0;i<14;i++){
       const d=new Date(start); d.setDate(start.getDate()+i);
       const iso=toISO(d); const dow=d.toLocaleDateString('es-MX',{weekday:'short'}).toUpperCase(); const dom=d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit'});
       const servicios=(map[iso]||[]).slice().sort(compararServicios);
-      const serviciosVisibles = servicios.filter(s => s.ver !== true);
+      const serviciosVisibles = servicios.filter(s => s.ver == true);
       const day=document.createElement('div'); day.className='day'; if(iso===toISO(new Date())) day.classList.add('today');
       const head=document.createElement('header'); head.innerHTML=`<span>${dow}</span><span class="date">${dom}</span>`; day.appendChild(head);
       const body=document.createElement('div');
@@ -3497,29 +1960,12 @@ window.login = loginPWA;
               : (s.hora_inicio || s.hora_fin || 'Servicio');
 
 
-
-
-
-
-
-
             const btn = document.createElement('button');
-
-
-
-
-
 
 
 
             let cls = 'svc-pill ' + stateClass(s.estado);
             if (s.empalmado) cls += ' conflict';
-
-
-
-
-
-
 
 
             btn.className = cls;
@@ -3531,60 +1977,9 @@ window.login = loginPWA;
 
 
 
-
-
-
-
-
       day.appendChild(body); cont.appendChild(day);
     }
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   /* ---------- MODAL DE SERVICIO (confirmar / iniciar / finalizar) ---------- */
@@ -3597,139 +1992,15 @@ window.login = loginPWA;
   document.getElementById('mDireccion').textContent = s.direccion || '—';
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const u = document.getElementById('mUbicacion');
   u.textContent = '—';
   if (s.ubicacion_link) {
     u.innerHTML = `<a href="${s.ubicacion_link}" target="_blank" rel="noopener">Abrir mapa</a>`;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   document.getElementById('mEdad').textContent  = s.edad_nino || '—';
   document.getElementById('mNotas').textContent = s.notas || '—';
   document.getElementById('mCuota').textContent = s.cuota_nanny || '—';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // Estado y marcas de tiempo
   const estado       = (s.estado || 'pendiente').toLowerCase();
@@ -3737,46 +2008,8 @@ window.login = loginPWA;
   const finReal      = s.fin_real      ? String(s.fin_real).trim()      : '';
   const confirmadoEn = s.confirmado_en ? String(s.confirmado_en).trim() : '';
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   const actions = document.querySelector('#modalBackdrop .actions');
   actions.innerHTML = '';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // 🚫 Servicio empalmado (solo niñera)
   if (!SESION.admin && s.empalmado) {
@@ -3787,73 +2020,7 @@ window.login = loginPWA;
     warn.style.color = '#b91c1c';
     warn.textContent = '⚠️ Servicio empalmado';
     actions.appendChild(warn);
-
-
-
-
-
-
-
-
-    const c = document.createElement('button');
-    c.className = 'btn-ghost';
-    c.textContent = 'Cerrar';
-    c.onclick = () => cerrarModal();
-    actions.appendChild(c);
-
-
-
-
-
-
-
-
-    document.getElementById('modalBackdrop').style.display = 'flex';
-    return;
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3869,27 +2036,6 @@ window.login = loginPWA;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // --- AQUI VIENE LA DIFERENCIA CLAVE ---
   // Si es ADMIN: solo visualiza, NO puede cambiar estatus
   if (SESION.admin) {
@@ -3902,18 +2048,6 @@ window.login = loginPWA;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     document.getElementById('modalBackdrop').style.display = 'flex';
     return;
     cargarListaNinerasAdmin();
@@ -3921,34 +2055,11 @@ window.login = loginPWA;
  
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  // Si NO es admin (es niñera), mostrar los botones de acción normales
-  if (estado === 'pendiente') {
+  if (estado === 'pendiente' && !s.empalmado) {
     const b = document.createElement('button');
     b.className = 'btn-primary';
     b.textContent = 'Confirmo asistencia';
-    b.onclick = () => accionConfirmar(s); // ✅ PASAR OBJETO COMPLETO
+    b.onclick = () => accionConfirmar(s);
     actions.appendChild(b);
   }
 
@@ -3981,36 +2092,6 @@ window.login = loginPWA;
   }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Botón cerrar (niñera)
   const c = document.createElement('button');
   c.className = 'btn-ghost';
@@ -4018,69 +2099,8 @@ window.login = loginPWA;
   c.onclick = () => cerrarModal();
   actions.appendChild(c);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   document.getElementById('modalBackdrop').style.display = 'flex';
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   function cerrarModal(){
@@ -4092,72 +2112,8 @@ window.login = loginPWA;
   });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   function accionConfirmar(s){
   cerrarModal();
-
-
 
 
   if (!s || !s.sheet || !s.row_base) {
@@ -4170,8 +2126,6 @@ window.login = loginPWA;
 
   google.script.run
     .withSuccessHandler(res => {
-
-
 
 
       // 🔁 Actualizar solo los días de esa fila y hoja
@@ -4203,35 +2157,6 @@ window.login = loginPWA;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
  function accionIniciar(sheetName, row, fechaISO){
   cerrarModal();
   google.script.run
@@ -4241,40 +2166,6 @@ window.login = loginPWA;
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function accionFinalizar(sheetName, row, fechaISO){
   cerrarModal();
   google.script.run
@@ -4282,31 +2173,6 @@ function accionFinalizar(sheetName, row, fechaISO){
     .withFailureHandler(err=> alert(err.message))
     .registrarFinServicio(sheetName, row, fechaISO, SESION.email);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4332,36 +2198,6 @@ function accionFinalizar(sheetName, row, fechaISO){
   }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   /* ---------- AGENDA ADMIN SEMANAL ---------- */
   function setWeekLabel(lunesISO){
     const d0=new Date(lunesISO+'T00:00:00'); const d6=new Date(lunesISO+'T00:00:00'); d6.setDate(d6.getDate()+6);
@@ -4378,44 +2214,6 @@ function accionFinalizar(sheetName, row, fechaISO){
   const hoyISO = toISO(new Date());
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Agrupar servicios por fecha
   const porFecha = {};
   lista.forEach(s=>{
@@ -4427,44 +2225,6 @@ function accionFinalizar(sheetName, row, fechaISO){
   });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   function stateClass2(e){
     e = (e||'').toLowerCase();
     if(e==='confirmado') return 'confirmed';
@@ -4472,35 +2232,6 @@ function accionFinalizar(sheetName, row, fechaISO){
     if(e==='completado')return 'completed';
     return 'pending';
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4515,36 +2246,6 @@ function accionFinalizar(sheetName, row, fechaISO){
   }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   // Limpiar contenedor y crear grid
   cont.innerHTML = '';
   const grid = document.createElement('div');
@@ -4552,51 +2253,9 @@ function accionFinalizar(sheetName, row, fechaISO){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   for(let i=0;i<7;i++){
     const d = new Date(lunesISO+'T00:00:00');
     d.setDate(d.getDate()+i);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4607,102 +2266,13 @@ function accionFinalizar(sheetName, row, fechaISO){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     const col = document.createElement('div');
     col.className = 'week-col' + (iso===hoyISO ? ' is-today' : '');
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     const header = document.createElement('header');
     header.innerHTML = `<span>${dow}</span><span class="date">${dom}</span>`;
     col.appendChild(header);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     if(!items.length){
@@ -4711,36 +2281,6 @@ function accionFinalizar(sheetName, row, fechaISO){
       empty.textContent = '—';
       col.appendChild(empty);
     } else {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
       // 🔴 Detectar empalmes por niñera en ESTE día
@@ -4752,35 +2292,6 @@ function accionFinalizar(sheetName, row, fechaISO){
           if(!porNinera[key]) porNinera[key] = [];
           porNinera[key].push({ s, idx });
         });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -4802,12 +2313,6 @@ function accionFinalizar(sheetName, row, fechaISO){
       }
 
 
-
-
-
-
-
-
       items.forEach((s, idx) => {
         let label = `${s.cliente || 'Cliente'} – ${s.nombre_ninera || 'Sin niñera'}`;
         if (conflictIdx.has(idx)) {
@@ -4815,20 +2320,7 @@ function accionFinalizar(sheetName, row, fechaISO){
         }
 
 
-
-
-
-
-
-
         const btn = document.createElement('button');
-
-
-
-
-
-
-
 
         // Clases base
         let cls = 'pill-svc ' + stateClass2(s.estado);
@@ -4836,22 +2328,10 @@ function accionFinalizar(sheetName, row, fechaISO){
         if (s.ver === true) cls += ' svc-hidden-admin';
 
 
-
-
-
-
-
-
         btn.className = cls;
         btn.title = (s.hora_inicio || '') + (s.hora_fin ? ('–' + s.hora_fin) : '');
         btn.textContent = label;
         btn.onclick = () => abrirModalServicio(s);
-
-
-
-
-
-
 
 
         // 🔵 FORZAR COLOR SI "Ver" = TRUE (esto es la clave)
@@ -4864,180 +2344,22 @@ function accionFinalizar(sheetName, row, fechaISO){
 
 
 
-
-
-
-
-
         col.appendChild(btn);
       });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
      
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     grid.appendChild(col);
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   cont.appendChild(grid);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   function semanaAnterior(){ if(!ADMIN_WEEK_START_ISO){ ADMIN_WEEK_START_ISO=toISO(startMonday(new Date())); } cargarAgendaAdminSemana(addDaysISO(ADMIN_WEEK_START_ISO,-7)); }
   function semanaSiguiente(){ if(!ADMIN_WEEK_START_ISO){ ADMIN_WEEK_START_ISO=toISO(startMonday(new Date())); } cargarAgendaAdminSemana(addDaysISO(ADMIN_WEEK_START_ISO, 7)); }
   function semanaActual(){ cargarAgendaAdminSemana(toISO(startMonday(new Date()))); }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   /* ---------- RESUMEN DISPONIBILIDAD (ADMIN) ---------- */
@@ -5055,322 +2377,233 @@ function accionFinalizar(sheetName, row, fechaISO){
       .obtenerResumenDisponibilidadSemanaActual();
   }
 
+  
+  function cargarResumenPlaneaciones(){
+    document.getElementById('resumenPlaneacionesActual').innerHTML =
+      '<p class="muted">Verificando planeaciones...</p>';
+
+    document.getElementById('resumenPlaneacionesSiguiente').innerHTML =
+      '<p class="muted">Verificando planeaciones...</p>';
+
+    const hoy = new Date();
+    const lunesActual = startMonday(hoy);
+    const lunesSiguiente = new Date(lunesActual);
+    lunesSiguiente.setDate(lunesSiguiente.getDate() + 7);
+
+    const isoActual = toISO(lunesActual);
+    const isoSiguiente = toISO(lunesSiguiente);
+
+    // Semana actual
+    google.script.run
+      .withSuccessHandler(data => {
+        renderResumenPlaneaciones(
+          data,
+          document.getElementById('resumenPlaneacionesActual')
+        );
+      })
+      .obtenerResumenPlaneacionesSemana(isoActual, SESION.email);
+
+    // Semana siguiente
+    google.script.run
+      .withSuccessHandler(data => {
+        renderResumenPlaneaciones(
+          data,
+          document.getElementById('resumenPlaneacionesSiguiente'),
+          'siguiente'
+        );
+
+      })
+      .obtenerResumenPlaneacionesSemana(isoSiguiente, SESION.email);
+  }
+
+  
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  function renderResumenDisponibilidadAdmin(lista){
-  const cont = document.getElementById('adminResumenDisp');
-  if(!lista.length){
-    cont.innerHTML = '<p class="muted">No hay usuarias registradas.</p>';
+  function renderResumenPlaneaciones(data, cont, prefijo){
+  if(!data || Object.keys(data).length === 0){
+    cont.innerHTML = '<p class="muted">No hay planeaciones registradas.</p>';
     return;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   let html = '';
+  const esSupervision = SESION.supervision || SESION.admin;
+  const esSiguiente = (prefijo || '').includes('siguiente');
+
+  /* ==================================================
+     👶 NIÑERA → LISTA PLANA (SIN CIUDADES)
+     ================================================== */
+  if (!esSupervision) {
+
+    html += `<ul style="list-style:none;margin:6px 0;padding-left:0;">`;
+
+    Object.values(data).flat().forEach(p => {
+
+      // 🔒 FILTRO CLAVE: solo planeaciones de esta niñera
+      const nombreSesion = (SESION.nombre || '').toLowerCase().trim();
+      const nombrePlaneacion = (p.ninera || '').toLowerCase().trim();
+
+      if (!nombrePlaneacion || nombrePlaneacion !== nombreSesion) {
+        return; // ⛔ no es su servicio
+      }
+
+
+      /* =========================
+         INDICADOR IZQUIERDO
+         Planeación
+         ========================= */
+      const colorPlaneacion = p.tienePlaneacion ? '#16a34a' : '#dc2626';
+      const textoPlaneacion = p.tienePlaneacion
+        ? 'planeación completa'
+        : 'planeación pendiente';
+
+      /* =========================
+         INDICADOR DERECHO
+         Revisión
+         ========================= */
+      const estadoRevision = normalizarTexto(
+        p.estado_revision || p.estadoRevision || p.estado_revision_planeacion
+      );
+
+      let colorRevision = '#3b82f6'; // 🔵 pendiente
+      if (estadoRevision.includes('correccion')) {
+        colorRevision = '#facc15'; // 🟡 a corrección
+      }
+      else if (estadoRevision === 'revisada') {
+        colorRevision = '#22c55e'; // 🟢 revisada
+      }
+
+      /* =========================
+         FECHAS (no tocar)
+         ========================= */
+      const key = `${prefijo || 'actual'}|${p.cliente}|${p.ninera || ''}`;
+
+      let fechas = [];
+
+      if (Array.isArray(p.fechas)) fechas = p.fechas;
+      else if (Array.isArray(p.dias)) fechas = p.dias;
+      else if (p.fecha) fechas = [p.fecha];
+
+      RESUMEN_PLANEACIONES_SUP[key] = fechas;
+
+      const handler =
+        `abrirPlaneacionesCliente('${p.cliente}', ${esSiguiente}, '${p.tipo_servicio || ''}')`;
+
+      html += `
+        <li style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;"
+            onclick="${handler}">
+          
+          <!-- ● Planeación -->
+          <span style="
+            width:10px;
+            height:10px;
+            border-radius:999px;
+            background:${colorPlaneacion};
+            display:inline-block;
+          "></span>
+
+          <!-- Texto -->
+          <span><b>${p.cliente}</b></span>
+          <span class="muted">(${textoPlaneacion})</span>
+
+          ${p.tienePlaneacion ? `
+            <!-- ● Revisión -->
+            <span style="
+              width:10px;
+              height:10px;
+              border-radius:999px;
+              background:${colorRevision};
+              display:inline-block;
+            "></span>
+          ` : ``}
+        </li>
+      `;
+    });
+
+    html += `</ul>`;
+    cont.innerHTML = html;
+    return; // ⛔ importante: no renderiza ciudades
+  }
+
+  /* ==================================================
+     👀 SUPERVISIÓN → AGRUPADO POR CIUDAD (IGUAL QUE HOY)
+     ================================================== */
+  Object.keys(data).forEach((ciudad, indexCiudad) => {
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  lista.forEach((grupo, indexCiudad) => {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    const ciudadId = `ciudad_${indexCiudad}`;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    const ciudadId = `${prefijo}_ciudad_${indexCiudad}`;
 
     html += `
       <div style="margin:10px 0;">
         <div style="display:flex;align-items:center;gap:10px;cursor:pointer;"
              onclick="toggleCiudad('${ciudadId}')">
           <span id="${ciudadId}_icon" style="font-size:18px;user-select:none;">➕</span>
-          <h4 style="margin:0;">${grupo.ciudad}</h4>
+          <h4 style="margin:0;">${ciudad}</h4>
         </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
         <div id="${ciudadId}" style="display:none; margin-left:28px; margin-top:6px;">
           <ul style="list-style:none;margin:4px 0 12px;padding-left:0;">
     `;
 
+    data[ciudad].forEach(p => {
+
+      const colorPlaneacion = p.tienePlaneacion ? '#16a34a' : '#dc2626';
+      const textoPlaneacion = p.tienePlaneacion
+        ? 'planeación completa'
+        : 'planeación pendiente';
+
+      const estadoRevision = normalizarTexto(
+        p.estado_revision || p.estadoRevision || p.estado_revision_planeacion
+      );
+
+      let colorRevision = '#3b82f6';
+      if (estadoRevision.includes('correccion')) colorRevision = '#facc15';
+      else if (estadoRevision === 'revisada') colorRevision = '#22c55e';
+
+      const key = `${prefijo || 'actual'}|${p.cliente}|${p.ninera || ''}`;
+
+      let fechas = [];
+
+      if (Array.isArray(p.fechas)) fechas = p.fechas;
+      else if (Array.isArray(p.dias)) fechas = p.dias;
+      else if (p.fecha) fechas = [p.fecha];
+
+      RESUMEN_PLANEACIONES_SUP[key] = fechas;
+
+      const handler =
+      `abrirPlaneacionesClienteDesdeResumen(
+        '${p.cliente}',
+        '${prefijo || 'actual'}',
+        '${p.tipo_servicio || ''}',
+        '${p.ninera || ''}'
+      )`;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    grupo.nineras.forEach(n => {
-      const color = n.tiene ? '#16a34a' : '#dc2626';
-      const texto = n.tiene ? 'ya capturó horarios' : 'sin horarios esta semana';
       html += `
-        <li style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-          <span style="width:10px;height:10px;border-radius:999px;background:${color};display:inline-block;"></span>
-          <span>${n.nombre}</span>
-          <span class="muted">(${texto})</span>
+        <li style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;"
+            onclick="${handler}">
+          
+          <span style="
+            width:10px;
+            height:10px;
+            border-radius:999px;
+            background:${colorPlaneacion};
+            display:inline-block;
+          "></span>
+
+          <span><b>${p.cliente}</b> – ${p.ninera}</span>
+          <span class="muted">(${textoPlaneacion})</span>
+
+          ${p.tienePlaneacion ? `
+            <span style="
+              width:10px;
+              height:10px;
+              border-radius:999px;
+              background:${colorRevision};
+              display:inline-block;
+            "></span>
+          ` : ``}
         </li>
       `;
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     html += `
           </ul>
@@ -5378,77 +2611,6 @@ function accionFinalizar(sheetName, row, fechaISO){
       </div>
     `;
   });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   cont.innerHTML = html;
 }
@@ -5462,85 +2624,111 @@ function accionFinalizar(sheetName, row, fechaISO){
 
 
 
+  function renderResumenDisponibilidadAdmin(lista){
+  const cont = document.getElementById('adminResumenDisp');
 
+  if(!lista || !lista.length){
+    cont.innerHTML = '<p class="muted">No hay usuarias registradas.</p>';
+    return;
+  }
 
+  let html = '';
 
+  lista.forEach((grupo, indexCiudad) => {
 
+    const ciudadId = `ciudad_${indexCiudad}`;
 
+    html += `
+      <div style="margin:10px 0;">
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;"
+             onclick="toggleCiudad('${ciudadId}')">
+          <span id="${ciudadId}_icon" style="font-size:18px;user-select:none;">➕</span>
+          <h4 style="margin:0;">${grupo.ciudad}</h4>
+        </div>
 
+        <div id="${ciudadId}" style="display:none; margin-left:28px; margin-top:6px;">
+          <ul style="list-style:none;margin:4px 0 12px;padding-left:0;">
+    `;
 
+    grupo.nineras.forEach(n => {
 
+      /* =========================
+         INDICADOR IZQUIERDO
+         Disponibilidad
+         ========================= */
+      const colorDisponibilidad = n.tiene ? '#16a34a' : '#dc2626';
+      const textoDisponibilidad = n.tiene
+        ? 'ya capturó horarios'
+        : 'sin horarios esta semana';
 
+      /* =========================
+         INDICADOR DERECHO
+         Estado de revisión
+         ========================= */
+      const estadoRevision = normalizarTexto(
+        p.estado_revision || p.estadoRevision || p.estado_revision_planeacion
+      );
 
+      let colorRevision = '#3b82f6'; // 🔵 pendiente
 
+      if (estadoRevision === 'correccion' || estadoRevision === 'a corrección') {
+        colorRevision = '#facc15'; // 🟡 a corrección
+      } else if (estadoRevision === 'revisada') {
+        colorRevision = '#22c55e'; // 🟢 revisada
+      }
 
+      html += `
+        <li style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          
+          <!-- ● Disponibilidad -->
+          <span style="
+            width:10px;
+            height:10px;
+            border-radius:999px;
+            background:${colorDisponibilidad};
+            display:inline-block;
+          "></span>
 
+          <!-- Texto -->
+          <span>${n.nombre}</span>
+          <span class="muted">(${textoDisponibilidad})</span>
 
+          <!-- ● Estado de revisión -->
+          <span style="
+            width:10px;
+            height:10px;
+            border-radius:999px;
+            background:${colorRevision};
+            display:inline-block;
+          "></span>
 
+        </li>
+      `;
+    });
 
+    html += `
+          </ul>
+        </div>
+      </div>
+    `;
+  });
 
+  cont.innerHTML = html;
+}
 
-
-
-
-
-
-
-
-
-
+function normalizarTexto(v){
+  return String(v || '')
+    .toLowerCase()
+    .trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
 
 
 
 function toggleCiudad(id){
   const box = document.getElementById(id);
   const icon = document.getElementById(id + "_icon");
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   if(box.style.display === "none"){
@@ -5551,35 +2739,6 @@ function toggleCiudad(id){
     icon.textContent = "➕";
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -5617,28 +2776,6 @@ function toggleCiudad(id){
   }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   /* ---------- PUNTAJE: VISTA ADMIN ---------- */
   function adminVerPuntaje(){
     const nombre = document.getElementById('pt_admin_nombre').value.trim();
@@ -5670,138 +2807,16 @@ function toggleCiudad(id){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   function adminAgregarPuntos(){
   const nombre = document.getElementById('pt_admin_nombre').value.trim();
   const tipo   = document.getElementById('pt_admin_tipo').value;
   const msg    = document.getElementById('pt_admin_msg');
   const out    = document.getElementById('pt_admin_resultado');
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   if(!nombre){
     msg.innerHTML='<span class="err">Capture el nombre de la niñera.</span>';
     return;
   }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   // ✅ VALIDAR ANTES DE ENVIAR AL SERVIDOR
@@ -5810,122 +2825,13 @@ function toggleCiudad(id){
     return;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   if(!tipo){
     msg.innerHTML='<span class="err">Seleccione el tipo de acción de puntos.</span>';
     return;
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   msg.textContent='Guardando...';
   out.textContent='';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   google.script.run
     .withSuccessHandler(res=>{
@@ -5947,43 +2853,7 @@ function toggleCiudad(id){
   if (!dataList) return;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   dataList.innerHTML = '';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
   google.script.run
@@ -6002,81 +2872,20 @@ function toggleCiudad(id){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function logout(){
   // borrar sesión guardada
   localStorage.removeItem('nyp_sesion');
 
+
   // resetear sesión en memoria
-  SESION = { email:null, nombre:'', admin:false };
+  SESION = { email:null, nombre:'', admin:false, supervision:false };
+
+
 
   // ocultar app y mostrar login
   document.getElementById('app').style.display = 'none';
   document.getElementById('auth').style.display = 'flex';
   document.querySelector('.bottom-nav').style.display = 'none';
-  // 🔓 Volver a modo login (scroll permitido)
-  document.body.classList.remove('app-mode');
-  document.body.classList.add('auth-mode');
 
 
   // limpiar inputs
@@ -6085,74 +2894,11 @@ function logout(){
   if(email) email.value = '';
   if(pass)  pass.value = '';
 
+
   // volver al paso login
   document.getElementById('paso-login').style.display = 'block';
   document.getElementById('paso-olvide').style.display = 'none';
-
-  document.body.classList.remove('app-mode');
-document.body.classList.add('auth-mode');
-
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6178,71 +2924,12 @@ function ocultarTodo(){
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 function mostrarVistaAdmin(){
   ocultarTodo();
   document.getElementById('adminCard').style.display='block';
   document.getElementById('adminAgendaCard').style.display='block';
   document.getElementById('adminPuntosCard').style.display='block';
   document.getElementById('adminResumenDispCard').style.display='block';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -6255,41 +2942,26 @@ function mostrarVistaAdmin(){
 
 
 
-
-
-
 function mostrarVistaNinera(){
   ocultarTodo();
-
-
-  // Servicios
-  document.getElementById('svcCard').style.display='block';
-
-
-  // Disponibilidad
-  document.getElementById('panel').style.display='block';
-  document.getElementById('tablaActualCard').style.display='block';
-
-
-  // Perfil (NO ocultar)
+  irVista('servicios');
   document.getElementById('puntosNineraCard').style.display='block';
 
+  // ✅ FALTABA ESTO
+  document.getElementById('planeacionesNineraCard').style.display='block';
+  document.getElementById('planeacionesNineraCardSiguiente').style.display='block';
 
   document.getElementById('fecha').valueAsDate = new Date();
 
-
   cargar();
   cargarServicios();
+  cargarServiciosSiguienteSemana();
   cargarPuntajeNinera();
+  cargarResumenPlaneacionesNinera();
 
 
-  // Vista inicial
   irVista('servicios');
-  cargarPerfil();
-
 }
-
-
 
 
 
@@ -6302,18 +2974,22 @@ function irVista(nombre){
     v.classList.remove('activa');
   });
 
+
   // mostrar la seleccionada
   const vista = document.getElementById('vista-' + nombre);
   if(vista) vista.classList.add('activa');
+
 
   // marcar botón activo
   document.querySelectorAll('.bottom-nav button').forEach(b=>{
     b.classList.remove('activo');
   });
 
+
   const btn = [...document.querySelectorAll('.bottom-nav button')]
     .find(b => b.getAttribute('onclick')?.includes(nombre));
   if(btn) btn.classList.add('activo');
+
 
   // ✅ CARGAR DATOS DEL PERFIL SOLO CUANDO ENTRE A PERFIL
   if(nombre === 'perfil'){
@@ -6324,40 +3000,410 @@ function irVista(nombre){
 
 
 function cargarPerfil(){
-  api('getProfile', { email: SESION.email })
-    .then(p => {
-      document.getElementById('perfil_nombre').textContent = p.nombre || '—';
-      document.getElementById('perfil_email').textContent  = p.email || '—';
-      document.getElementById('perfil_tel').textContent    = p.telefono || '—';
+  google.script.run
+    .withSuccessHandler(p => {
+      document.getElementById('perfil_nombre').textContent   = p.nombre || '—';
+      document.getElementById('perfil_email').textContent    = p.email || '—';
+      document.getElementById('perfil_tel').textContent = p.telefono || '—';
     })
-    .catch(err => {
-      console.error(err);
-      alert('Error al cargar perfil: ' + err.message);
-    });
+    .withFailureHandler(err => {
+      console.error(err.message);
+    })
+    .obtenerPerfilCompleto(SESION.email);
+}
+
+
+let SERVICIO_PLANEACION = null;
+
+function formatearFechaPlaneacion(fechaStr){
+  if(!fechaStr) return '';
+
+  const d = new Date(fechaStr);
+  if(isNaN(d.getTime())) return '';
+
+  const dias = [
+    'Domingo','Lunes','Martes','Miércoles',
+    'Jueves','Viernes','Sábado'
+  ];
+
+  const diaNombre = dias[d.getDay()];
+  const diaNum = d.getDate();
+  const horas = String(d.getHours()).padStart(2,'0');
+  const minutos = String(d.getMinutes()).padStart(2,'0');
+
+  return `${diaNombre} ${diaNum} - ${horas}:${minutos} hrs`;
 }
 
 
 
+function abrirPlaneacionNeuronanny(servicio, planeacion){
+  console.log('SERVICIO FRONTEND:', servicio);
 
+  SERVICIO_PLANEACION = servicio;
+  PLANEACION_EXISTENTE = planeacion || null;
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbwp4QRsxLj51iMbZkAlcP4OqH-3EVCcbFIqkA0sFUzAq8l9HhKnsJDADUv-WnbtEvM/exec';
+  // =========================
+  // 📅 FECHAS DE REVISIÓN / CORRECCIÓN
+  // =========================
+  const contFechas    = document.getElementById('pl_fechas_revision');
+  const lblRevision   = document.getElementById('pl_fecha_revision');
+  const lblCorreccion = document.getElementById('pl_fecha_correccion');
 
-async function api(action, payload = {}) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify({ action, ...payload })
-  });
+  if (contFechas && lblRevision && lblCorreccion) {
+  let mostrar = false;
 
-  const text = await res.text();
-  let data;
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new Error('Respuesta inválida del servidor');
+  const fechaRevision   = String(planeacion?.fecha_revision || '').trim();
+  const fechaCorreccion = String(planeacion?.fecha_correccion || '').trim();
+
+  if (fechaRevision) {
+    const f = formatearFechaPlaneacion(fechaRevision);
+    if (f) {
+      lblRevision.textContent = `🆕 Creación: ${f}`;
+      mostrar = true;
+    }
+  } else {
+    lblRevision.textContent = '';
   }
 
-  if (data.error) throw new Error(data.error);
-  return data;
+  if (fechaCorreccion) {
+    const f = formatearFechaPlaneacion(fechaCorreccion);
+    if (f) {
+      lblCorreccion.textContent = `✏ Corrección enviada: ${f}`;
+      mostrar = true;
+    }
+  } else {
+    lblCorreccion.textContent = '';
+  }
+
+  contFechas.style.display = mostrar ? 'flex' : 'none';
+}
+
+
+
+  // =========================
+  // ESTADO DE REVISIÓN
+  // =========================
+  const estadoRevisionActual = normalizarTexto(
+    planeacion?.estado_revision || ''
+  );
+
+  // =========================
+  // HEADER DEL MODAL
+  // =========================
+  const titulo = document.getElementById('pl_titulo');
+  const infoCliente = document.getElementById('pl_info_cliente');
+  const infoNinera = document.getElementById('pl_info_ninera');
+
+  if (titulo) {
+    const tipo = normalizarTexto(servicio?.tipo_servicio || '');
+
+    let tituloBase = 'Planeación';
+
+    if (tipo === 'neuronanny') tituloBase = 'Planeación Neuronanny';
+    else if (tipo === 'nanny educativa') tituloBase = 'Planeación Nanny Educativa';
+    else if (tipo === 'miss nanny') tituloBase = 'Planeación Miss Nanny';
+
+    titulo.textContent = MODO_SOLO_LECTURA
+      ? `${tituloBase} (solo lectura)`
+      : tituloBase;
+  }
+
+
+  if (infoCliente) {
+    infoCliente.textContent = `👶 Cliente: ${servicio.cliente || '—'}`;
+  }
+
+  if (infoNinera) {
+    let nombreNinera = '—';
+
+    if (planeacion?.nombre_ninera) {
+      nombreNinera = planeacion.nombre_ninera;
+    }
+    else if (!SESION.supervision && !SESION.admin && SESION.nombre) {
+      nombreNinera = SESION.nombre;
+    }
+    else if (servicio?.nombre_ninera) {
+      nombreNinera = servicio.nombre_ninera;
+    }
+
+    infoNinera.textContent = `🧸 Niñera: ${nombreNinera}`;
+  }
+
+  // =========================
+  // CAMPOS
+  // =========================
+  const area = document.getElementById('pl_area');
+  const objetivo = document.getElementById('pl_objetivo');
+  const descripcion = document.getElementById('pl_descripcion');
+  const materiales = document.getElementById('pl_materiales');
+  const imagen = document.getElementById('pl_imagen');
+
+  const cont = document.getElementById('obsSupervisionContainer');
+  const obsSup = document.getElementById('obsSupervision');
+  const obsNin = document.getElementById('obsSupervisionNinera');
+
+  area.value = '';
+  objetivo.value = '';
+  descripcion.value = '';
+  materiales.value = '';
+  imagen.value = '';
+
+  if(cont) cont.style.display = 'none';
+  if(obsSup){ obsSup.value = ''; obsSup.style.display = 'none'; }
+  if(obsNin){ obsNin.value = ''; obsNin.style.display = 'none'; }
+
+  if(planeacion){
+    area.value        = planeacion.area_desarrollo || '';
+    objetivo.value    = planeacion.objetivo || '';
+    descripcion.value = planeacion.descripcion || '';
+    materiales.value  = planeacion.materiales || '';
+    imagen.value      = planeacion.imagen || '';
+  }
+
+  const cache = CACHE_PLANEACION_MODAL[servicio.fecha];
+  if(cache){
+    area.value        = cache.area;
+    objetivo.value    = cache.objetivo;
+    descripcion.value = cache.descripcion;
+    materiales.value  = cache.materiales;
+    imagen.value      = cache.imagen;
+  }
+
+  // =========================
+  // OBSERVACIONES
+  // =========================
+  if (SESION.supervision || SESION.admin) {
+    if (cont) cont.style.display = 'block';
+
+    if (obsSup) {
+      obsSup.style.display = 'block';
+      obsSup.readOnly = false;
+      obsSup.disabled = false;
+      obsSup.value = planeacion?.observaciones_supervision || '';
+    }
+
+    if (obsNin) obsNin.style.display = 'none';
+  }
+  else if (planeacion?.observaciones_supervision) {
+    if (cont) cont.style.display = 'block';
+
+    if (obsNin) {
+      obsNin.style.display = 'block';
+      obsNin.value = planeacion.observaciones_supervision;
+    }
+
+    if (obsSup) obsSup.style.display = 'none';
+  }
+
+  // =========================
+  // 🔒 MODO SOLO LECTURA
+  // =========================
+  MODO_SOLO_LECTURA = false;
+
+  // 👀 SUPERVISIÓN o ADMIN → SIEMPRE solo lectura
+  if (SESION.supervision || SESION.admin) {
+    MODO_SOLO_LECTURA = true;
+  }
+
+// 👶 NIÑERA → solo lectura si ya está revisada
+else if (estadoRevisionActual === 'revisada') {
+  MODO_SOLO_LECTURA = true;
+}
+
+
+  [area, objetivo, descripcion, materiales, imagen].forEach(el=>{
+    el.readOnly = MODO_SOLO_LECTURA;
+    el.disabled = MODO_SOLO_LECTURA;
+  });
+
+  // =========================
+  // 🎯 BOTONES
+  // =========================
+  const btnGuardar    = document.getElementById('btnGuardarPlaneacion');
+  const btnReenviar   = document.getElementById('btnReenviarPlaneacion');
+  const btnCorreccion = document.getElementById('btnEnviarCorreccion');
+  const btnRevisada   = document.getElementById('btnMarcarRevisada');
+
+  [btnGuardar, btnReenviar, btnCorreccion, btnRevisada].forEach(b=>{
+    if(b) b.style.display = 'none';
+  });
+
+  if (SESION.supervision || SESION.admin) {
+    if (estadoRevisionActual !== 'revisada') {
+      if (btnCorreccion) btnCorreccion.style.display = 'inline-flex';
+      if (btnRevisada)   btnRevisada.style.display   = 'inline-flex';
+    }
+  }
+  else {
+    if (!estadoRevisionActual) {
+      if (btnGuardar) btnGuardar.style.display = 'inline-flex';
+    }
+    else if (
+      estadoRevisionActual === 'pendiente' ||
+      estadoRevisionActual === 'a correccion'
+    ) {
+      if (btnReenviar) btnReenviar.style.display = 'inline-flex';
+    }
+  }
+
+  document.getElementById('planeacionBackdrop').style.display = 'flex';
+}
+
+
+
+
+
+function reenviarPlaneacionCorregida(){
+
+  if(!SERVICIO_PLANEACION){
+    alert('Servicio no identificado');
+    return;
+  }
+
+  const btn = document.getElementById('btnReenviarPlaneacion');
+  feedbackBotonInmediato(btn, 'Enviando…');
+
+  // 🚀 FEEDBACK INMEDIATO
+  mostrarToast('🔄 Enviando correcciones…');
+
+  const payload = {
+    fila: PLANEACION_EXISTENTE?.fila || null,
+    fecha: SERVICIO_PLANEACION.fecha,
+    cliente: SERVICIO_PLANEACION.cliente,
+    nombre_ninera: SERVICIO_PLANEACION.nombre_ninera,
+    area_desarrollo: document.getElementById('pl_area').value,
+    objetivo: document.getElementById('pl_objetivo').value,
+    descripcion: document.getElementById('pl_descripcion').value,
+    materiales: document.getElementById('pl_materiales').value,
+    imagen: document.getElementById('pl_imagen').value
+  };
+
+  google.script.run
+    .withSuccessHandler(()=>{
+      btn.textContent = 'Enviado ✓';
+      setTimeout(()=>restaurarBoton(btn), 800);
+      cargarResumenPlaneaciones();
+    })
+    .withFailureHandler(err=>{
+      restaurarBoton(btn);
+      mostrarToast('❌ Error al reenviar');
+      console.error(err);
+    })
+    .reenviarPlaneacionCorregida(payload, SESION.email);
+}
+
+
+
+
+
+function guardarPlaneacionNeuronanny(){
+  if(!SERVICIO_PLANEACION){
+    alert('Servicio no identificado');
+    return;
+  }
+
+  const btn = document.getElementById('btnGuardarPlaneacion');
+  feedbackBotonInmediato(btn, 'Guardando…');
+
+  // 🚀 FEEDBACK INMEDIATO
+  mostrarToast('💾 Guardando planeación…');
+
+  const payload = {
+    fecha: SERVICIO_PLANEACION.fecha,
+    nombre_ninera: SERVICIO_PLANEACION.nombre_ninera,
+    cliente: SERVICIO_PLANEACION.cliente,
+    edad_nino: SERVICIO_PLANEACION.edad_nino,
+    ciudad: SERVICIO_PLANEACION.ciudad || '',
+    area_desarrollo: document.getElementById('pl_area').value,
+    objetivo: document.getElementById('pl_objetivo').value,
+    descripcion: document.getElementById('pl_descripcion').value,
+    materiales: document.getElementById('pl_materiales').value,
+    imagen: document.getElementById('pl_imagen').value,
+    fila: PLANEACION_EXISTENTE?.fila
+  };
+
+  const fn = PLANEACION_EXISTENTE
+    ? 'editarPlaneacionNeuronanny'
+    : 'guardarPlaneacionNeuronanny';
+
+  google.script.run
+    .withSuccessHandler(()=>{
+      btn.textContent = 'Guardado ✓';
+      setTimeout(()=>restaurarBoton(btn), 800);
+    })
+    .withFailureHandler(err=>{
+      restaurarBoton(btn);
+      mostrarToast('❌ Error al guardar');
+      console.error(err);
+    })
+    [fn](payload, SESION.email);
+}
+
+
+
+function feedbackBotonInmediato(btn, texto = 'Guardando…') {
+  if (!btn) return;
+
+  btn.disabled = true;
+  btn.dataset.textoOriginal = btn.textContent;
+  btn.textContent = texto;
+  btn.style.opacity = '0.7';
+}
+
+function restaurarBoton(btn) {
+  if (!btn) return;
+
+  btn.disabled = false;
+  btn.textContent = btn.dataset.textoOriginal || btn.textContent;
+  btn.style.opacity = '1';
+}
+
+
+function mostrarToast(msg){
+  const t = document.getElementById('toast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2500);
+}
+
+
+function cargarResumenPlaneacionesNinera(){
+  const contActual = document.getElementById('listaPlaneacionesNinera');
+  const contSig    = document.getElementById('listaPlaneacionesNineraSiguiente');
+
+  contActual.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+  contSig.innerHTML    = '<p class="muted">Verificando planeaciones...</p>';
+
+  const hoy = new Date();
+  const lunesActual = startMonday(hoy);
+  const lunesSig = new Date(lunesActual);
+  lunesSig.setDate(lunesSig.getDate() + 7);
+
+  const isoActual = toISO(lunesActual);
+  const isoSig = toISO(lunesSig);
+
+  // Semana actual
+  google.script.run
+    .withSuccessHandler(data => {
+      renderResumenPlaneaciones(
+        data,
+        contActual,
+        'ninera_actual'
+      );
+    })
+    .obtenerResumenPlaneacionesSemana(isoActual, SESION.email);
+
+  // Semana siguiente
+  google.script.run
+    .withSuccessHandler(data => {
+      renderResumenPlaneaciones(
+        data,
+        contSig,
+        'ninera_siguiente'
+      );
+    })
+    .obtenerResumenPlaneacionesSemana(isoSig, SESION.email);
 }
 
 
@@ -6366,17 +3412,325 @@ async function api(action, payload = {}) {
 
 
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js')
-    .then(() => console.log('Service Worker registrado'))
-    .catch(err => console.error('SW error', err));
+function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResumen){
+  PLANEACION_SESSION_ID++;
+  MODO_SOLO_LECTURA = false; // niñera puede editar
+  PLANEACION_CLIENTE = cliente;
+
+  // 🔑 USAR FECHAS DEL RESUMEN (NO del calendario)
+  const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}|${cliente}|${SESION.nombre || ''}`;
+  const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
+
+  if (!fechas.length) {
+    alert('No hay servicios con planeación para este cliente en esta semana.');
+    return;
+  }
+
+  // 🧠 ORDENAR TODAS LAS FECHAS (incluye días pasados)
+  PLANEACIONES_FECHAS = fechas.slice().sort();
+  PLANEACION_INDEX = 0;
+
+  // 📦 FUENTE VIRTUAL (no depende del calendario)
+  PLANEACION_FUENTE = PLANEACIONES_FECHAS.map(f => ({
+  cliente,
+  fecha: f,
+  tipo_servicio: tipoServicioResumen || ''
+}));
+
+
+
+  // 🪟 ABRIR MODAL
+  document.getElementById('planeacionBackdrop').style.display = 'flex';
+
+  // mostrar fecha y navegación
+  actualizarNavegacionPlaneacion();
+
+  // 🚀 precargar planeaciones
+  precargarPlaneacionesCliente();
+
+  // abrir primer día
+  abrirPlaneacionPorIndice();
 }
+
+
+
+
+function abrirPlaneacionPorIndice(){
+  const fecha = PLANEACIONES_FECHAS[PLANEACION_INDEX];
+  const key = `${PLANEACION_CLIENTE}|${fecha}`;
+
+  const servicio = PLANEACION_FUENTE.find(
+    s => s.cliente === PLANEACION_CLIENTE && s.fecha === fecha
+  );
+
+  if(!servicio){
+    alert('Servicio no encontrado en esta semana');
+    return;
+  }
+
+  // 🚀 1. Si ya está en cache → usarlo
+  if(key in CACHE_PLANEACIONES){
+    abrirPlaneacionNeuronanny(servicio, CACHE_PLANEACIONES[key]);
+    actualizarNavegacionPlaneacion();
+    return;
+  }
+
+  // ⏳ 2. Pedir al backend (blindado por sesión)
+  const sessionAtRequest = PLANEACION_SESSION_ID;
+
+  google.script.run
+    .withSuccessHandler(res=>{
+      if(sessionAtRequest !== PLANEACION_SESSION_ID) return;
+
+      CACHE_PLANEACIONES[key] = res || null;
+      abrirPlaneacionNeuronanny(servicio, res || null);
+      actualizarNavegacionPlaneacion();
+    })
+    .withFailureHandler(()=>{
+      if(sessionAtRequest !== PLANEACION_SESSION_ID) return;
+
+      CACHE_PLANEACIONES[key] = null;
+      abrirPlaneacionNeuronanny(servicio, null);
+      actualizarNavegacionPlaneacion();
+    })
+    .obtenerPlaneacionNeuronanny(
+      { fecha, cliente: PLANEACION_CLIENTE },
+      SESION.email
+    );
+}
+
+
+
+
+function planeacionAnterior(){
+  guardarPlaneacionEnCache();
+  if(PLANEACION_INDEX > 0){
+    PLANEACION_INDEX--;
+    abrirPlaneacionPorIndice();
+  }
+}
+
+
+
+function planeacionSiguiente(){
+  guardarPlaneacionEnCache();
+  if(PLANEACION_INDEX < PLANEACIONES_FECHAS.length - 1){
+    PLANEACION_INDEX++;
+    abrirPlaneacionPorIndice();
+  }
+}
+
+
+
+function actualizarNavegacionPlaneacion(){
+  const fechaISO = PLANEACIONES_FECHAS[PLANEACION_INDEX];
+  const total = PLANEACIONES_FECHAS.length;
+  const actual = PLANEACION_INDEX + 1;
+
+  // 📅 Convertir fecha ISO a "Domingo 11"
+  const d = new Date(fechaISO + 'T00:00:00');
+  const textoFecha = d.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    day: 'numeric'
+  });
+
+  // 🧠 Texto final: "Domingo 11 · Día 2 de 4"
+  const textoFinal =
+    total > 1
+      ? `${textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1)} · Día ${actual} de ${total}`
+      : textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
+
+  const elFecha = document.getElementById('pl_fecha_actual');
+  if(elFecha){
+    elFecha.textContent = textoFinal;
+  }
+
+  // Botones
+  const btnPrev = document.querySelector(
+    '#planeacionBackdrop button[onclick="planeacionAnterior()"]'
+  );
+  const btnNext = document.querySelector(
+    '#planeacionBackdrop button[onclick="planeacionSiguiente()"]'
+  );
+
+  // 🔒 Caso: solo un día
+  if(total <= 1){
+    if(btnPrev) btnPrev.style.display = 'none';
+    if(btnNext) btnNext.style.display = 'none';
+    return;
+  }
+
+  // 🔒 Primer día
+  if(PLANEACION_INDEX === 0){
+    if(btnPrev) btnPrev.style.display = 'none';
+    if(btnNext) btnNext.style.display = 'inline-flex';
+    return;
+  }
+
+  // 🔒 Último día
+  if(PLANEACION_INDEX === total - 1){
+    if(btnPrev) btnPrev.style.display = 'inline-flex';
+    if(btnNext) btnNext.style.display = 'none';
+    return;
+  }
+
+  // 🔒 Días intermedios
+  if(btnPrev) btnPrev.style.display = 'inline-flex';
+  if(btnNext) btnNext.style.display = 'inline-flex';
+}
+
+function cerrarPlaneacionNeuronanny(){
+  SERVICIO_PLANEACION = null;
+  CACHE_PLANEACIONES = {};
+  CACHE_PLANEACION_MODAL = {}; // 👈 limpiar SOLO al cerrar
+  PLANEACION_SESSION_ID++;
+  document.getElementById('planeacionBackdrop').style.display = 'none';
+}
+
+
+
+function precargarPlaneacionesCliente(){
+  PLANEACIONES_FECHAS.forEach(fecha => {
+    const key = `${PLANEACION_CLIENTE}|${fecha}`;
+
+    // si ya está en cache, no pedir de nuevo
+    if(key in CACHE_PLANEACIONES) return;
+
+    google.script.run
+      .withSuccessHandler(res=>{
+        CACHE_PLANEACIONES[key] = res || null;
+      })
+      .withFailureHandler(()=>{
+        CACHE_PLANEACIONES[key] = null;
+      })
+      .obtenerPlaneacionNeuronanny(
+        { fecha, cliente: PLANEACION_CLIENTE },
+        SESION.email
+      );
+  });
+}
+
+function abrirPlaneacionesClienteDesdeResumen( cliente, prefijo, tipoServicioResumen, nombreNineraResumen){
+
+  PLANEACION_SESSION_ID++;
+  MODO_SOLO_LECTURA = true;
+  PLANEACION_CLIENTE = cliente;
+
+  const key = `${prefijo}|${cliente}|${nombreNineraResumen || ''}`;
+
+  const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
+
+  if(!fechas.length){
+    alert('No hay servicios Neuronanny para este cliente en esta semana.');
+    return;
+  }
+
+  PLANEACIONES_FECHAS = fechas.slice().sort();
+  PLANEACION_INDEX = 0;
+
+  PLANEACION_FUENTE = PLANEACIONES_FECHAS.map(f => ({
+    cliente,
+    fecha: f,
+    tipo_servicio: tipoServicioResumen || '',
+    nombre_ninera: nombreNineraResumen || ''
+  }));
+
+
+
+
+  document.getElementById('planeacionBackdrop').style.display = 'flex';
+  actualizarNavegacionPlaneacion();
+  precargarPlaneacionesCliente();
+  abrirPlaneacionPorIndice();
+}
+
+
+
+function marcarPlaneacionRevisada(){
+  const texto = document.getElementById('obsSupervision').value;
+
+  // 🚀 MENSAJE INMEDIATO (UX rápida)
+  mostrarToast('✅ Planeación marcada como revisada');
+
+  google.script.run
+    .withFailureHandler(err => {
+      mostrarToast('❌ Error al guardar revisión');
+      console.error(err);
+    })
+    .guardarObservacionesSupervision({
+      fila: PLANEACION_EXISTENTE?.fila,
+      observaciones: texto,
+      tipo: 'revisada'
+    }, SESION.email);
+}
+
+
+
+function enviarACorreccion(){
+  const texto = document.getElementById('obsSupervision').value;
+
+  // 🚀 MENSAJE INMEDIATO
+  mostrarToast('🟠 Observaciones enviadas a corrección');
+
+  google.script.run
+    .withFailureHandler(err => {
+      mostrarToast('❌ Error al enviar a corrección');
+      console.error(err);
+    })
+    .guardarObservacionesSupervision({
+      fila: PLANEACION_EXISTENTE?.fila,
+      observaciones: texto,
+      tipo: 'correccion'
+    }, SESION.email);
+}
+
+
+function guardarPlaneacionEnCache(){
+  if(!SERVICIO_PLANEACION) return;
+
+  const fecha = SERVICIO_PLANEACION.fecha;
+  if(!fecha) return;
+
+  CACHE_PLANEACION_MODAL[fecha] = {
+    area: document.getElementById('pl_area')?.value || '',
+    objetivo: document.getElementById('pl_objetivo')?.value || '',
+    descripcion: document.getElementById('pl_descripcion')?.value || '',
+    materiales: document.getElementById('pl_materiales')?.value || '',
+    imagen: document.getElementById('pl_imagen')?.value || '',
+    observaciones: document.getElementById('obsSupervision')?.value || ''
+  };
+}
+
+// Cerrar modal de planeación al dar click fuera
+document.addEventListener('click', function (e) {
+  const backdrop = document.getElementById('planeacionBackdrop');
+  const modal = document.querySelector('.modal-planeacion');
+
+  if (!backdrop || backdrop.style.display !== 'flex') return;
+
+  // Si el click fue en el fondo (backdrop) y NO dentro del modal
+  if (e.target === backdrop) {
+    cerrarPlaneacionNeuronanny();
+  }
+});
+
+function setAppHeight() {
+    const vh = window.innerHeight * 0.01;
+    document.documentElement.style.setProperty('--vh', `${vh}px`);
+  }
+
+  window.addEventListener('resize', setAppHeight);
+  window.addEventListener('orientationchange', setAppHeight);
+  setAppHeight();
+
+
 
 
 
 
 
 </script>
+<div id="toast" class="toast"></div>
 
 
 
@@ -6384,4 +3738,18 @@ if ('serviceWorker' in navigator) {
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

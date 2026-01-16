@@ -1,0 +1,23 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #ffeef6; /* tu rosa */
+}
+
+.app-root {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  padding-bottom: 90px; /* espacio para menú inferior */
+}
+
+/* iOS safe area */
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+}
