@@ -2023,7 +2023,9 @@ async function guardarNueva(){
     for(let i=0;i<14;i++){
       const d=new Date(start); d.setDate(start.getDate()+i);
       const iso=toISO(d); const dow=d.toLocaleDateString('es-MX',{weekday:'short'}).toUpperCase(); const dom=d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit'});
-      const serviciosVisibles = servicios.filter(s => {
+      const serviciosDia = map[iso] || [];
+      const serviciosVisibles = serviciosDia.filter(s => {
+
 
       // ✅ 1) FILTRO POR NIÑERA (robusto: acentos, mayúsculas, espacios)
       const nineraServicio = normalizarTexto(s?.nombre_ninera || '');
