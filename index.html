@@ -883,6 +883,19 @@ body.ninera .modal-planeacion:hover::-webkit-scrollbar-thumb {
 
 
   </style>
+
+<!-- =====================
+     PWA iOS CONFIG (FIX DEFINITIVO)
+===================== -->
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nannys y Peques">
+
+<link rel="apple-touch-icon" sizes="180x180" href="/nannys-peques-pwa/icons/apple-touch-icon.png">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="/nannys-peques-pwa/icons/apple-touch-icon.png">
+
+
 </head>
 <body>
   <h2>Disponibilidad – Nannys y Peques</h2>
@@ -1480,7 +1493,7 @@ body.ninera .modal-planeacion:hover::-webkit-scrollbar-thumb {
   const API_URL = 'https://script.google.com/macros/s/AKfycbwp4QRsxLj51iMbZkAlcP4OqH-3EVCcbFIqkA0sFUzAq8l9HhKnsJDADUv-WnbtEvM/exec';
 
 
-  
+
 async function api(action, payload = {}) {
   const params = new URLSearchParams();
   params.append('action', action);
@@ -1574,8 +1587,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // 👶 NIÑERA
       else {
         mostrarVistaNinera();
-        irVista('servicios'); // ← fuerza vista activa al cargar
+        // irVista('servicios'); ← ya se hace dentro
       }
+
 
 
 
@@ -1646,7 +1660,7 @@ document.addEventListener('DOMContentLoaded', () => {
   msg.textContent = 'Validando...';
 
   try {
-    const res = await api('login', { email, pass });
+    const res = await api('login', { email, contrasena: pass });
 
     SESION.email = email;
     SESION.nombre = res.nombre || '';
@@ -2952,23 +2966,21 @@ function mostrarVistaAdmin(){
 function mostrarVistaNinera(){
   ocultarTodo();
   irVista('servicios');
-  document.getElementById('puntosNineraCard').style.display='block';
 
-  // ✅ FALTABA ESTO
+  document.getElementById('puntosNineraCard').style.display='block';
   document.getElementById('planeacionesNineraCard').style.display='block';
   document.getElementById('planeacionesNineraCardSiguiente').style.display='block';
 
   document.getElementById('fecha').valueAsDate = new Date();
 
-  cargar();
-  cargarServicios();
-  cargarServiciosSiguienteSemana();
-  cargarPuntajeNinera();
-  cargarResumenPlaneacionesNinera();
-
-
-  irVista('servicios');
+  // ⛔ DESACTIVADO TEMPORALMENTE
+  // cargar();
+  // cargarServicios();
+  // cargarServiciosSiguienteSemana();
+  // cargarPuntajeNinera();
+  // cargarResumenPlaneacionesNinera();
 }
+
 
 
 
@@ -3739,6 +3751,22 @@ function setAppHeight() {
 </script>
 <div id="toast" class="toast"></div>
 
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register(
+        '/nannys-peques-pwa/service-worker.js',
+        { scope: '/nannys-peques-pwa/' }
+      )
+      .then(reg => {
+        console.log('Service Worker registrado:', reg.scope);
+      })
+      .catch(err => {
+        console.error('Error al registrar Service Worker:', err);
+      });
+    });
+  }
+</script>
 
 
 
