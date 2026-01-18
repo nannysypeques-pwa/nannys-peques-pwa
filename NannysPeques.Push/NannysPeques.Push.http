@@ -1,0 +1,6 @@
+@NannysPeques.Push_HostAddress = http://localhost:5247
+
+GET {{NannysPeques.Push_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

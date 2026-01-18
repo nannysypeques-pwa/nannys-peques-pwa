@@ -1,19 +1,20 @@
 {
   "name": "Nannys y Peques",
   "short_name": "Nannys",
-  "start_url": "./index.html",
+  "start_url": "/nannys-peques-pwa/index.html",
+  "scope": "/nannys-peques-pwa/",
   "display": "standalone",
   "background_color": "#FFE4F1",
   "theme_color": "#E84C9A",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "/nannys-peques-pwa/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "/nannys-peques-pwa/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

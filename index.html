@@ -988,7 +988,18 @@ body.ninera .modal-planeacion:hover::-webkit-scrollbar-thumb {
           <span class="perfil-label">Teléfono</span>
           <span id="perfil_tel" class="perfil-valor">—</span>
         </div>
+        
+        <div class="card">
+          <h3>Notificaciones</h3>
 
+          <button onclick="activarNotificaciones()">
+            🔔 Activar notificaciones
+          </button>
+
+          <p class="muted">
+            Recibe avisos cuando tengas un nuevo servicio asignado.
+          </p>
+        </div>
 
         <div style="margin-top:20px;">
           <button class="btn-primary" onclick="logout()" style="width:100%;">
@@ -2024,28 +2035,26 @@ async function guardarNueva(){
       const d=new Date(start); d.setDate(start.getDate()+i);
       const iso=toISO(d); const dow=d.toLocaleDateString('es-MX',{weekday:'short'}).toUpperCase(); const dom=d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit'});
       const servicios=(map[iso]||[]).slice().sort(compararServicios);
-      // 🔑 servicios DEL DÍA (desde el mapa real)
-      const serviciosDia = map[iso] || [];
+      const serviciosVisibles = servicios.filter(s => {
 
-      const serviciosVisibles = serviciosDia.filter(s => {
+        // ✅ 1) FILTRO POR NIÑERA (robusto: acentos, mayúsculas, espacios)
+        const nineraServicio = normalizarTexto(s?.nombre_ninera || '');
+        const nineraSesion   = normalizarTexto(SESION.nombre || '');
 
+        // Si por alguna razón SESION.nombre viene vacío, NO bloqueamos (evita dejar calendario en blanco)
+        if (nineraSesion && nineraServicio && nineraServicio !== nineraSesion) return false;
 
-      // ✅ 1) FILTRO POR NIÑERA
-      const nineraServicio = normalizarTexto(s?.nombre_ninera || '');
-      const nineraSesion   = normalizarTexto(SESION.nombre || '');
+        // ✅ 2) TU FILTRO "ver" (lo dejo igual que lo traías)
+        const v = s?.ver;
 
-      if (nineraSesion && nineraServicio && nineraServicio !== nineraSesion) return false;
+        if (v === undefined || v === null || v === '') return true;
+        if (v === true) return true;
+        if (typeof v === 'string' && v.trim().toLowerCase() === 'true') return true;
+        if (v === 1 || v === '1') return true;
 
-      // ✅ 2) FILTRO "ver"
-      const v = s?.ver;
-      if (v === undefined || v === null || v === '') return true;
-      if (v === true) return true;
-      if (typeof v === 'string' && v.trim().toLowerCase() === 'true') return true;
-      if (v === 1 || v === '1') return true;
-
-      return false;
-
+        return false;
       });
+
 
       const day=document.createElement('div'); day.className='day'; if(iso===toISO(new Date())) day.classList.add('today');
       const head=document.createElement('header'); head.innerHTML=`<span>${dow}</span><span class="date">${dom}</span>`; day.appendChild(head);
@@ -3540,6 +3549,7 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
 
   // 🔑 USAR FECHAS DEL RESUMEN (NO del calendario)
   const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}|${cliente}|${normalizarTexto(SESION.nombre || '')}`;
+
   const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
 
   if (!fechas.length) {
@@ -3846,16 +3856,80 @@ function setAppHeight() {
 
 
 
+// ===============================
+// 🔔 PUSH NOTIFICATIONS (PWA)
+// ===============================
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function activarNotificaciones() {
+  try {
+    if (!('serviceWorker' in navigator)) {
+      mostrarToast('❌ Este dispositivo no soporta Service Workers');
+      return;
+    }
+
+    if (!('PushManager' in window)) {
+      mostrarToast('❌ Este dispositivo no soporta notificaciones push');
+      return;
+    }
+
+    // 1️⃣ Pedir permiso
+    const permiso = await Notification.requestPermission();
+    if (permiso !== 'granted') {
+      mostrarToast('🔕 Permiso de notificaciones rechazado');
+      return;
+    }
+
+    // 2️⃣ Esperar service worker
+    const registration = await navigator.serviceWorker.ready;
+
+    // 3️⃣ Obtener public key del backend
+    const resp = await fetch('http://localhost:5247/api/push/publickey');
+    const publicKey = await resp.text();
+
+    // 4️⃣ Crear suscripción
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey)
+    });
+
+    console.log('✅ SUSCRIPCIÓN PUSH OBTENIDA');
+    console.log(subscription);
+
+    mostrarToast('🔔 Notificaciones activadas correctamente');
+
+    // 👉 En el siguiente paso la guardaremos en Sheets
+    return subscription;
+
+  } catch (err) {
+    console.error('❌ Error al activar notificaciones push', err);
+    mostrarToast('❌ Error al activar notificaciones');
+  }
+}
 
 
 
 
 </script>
+
+<button onclick="activarNotificaciones()">
+  🔔 Activar notificaciones
+</button>
+
 <div id="toast" class="toast"></div>
 
 <script>
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
+    document.addEventListener('DOMContentLoaded', () => {
       navigator.serviceWorker.register(
         '/nannys-peques-pwa/service-worker.js',
         { scope: '/nannys-peques-pwa/' }
@@ -3868,7 +3942,13 @@ function setAppHeight() {
       });
     });
   }
+
+
+
+
+
 </script>
+
 
 
 
