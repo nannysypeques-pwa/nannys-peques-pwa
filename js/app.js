@@ -7,28 +7,12 @@ async function api(action, payload = {}) {
 
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-    },
-    body: params.toString()
+    body: params
   });
 
-  if (!res.ok) {
-    throw new Error('Error de red (' + res.status + ')');
-  }
-
   const text = await res.text();
+  const json = JSON.parse(text);
 
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch {
-    throw new Error('Respuesta no válida del servidor');
-  }
-
-  if (!json.ok) {
-    throw new Error(json.error || 'Error desconocido');
-  }
-
+  if (!json.ok) throw new Error(json.error || 'Error desconocido');
   return json.data;
 }
