@@ -1779,27 +1779,58 @@ async function guardarNueva(){
 
 
 
-  function cargar(){
-    const msg=document.getElementById('msgApp'); msg.textContent='Cargando semana...';
-    const fechaISO=document.getElementById('fecha').value || null; SEM1.baseISO=fechaISO;
-    google.script.run.withSuccessHandler(res=>{
-      msg.textContent='';
-      SEM1.dias = res.dias;
+    async function cargar(){
+    const msg = document.getElementById('msgApp');
+    msg.textContent = 'Cargando semana...';
+
+    const fechaISO = document.getElementById('fecha').value || null;
+    SEM1.baseISO = fechaISO;
+
+    try {
+      const res = await api('getDisponibilidadSemana', {
+        email: SESION.email,
+        fechaBase: fechaISO
+      });
+
+      SEM1.dias = res.dias || [];
       renderTablaTurnos('tabla', SEM1);
       renderResumen('resumen', SEM1.baseISO);
-    }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).obtenerDisponibilidad(SESION.email, fechaISO);
+
+      msg.textContent = '';
+    } catch (err) {
+      msg.innerHTML = `<span class="err">${err.message}</span>`;
+    }
   }
-  function cargarSiguiente(){
-    const msg=document.getElementById('msgApp'); const baseISO=document.getElementById('fecha').value || null;
-    const nextISO = addDaysISO(baseISO, 7); SEM2.baseISO = nextISO; msg.textContent='Cargando semana siguiente...';
-    google.script.run.withSuccessHandler(res=>{
-      msg.textContent=''; SEM2.dias=res.dias; SEM2.cargada=true;
-      document.getElementById('tablaSiguienteCard').style.display='block';
-      document.getElementById('resumenCard2').style.display='block';
+
+  async function cargarSiguiente(){
+    const msg = document.getElementById('msgApp');
+    const baseISO = document.getElementById('fecha').value || null;
+    const nextISO = addDaysISO(baseISO, 7);
+    SEM2.baseISO = nextISO;
+
+    msg.textContent = 'Cargando semana siguiente...';
+
+    try {
+      const res = await api('getDisponibilidadSemana', {
+        email: SESION.email,
+        fechaBase: nextISO
+      });
+
+      SEM2.dias = res.dias || [];
+      SEM2.cargada = true;
+
+      document.getElementById('tablaSiguienteCard').style.display = 'block';
+      document.getElementById('resumenCard2').style.display = 'block';
+
       renderTablaTurnos('tabla2', SEM2);
       renderResumen('resumen2', SEM2.baseISO);
-    }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).obtenerDisponibilidad(SESION.email, nextISO);
+
+      msg.textContent = '';
+    } catch (err) {
+      msg.innerHTML = `<span class="err">${err.message}</span>`;
+    }
   }
+
   function copiarSemanaAnterior(){
     if(!SEM2.cargada){ cargarSiguiente(); setTimeout(()=>{ if(SEM2.cargada) _doCopiar(); }, 600); }
     else _doCopiar();
@@ -1808,19 +1839,27 @@ async function guardarNueva(){
     SEM2.dias = SEM1.dias.map(d=>({fecha:d.fecha,dia:d.dia,Matutino:d.Matutino,Vespertino:d.Vespertino}));
     renderTablaTurnos('tabla2', SEM2); renderResumen('resumen2', SEM2.baseISO);
   }
-  function guardar(){
-    const msg=document.getElementById('msgApp'); msg.textContent='Guardando...';
-    const p1={ dias:SEM1.dias };
-    google.script.run.withSuccessHandler(_=>{
-      if(SEM2.cargada){
-        const p2={ dias:SEM2.dias };
-        google.script.run.withSuccessHandler(_=>{
-          msg.innerHTML='<span class="ok">Disponibilidad de ambas semanas guardada.</span>';
-          renderResumen('resumen', SEM1.baseISO); renderResumen('resumen2', SEM2.baseISO);
-        }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).guardarDisponibilidad(SESION.email, p2);
-      } else { msg.innerHTML='<span class="ok">Disponibilidad guardada.</span>'; renderResumen('resumen', SEM1.baseISO); }
-    }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).guardarDisponibilidad(SESION.email, p1);
+  
+  
+  async function guardar(){
+    const msg = document.getElementById('msgApp');
+    msg.textContent = 'Guardando...';
+
+    try {
+      await api('guardarDisponibilidad', {
+        email: SESION.email,
+        semanaActual: SEM1.dias,
+        semanaSiguiente: SEM2.cargada ? SEM2.dias : null
+      });
+
+      msg.innerHTML = '<span class="ok">Disponibilidad guardada.</span>';
+    } catch (err) {
+      msg.innerHTML = `<span class="err">${err.message}</span>`;
+    }
   }
+
+  
+
   function renderResumen(targetId, baseISO){
     const cont=document.getElementById(targetId); cont.innerHTML='Generando...';
     google.script.run.withSuccessHandler(map=>{
