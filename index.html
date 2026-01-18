@@ -973,19 +973,19 @@ body.ninera .modal-planeacion:hover::-webkit-scrollbar-thumb {
 
 
         <div class="perfil-item">
-          <span class="perfil-label">Nombre:</span>
+          <span class="perfil-label">Nombre</span>
           <span id="perfil_nombre" class="perfil-valor">—</span>
         </div>
 
 
         <div class="perfil-item">
-          <span class="perfil-label">Email:</span>
+          <span class="perfil-label">Email</span>
           <span id="perfil_email" class="perfil-valor">—</span>
         </div>
 
 
         <div class="perfil-item">
-          <span class="perfil-label">Teléfono:</span>
+          <span class="perfil-label">Teléfono</span>
           <span id="perfil_tel" class="perfil-valor">—</span>
         </div>
 
@@ -1505,35 +1505,14 @@ async function api(action, payload = {}) {
   });
 
   const text = await res.text();
-
-  let json;
-  try {
-    json = JSON.parse(text);
-  } catch (e) {
-    console.error('Respuesta NO JSON:', text);
-    throw new Error('Respuesta inválida del servidor');
-  }
+  const json = JSON.parse(text);
 
   if (!json.ok) {
     throw new Error(json.error || 'Error desconocido');
   }
 
-  // 🔑 NORMALIZAR RESPUESTA
-  if (Array.isArray(json.data)) {
-    return json.data;
-  }
-
-  if (json.data && typeof json.data === 'object') {
-    // si viene envuelto
-    if (Array.isArray(json.data.servicios)) return json.data.servicios;
-    if (Array.isArray(json.data.lista)) return json.data.lista;
-    if (Array.isArray(json.data.items)) return json.data.items;
-    return json.data;
-  }
-
-  return [];
+  return json.data;
 }
-
 
 
 
@@ -1779,58 +1758,27 @@ async function guardarNueva(){
 
 
 
-    async function cargar(){
-    const msg = document.getElementById('msgApp');
-    msg.textContent = 'Cargando semana...';
-
-    const fechaISO = document.getElementById('fecha').value || null;
-    SEM1.baseISO = fechaISO;
-
-    try {
-      const res = await api('getDisponibilidadSemana', {
-        email: SESION.email,
-        fechaBase: fechaISO
-      });
-
-      SEM1.dias = res.dias || [];
+  function cargar(){
+    const msg=document.getElementById('msgApp'); msg.textContent='Cargando semana...';
+    const fechaISO=document.getElementById('fecha').value || null; SEM1.baseISO=fechaISO;
+    google.script.run.withSuccessHandler(res=>{
+      msg.textContent='';
+      SEM1.dias = res.dias;
       renderTablaTurnos('tabla', SEM1);
       renderResumen('resumen', SEM1.baseISO);
-
-      msg.textContent = '';
-    } catch (err) {
-      msg.innerHTML = `<span class="err">${err.message}</span>`;
-    }
+    }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).obtenerDisponibilidad(SESION.email, fechaISO);
   }
-
-  async function cargarSiguiente(){
-    const msg = document.getElementById('msgApp');
-    const baseISO = document.getElementById('fecha').value || null;
-    const nextISO = addDaysISO(baseISO, 7);
-    SEM2.baseISO = nextISO;
-
-    msg.textContent = 'Cargando semana siguiente...';
-
-    try {
-      const res = await api('getDisponibilidadSemana', {
-        email: SESION.email,
-        fechaBase: nextISO
-      });
-
-      SEM2.dias = res.dias || [];
-      SEM2.cargada = true;
-
-      document.getElementById('tablaSiguienteCard').style.display = 'block';
-      document.getElementById('resumenCard2').style.display = 'block';
-
+  function cargarSiguiente(){
+    const msg=document.getElementById('msgApp'); const baseISO=document.getElementById('fecha').value || null;
+    const nextISO = addDaysISO(baseISO, 7); SEM2.baseISO = nextISO; msg.textContent='Cargando semana siguiente...';
+    google.script.run.withSuccessHandler(res=>{
+      msg.textContent=''; SEM2.dias=res.dias; SEM2.cargada=true;
+      document.getElementById('tablaSiguienteCard').style.display='block';
+      document.getElementById('resumenCard2').style.display='block';
       renderTablaTurnos('tabla2', SEM2);
       renderResumen('resumen2', SEM2.baseISO);
-
-      msg.textContent = '';
-    } catch (err) {
-      msg.innerHTML = `<span class="err">${err.message}</span>`;
-    }
+    }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).obtenerDisponibilidad(SESION.email, nextISO);
   }
-
   function copiarSemanaAnterior(){
     if(!SEM2.cargada){ cargarSiguiente(); setTimeout(()=>{ if(SEM2.cargada) _doCopiar(); }, 600); }
     else _doCopiar();
@@ -1839,27 +1787,19 @@ async function guardarNueva(){
     SEM2.dias = SEM1.dias.map(d=>({fecha:d.fecha,dia:d.dia,Matutino:d.Matutino,Vespertino:d.Vespertino}));
     renderTablaTurnos('tabla2', SEM2); renderResumen('resumen2', SEM2.baseISO);
   }
-  
-  
-  async function guardar(){
-    const msg = document.getElementById('msgApp');
-    msg.textContent = 'Guardando...';
-
-    try {
-      await api('guardarDisponibilidad', {
-        email: SESION.email,
-        semanaActual: SEM1.dias,
-        semanaSiguiente: SEM2.cargada ? SEM2.dias : null
-      });
-
-      msg.innerHTML = '<span class="ok">Disponibilidad guardada.</span>';
-    } catch (err) {
-      msg.innerHTML = `<span class="err">${err.message}</span>`;
-    }
+  function guardar(){
+    const msg=document.getElementById('msgApp'); msg.textContent='Guardando...';
+    const p1={ dias:SEM1.dias };
+    google.script.run.withSuccessHandler(_=>{
+      if(SEM2.cargada){
+        const p2={ dias:SEM2.dias };
+        google.script.run.withSuccessHandler(_=>{
+          msg.innerHTML='<span class="ok">Disponibilidad de ambas semanas guardada.</span>';
+          renderResumen('resumen', SEM1.baseISO); renderResumen('resumen2', SEM2.baseISO);
+        }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).guardarDisponibilidad(SESION.email, p2);
+      } else { msg.innerHTML='<span class="ok">Disponibilidad guardada.</span>'; renderResumen('resumen', SEM1.baseISO); }
+    }).withFailureHandler(err=>{ msg.innerHTML='<span class="err">'+err.message+'</span>'; }).guardarDisponibilidad(SESION.email, p1);
   }
-
-
-
   function renderResumen(targetId, baseISO){
     const cont=document.getElementById(targetId); cont.innerHTML='Generando...';
     google.script.run.withSuccessHandler(map=>{
@@ -1883,38 +1823,37 @@ async function guardarNueva(){
 
 
   /* ---------- SERVICIOS PRÓXIMOS ---------- */
-  async function refreshServicios(){
-  const btn = document.getElementById('btnRefreshSvc');
-  const msg = document.getElementById('calMsg');
+  function refreshServicios(){
+    const btn = document.getElementById('btnRefreshSvc');
+    const msg = document.getElementById('calMsg');
 
-  btn.textContent = 'Actualizando...';
-  msg.textContent = '';
+    btn.textContent = 'Actualizando...';
+    msg.textContent = '';
 
-  try{
-    const lista = await api('getServiciosNinera', {
-      email: SESION.email,
-      dias: 14
-    });
+    google.script.run
+      .withSuccessHandler(lista => {
+        CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
 
-    CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
+        if(!SEMANA_CALENDARIO_BASE){
+          SEMANA_CALENDARIO_BASE = new Date();
+        }
 
-    if(!SEMANA_CALENDARIO_BASE){
-      SEMANA_CALENDARIO_BASE = new Date();
-    }
+        // 🔁 Render calendario
+        renderCalendario2Semanas();
 
-    renderCalendario2Semanas();
-    cargarResumenPlaneacionesNinera();
+        // ✅ AHORA recalcular planeaciones Neuronanny
+        cargarResumenPlaneacionesNinera();
 
-    btn.textContent = '🔄 Actualizar';
-    msg.textContent = 'Actualizado';
-    setTimeout(() => msg.textContent = '', 1200);
-
-  }catch(err){
-    btn.textContent = '🔄 Actualizar';
-    msg.innerHTML = `<span class="err">${err.message}</span>`;
+        btn.textContent = '🔄 Actualizar';
+        msg.textContent = 'Actualizado';
+        setTimeout(() => msg.textContent = '', 1200);
+      })
+      .withFailureHandler(err => {
+        btn.textContent = '🔄 Actualizar';
+        msg.innerHTML = '<span class="err">' + err.message + '</span>';
+      })
+      .obtenerServiciosProximosPorNombre(SESION.email, 14);
   }
-}
-
 
   function actualizarPlaneaciones(){
     // ⛔ si hay un modal abierto, no interferir
@@ -1953,67 +1892,30 @@ async function guardarNueva(){
     cargarResumenPlaneaciones();
   }
 
-  async function cargarServicios(){
-  const cont = document.getElementById('cal');
-  const msg  = document.getElementById('calMsg');
+  function cargarServicios(){
+    const cont=document.getElementById('cal');
+    const msg=document.getElementById('calMsg');
 
-  cont.innerHTML = '';
-  msg.textContent = 'Cargando servicios...';
+    cont.innerHTML='';
+    msg.textContent='Cargando...';
 
-  try{
-    const lista = await api('getServiciosNinera', {
-      email: SESION.email,
-      dias: 14
-    });
+    google.script.run
+      .withSuccessHandler(lista=>{
+        CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
+        msg.textContent='';
+        if(!SEMANA_CALENDARIO_BASE){
+          SEMANA_CALENDARIO_BASE = new Date();
+        }
+        renderCalendario2Semanas();
 
-    // 🧠 Normalizar lista
-    CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
-
-    // 🔎 DEBUG DURO (no rompe nada)
-    console.log('Servicios recibidos:', CAL_SERVICIOS);
-
-    msg.textContent = `Servicios recibidos: ${CAL_SERVICIOS.length}`;
-
-    // 🧼 NORMALIZAR CAMPO "ver" (clave del bug)
-    CAL_SERVICIOS = CAL_SERVICIOS.map(s => {
-      let ver = s.ver;
-
-      if (ver === undefined || ver === null || ver === '') ver = true;
-      if (typeof ver === 'string') ver = ver.trim().toLowerCase();
-      if (ver === 'true' || ver === '1') ver = true;
-      if (ver === 'false' || ver === '0') ver = false;
-
-      return {
-        ...s,
-        ver: ver === true
-      };
-    });
-
-    // 📅 base del calendario
-    if(!SEMANA_CALENDARIO_BASE){
-      SEMANA_CALENDARIO_BASE = new Date();
-    }
-
-    // 🖌️ render
-    renderCalendario2Semanas();
-
-    // 🔑 encadenar planeaciones
-    cargarResumenPlaneacionesNinera();
-
-    // limpiar mensaje después
-    setTimeout(() => {
-      if (msg.textContent.startsWith('Servicios recibidos')) {
-        msg.textContent = '';
-      }
-    }, 1500);
-
-  }catch(err){
-    console.error('Error cargarServicios:', err);
-    msg.innerHTML = `<span class="err">${err.message}</span>`;
+        // ✅ AHORA SÍ: planeaciones
+        cargarResumenPlaneacionesNinera();
+      })
+      .withFailureHandler(err=>{
+        msg.innerHTML='<span class="err">'+err.message+'</span>';
+      })
+      .obtenerServiciosProximosPorNombre(SESION.email, 14);
   }
-}
-
-
 
   function cargarServiciosSiguienteSemana(){
     google.script.run
@@ -2062,29 +1964,8 @@ async function guardarNueva(){
     for(let i=0;i<14;i++){
       const d=new Date(start); d.setDate(start.getDate()+i);
       const iso=toISO(d); const dow=d.toLocaleDateString('es-MX',{weekday:'short'}).toUpperCase(); const dom=d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit'});
-      const serviciosDia = map[iso] || [];
-      const serviciosVisibles = serviciosDia.filter(s => {
-
-
-      // ✅ 1) FILTRO POR NIÑERA (robusto: acentos, mayúsculas, espacios)
-      const nineraServicio = normalizarTexto(s?.nombre_ninera || '');
-      const nineraSesion   = normalizarTexto(SESION.nombre || '');
-
-      // Si por alguna razón SESION.nombre viene vacío, NO bloqueamos (evita dejar calendario en blanco)
-      if (nineraSesion && nineraServicio && nineraServicio !== nineraSesion) return false;
-
-      // ✅ 2) TU FILTRO "ver" (lo dejo igual que lo traías)
-      const v = s?.ver;
-
-      if (v === undefined || v === null || v === '') return true;
-      if (v === true) return true;
-      if (typeof v === 'string' && v.trim().toLowerCase() === 'true') return true;
-      if (v === 1 || v === '1') return true;
-
-      return false;
-    });
-
-
+      const servicios=(map[iso]||[]).slice().sort(compararServicios);
+      const serviciosVisibles = servicios.filter(s => s.ver == true);
       const day=document.createElement('div'); day.className='day'; if(iso===toISO(new Date())) day.classList.add('today');
       const head=document.createElement('header'); head.innerHTML=`<span>${dow}</span><span class="date">${dom}</span>`; day.appendChild(head);
       const body=document.createElement('div');
@@ -2579,13 +2460,12 @@ function accionFinalizar(sheetName, row, fechaISO){
     Object.values(data).flat().forEach(p => {
 
       // 🔒 FILTRO CLAVE: solo planeaciones de esta niñera
-      const nombreSesion    = normalizarTexto(SESION.nombre || '');
-      const nombrePlaneacion = normalizarTexto(p.ninera || '');
+      const nombreSesion = (SESION.nombre || '').toLowerCase().trim();
+      const nombrePlaneacion = (p.ninera || '').toLowerCase().trim();
 
-      if (!nombrePlaneacion || (nombreSesion && nombrePlaneacion !== nombreSesion)) {
+      if (!nombrePlaneacion || nombrePlaneacion !== nombreSesion) {
         return; // ⛔ no es su servicio
       }
-
 
 
       /* =========================
@@ -2616,7 +2496,7 @@ function accionFinalizar(sheetName, row, fechaISO){
       /* =========================
          FECHAS (no tocar)
          ========================= */
-      const key = `${prefijo || 'actual'}|${p.cliente}|${normalizarTexto(p.ninera || '')}`;
+      const key = `${prefijo || 'actual'}|${p.cliente}|${p.ninera || ''}`;
 
       let fechas = [];
 
@@ -3087,22 +2967,19 @@ function mostrarVistaNinera(){
   ocultarTodo();
   irVista('servicios');
 
-  // 🔥 MOSTRAR CONTENEDORES CORRECTOS
-  document.getElementById('svcCard').style.display = 'block';
-  document.getElementById('planeacionesNineraCard').style.display = 'block';
-  document.getElementById('planeacionesNineraCardSiguiente').style.display = 'block';
-  document.getElementById('puntosNineraCard').style.display = 'block';
+  document.getElementById('puntosNineraCard').style.display='block';
+  document.getElementById('planeacionesNineraCard').style.display='block';
+  document.getElementById('planeacionesNineraCardSiguiente').style.display='block';
 
   document.getElementById('fecha').valueAsDate = new Date();
 
-  // ✅ CARGAS REALES
-  cargarServicios();
-  cargarServiciosSiguienteSemana();
-  cargarResumenPlaneacionesNinera();
-  cargarPuntajeNinera();
+  // ⛔ DESACTIVADO TEMPORALMENTE
+  // cargar();
+  // cargarServicios();
+  // cargarServiciosSiguienteSemana();
+  // cargarPuntajeNinera();
+  // cargarResumenPlaneacionesNinera();
 }
-
-
 
 
 
@@ -3520,7 +3397,7 @@ function mostrarToast(msg){
 }
 
 
-async function cargarResumenPlaneacionesNinera(){
+function cargarResumenPlaneacionesNinera(){
   const contActual = document.getElementById('listaPlaneacionesNinera');
   const contSig    = document.getElementById('listaPlaneacionesNineraSiguiente');
 
@@ -3533,37 +3410,30 @@ async function cargarResumenPlaneacionesNinera(){
   lunesSig.setDate(lunesSig.getDate() + 7);
 
   const isoActual = toISO(lunesActual);
-  const isoSig    = toISO(lunesSig);
+  const isoSig = toISO(lunesSig);
 
-  try{
-    const dataActual = await api('getResumenPlaneacionesSemana', {
-      email: SESION.email,
-      fechaBase: isoActual
-    });
+  // Semana actual
+  google.script.run
+    .withSuccessHandler(data => {
+      renderResumenPlaneaciones(
+        data,
+        contActual,
+        'ninera_actual'
+      );
+    })
+    .obtenerResumenPlaneacionesSemana(isoActual, SESION.email);
 
-    renderResumenPlaneaciones(
-      dataActual,
-      contActual,
-      'ninera_actual'
-    );
-
-    const dataSig = await api('getResumenPlaneacionesSemana', {
-      email: SESION.email,
-      fechaBase: isoSig
-    });
-
-    renderResumenPlaneaciones(
-      dataSig,
-      contSig,
-      'ninera_siguiente'
-    );
-
-  }catch(err){
-    contActual.innerHTML = `<span class="err">${err.message}</span>`;
-    contSig.innerHTML    = `<span class="err">${err.message}</span>`;
-  }
+  // Semana siguiente
+  google.script.run
+    .withSuccessHandler(data => {
+      renderResumenPlaneaciones(
+        data,
+        contSig,
+        'ninera_siguiente'
+      );
+    })
+    .obtenerResumenPlaneacionesSemana(isoSig, SESION.email);
 }
-
 
 
 
@@ -3577,8 +3447,7 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
   PLANEACION_CLIENTE = cliente;
 
   // 🔑 USAR FECHAS DEL RESUMEN (NO del calendario)
-  const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}|${cliente}|${normalizarTexto(SESION.nombre || '')}`;
-
+  const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}|${cliente}|${SESION.nombre || ''}`;
   const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
 
   if (!fechas.length) {
@@ -3893,7 +3762,7 @@ function setAppHeight() {
 <div id="toast" class="toast"></div>
 
 <script>
-  /*if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register(
         '/nannys-peques-pwa/service-worker.js',
@@ -3906,7 +3775,7 @@ function setAppHeight() {
         console.error('Error al registrar Service Worker:', err);
       });
     });
-  }*/
+  }
 </script>
 
 
@@ -3914,6 +3783,7 @@ function setAppHeight() {
 
 </body>
 </html>
+
 
 
 
