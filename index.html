@@ -3871,25 +3871,50 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function activarNotificaciones() {
-  alert('Permiso actual: ' + Notification.permission);
+  try {
+    alert('1️⃣ Click recibido');
 
-  const registration = await navigator.serviceWorker.ready;
+    // 1. Pedir permiso
+    const permiso = await Notification.requestPermission();
+    alert('2️⃣ Permiso: ' + permiso);
 
-  alert('Service Worker listo');
+    if (permiso !== 'granted') {
+      alert('❌ El usuario no concedió permisos');
+      return;
+    }
 
-  const resp = await fetch('https://push.nannysypeques.com.mx');
-  const publicKey = await resp.text();
+    // 2. Esperar service worker
+    if (!('serviceWorker' in navigator)) {
+      alert('❌ No hay serviceWorker en este navegador');
+      return;
+    }
 
-  alert('Public key OK');
+    const registration = await navigator.serviceWorker.ready;
+    alert('3️⃣ Service Worker listo');
 
-  const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicKey)
-  });
+    // 3. Crear suscripción push
+    if (!registration.pushManager) {
+      alert('❌ PushManager no disponible');
+      return;
+    }
 
-  alert('SUSCRIPCIÓN CREADA');
-  console.log(subscription);
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true
+    });
+
+    // 4. Mostrar resultado CLAVE
+    alert(
+      '4️⃣ SUSCRIPCIÓN CREADA ✅\n\n' +
+      'Endpoint:\n' +
+      subscription.endpoint
+    );
+
+  } catch (e) {
+    alert('❌ ERROR:\n' + e.message);
+  }
 }
+
+
 
 
 
