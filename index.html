@@ -1505,14 +1505,35 @@ async function api(action, payload = {}) {
   });
 
   const text = await res.text();
-  const json = JSON.parse(text);
+
+  let json;
+  try {
+    json = JSON.parse(text);
+  } catch (e) {
+    console.error('Respuesta NO JSON:', text);
+    throw new Error('Respuesta inválida del servidor');
+  }
 
   if (!json.ok) {
     throw new Error(json.error || 'Error desconocido');
   }
 
-  return json.data;
+  // 🔑 NORMALIZAR RESPUESTA
+  if (Array.isArray(json.data)) {
+    return json.data;
+  }
+
+  if (json.data && typeof json.data === 'object') {
+    // si viene envuelto
+    if (Array.isArray(json.data.servicios)) return json.data.servicios;
+    if (Array.isArray(json.data.lista)) return json.data.lista;
+    if (Array.isArray(json.data.items)) return json.data.items;
+    return json.data;
+  }
+
+  return [];
 }
+
 
 
 
@@ -1823,37 +1844,38 @@ async function guardarNueva(){
 
 
   /* ---------- SERVICIOS PRÓXIMOS ---------- */
-  function refreshServicios(){
+  async function refreshServicios(){
     const btn = document.getElementById('btnRefreshSvc');
     const msg = document.getElementById('calMsg');
 
     btn.textContent = 'Actualizando...';
     msg.textContent = '';
 
-    google.script.run
-      .withSuccessHandler(lista => {
-        CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
+    try{
+      const lista = await api('getServiciosNinera', {
+        email: SESION.email,
+        dias: 14
+      });
 
-        if(!SEMANA_CALENDARIO_BASE){
-          SEMANA_CALENDARIO_BASE = new Date();
-        }
+      CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
 
-        // 🔁 Render calendario
-        renderCalendario2Semanas();
+      if(!SEMANA_CALENDARIO_BASE){
+        SEMANA_CALENDARIO_BASE = new Date();
+      }
 
-        // ✅ AHORA recalcular planeaciones Neuronanny
-        cargarResumenPlaneacionesNinera();
+      renderCalendario2Semanas();
+      cargarResumenPlaneacionesNinera();
 
-        btn.textContent = '🔄 Actualizar';
-        msg.textContent = 'Actualizado';
-        setTimeout(() => msg.textContent = '', 1200);
-      })
-      .withFailureHandler(err => {
-        btn.textContent = '🔄 Actualizar';
-        msg.innerHTML = '<span class="err">' + err.message + '</span>';
-      })
-      .obtenerServiciosProximosPorNombre(SESION.email, 14);
-  }
+      btn.textContent = '🔄 Actualizar';
+      msg.textContent = 'Actualizado';
+      setTimeout(() => msg.textContent = '', 1200);
+
+    }catch(err){
+      btn.textContent = '🔄 Actualizar';
+      msg.innerHTML = `<span class="err">${err.message}</span>`;
+    }
+}
+
 
   function actualizarPlaneaciones(){
     // ⛔ si hay un modal abierto, no interferir
@@ -1892,30 +1914,67 @@ async function guardarNueva(){
     cargarResumenPlaneaciones();
   }
 
-  function cargarServicios(){
-    const cont=document.getElementById('cal');
-    const msg=document.getElementById('calMsg');
+  async function cargarServicios(){
+  const cont = document.getElementById('cal');
+  const msg  = document.getElementById('calMsg');
 
-    cont.innerHTML='';
-    msg.textContent='Cargando...';
+  cont.innerHTML = '';
+  msg.textContent = 'Cargando servicios...';
 
-    google.script.run
-      .withSuccessHandler(lista=>{
-        CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
-        msg.textContent='';
-        if(!SEMANA_CALENDARIO_BASE){
-          SEMANA_CALENDARIO_BASE = new Date();
-        }
-        renderCalendario2Semanas();
+  try{
+    const lista = await api('getServiciosNinera', {
+      email: SESION.email,
+      dias: 14
+    });
 
-        // ✅ AHORA SÍ: planeaciones
-        cargarResumenPlaneacionesNinera();
-      })
-      .withFailureHandler(err=>{
-        msg.innerHTML='<span class="err">'+err.message+'</span>';
-      })
-      .obtenerServiciosProximosPorNombre(SESION.email, 14);
+    // 🧠 Normalizar lista
+    CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
+
+    // 🔎 DEBUG DURO (no rompe nada)
+    console.log('Servicios recibidos:', CAL_SERVICIOS);
+
+    msg.textContent = `Servicios recibidos: ${CAL_SERVICIOS.length}`;
+
+    // 🧼 NORMALIZAR CAMPO "ver" (clave del bug)
+    CAL_SERVICIOS = CAL_SERVICIOS.map(s => {
+      let ver = s.ver;
+
+      if (ver === undefined || ver === null || ver === '') ver = true;
+      if (typeof ver === 'string') ver = ver.trim().toLowerCase();
+      if (ver === 'true' || ver === '1') ver = true;
+      if (ver === 'false' || ver === '0') ver = false;
+
+      return {
+        ...s,
+        ver: ver === true
+      };
+    });
+
+    // 📅 base del calendario
+    if(!SEMANA_CALENDARIO_BASE){
+      SEMANA_CALENDARIO_BASE = new Date();
+    }
+
+    // 🖌️ render
+    renderCalendario2Semanas();
+
+    // 🔑 encadenar planeaciones
+    cargarResumenPlaneacionesNinera();
+
+    // limpiar mensaje después
+    setTimeout(() => {
+      if (msg.textContent.startsWith('Servicios recibidos')) {
+        msg.textContent = '';
+      }
+    }, 1500);
+
+  }catch(err){
+    console.error('Error cargarServicios:', err);
+    msg.innerHTML = `<span class="err">${err.message}</span>`;
   }
+}
+
+
 
   function cargarServiciosSiguienteSemana(){
     google.script.run
@@ -1965,7 +2024,29 @@ async function guardarNueva(){
       const d=new Date(start); d.setDate(start.getDate()+i);
       const iso=toISO(d); const dow=d.toLocaleDateString('es-MX',{weekday:'short'}).toUpperCase(); const dom=d.toLocaleDateString('es-MX',{day:'2-digit',month:'2-digit'});
       const servicios=(map[iso]||[]).slice().sort(compararServicios);
-      const serviciosVisibles = servicios.filter(s => s.ver == true);
+      // 🔑 servicios DEL DÍA (desde el mapa real)
+      const serviciosDia = map[iso] || [];
+
+      const serviciosVisibles = serviciosDia.filter(s => {
+
+
+      // ✅ 1) FILTRO POR NIÑERA
+      const nineraServicio = normalizarTexto(s?.nombre_ninera || '');
+      const nineraSesion   = normalizarTexto(SESION.nombre || '');
+
+      if (nineraSesion && nineraServicio && nineraServicio !== nineraSesion) return false;
+
+      // ✅ 2) FILTRO "ver"
+      const v = s?.ver;
+      if (v === undefined || v === null || v === '') return true;
+      if (v === true) return true;
+      if (typeof v === 'string' && v.trim().toLowerCase() === 'true') return true;
+      if (v === 1 || v === '1') return true;
+
+      return false;
+
+      });
+
       const day=document.createElement('div'); day.className='day'; if(iso===toISO(new Date())) day.classList.add('today');
       const head=document.createElement('header'); head.innerHTML=`<span>${dow}</span><span class="date">${dom}</span>`; day.appendChild(head);
       const body=document.createElement('div');
@@ -2460,12 +2541,13 @@ function accionFinalizar(sheetName, row, fechaISO){
     Object.values(data).flat().forEach(p => {
 
       // 🔒 FILTRO CLAVE: solo planeaciones de esta niñera
-      const nombreSesion = (SESION.nombre || '').toLowerCase().trim();
-      const nombrePlaneacion = (p.ninera || '').toLowerCase().trim();
+      const nombreSesion    = normalizarTexto(SESION.nombre || '');
+      const nombrePlaneacion = normalizarTexto(p.ninera || '');
 
-      if (!nombrePlaneacion || nombrePlaneacion !== nombreSesion) {
+      if (!nombrePlaneacion || (nombreSesion && nombrePlaneacion !== nombreSesion)) {
         return; // ⛔ no es su servicio
       }
+
 
 
       /* =========================
@@ -2496,7 +2578,7 @@ function accionFinalizar(sheetName, row, fechaISO){
       /* =========================
          FECHAS (no tocar)
          ========================= */
-      const key = `${prefijo || 'actual'}|${p.cliente}|${p.ninera || ''}`;
+      const key = `${prefijo || 'actual'}|${p.cliente}|${normalizarTexto(p.ninera || '')}`;
 
       let fechas = [];
 
@@ -2967,19 +3049,22 @@ function mostrarVistaNinera(){
   ocultarTodo();
   irVista('servicios');
 
-  document.getElementById('puntosNineraCard').style.display='block';
-  document.getElementById('planeacionesNineraCard').style.display='block';
-  document.getElementById('planeacionesNineraCardSiguiente').style.display='block';
+  // 🔥 MOSTRAR CONTENEDORES CORRECTOS
+  document.getElementById('svcCard').style.display = 'block';
+  document.getElementById('planeacionesNineraCard').style.display = 'block';
+  document.getElementById('planeacionesNineraCardSiguiente').style.display = 'block';
+  document.getElementById('puntosNineraCard').style.display = 'block';
 
   document.getElementById('fecha').valueAsDate = new Date();
 
-  // ⛔ DESACTIVADO TEMPORALMENTE
-  // cargar();
-  // cargarServicios();
-  // cargarServiciosSiguienteSemana();
-  // cargarPuntajeNinera();
-  // cargarResumenPlaneacionesNinera();
+  // ✅ CARGAS REALES
+  cargarServicios();
+  cargarServiciosSiguienteSemana();
+  cargarResumenPlaneacionesNinera();
+  cargarPuntajeNinera();
 }
+
+
 
 
 
@@ -3397,7 +3482,7 @@ function mostrarToast(msg){
 }
 
 
-function cargarResumenPlaneacionesNinera(){
+async function cargarResumenPlaneacionesNinera(){
   const contActual = document.getElementById('listaPlaneacionesNinera');
   const contSig    = document.getElementById('listaPlaneacionesNineraSiguiente');
 
@@ -3410,30 +3495,37 @@ function cargarResumenPlaneacionesNinera(){
   lunesSig.setDate(lunesSig.getDate() + 7);
 
   const isoActual = toISO(lunesActual);
-  const isoSig = toISO(lunesSig);
+  const isoSig    = toISO(lunesSig);
 
-  // Semana actual
-  google.script.run
-    .withSuccessHandler(data => {
-      renderResumenPlaneaciones(
-        data,
-        contActual,
-        'ninera_actual'
-      );
-    })
-    .obtenerResumenPlaneacionesSemana(isoActual, SESION.email);
+  try{
+    const dataActual = await api('getResumenPlaneacionesSemana', {
+      email: SESION.email,
+      fechaBase: isoActual
+    });
 
-  // Semana siguiente
-  google.script.run
-    .withSuccessHandler(data => {
-      renderResumenPlaneaciones(
-        data,
-        contSig,
-        'ninera_siguiente'
-      );
-    })
-    .obtenerResumenPlaneacionesSemana(isoSig, SESION.email);
+    renderResumenPlaneaciones(
+      dataActual,
+      contActual,
+      'ninera_actual'
+    );
+
+    const dataSig = await api('getResumenPlaneacionesSemana', {
+      email: SESION.email,
+      fechaBase: isoSig
+    });
+
+    renderResumenPlaneaciones(
+      dataSig,
+      contSig,
+      'ninera_siguiente'
+    );
+
+  }catch(err){
+    contActual.innerHTML = `<span class="err">${err.message}</span>`;
+    contSig.innerHTML    = `<span class="err">${err.message}</span>`;
+  }
 }
+
 
 
 
@@ -3447,7 +3539,7 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
   PLANEACION_CLIENTE = cliente;
 
   // 🔑 USAR FECHAS DEL RESUMEN (NO del calendario)
-  const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}|${cliente}|${SESION.nombre || ''}`;
+  const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}|${cliente}|${normalizarTexto(SESION.nombre || '')}`;
   const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
 
   if (!fechas.length) {
