@@ -3871,63 +3871,26 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function activarNotificaciones() {
-  let log = '';
+  alert('Permiso actual: ' + Notification.permission);
 
-  try {
-    // 1️⃣ Verificar soporte
-    if (!('serviceWorker' in navigator)) {
-      alert('❌ Este dispositivo no soporta Service Workers');
-      return;
-    }
+  const registration = await navigator.serviceWorker.ready;
 
-    if (!('PushManager' in window)) {
-      alert('❌ Este dispositivo no soporta notificaciones push');
-      return;
-    }
+  alert('Service Worker listo');
 
-    // 2️⃣ Pedir permiso
-    const permiso = await Notification.requestPermission();
-    log += 'Permiso: ' + permiso + '\n\n';
+  const resp = await fetch('https://push.nannysypeques.com.mx');
+  const publicKey = await resp.text();
 
-    if (permiso !== 'granted') {
-      alert(log + '❌ Permiso no concedido');
-      return;
-    }
+  alert('Public key OK');
 
-    // 3️⃣ Esperar Service Worker
-    const registration = await navigator.serviceWorker.ready;
-    log += 'Service Worker listo\n\n';
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey)
+  });
 
-    // 4️⃣ Obtener public key DESDE TU WORKER (Cloudflare)
-    const resp = await fetch('https://push.nannysypeques.com.mx');
-    const publicKey = await resp.text();
-    log += 'Public key obtenida\n\n';
-
-    // 5️⃣ Crear suscripción
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey)
-    });
-
-    log += '✅ SUSCRIPCIÓN CREADA:\n\n';
-    log += JSON.stringify(subscription, null, 2);
-
-    // 6️⃣ Guardar en Sheets
-    google.script.run
-      .withSuccessHandler(res => {
-        console.log('📦 Guardado en Sheets:', res);
-        alert(log + '\n\n✅ Suscripción guardada en Sheets');
-      })
-      .withFailureHandler(err => {
-        console.error('❌ Error guardando push', err);
-        alert(log + '\n\n❌ Error al guardar en Sheets');
-      })
-      .guardarPushSubscription(SESION.email, subscription);
-
-  } catch (e) {
-    alert('❌ ERROR:\n' + e.message);
-  }
+  alert('SUSCRIPCIÓN CREADA');
+  console.log(subscription);
 }
+
 
 
 
