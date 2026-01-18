@@ -3878,37 +3878,35 @@ async function activarNotificaciones() {
   try {
     alert('1️⃣ Click recibido');
 
-    // 🔍 Ver permiso actual
     alert('Permiso actual: ' + Notification.permission);
 
-    if (Notification.permission === 'denied') {
+    if (Notification.permission !== 'granted') {
+      alert('❌ El permiso no está concedido');
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    alert('2️⃣ Service Worker listo');
+
+    // 🔍 1. Revisar si ya existe suscripción
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (subscription) {
       alert(
-        '❌ Las notificaciones están bloqueadas.\n\n' +
-        'Ve a Ajustes > Notificaciones > Nannys y Peques y actívalas.'
+        '3️⃣ YA EXISTE SUSCRIPCIÓN ✅\n\n' +
+        'Endpoint:\n' +
+        subscription.endpoint
       );
       return;
     }
 
-    if (Notification.permission === 'default') {
-      const permiso = await Notification.requestPermission();
-      alert('2️⃣ Resultado permiso: ' + permiso);
-
-      if (permiso !== 'granted') {
-        alert('❌ Permiso no concedido');
-        return;
-      }
-    }
-
-    // ✅ Aquí ya tenemos permiso garantizado
-    const registration = await navigator.serviceWorker.ready;
-    alert('3️⃣ Service Worker listo');
-
-    const subscription = await registration.pushManager.subscribe({
+    // ➕ 2. Crear suscripción SOLO si no existe
+    subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true
     });
 
     alert(
-      '4️⃣ SUSCRIPCIÓN CREADA ✅\n\n' +
+      '4️⃣ NUEVA SUSCRIPCIÓN CREADA ✅\n\n' +
       'Endpoint:\n' +
       subscription.endpoint
     );
@@ -3917,6 +3915,7 @@ async function activarNotificaciones() {
     alert('❌ ERROR:\n' + e.message);
   }
 }
+
 
 
 
