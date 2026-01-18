@@ -3893,7 +3893,8 @@ async function activarNotificaciones() {
     const registration = await navigator.serviceWorker.ready;
 
     // 3️⃣ Obtener public key del backend
-    const resp = await fetch('http://localhost:5247/api/push/publickey');
+    const resp = await fetch('https://push.nannysypeques.com.mx/publickey');
+
     const publicKey = await resp.text();
 
     // 4️⃣ Crear suscripción
@@ -3926,20 +3927,17 @@ async function activarNotificaciones() {
 <div id="toast" class="toast"></div>
 
 <script>
-  if ('serviceWorker' in navigator) {
-    document.addEventListener('DOMContentLoaded', () => {
-      navigator.serviceWorker.register(
-        '/nannys-peques-pwa/service-worker.js',
-        { scope: '/nannys-peques-pwa/' }
-      )
-      .then(reg => {
-        console.log('Service Worker registrado:', reg.scope);
-      })
-      .catch(err => {
-        console.error('Error al registrar Service Worker:', err);
-      });
-    });
-  }
+ if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/service-worker.js');
+      console.log('✅ Service Worker registrado con scope:', reg.scope);
+    } catch (err) {
+      console.error('❌ Error al registrar Service Worker:', err);
+    }
+  });
+}
+
 
 
 
