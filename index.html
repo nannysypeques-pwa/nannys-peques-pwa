@@ -3870,39 +3870,43 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
+
+
+
+
 async function activarNotificaciones() {
   try {
     alert('1️⃣ Click recibido');
 
-    // 1. Pedir permiso
-    const permiso = await Notification.requestPermission();
-    alert('2️⃣ Permiso: ' + permiso);
+    // 🔍 Ver permiso actual
+    alert('Permiso actual: ' + Notification.permission);
 
-    if (permiso !== 'granted') {
-      alert('❌ El usuario no concedió permisos');
+    if (Notification.permission === 'denied') {
+      alert(
+        '❌ Las notificaciones están bloqueadas.\n\n' +
+        'Ve a Ajustes > Notificaciones > Nannys y Peques y actívalas.'
+      );
       return;
     }
 
-    // 2. Esperar service worker
-    if (!('serviceWorker' in navigator)) {
-      alert('❌ No hay serviceWorker en este navegador');
-      return;
+    if (Notification.permission === 'default') {
+      const permiso = await Notification.requestPermission();
+      alert('2️⃣ Resultado permiso: ' + permiso);
+
+      if (permiso !== 'granted') {
+        alert('❌ Permiso no concedido');
+        return;
+      }
     }
 
+    // ✅ Aquí ya tenemos permiso garantizado
     const registration = await navigator.serviceWorker.ready;
     alert('3️⃣ Service Worker listo');
-
-    // 3. Crear suscripción push
-    if (!registration.pushManager) {
-      alert('❌ PushManager no disponible');
-      return;
-    }
 
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true
     });
 
-    // 4. Mostrar resultado CLAVE
     alert(
       '4️⃣ SUSCRIPCIÓN CREADA ✅\n\n' +
       'Endpoint:\n' +
@@ -3913,6 +3917,7 @@ async function activarNotificaciones() {
     alert('❌ ERROR:\n' + e.message);
   }
 }
+
 
 
 
