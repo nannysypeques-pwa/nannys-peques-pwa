@@ -3871,53 +3871,36 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function activarNotificaciones() {
+  let log = '';
+
   try {
-    if (!('serviceWorker' in navigator)) {
-      mostrarToast('❌ Este dispositivo no soporta Service Workers');
-      return;
-    }
-
-    if (!('PushManager' in window)) {
-      mostrarToast('❌ Este dispositivo no soporta notificaciones push');
-      return;
-    }
-
-    // 1️⃣ Pedir permiso
     const permiso = await Notification.requestPermission();
+    log += 'Permiso: ' + permiso + '\n\n';
+
     if (permiso !== 'granted') {
-      mostrarToast('🔕 Permiso de notificaciones rechazado');
+      alert(log + '❌ Permiso no concedido');
       return;
     }
 
-    // 2️⃣ Esperar service worker
     const registration = await navigator.serviceWorker.ready;
+    log += 'Service Worker listo\n\n';
 
-    // 3️⃣ Obtener public key del backend
-    const resp = await fetch('https://push.nannysypeques.com.mx/publickey');
-
-    const publicKey = await resp.text();
-
-    // 4️⃣ Crear suscripción
     const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey)
+      userVisibleOnly: true
     });
 
-    console.log('✅ SUSCRIPCIÓN PUSH OBTENIDA');
-    console.log(subscription);
+    log += '✅ SUSCRIPCIÓN CREADA:\n\n';
+    log += JSON.stringify(subscription, null, 2);
 
-    mostrarToast('🔔 Notificaciones activadas correctamente');
+    alert(log);
 
-    // 👉 En el siguiente paso la guardaremos en Sheets
-    return subscription;
-
-  } catch (err) {
-      console.error('❌ Error al activar notificaciones push');
-      console.error(err);
-      alert(err?.message || JSON.stringify(err));
-    }
-
+  } catch (e) {
+    alert('❌ ERROR:\n' + e.message);
+  }
 }
+
+
+
 
 
 
