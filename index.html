@@ -3911,19 +3911,17 @@ async function activarNotificaciones() {
     return subscription;
 
   } catch (err) {
-    console.error('❌ Error al activar notificaciones push', err);
-    mostrarToast('❌ Error al activar notificaciones');
-  }
+      console.error('❌ Error al activar notificaciones push');
+      console.error(err);
+      alert(err?.message || JSON.stringify(err));
+    }
+
 }
 
 
 
 
 </script>
-
-<button onclick="activarNotificaciones()">
-  🔔 Activar notificaciones
-</button>
 
 <div id="toast" class="toast"></div>
 
