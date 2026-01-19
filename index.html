@@ -3880,43 +3880,23 @@ async function activarNotificaciones() {
 
     alert('Permiso actual: ' + Notification.permission);
 
-    if (Notification.permission !== 'granted') {
-      alert('❌ El permiso no está concedido');
+    if (!navigator.serviceWorker) {
+      alert('❌ navigator.serviceWorker NO existe');
       return;
     }
 
     // 🔍 PRUEBA CLAVE
-    alert('Antes de serviceWorker.ready');
+    alert('serviceWorker.controller: ' + (navigator.serviceWorker.controller ? 'SÍ' : 'NO'));
 
-    const regs = await navigator.serviceWorker.getRegistrations();
-    alert('Registrations encontradas: ' + regs.length);
-
-    // ⬇️ AQUÍ ES DONDE SE ESTÁ ATORANDO
-    const registration = await navigator.serviceWorker.ready;
-    alert('2️⃣ Service Worker listo');
-
-    // 🔍 Revisar si ya existe suscripción
-    let subscription = await registration.pushManager.getSubscription();
-
-    if (subscription) {
+    if (!navigator.serviceWorker.controller) {
       alert(
-        '3️⃣ YA EXISTE SUSCRIPCIÓN ✅\n\n' +
-        'Endpoint:\n' +
-        subscription.endpoint
+        '❌ El Service Worker NO controla esta página.\n\n' +
+        'Esto impide Push en iOS.'
       );
       return;
     }
 
-    // ➕ Crear nueva suscripción
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true
-    });
-
-    alert(
-      '4️⃣ NUEVA SUSCRIPCIÓN CREADA ✅\n\n' +
-      'Endpoint:\n' +
-      subscription.endpoint
-    );
+    alert('✅ Service Worker controla la página');
 
   } catch (e) {
     alert('❌ ERROR:\n' + e.message);
