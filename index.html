@@ -3885,10 +3885,17 @@ async function activarNotificaciones() {
       return;
     }
 
+    // 🔍 PRUEBA CLAVE
+    alert('Antes de serviceWorker.ready');
+
+    const regs = await navigator.serviceWorker.getRegistrations();
+    alert('Registrations encontradas: ' + regs.length);
+
+    // ⬇️ AQUÍ ES DONDE SE ESTÁ ATORANDO
     const registration = await navigator.serviceWorker.ready;
     alert('2️⃣ Service Worker listo');
 
-    // 🔍 1. Revisar si ya existe suscripción
+    // 🔍 Revisar si ya existe suscripción
     let subscription = await registration.pushManager.getSubscription();
 
     if (subscription) {
@@ -3900,7 +3907,7 @@ async function activarNotificaciones() {
       return;
     }
 
-    // ➕ 2. Crear suscripción SOLO si no existe
+    // ➕ Crear nueva suscripción
     subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true
     });
@@ -3915,6 +3922,7 @@ async function activarNotificaciones() {
     alert('❌ ERROR:\n' + e.message);
   }
 }
+
 
 
 
