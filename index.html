@@ -3873,35 +3873,67 @@ function urlBase64ToUint8Array(base64String) {
 
 
 
-
 async function activarNotificaciones() {
   try {
     alert('1️⃣ Click recibido');
 
-    alert('Permiso actual: ' + Notification.permission);
-
-    if (!navigator.serviceWorker) {
-      alert('❌ navigator.serviceWorker NO existe');
+    // 1. Verificar soporte
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('❌ Este dispositivo no soporta notificaciones push');
       return;
     }
 
-    // 🔍 PRUEBA CLAVE
-    alert('serviceWorker.controller: ' + (navigator.serviceWorker.controller ? 'SÍ' : 'NO'));
-
-    if (!navigator.serviceWorker.controller) {
-      alert(
-        '❌ El Service Worker NO controla esta página.\n\n' +
-        'Esto impide Push en iOS.'
-      );
+    // 2. Ver permiso
+    if (Notification.permission === 'denied') {
+      alert('❌ Notificaciones bloqueadas en ajustes');
       return;
     }
 
-    alert('✅ Service Worker controla la página');
+    if (Notification.permission === 'default') {
+      const permiso = await Notification.requestPermission();
+      if (permiso !== 'granted') {
+        alert('❌ Permiso no concedido');
+        return;
+      }
+    }
+
+    alert('2️⃣ Permiso OK');
+
+    // 3. Esperar SW
+    const registration = await navigator.serviceWorker.ready;
+    alert('3️⃣ Service Worker listo');
+
+    // 4. Revisar suscripción existente
+    let subscription = await registration.pushManager.getSubscription();
+    if (subscription) {
+      alert('4️⃣ Ya existe suscripción ✅');
+      console.log(subscription);
+      return;
+    }
+
+    // 5. Obtener VAPID key desde tu Worker
+    const resp = await fetch('https://push.nannysypeques.com.mx/vapid');
+    const publicKey = await resp.text();
+
+    alert('5️⃣ VAPID key obtenida');
+
+    // 6. Crear suscripción
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey)
+    });
+
+    alert('6️⃣ Suscripción creada ✅');
+
+    console.log('SUBSCRIPTION:', subscription);
+
+    // 👉 AQUÍ luego la guardaremos en Sheets
 
   } catch (e) {
     alert('❌ ERROR:\n' + e.message);
   }
 }
+
 
 
 
