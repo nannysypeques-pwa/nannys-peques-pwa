@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NannysPeques.Push")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3d8da6dbd8418f23777ff6970366d23248813b36")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b98040a383de5018189db88e2eb2c9bfb08147a9")]
 [assembly: System.Reflection.AssemblyProductAttribute("NannysPeques.Push")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NannysPeques.Push")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

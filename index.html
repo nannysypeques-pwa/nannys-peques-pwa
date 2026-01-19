@@ -3874,65 +3874,45 @@ function urlBase64ToUint8Array(base64String) {
 
 
 async function activarNotificaciones() {
+alert('SW controller: ' + !!navigator.serviceWorker.controller);
+
   try {
     alert('1️⃣ Click recibido');
 
-    // 1. Verificar soporte
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('❌ Este dispositivo no soporta notificaciones push');
-      return;
-    }
+    alert('Permiso actual: ' + Notification.permission);
 
-    // 2. Ver permiso
-    if (Notification.permission === 'denied') {
-      alert('❌ Notificaciones bloqueadas en ajustes');
-      return;
-    }
-
-    if (Notification.permission === 'default') {
+    if (Notification.permission !== 'granted') {
       const permiso = await Notification.requestPermission();
+      alert('Resultado permiso: ' + permiso);
+
       if (permiso !== 'granted') {
         alert('❌ Permiso no concedido');
         return;
       }
     }
 
-    alert('2️⃣ Permiso OK');
-
-    // 3. Esperar SW
     const registration = await navigator.serviceWorker.ready;
-    alert('3️⃣ Service Worker listo');
+    alert('2️⃣ Service Worker listo');
 
-    // 4. Revisar suscripción existente
     let subscription = await registration.pushManager.getSubscription();
-    if (subscription) {
-      alert('4️⃣ Ya existe suscripción ✅');
-      console.log(subscription);
-      return;
+
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true
+      });
+      alert('3️⃣ Suscripción creada');
+    } else {
+      alert('3️⃣ Ya existía suscripción');
     }
 
-    // 5. Obtener VAPID key desde tu Worker
-    const resp = await fetch('https://push.nannysypeques.com.mx/vapid');
-    const publicKey = await resp.text();
-
-    alert('5️⃣ VAPID key obtenida');
-
-    // 6. Crear suscripción
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey)
-    });
-
-    alert('6️⃣ Suscripción creada ✅');
-
     console.log('SUBSCRIPTION:', subscription);
-
-    // 👉 AQUÍ luego la guardaremos en Sheets
+    alert('4️⃣ Push configurado correctamente ✅');
 
   } catch (e) {
-    alert('❌ ERROR:\n' + e.message);
+    alert('❌ ERROR: ' + e.message);
   }
 }
+
 
 
 
@@ -3974,6 +3954,24 @@ async function activarNotificaciones() {
 
 </script>
 
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register(
+        '/service-worker.js',
+        { scope: '/' }
+      );
+
+      console.log('✅ Service Worker registrado');
+      console.log('Scope:', reg.scope);
+
+    } catch (err) {
+      console.error('❌ Error al registrar Service Worker:', err);
+    }
+  });
+}
+</script>
 
 
 

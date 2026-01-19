@@ -6,9 +6,6 @@ self.addEventListener('activate', event => {
   event.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', event => {
-  // Por ahora no cacheamos nada
-});
 self.addEventListener('push', function (event) {
   if (!event.data) return;
 
