@@ -3860,8 +3860,14 @@ function setAppHeight() {
 // 🔔 PUSH NOTIFICATIONS (PWA)
 // ===============================
 
+// 🔑 VAPID PUBLIC KEY
+  const VAPID_PUBLIC_KEY = 'BAALWaRIxKUyY4J0qKwy0CV1AJKtsloQZHcPzZzHLqF3GQOf8HzLEbe6gYJsgr1BEW00GbwjfE6QR6twPW27Ghk';
+
+
+
 function urlBase64ToUint8Array(base64String) {
-  const base64 = base64String
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
     .replace(/-/g, '+')
     .replace(/_/g, '/');
 
@@ -3878,32 +3884,23 @@ function urlBase64ToUint8Array(base64String) {
 
 
 
+
 async function activarNotificaciones() {
   try {
-    console.clear();
     console.log('🔔 Activando notificaciones...');
 
-    // 1️⃣ Soporte
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       alert('❌ Este navegador no soporta notificaciones push');
       return;
     }
 
-    // 2️⃣ El SW debe controlar la página
     if (!navigator.serviceWorker.controller) {
-      alert(
-        '❌ El Service Worker aún no controla esta página.\n\n' +
-        'Recarga la página e inténtalo de nuevo.'
-      );
+      alert('❌ Recarga la página y vuelve a intentar');
       return;
     }
 
-    // 3️⃣ Permisos
     if (Notification.permission === 'denied') {
-      alert(
-        '❌ Las notificaciones están bloqueadas.\n\n' +
-        'Debes habilitarlas manualmente en el navegador.'
-      );
+      alert('❌ Notificaciones bloqueadas en el navegador');
       return;
     }
 
@@ -3915,34 +3912,19 @@ async function activarNotificaciones() {
       }
     }
 
-    // 4️⃣ Service Worker listo
     const registration = await navigator.serviceWorker.ready;
     console.log('✅ Service Worker listo');
 
-    // 5️⃣ VAPID PUBLIC KEY (TUYA)
-    const publicVapidKey =
-      'BAALWaRIxKUyY4J0qKwy0CVI1AJKtsloQZHcPzZzHLqF3GQOf8hzLEbe6gYJsgr1BEW00GbwfjFe6QR6twPW27Ghk';
-
-
-    // 6️⃣ Convertir VAPID
-    function urlBase64ToUint8Array(base64String) {
-      const padding = '='.repeat((4 - base64String.length % 4) % 4);
-      const base64 = (base64String + padding)
-        .replace(/-/g, '+')
-        .replace(/_/g, '/');
-
-      const rawData = atob(base64);
-      return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
-    }
-
-    // 7️⃣ Suscripción
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
+      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+        applicationServerKey
       });
+
       console.log('✅ Nueva suscripción creada');
     } else {
       console.log('ℹ️ Ya existía suscripción');
@@ -3951,7 +3933,6 @@ async function activarNotificaciones() {
     console.log('📦 SUBSCRIPTION:', subscription);
     alert('✅ Notificaciones activadas correctamente');
 
-    // ⚠️ Próximo paso: mandar esto al backend
     return subscription;
 
   } catch (error) {
