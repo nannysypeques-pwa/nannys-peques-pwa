@@ -3874,44 +3874,86 @@ function urlBase64ToUint8Array(base64String) {
 
 
 async function activarNotificaciones() {
-alert('SW controller: ' + !!navigator.serviceWorker.controller);
-
   try {
-    alert('1️⃣ Click recibido');
+    console.clear();
+    console.log('🔔 Activando notificaciones...');
 
-    alert('Permiso actual: ' + Notification.permission);
+    // 1️⃣ Soporte
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('❌ Este navegador no soporta notificaciones push');
+      return;
+    }
 
-    if (Notification.permission !== 'granted') {
+    // 2️⃣ El SW debe controlar la página
+    if (!navigator.serviceWorker.controller) {
+      alert(
+        '❌ El Service Worker aún no controla esta página.\n\n' +
+        'Recarga la página e inténtalo de nuevo.'
+      );
+      return;
+    }
+
+    // 3️⃣ Permisos
+    if (Notification.permission === 'denied') {
+      alert(
+        '❌ Las notificaciones están bloqueadas.\n\n' +
+        'Debes habilitarlas manualmente en el navegador.'
+      );
+      return;
+    }
+
+    if (Notification.permission === 'default') {
       const permiso = await Notification.requestPermission();
-      alert('Resultado permiso: ' + permiso);
-
       if (permiso !== 'granted') {
         alert('❌ Permiso no concedido');
         return;
       }
     }
 
+    // 4️⃣ Service Worker listo
     const registration = await navigator.serviceWorker.ready;
-    alert('2️⃣ Service Worker listo');
+    console.log('✅ Service Worker listo');
 
+    // 5️⃣ VAPID PUBLIC KEY (TUYA)
+    const publicVapidKey =
+      'BAALWaRIxKUyY4J0qKwy0CVI1AJKtsloQZHcPzZzHLqF3GQOf8hzLEbe6gYJsgr1BEW00GbwfjFe6QR6twPW27Ghk';
+
+    // 6️⃣ Convertir VAPID
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - base64String.length % 4) % 4);
+      const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+      const rawData = atob(base64);
+      return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+    }
+
+    // 7️⃣ Suscripción
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
       });
-      alert('3️⃣ Suscripción creada');
+      console.log('✅ Nueva suscripción creada');
     } else {
-      alert('3️⃣ Ya existía suscripción');
+      console.log('ℹ️ Ya existía suscripción');
     }
 
-    console.log('SUBSCRIPTION:', subscription);
-    alert('4️⃣ Push configurado correctamente ✅');
+    console.log('📦 SUBSCRIPTION:', subscription);
+    alert('✅ Notificaciones activadas correctamente');
 
-  } catch (e) {
-    alert('❌ ERROR: ' + e.message);
+    // ⚠️ Próximo paso: mandar esto al backend
+    return subscription;
+
+  } catch (error) {
+    console.error(error);
+    alert('❌ Error al activar notificaciones:\n' + error.message);
   }
 }
+
 
 
 
