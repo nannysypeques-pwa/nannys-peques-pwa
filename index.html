@@ -3889,16 +3889,19 @@ async function activarNotificaciones() {
   try {
     console.log('🔔 Activando notificaciones...');
 
+    // 1️⃣ Soporte
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('❌ Este navegador no soporta notificaciones push');
+      alert('❌ Este navegador no soporta notificaciones');
       return;
     }
 
+    // 2️⃣ Control del SW
     if (!navigator.serviceWorker.controller) {
       alert('❌ Recarga la página y vuelve a intentar');
       return;
     }
 
+    // 3️⃣ Permiso
     if (Notification.permission === 'denied') {
       alert('❌ Notificaciones bloqueadas en el navegador');
       return;
@@ -3912,13 +3915,16 @@ async function activarNotificaciones() {
       }
     }
 
+    // 4️⃣ SW listo
     const registration = await navigator.serviceWorker.ready;
     console.log('✅ Service Worker listo');
 
+    // 5️⃣ Suscripción
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
-      const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      const applicationServerKey =
+        urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
 
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -3931,6 +3937,25 @@ async function activarNotificaciones() {
     }
 
     console.log('📦 SUBSCRIPTION:', subscription);
+
+    // 6️⃣ GUARDAR EN BACKEND
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: new URLSearchParams({
+        action: 'guardarPushSubscription',
+        payload: JSON.stringify({
+          email: SESION.email, // ⚠️ debe existir
+          subscription: subscription.toJSON()
+        })
+      })
+    });
+
+    const json = await res.json();
+
+    if (!json.ok) {
+      throw new Error(json.error || 'Error al guardar suscripción');
+    }
+
     alert('✅ Notificaciones activadas correctamente');
 
     return subscription;
@@ -3940,6 +3965,7 @@ async function activarNotificaciones() {
     alert('❌ Error al activar notificaciones:\n' + error.message);
   }
 }
+
 
 
 
