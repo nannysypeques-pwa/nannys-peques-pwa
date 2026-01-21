@@ -903,9 +903,6 @@ body.ninera .modal-planeacion:hover::-webkit-scrollbar-thumb {
     await OneSignal.init({
       appId: "49543b11-f7f6-451d-95d8-a28c0f3a0aa3",
       safari_web_id: "web.onesignal.auto.5a4f7f6e-eec9-48b6-8a5c-3683e8870b3c",
-      notifyButton: {
-        enable: true,
-      },
     });
   });
 </script>
@@ -3973,6 +3970,17 @@ async function activarNotificaciones() {
     if (!json.ok) {
       throw new Error(json.error || 'Error al guardar suscripción');
     }
+    
+    // 🔔 VINCULAR CON ONESIGNAL (ESTO ES LA CLAVE)
+    if (window.OneSignalDeferred) {
+      OneSignalDeferred.push(async function (OneSignal) {
+        console.log('🔗 Vinculando usuario con OneSignal...');
+        await OneSignal.User.PushSubscription.optIn();
+
+        const oneSignalId = await OneSignal.User.getId();
+        console.log('🆔 OneSignal User ID:', oneSignalId);
+      });
+    }
 
     alert('✅ Notificaciones activadas correctamente');
 
@@ -4008,24 +4016,6 @@ async function activarNotificaciones() {
 
 <div id="toast" class="toast"></div>
 
-<script>
- if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
-    try {
-      const reg = await navigator.serviceWorker.register('/service-worker.js');
-      console.log('✅ Service Worker registrado con scope:', reg.scope);
-    } catch (err) {
-      console.error('❌ Error al registrar Service Worker:', err);
-    }
-  });
-}
-
-
-
-
-
-
-</script>
 
 <script>
 if ('serviceWorker' in navigator) {
