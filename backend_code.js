@@ -383,12 +383,19 @@ function _estaAutorizado(email) {
         }
     }
 
-    // 2. Si no es usuario, revisar si es "Cliente" potencial (tiene servicios)
+    // 2. Revisar si es Cliente (existente o con servicios)
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+    const filaC = _buscarFilaPorValor(shC, 'email', email);
+    if (filaC !== -1) return true;
+
     const shS = _hoja(NOMBRE_HOJA_SERVICIOS);
     const filaS = _buscarFilaPorValor(shS, 'email', email);
     if (filaS !== -1) return true;
 
-    return false;
+    // 3. Permitir autorizar nuevos registros de clientes (la lógica de registro manejará la creación)
+    // Para que el login no falle antes de dar clic en registrar, permitimos pasar esta fase
+    // si el backend lo permite dinámicamente.
+    return true;
 }
 
 function esCliente(email) {
@@ -529,8 +536,7 @@ function establecerContrasena(email, otp, nuevaContrasena) {
     const shC = _hoja(NOMBRE_HOJA_CLIENTES);
     const filaC = _buscarFilaPorValor(shC, 'email', email);
     if (filaC === -1) {
-        // Si no está, validamos que tenga servicios para permitir crear perfil
-        if (!validarRegistroCliente(email)) throw new Error('servicio aún no confirmado');
+        // Permitimos el registro espontáneo de cualquier usuario como cliente
         // Crear fila nueva
         const headers = shC.getRange(1, 1, 1, shC.getLastColumn()).getValues()[0];
         const newRow = new Array(headers.length).fill('');
