@@ -889,12 +889,12 @@ function cargarResumenPlaneaciones() {
     const isoSiguiente = toISO(lunesSiguiente);
 
     // Semana actual
-    api('getResumenPlaneacionesSemana', { fechaBase: isoActual, email: SESION.email })
+    api('getResumenPlaneacionesSemana', { fechaBase: isoActual, email: SESION.email, tipo: 'actual' })
         .then(data => renderResumenPlaneaciones(data, document.getElementById('resumenPlaneacionesActual')))
         .catch(console.error);
 
     // Semana siguiente
-    api('getResumenPlaneacionesSemana', { fechaBase: isoSiguiente, email: SESION.email })
+    api('getResumenPlaneacionesSemana', { fechaBase: isoSiguiente, email: SESION.email, tipo: 'siguiente' })
         .then(data => renderResumenPlaneaciones(data, document.getElementById('resumenPlaneacionesSiguiente'), 'siguiente'))
         .catch(console.error);
 }
@@ -1468,7 +1468,8 @@ async function cargarResumenPlaneacionesNinera() {
         // Semana Actual
         const dataActual = await api('getResumenPlaneacionesSemana', {
             email: SESION.email,
-            fechaBase: isoActual
+            fechaBase: isoActual,
+            tipo: 'actual'
         });
         // Reutilizamos la función de renderizado que aplana los datos por ciudad
         renderResumenPlaneaciones(dataActual, contActual, 'ninera_actual');
@@ -1476,7 +1477,8 @@ async function cargarResumenPlaneacionesNinera() {
         // Semana Siguiente
         const dataSig = await api('getResumenPlaneacionesSemana', {
             email: SESION.email,
-            fechaBase: isoSig
+            fechaBase: isoSig,
+            tipo: 'siguiente'
         });
         renderResumenPlaneaciones(dataSig, contSig, 'ninera_siguiente');
 

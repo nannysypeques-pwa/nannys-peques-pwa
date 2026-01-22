@@ -76,7 +76,7 @@ function doPost(e) {
 
             // --- PLANEACIONES (NEURONANNY) ---
             case 'getResumenPlaneacionesSemana':
-                result = obtenerResumenPlaneacionesSemana(payload.fechaBase, email);
+                result = obtenerResumenPlaneacionesSemana(payload.fechaBase, email, payload.tipo);
                 break;
             case 'obtenerPlaneacionNeuronanny':
                 result = obtenerPlaneacionNeuronanny(payload, email);
@@ -3299,14 +3299,16 @@ function obtenerResumenDisponibilidadSemanaActual() {
 
 
 
-function obtenerResumenPlaneacionesSemana(fechaBaseISO, email) {
+function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
 
     const fechasSemana = _diasDeSemana(fechaBaseISO).map(d => d.fecha);
 
-    const servicios = _leerServiciosDesdeHojas_([
-        'Servicios',
-        'Servicios_Siguiente_semana'
-    ]).filter(s =>
+    // 🔑 SEGREGACIÓN POR HOJA SEGÚN TIPO
+    let hojasALeer = ['Servicios', 'Servicios_Siguiente_semana'];
+    if (tipo === 'actual') hojasALeer = ['Servicios'];
+    else if (tipo === 'siguiente') hojasALeer = ['Servicios_Siguiente_semana'];
+
+    const servicios = _leerServiciosDesdeHojas_(hojasALeer).filter(s =>
         ['neuronanny', 'nanny educativa', 'miss nanny']
             .includes(_norm(s.tipo_servicio)) &&
         fechasSemana.includes(s.fecha)
