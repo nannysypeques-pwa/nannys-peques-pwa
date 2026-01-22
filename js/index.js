@@ -1381,62 +1381,40 @@ function mostrarToast(msg) {
 }
 
 async function cargarResumenPlaneacionesNinera() {
-    const cont = document.getElementById('listaPlaneacionesNinera');
+    const contActual = document.getElementById('listaPlaneacionesNinera');
     const contSig = document.getElementById('listaPlaneacionesNineraSiguiente');
-    if (!cont) { console.log('No contenedor lista planeaciones'); return; }
+
+    if (contActual) contActual.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+    if (contSig) contSig.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+
+    const hoy = new Date();
+    const lunesActual = startMonday(hoy);
+    const lunesSig = new Date(lunesActual);
+    lunesSig.setDate(lunesSig.getDate() + 7);
+
+    const isoActual = toISO(lunesActual);
+    const isoSig = toISO(lunesSig);
 
     try {
-        const data = await api('getResumenPlaneacionesNinera', { email: SESION.email });
-        const fechaHoy = toISO(new Date());
-        const lunesActual = startMonday(new Date());
-        const domingoActual = new Date(lunesActual); domingoActual.setDate(domingoActual.getDate() + 6);
-        const isoDomActual = toISO(domingoActual);
-
-        const semanaActual = [];
-        const semanaSiguiente = [];
-
-        data.forEach(p => {
-            if (p.fecha <= isoDomActual) semanaActual.push(p);
-            else semanaSiguiente.push(p);
+        // Semana Actual
+        const dataActual = await api('getResumenPlaneacionesSemana', {
+            email: SESION.email,
+            fechaBase: isoActual
         });
+        // Reutilizamos la función de renderizado que aplana los datos por ciudad
+        renderResumenPlaneaciones(dataActual, contActual, 'ninera_actual');
 
-        const render = (arr, c) => {
-            if (!arr.length) { c.innerHTML = '<p class="muted">No se requieren planeaciones.</p>'; return; }
-            let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
-            arr.forEach(p => {
-                const color = p.tienePlaneacion ? '#16a34a' : '#ef4444';
-                const txt = p.tienePlaneacion ? 'Completa' : 'Pendiente';
-                const fechaFmt = new Date(p.fecha + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
-
-                const estadoRevision = normalizarTexto(p.estado_revision || p.estadoRevision || p.estado_revision_planeacion);
-                let colorRevision = '#3b82f6';
-                if (estadoRevision.includes('correccion')) colorRevision = '#facc15';
-                else if (estadoRevision === 'revisada') colorRevision = '#22c55e';
-
-                const handler = `abrirPlaneacionesCliente('${p.cliente}', ${c === contSig}, '${p.tipo_servicio}')`;
-
-                html += `<div class="card" style="margin:0;padding:12px;cursor:pointer;border-left:4px solid ${color};" onclick="${handler}">
-            <div style="display:flex;justify-content:space-between;">
-              <span style="font-weight:600">${p.cliente}</span>
-              <span style="font-size:12px;color:${color}">${txt}</span>
-            </div>
-            <div style="font-size:13px;color:#6b7280;margin-top:2px;">${fechaFmt} — ${p.tipo_servicio}</div>
-            ${p.tienePlaneacion ? `<div style="margin-top:6px;display:inline-flex;align-items:center;gap:6px;font-size:12px;background:#f3f4f6;padding:2px 8px;border-radius:999px;">
-              <span style="width:8px;height:8px;background:${colorRevision};border-radius:50%;"></span>
-              <span>${estadoRevision || 'En revisión'}</span>
-            </div>` : ''}
-          </div>`;
-            });
-            html += '</div>';
-            c.innerHTML = html;
-        };
-
-        if (cont) render(semanaActual, cont);
-        if (contSig) render(semanaSiguiente, contSig);
+        // Semana Siguiente
+        const dataSig = await api('getResumenPlaneacionesSemana', {
+            email: SESION.email,
+            fechaBase: isoSig
+        });
+        renderResumenPlaneaciones(dataSig, contSig, 'ninera_siguiente');
 
     } catch (err) {
-        if (cont) cont.innerHTML = `<span class="err">${err.message}</span>`;
+        if (contActual) contActual.innerHTML = `<span class="err">${err.message}</span>`;
         if (contSig) contSig.innerHTML = '';
+        console.error(err);
     }
 }
 

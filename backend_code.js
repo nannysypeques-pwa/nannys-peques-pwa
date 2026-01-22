@@ -66,9 +66,6 @@ function doPost(e) {
                 break;
 
             // --- PLANEACIONES (NEURONANNY) ---
-            case 'getResumenPlaneacionesNinera':
-                result = obtenerResumenPlaneacionesNinera(email);
-                break;
             case 'getResumenPlaneacionesSemana':
                 result = obtenerResumenPlaneacionesSemana(payload.fechaBase, email);
                 break;
