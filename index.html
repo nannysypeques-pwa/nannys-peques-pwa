@@ -123,484 +123,483 @@
           <p id="msgOlvide"></p>
         </div>
       </div>
+    </div> <!-- Cerrar auth-wrapper -->
 
 
-      <!-- APP -->
-      <div id="app" style="display:none;">
-        <!-- HEADER ADMIN / SUPERVISIÓN -->
-        <div id="header-admin" class="card panel-header" style="display:none;">
+    <!-- APP -->
+    <div id="app" style="display:none;">
+      <!-- HEADER ADMIN / SUPERVISIÓN -->
+      <div id="header-admin" class="card panel-header" style="display:none;">
+        <div class="panel-header-row">
+          <div id="saludo-admin" class="panel-saludo">¡Hola!</div>
+          <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <div id="vista-perfil" class="vista">
+        <div class="card" id="perfilCard">
+          <h3>Mi perfil</h3>
+
+          <div class="perfil-item">
+            <span class="perfil-label">Nombre:</span>
+            <span id="perfil_nombre" class="perfil-valor">—</span>
+          </div>
+
+          <div class="perfil-item">
+            <span class="perfil-label">Email:</span>
+            <span id="perfil_email" class="perfil-valor">—</span>
+          </div>
+
+          <div class="perfil-item">
+            <span class="perfil-label">Teléfono:</span>
+            <span id="perfil_tel" class="perfil-valor">—</span>
+          </div>
+
+          <div class="card">
+            <h3>Notificaciones</h3>
+            <button onclick="activarNotificaciones()">
+              🔔 Activar notificaciones
+            </button>
+            <p class="muted">
+              Recibe avisos cuando tengas un nuevo servicio asignado.
+            </p>
+          </div>
+
+          <div style="margin-top:20px;">
+            <button class="btn-primary" onclick="logout()" style="width:100%;">
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="vista-servicios" class="vista">
+        <!-- HEADER PANEL NIÑERA -->
+        <div class="card panel-header">
           <div class="panel-header-row">
-            <div id="saludo-admin" class="panel-saludo">¡Hola!</div>
+            <div id="saludo" class="panel-saludo">¡Hola!</div>
             <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
           </div>
         </div>
 
-        <div id="vista-perfil" class="vista">
-          <div class="card" id="perfilCard">
-            <h3>Mi perfil</h3>
-
-            <div class="perfil-item">
-              <span class="perfil-label">Nombre:</span>
-              <span id="perfil_nombre" class="perfil-valor">—</span>
-            </div>
-
-            <div class="perfil-item">
-              <span class="perfil-label">Email:</span>
-              <span id="perfil_email" class="perfil-valor">—</span>
-            </div>
-
-            <div class="perfil-item">
-              <span class="perfil-label">Teléfono:</span>
-              <span id="perfil_tel" class="perfil-valor">—</span>
-            </div>
-
-            <div class="card">
-              <h3>Notificaciones</h3>
-              <button onclick="activarNotificaciones()">
-                🔔 Activar notificaciones
-              </button>
-              <p class="muted">
-                Recibe avisos cuando tengas un nuevo servicio asignado.
-              </p>
-            </div>
-
-            <div style="margin-top:20px;">
-              <button class="btn-primary" onclick="logout()" style="width:100%;">
-                Cerrar sesión
-              </button>
-            </div>
+        <!-- SERVICIOS PRÓXIMOS (niñera) -->
+        <div class="card" id="svcCard">
+          <div class="row" style="justify-content:space-between;">
+            <h3>Servicios próximos (2 semanas)</h3>
+            <button id="btnRefreshSvc" class="btn-ghost" onclick="refreshServicios()">🔄 Actualizar</button>
           </div>
+          <div id="cal" class="calendar"></div>
+          <div id="calMsg" class="muted" style="margin-top:8px;"></div>
         </div>
 
-        <div id="vista-servicios" class="vista">
-          <!-- HEADER PANEL NIÑERA -->
-          <div class="card panel-header">
-            <div class="panel-header-row">
-              <div id="saludo" class="panel-saludo">¡Hola!</div>
-              <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
-            </div>
-          </div>
-
-          <!-- SERVICIOS PRÓXIMOS (niñera) -->
-          <div class="card" id="svcCard">
-            <div class="row" style="justify-content:space-between;">
-              <h3>Servicios próximos (2 semanas)</h3>
-              <button id="btnRefreshSvc" class="btn-ghost" onclick="refreshServicios()">🔄 Actualizar</button>
-            </div>
-            <div id="cal" class="calendar"></div>
-            <div id="calMsg" class="muted" style="margin-top:8px;"></div>
-          </div>
-
-          <div class="card" id="planeacionesNineraCard">
-            <div class="row" style="justify-content:space-between;align-items:center;">
-              <h3>Planeaciones de actividades</h3>
-              <button class="btn-ghost" onclick="actualizarPlaneaciones()">🔄 Actualizar</button>
-            </div>
-            <div id="listaPlaneacionesNinera"></div>
-          </div>
-
-          <div class="card" id="planeacionesNineraCardSiguiente">
-            <h3>Planeaciones de actividades – semana siguiente</h3>
-            <div id="listaPlaneacionesNineraSiguiente"></div>
-          </div>
-        </div>
-
-        <div id="vista-puntos" class="vista">
-          <!-- MIS PUNTOS (solo niñeras) -->
-          <div class="card" id="puntosNineraCard">
-            <h3>Mis puntos</h3>
-            <p class="muted" style="margin-top:0;">Sistema de niveles: Pink, Yellow, Blue, Golden Nanny.</p>
-            <div class="row" style="margin-bottom:6px;">
-              <div><b>Nivel actual:</b> <span id="pt_nivel">—</span></div>
-              <div><b>Puntos totales:</b> <span id="pt_total">0</span></div>
-              <div><b>Servicios eventuales:</b> <span id="pt_servicios">0</span></div>
-            </div>
-            <p id="pt_msg" class="muted"></p>
-          </div>
-        </div>
-
-        <div id="vista-cliente" class="vista">
-          <!-- ONBOARDING: Completar perfil -->
-          <div id="cliente-onboarding" style="display:none;">
-            <div class="card">
-              <h3>¡Bienvenida Familia! ✨</h3>
-              <p>Para poder brindarte el mejor servicio, por favor completa tu información por única vez:</p>
-              <div class="form-grid">
-                <div class="form-group full">
-                  <label>Nombre completo (Papá o Mamá)</label>
-                  <input id="reg_nombre" type="text" placeholder="Ej. Ana García">
-                </div>
-                <div class="form-group full">
-                  <label>Dirección</label>
-                  <input id="reg_direccion" type="text" placeholder="Calle, número, colonia...">
-                </div>
-                <div class="form-group full">
-                  <label>Ubicación (Link Google Maps)</label>
-                  <input id="reg_ubicacion" type="text" placeholder="https://goo.gl/maps/...">
-                </div>
-                <div class="form-group">
-                  <label>Teléfono de contacto</label>
-                  <input id="reg_tel" type="tel" placeholder="10 dígitos">
-                </div>
-                <div class="form-group">
-                  <label>Contacto de emergencia</label>
-                  <input id="reg_emergencia" type="text" placeholder="Nombre y Teléfono">
-                </div>
-                <div class="form-group">
-                  <label>Nombre del peque</label>
-                  <input id="reg_peque_nombre" type="text">
-                </div>
-                <div class="form-group">
-                  <label>Fecha de nacimiento del peque</label>
-                  <input id="reg_peque_nac" type="date">
-                </div>
-                <div class="form-group full">
-                  <label>Alergias o Cuidados Especiales</label>
-                  <textarea id="reg_alergias" placeholder="Escribe aquí si tiene alguna alergia..."></textarea>
-                </div>
-                <div class="form-group full">
-                  <label>Condición Médica</label>
-                  <input id="reg_condicion" type="text" placeholder="Ninguna">
-                </div>
-                <div class="form-group full">
-                  <label>Servicio médico / Seguro</label>
-                  <input id="reg_salud" type="text" placeholder="Nombre y póliza (opcional)">
-                </div>
-                <div class="form-group full">
-                  <label>Preferencias o Rutinas</label>
-                  <textarea id="reg_preferencias" placeholder="¿Qué le gusta hacer? ¿A qué hora duerme?"></textarea>
-                </div>
-                <div class="form-group full">
-                  <label>¿Hay mascotas en casa?</label>
-                  <input id="reg_mascotas" type="text" placeholder="Ej. Un perro pequeño">
-                </div>
-              </div>
-              <button class="btn-primary" onclick="guardarRegistroCompleto()" style="margin-top:20px;">
-                Guardar y Continuar
-              </button>
-            </div>
-          </div>
-
-          <!-- DASHBOARD CLIENTE: Próximos servicios -->
-          <div id="cliente-dashboard" style="display:none;">
-            <div class="card panel-header" style="background: var(--blue-main);">
-              <div class="panel-header-row">
-                <div class="panel-saludo" style="color:white;">Mi Portal Familia</div>
-                <button class="btn-ghost logout-btn" onclick="logout()" style="color:white; border-color:white;">Cerrar
-                  sesión</button>
-              </div>
-            </div>
-
-            <div class="card">
-              <h3>Mis próximos servicios</h3>
-              <p class="muted">Aquí podrás ver el detalle de tus servicios agendados.</p>
-              <div id="servicios-cliente-lista" style="margin-top:15px;"></div>
-            </div>
-          </div>
-        </div>
-
-        <div id="vista-comunidad" class="vista">
-          <div class="card">
-            <h3>Comunidad</h3>
-            <p>Próximamente: Foros y recursos para nannies.</p>
-          </div>
-        </div>
-
-        <div id="vista-supervision" class="vista">
-          <!-- CARD SEMANA ACTUAL -->
-          <div class="supervision-card">
-            <div class="row" style="justify-content:space-between;align-items:center;">
-              <div class="supervision-title">
-                Resumen de planeaciones – semana actual
-              </div>
-              <button class="btn-ghost" onclick="actualizarPlaneacionesSupervision()">
-                🔄 Actualizar
-              </button>
-            </div>
-            <div id="resumenPlaneacionesActual"></div>
-          </div>
-
-          <!-- CARD SEMANA SIGUIENTE -->
-          <div class="supervision-card">
-            <div class="supervision-title">
-              Resumen de planeaciones – semana siguiente
-            </div>
-            <div id="resumenPlaneacionesSiguiente"></div>
-          </div>
-        </div>
-
-        <div id="vista-disponibilidad" class="vista">
-          <!-- PANEL (solo niñeras) -->
-          <div class="card" id="panel">
-            <div class="row" style="justify-content:space-between;align-items:center;">
-            </div>
-
-            <div class="row">
-              <div><b>Semana base:</b></div>
-              <input id="fecha" type="date" />
-              <button class="btn-ghost" onclick="cargar()">Cargar semana</button>
-              <button class="btn-ghost" onclick="cargarSiguiente()">Cargar semana siguiente</button>
-              <button class="btn-primary" onclick="guardar()">Guardar</button>
-            </div>
-            <p class="muted">Selecciona Matutino (07–15hrs) y/o Vespertino (15–22hrs) por día.</p>
-            <p id="msgApp"></p>
-          </div>
-
-          <!-- SEMANA ACTUAL -->
-          <div class="card" id="tablaActualCard">
-            <div class="week-title">
-              <span>Semana actual</span>
-              <span class="row">
-                <button class="btn-ghost" onclick="marcarSemana('tabla', true)">Marcar todo (actual)</button>
-                <button class="btn-ghost" onclick="marcarSemana('tabla', false)">Desmarcar todo (actual)</button>
-              </span>
-            </div>
-            <div id="tabla"></div>
-          </div>
-
-
-          <!-- SEMANA SIGUIENTE -->
-          <div class="card" id="tablaSiguienteCard" style="display:none;">
-            <div class="week-title">
-              <span>Semana siguiente</span>
-              <span class="row">
-                <button class="btn-ghost" onclick="copiarSemanaAnterior()">Copiar semana anterior</button>
-                <button class="btn-ghost" onclick="marcarSemana('tabla2', true)">Marcar todo (siguiente)</button>
-                <button class="btn-ghost" onclick="marcarSemana('tabla2', false)">Desmarcar todo (siguiente)</button>
-              </span>
-            </div>
-            <div id="tabla2"></div>
-          </div>
-
-          <!-- RESÚMENES -->
-          <div class="card" id="resumenCard">
-            <details open>
-              <summary><b>Resumen de la semana (turnos)</b></summary>
-              <div id="resumen"></div>
-            </details>
-          </div>
-          <div class="card" id="resumenCard2" style="display:none;">
-            <details open>
-              <summary><b>Resumen de la semana siguiente (turnos)</b></summary>
-              <div id="resumen2"></div>
-            </details>
-          </div>
-        </div>
-
-
-        <!-- ADMIN: Sugeridor -->
-        <div id="adminCard" class="card" style="display:none;">
-          <h3>Administrador – Sugerir niñeras</h3>
-          <div class="row">
-            <div><label>Fecha</label><br><input id="sv_fecha" type="date"></div>
-            <div><label>Inicio</label><br><input id="sv_hi" type="time" step="1800" value="09:00"></div>
-            <div><label>Fin</label><br><input id="sv_hf" type="time" step="1800" value="12:00"></div>
-            <div><label>Edad (años)</label><br><input id="sv_edad" type="number" step="0.1" value="1"></div>
-          </div>
-          <div class="row" style="margin-top:8px%;">
-            <label style="width:100%;">Ubicación (dirección)</label>
-            <input id="sv_ubic" type="text" placeholder="Ej. Parque México, CDMX" style="max-width:580px; width:100%;">
-          </div>
-          <div class="row" style="margin-top:8px;">
-            <button id="btnSugerir" class="btn-primary" onclick="sugerir()">Sugerir niñeras</button>
-            <span id="admMsg" class="muted"></span>
-          </div>
-          <div id="admResultados" style="margin-top:12px; overflow:auto;"></div>
-        </div>
-
-        <!-- ADMIN: Agenda semanal (L–D) -->
-        <div id="adminAgendaCard" class="card" style="display:none;">
-          <div class="week-head">
-            <h3>Administrador – Servicios (semana L–D)</h3>
-            <div class="nav-weeks">
-              <button class="btn-ghost" onclick="semanaAnterior()">◀ Semana anterior</button>
-              <button class="btn-ghost" onclick="semanaActual()">Semana actual</button>
-              <button class="btn-ghost" onclick="semanaSiguiente()">Semana siguiente ▶</button>
-            </div>
-          </div>
-          <div class="muted" id="admWeekLabel" style="margin-bottom:8px;"></div>
-          <div id="adminAgenda"></div>
-        </div>
-
-        <!-- ADMIN: Puntaje de niñeras -->
-        <div id="adminPuntosCard" class="card" style="display:none;">
-          <h3>Administrador – Puntaje de niñeras</h3>
-          <div class="row">
-            <div style="min-width:220px;">
-              <label>Nombre de niñera</label><br />
-              <input id="pt_admin_nombre" type="text" list="lista_nineras"
-                placeholder="Escriba el nombre de la niñera" />
-              <datalist id="lista_nineras"></datalist>
-            </div>
-            <div>
-              <label>Acción de puntos</label><br />
-              <select id="pt_admin_tipo">
-                <option value="">Seleccionar...</option>
-                <option value="SERVICIO_ULTIMO_MINUTO">Servicio de último minuto (+2)</option>
-                <option value="FAMILIA_REPITE">La familia pide de nuevo la misma nanny (+1)</option>
-                <option value="CAPACITACION_NO_OBLIGATORIA">Capacitación no obligatoria (+7)</option>
-                <option value="INICIAR_SERVICIO_FIJO">Iniciar un servicio fijo (+20)</option>
-                <option value="GANAR_INSIGNIA">Ganar una insignia (+10)</option>
-                <option value="ENTRENAMIENTO_NANNY_STAR">Entrenamiento Nanny Star (+25)</option>
-                <option value="RECOMENDAR_NANNY">Recomendar a otra nanny y que tome servicio (+20)</option>
-                <option value="NO_CONECTARSE_REUNION">No conectarse a reunión programada (−10)</option>
-                <option value="FALTA_SERVICIO">Falta a servicio (−10)</option>
-                <option value="REPORTE_NEGATIVO">Reporte negativo de la familia (−10)</option>
-                <option value="MALA_ACTITUD">Mala actitud con la agencia (−10)</option>
-              </select>
-            </div>
-          </div>
-          <div class="row" style="margin-top:8px;">
-            <button class="btn-ghost" onclick="adminVerPuntaje()">Ver puntaje</button>
-            <button class="btn-primary" onclick="adminAgregarPuntos()">Agregar puntos</button>
-            <span id="pt_admin_msg" class="muted"></span>
-          </div>
-          <div id="pt_admin_resultado" style="margin-top:8px;" class="muted"></div>
-        </div>
-
-        <!-- ADMIN: Resumen de disponibilidad semanal -->
-        <div id="adminResumenDispCard" class="card" style="display:none;">
+        <div class="card" id="planeacionesNineraCard">
           <div class="row" style="justify-content:space-between;align-items:center;">
-            <h3>Resumen de disponibilidad – semana actual</h3>
-            <button class="btn-ghost" onclick="cargarResumenDisponibilidadAdmin()">🔄 Actualizar</button>
+            <h3>Planeaciones de actividades</h3>
+            <button class="btn-ghost" onclick="actualizarPlaneaciones()">🔄 Actualizar</button>
           </div>
-          <p class="muted">Verde: ya capturó horarios · Rojo: no ha capturado horarios.</p>
-          <div id="adminResumenDisp"></div>
+          <div id="listaPlaneacionesNinera"></div>
         </div>
 
-        <nav class="bottom-nav">
-          <button onclick="irVista('perfil')">
-            👤<span>Perfil</span>
-          </button>
-          <button onclick="irVista('servicios')" class="activo">
-            🏠<span>Servicios</span>
-          </button>
-          <button onclick="irVista('disponibilidad')">
-            📅<span>Disponibilidad</span>
-          </button>
-          <button onclick="irVista('comunidad')">
-            💬<span>Comunidad</span>
-          </button>
-        </nav>
-      </div>
-    </div>
-
-    <!-- MODAL Detalle -->
-    <div id="modalBackdrop" class="modal-backdrop" style="display:none;">
-      <div class="modal-card">
-        <h4 id="mCliente">Detalle del servicio</h4>
-        <div><b>Fecha:</b> <span id="mFecha">—</span></div>
-        <div><b>Horario:</b> <span id="mHorario">—</span></div>
-        <div><b>Número de contacto:</b> <span id="mContacto">—</span></div>
-        <div><b>Dirección:</b> <span id="mDireccion">—</span></div>
-        <div><b>Ubicación:</b> <span id="mUbicacion">—</span></div>
-        <div><b>Edad del niño:</b> <span id="mEdad">—</span></div>
-        <div><b>Cuota nanny:</b> <span id="mCuota">—</span></div>
-        <div><b>Notas:</b> <span id="mNotas">—</span></div>
-        <div id="mMsg" class="muted" style="margin-top:6px;"></div>
-        <div class="actions" style="margin-top:10px;"></div>
-      </div>
-    </div>
-
-    <!-- MODAL Planeación Neuronanny -->
-    <div id="planeacionBackdrop" class="modal-backdrop" style="display:none;">
-      <div class="modal-card modal-planeacion">
-
-        <!-- HEADER: TÍTULO + CLIENTE + NIÑERA -->
-        <div id="planeacionHeader" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
-          <h3 class="modal-title pink" id="pl_titulo">
-            Planeación de actividades
-          </h3>
-          <div class="muted" id="pl_info_cliente" style="margin-top:4px;"></div>
-          <div class="muted" id="pl_info_ninera"></div>
-          <div id="pl_fechas_revision" class="muted"
-            style="margin-top:6px;font-size:13px;display:none;display:flex;gap:12px;flex-wrap:wrap;">
-            <span id="pl_fecha_revision"></span>
-            <span id="pl_fecha_correccion"></span>
-          </div>
-        </div>
-
-        <!-- NAVEGACIÓN ENTRE DÍAS -->
-        <div class="row"
-          style="display:grid;grid-template-columns: 1fr auto 1fr;align-items:center;margin-bottom:18px;">
-          <div style="justify-self:start;">
-            <button class="btn-ghost" onclick="planeacionAnterior()">⬅️ Día anterior</button>
-          </div>
-
-          <span id="pl_fecha_actual" class="muted" style="font-weight:600; justify-self:center;">
-            Fecha del servicio
-          </span>
-
-          <div style="justify-self:end;">
-            <button class="btn-ghost" onclick="planeacionSiguiente()">Día siguiente ➡️</button>
-          </div>
-        </div>
-
-        <!-- FORMULARIO -->
-        <div class="form-grid">
-          <div class="form-group full">
-            <label>Área de desarrollo</label>
-            <input id="pl_area" type="text" placeholder="Ej. Motricidad fina" />
-          </div>
-
-          <div class="form-group full">
-            <label>Objetivo de la actividad</label>
-            <textarea id="pl_objetivo" placeholder="¿Qué se busca estimular?"></textarea>
-          </div>
-
-          <div class="form-group full">
-            <label>Descripción de la actividad</label>
-            <textarea id="pl_descripcion" placeholder="Describe paso a paso la actividad"></textarea>
-          </div>
-
-          <div class="form-group full">
-            <label>Materiales requeridos</label>
-            <textarea id="pl_materiales" placeholder="Ej. hojas, colores, bloques"></textarea>
-          </div>
-
-          <div class="form-group full">
-            <label>Imagen de referencia (link)</label>
-            <input id="pl_imagen" type="text" placeholder="https://..." />
-          </div>
-
-          <!-- OBSERVACIONES DE SUPERVISIÓN -->
-          <div id="obsSupervisionContainer" class="form-group full" style="display:none;">
-            <label>Observaciones de supervisión</label>
-            <!-- Supervisión escribe -->
-            <textarea id="obsSupervision" placeholder="Escriba aquí las observaciones para la niñera" rows="4"
-              style="display:none;"></textarea>
-            <!-- Niñera solo lectura -->
-            <textarea id="obsSupervisionNinera" rows="4" readonly disabled
-              style="display:none; background:#f9fafb; color:#6b7280;"></textarea>
-          </div>
-        </div>
-
-        <!-- ACCIONES DEL MODAL -->
-        <div class="modal-actions">
-          <button id="btnGuardarPlaneacion" class="btn-pink" onclick="guardarPlaneacionNeuronanny()">
-            Guardar planeación
-          </button>
-          <button id="btnEnviarCorreccion" class="btn-ghost" style="display:none;" onclick="enviarACorreccion()">
-            🟠 Enviar a corrección
-          </button>
-          <button id="btnMarcarRevisada" class="btn-pink" style="display:none;" onclick="marcarPlaneacionRevisada()">
-            🟢 Marcar como revisada
-          </button>
-          <button id="btnReenviarPlaneacion" class="btn-pink" style="display:none;"
-            onclick="reenviarPlaneacionCorregida()">
-            🔄 Reenviar planeación
-          </button>
-          <button class="btn-ghost" onclick="cerrarPlaneacionNeuronanny()">
-            Cancelar
-          </button>
+        <div class="card" id="planeacionesNineraCardSiguiente">
+          <h3>Planeaciones de actividades – semana siguiente</h3>
+          <div id="listaPlaneacionesNineraSiguiente"></div>
         </div>
       </div>
+
+      <div id="vista-puntos" class="vista">
+        <!-- MIS PUNTOS (solo niñeras) -->
+        <div class="card" id="puntosNineraCard">
+          <h3>Mis puntos</h3>
+          <p class="muted" style="margin-top:0;">Sistema de niveles: Pink, Yellow, Blue, Golden Nanny.</p>
+          <div class="row" style="margin-bottom:6px;">
+            <div><b>Nivel actual:</b> <span id="pt_nivel">—</span></div>
+            <div><b>Puntos totales:</b> <span id="pt_total">0</span></div>
+            <div><b>Servicios eventuales:</b> <span id="pt_servicios">0</span></div>
+          </div>
+          <p id="pt_msg" class="muted"></p>
+        </div>
+      </div>
+
+      <div id="vista-cliente" class="vista">
+        <!-- ONBOARDING: Completar perfil -->
+        <div id="cliente-onboarding" style="display:none;">
+          <div class="card">
+            <h3>¡Bienvenida Familia! ✨</h3>
+            <p>Para poder brindarte el mejor servicio, por favor completa tu información por única vez:</p>
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>Nombre completo (Papá o Mamá)</label>
+                <input id="reg_nombre" type="text" placeholder="Ej. Ana García">
+              </div>
+              <div class="form-group full">
+                <label>Dirección</label>
+                <input id="reg_direccion" type="text" placeholder="Calle, número, colonia...">
+              </div>
+              <div class="form-group full">
+                <label>Ubicación (Link Google Maps)</label>
+                <input id="reg_ubicacion" type="text" placeholder="https://goo.gl/maps/...">
+              </div>
+              <div class="form-group">
+                <label>Teléfono de contacto</label>
+                <input id="reg_tel" type="tel" placeholder="10 dígitos">
+              </div>
+              <div class="form-group">
+                <label>Contacto de emergencia</label>
+                <input id="reg_emergencia" type="text" placeholder="Nombre y Teléfono">
+              </div>
+              <div class="form-group">
+                <label>Nombre del peque</label>
+                <input id="reg_peque_nombre" type="text">
+              </div>
+              <div class="form-group">
+                <label>Fecha de nacimiento del peque</label>
+                <input id="reg_peque_nac" type="date">
+              </div>
+              <div class="form-group full">
+                <label>Alergias o Cuidados Especiales</label>
+                <textarea id="reg_alergias" placeholder="Escribe aquí si tiene alguna alergia..."></textarea>
+              </div>
+              <div class="form-group full">
+                <label>Condición Médica</label>
+                <input id="reg_condicion" type="text" placeholder="Ninguna">
+              </div>
+              <div class="form-group full">
+                <label>Servicio médico / Seguro</label>
+                <input id="reg_salud" type="text" placeholder="Nombre y póliza (opcional)">
+              </div>
+              <div class="form-group full">
+                <label>Preferencias o Rutinas</label>
+                <textarea id="reg_preferencias" placeholder="¿Qué le gusta hacer? ¿A qué hora duerme?"></textarea>
+              </div>
+              <div class="form-group full">
+                <label>¿Hay mascotas en casa?</label>
+                <input id="reg_mascotas" type="text" placeholder="Ej. Un perro pequeño">
+              </div>
+            </div>
+            <button class="btn-primary" onclick="guardarRegistroCompleto()" style="margin-top:20px;">
+              Guardar y Continuar
+            </button>
+          </div>
+        </div>
+
+        <!-- DASHBOARD CLIENTE: Próximos servicios -->
+        <div id="cliente-dashboard" style="display:none;">
+          <div class="card panel-header" style="background: var(--blue-main);">
+            <div class="panel-header-row">
+              <div class="panel-saludo" style="color:white;">Mi Portal Familia</div>
+              <button class="btn-ghost logout-btn" onclick="logout()" style="color:white; border-color:white;">Cerrar
+                sesión</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>Mis próximos servicios</h3>
+            <p class="muted">Aquí podrás ver el detalle de tus servicios agendados.</p>
+            <div id="servicios-cliente-lista" style="margin-top:15px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="vista-comunidad" class="vista">
+        <div class="card">
+          <h3>Comunidad</h3>
+          <p>Próximamente: Foros y recursos para nannies.</p>
+        </div>
+      </div>
+
+      <div id="vista-supervision" class="vista">
+        <!-- CARD SEMANA ACTUAL -->
+        <div class="supervision-card">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <div class="supervision-title">
+              Resumen de planeaciones – semana actual
+            </div>
+            <button class="btn-ghost" onclick="actualizarPlaneacionesSupervision()">
+              🔄 Actualizar
+            </button>
+          </div>
+          <div id="resumenPlaneacionesActual"></div>
+        </div>
+
+        <!-- CARD SEMANA SIGUIENTE -->
+        <div class="supervision-card">
+          <div class="supervision-title">
+            Resumen de planeaciones – semana siguiente
+          </div>
+          <div id="resumenPlaneacionesSiguiente"></div>
+        </div>
+      </div>
+
+      <div id="vista-disponibilidad" class="vista">
+        <!-- PANEL (solo niñeras) -->
+        <div class="card" id="panel">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+          </div>
+
+          <div class="row">
+            <div><b>Semana base:</b></div>
+            <input id="fecha" type="date" />
+            <button class="btn-ghost" onclick="cargar()">Cargar semana</button>
+            <button class="btn-ghost" onclick="cargarSiguiente()">Cargar semana siguiente</button>
+            <button class="btn-primary" onclick="guardar()">Guardar</button>
+          </div>
+          <p class="muted">Selecciona Matutino (07–15hrs) y/o Vespertino (15–22hrs) por día.</p>
+          <p id="msgApp"></p>
+        </div>
+
+        <!-- SEMANA ACTUAL -->
+        <div class="card" id="tablaActualCard">
+          <div class="week-title">
+            <span>Semana actual</span>
+            <span class="row">
+              <button class="btn-ghost" onclick="marcarSemana('tabla', true)">Marcar todo (actual)</button>
+              <button class="btn-ghost" onclick="marcarSemana('tabla', false)">Desmarcar todo (actual)</button>
+            </span>
+          </div>
+          <div id="tabla"></div>
+        </div>
+
+
+        <!-- SEMANA SIGUIENTE -->
+        <div class="card" id="tablaSiguienteCard" style="display:none;">
+          <div class="week-title">
+            <span>Semana siguiente</span>
+            <span class="row">
+              <button class="btn-ghost" onclick="copiarSemanaAnterior()">Copiar semana anterior</button>
+              <button class="btn-ghost" onclick="marcarSemana('tabla2', true)">Marcar todo (siguiente)</button>
+              <button class="btn-ghost" onclick="marcarSemana('tabla2', false)">Desmarcar todo (siguiente)</button>
+            </span>
+          </div>
+          <div id="tabla2"></div>
+        </div>
+
+        <!-- RESÚMENES -->
+        <div class="card" id="resumenCard">
+          <details open>
+            <summary><b>Resumen de la semana (turnos)</b></summary>
+            <div id="resumen"></div>
+          </details>
+        </div>
+        <div class="card" id="resumenCard2" style="display:none;">
+          <details open>
+            <summary><b>Resumen de la semana siguiente (turnos)</b></summary>
+            <div id="resumen2"></div>
+          </details>
+        </div>
+      </div>
+
+
+      <!-- ADMIN: Sugeridor -->
+      <div id="adminCard" class="card" style="display:none;">
+        <h3>Administrador – Sugerir niñeras</h3>
+        <div class="row">
+          <div><label>Fecha</label><br><input id="sv_fecha" type="date"></div>
+          <div><label>Inicio</label><br><input id="sv_hi" type="time" step="1800" value="09:00"></div>
+          <div><label>Fin</label><br><input id="sv_hf" type="time" step="1800" value="12:00"></div>
+          <div><label>Edad (años)</label><br><input id="sv_edad" type="number" step="0.1" value="1"></div>
+        </div>
+        <div class="row" style="margin-top:8px%;">
+          <label style="width:100%;">Ubicación (dirección)</label>
+          <input id="sv_ubic" type="text" placeholder="Ej. Parque México, CDMX" style="max-width:580px; width:100%;">
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <button id="btnSugerir" class="btn-primary" onclick="sugerir()">Sugerir niñeras</button>
+          <span id="admMsg" class="muted"></span>
+        </div>
+        <div id="admResultados" style="margin-top:12px; overflow:auto;"></div>
+      </div>
+
+      <!-- ADMIN: Agenda semanal (L–D) -->
+      <div id="adminAgendaCard" class="card" style="display:none;">
+        <div class="week-head">
+          <h3>Administrador – Servicios (semana L–D)</h3>
+          <div class="nav-weeks">
+            <button class="btn-ghost" onclick="semanaAnterior()">◀ Semana anterior</button>
+            <button class="btn-ghost" onclick="semanaActual()">Semana actual</button>
+            <button class="btn-ghost" onclick="semanaSiguiente()">Semana siguiente ▶</button>
+          </div>
+        </div>
+        <div class="muted" id="admWeekLabel" style="margin-bottom:8px;"></div>
+        <div id="adminAgenda"></div>
+      </div>
+
+      <!-- ADMIN: Puntaje de niñeras -->
+      <div id="adminPuntosCard" class="card" style="display:none;">
+        <h3>Administrador – Puntaje de niñeras</h3>
+        <div class="row">
+          <div style="min-width:220px;">
+            <label>Nombre de niñera</label><br />
+            <input id="pt_admin_nombre" type="text" list="lista_nineras" placeholder="Escriba el nombre de la niñera" />
+            <datalist id="lista_nineras"></datalist>
+          </div>
+          <div>
+            <label>Acción de puntos</label><br />
+            <select id="pt_admin_tipo">
+              <option value="">Seleccionar...</option>
+              <option value="SERVICIO_ULTIMO_MINUTO">Servicio de último minuto (+2)</option>
+              <option value="FAMILIA_REPITE">La familia pide de nuevo la misma nanny (+1)</option>
+              <option value="CAPACITACION_NO_OBLIGATORIA">Capacitación no obligatoria (+7)</option>
+              <option value="INICIAR_SERVICIO_FIJO">Iniciar un servicio fijo (+20)</option>
+              <option value="GANAR_INSIGNIA">Ganar una insignia (+10)</option>
+              <option value="ENTRENAMIENTO_NANNY_STAR">Entrenamiento Nanny Star (+25)</option>
+              <option value="RECOMENDAR_NANNY">Recomendar a otra nanny y que tome servicio (+20)</option>
+              <option value="NO_CONECTARSE_REUNION">No conectarse a reunión programada (−10)</option>
+              <option value="FALTA_SERVICIO">Falta a servicio (−10)</option>
+              <option value="REPORTE_NEGATIVO">Reporte negativo de la familia (−10)</option>
+              <option value="MALA_ACTITUD">Mala actitud con la agencia (−10)</option>
+            </select>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn-ghost" onclick="adminVerPuntaje()">Ver puntaje</button>
+          <button class="btn-primary" onclick="adminAgregarPuntos()">Agregar puntos</button>
+          <span id="pt_admin_msg" class="muted"></span>
+        </div>
+        <div id="pt_admin_resultado" style="margin-top:8px;" class="muted"></div>
+      </div>
+
+      <!-- ADMIN: Resumen de disponibilidad semanal -->
+      <div id="adminResumenDispCard" class="card" style="display:none;">
+        <div class="row" style="justify-content:space-between;align-items:center;">
+          <h3>Resumen de disponibilidad – semana actual</h3>
+          <button class="btn-ghost" onclick="cargarResumenDisponibilidadAdmin()">🔄 Actualizar</button>
+        </div>
+        <p class="muted">Verde: ya capturó horarios · Rojo: no ha capturado horarios.</p>
+        <div id="adminResumenDisp"></div>
+      </div>
+
+      <nav class="bottom-nav">
+        <button onclick="irVista('perfil')">
+          👤<span>Perfil</span>
+        </button>
+        <button onclick="irVista('servicios')" class="activo">
+          🏠<span>Servicios</span>
+        </button>
+        <button onclick="irVista('disponibilidad')">
+          📅<span>Disponibilidad</span>
+        </button>
+        <button onclick="irVista('comunidad')">
+          💬<span>Comunidad</span>
+        </button>
+      </nav>
     </div>
+  </div>
 
-    <div id="toast" class="toast"></div>
+  <!-- MODAL Detalle -->
+  <div id="modalBackdrop" class="modal-backdrop" style="display:none;">
+    <div class="modal-card">
+      <h4 id="mCliente">Detalle del servicio</h4>
+      <div><b>Fecha:</b> <span id="mFecha">—</span></div>
+      <div><b>Horario:</b> <span id="mHorario">—</span></div>
+      <div><b>Número de contacto:</b> <span id="mContacto">—</span></div>
+      <div><b>Dirección:</b> <span id="mDireccion">—</span></div>
+      <div><b>Ubicación:</b> <span id="mUbicacion">—</span></div>
+      <div><b>Edad del niño:</b> <span id="mEdad">—</span></div>
+      <div><b>Cuota nanny:</b> <span id="mCuota">—</span></div>
+      <div><b>Notas:</b> <span id="mNotas">—</span></div>
+      <div id="mMsg" class="muted" style="margin-top:6px;"></div>
+      <div class="actions" style="margin-top:10px;"></div>
+    </div>
+  </div>
 
-    <script src="js/app.js"></script>
-    <script src="js/index.js" defer></script>
+  <!-- MODAL Planeación Neuronanny -->
+  <div id="planeacionBackdrop" class="modal-backdrop" style="display:none;">
+    <div class="modal-card modal-planeacion">
+
+      <!-- HEADER: TÍTULO + CLIENTE + NIÑERA -->
+      <div id="planeacionHeader" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
+        <h3 class="modal-title pink" id="pl_titulo">
+          Planeación de actividades
+        </h3>
+        <div class="muted" id="pl_info_cliente" style="margin-top:4px;"></div>
+        <div class="muted" id="pl_info_ninera"></div>
+        <div id="pl_fechas_revision" class="muted"
+          style="margin-top:6px;font-size:13px;display:none;display:flex;gap:12px;flex-wrap:wrap;">
+          <span id="pl_fecha_revision"></span>
+          <span id="pl_fecha_correccion"></span>
+        </div>
+      </div>
+
+      <!-- NAVEGACIÓN ENTRE DÍAS -->
+      <div class="row" style="display:grid;grid-template-columns: 1fr auto 1fr;align-items:center;margin-bottom:18px;">
+        <div style="justify-self:start;">
+          <button class="btn-ghost" onclick="planeacionAnterior()">⬅️ Día anterior</button>
+        </div>
+
+        <span id="pl_fecha_actual" class="muted" style="font-weight:600; justify-self:center;">
+          Fecha del servicio
+        </span>
+
+        <div style="justify-self:end;">
+          <button class="btn-ghost" onclick="planeacionSiguiente()">Día siguiente ➡️</button>
+        </div>
+      </div>
+
+      <!-- FORMULARIO -->
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Área de desarrollo</label>
+          <input id="pl_area" type="text" placeholder="Ej. Motricidad fina" />
+        </div>
+
+        <div class="form-group full">
+          <label>Objetivo de la actividad</label>
+          <textarea id="pl_objetivo" placeholder="¿Qué se busca estimular?"></textarea>
+        </div>
+
+        <div class="form-group full">
+          <label>Descripción de la actividad</label>
+          <textarea id="pl_descripcion" placeholder="Describe paso a paso la actividad"></textarea>
+        </div>
+
+        <div class="form-group full">
+          <label>Materiales requeridos</label>
+          <textarea id="pl_materiales" placeholder="Ej. hojas, colores, bloques"></textarea>
+        </div>
+
+        <div class="form-group full">
+          <label>Imagen de referencia (link)</label>
+          <input id="pl_imagen" type="text" placeholder="https://..." />
+        </div>
+
+        <!-- OBSERVACIONES DE SUPERVISIÓN -->
+        <div id="obsSupervisionContainer" class="form-group full" style="display:none;">
+          <label>Observaciones de supervisión</label>
+          <!-- Supervisión escribe -->
+          <textarea id="obsSupervision" placeholder="Escriba aquí las observaciones para la niñera" rows="4"
+            style="display:none;"></textarea>
+          <!-- Niñera solo lectura -->
+          <textarea id="obsSupervisionNinera" rows="4" readonly disabled
+            style="display:none; background:#f9fafb; color:#6b7280;"></textarea>
+        </div>
+      </div>
+
+      <!-- ACCIONES DEL MODAL -->
+      <div class="modal-actions">
+        <button id="btnGuardarPlaneacion" class="btn-pink" onclick="guardarPlaneacionNeuronanny()">
+          Guardar planeación
+        </button>
+        <button id="btnEnviarCorreccion" class="btn-ghost" style="display:none;" onclick="enviarACorreccion()">
+          🟠 Enviar a corrección
+        </button>
+        <button id="btnMarcarRevisada" class="btn-pink" style="display:none;" onclick="marcarPlaneacionRevisada()">
+          🟢 Marcar como revisada
+        </button>
+        <button id="btnReenviarPlaneacion" class="btn-pink" style="display:none;"
+          onclick="reenviarPlaneacionCorregida()">
+          🔄 Reenviar planeación
+        </button>
+        <button class="btn-ghost" onclick="cerrarPlaneacionNeuronanny()">
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="js/app.js"></script>
+  <script src="js/index.js" defer></script>
 
 </body>
 

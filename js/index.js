@@ -1179,7 +1179,7 @@ function irVista(nombre) {
     // Lógica adicional por vista
     if (SESION.cliente) {
         if (target === 'cliente') mostrarVistaCliente();
-        if (nombre === 'perfil') irVista('perfil'); // Ya se maneja arriba
+        if (target === 'perfil') cargarPerfil();
         return;
     }
 
