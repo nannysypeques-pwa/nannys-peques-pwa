@@ -51,7 +51,7 @@
 
         <div id="paso-seleccion">
           <div class="brand-title">Nannys y Peques</div>
-          <p class="login-subtitle">¿Cómo vas a ingresar hoy?</p>
+          <p class="login-subtitle">Amamos, servimos y cuidamos con el corazón</p>
           <div class="row" style="flex-direction: column; gap: 12px; padding: 10px 0;">
             <div class="card" onclick="mostrarLoginStaff()"
               style="cursor: pointer; padding: 20px; transition: transform 0.2s; border: 1px solid rgba(255,255,255,0.3);">
@@ -69,7 +69,7 @@
         </div>
 
         <div id="paso-login" style="display:none;">
-          <div class="brand-title">Ingreso Staff</div>
+          <div class="brand-title">Ingreso</div>
           <p class="login-subtitle">Personal de Nannys y Peques</p>
 
           <div class="row"><label>Email</label><input id="email" type="email" placeholder="nombre@correo.com"></div>
@@ -216,6 +216,86 @@
               <div><b>Servicios eventuales:</b> <span id="pt_servicios">0</span></div>
             </div>
             <p id="pt_msg" class="muted"></p>
+          </div>
+        </div>
+
+        <div id="vista-cliente" class="vista">
+          <!-- ONBOARDING: Completar perfil -->
+          <div id="cliente-onboarding" style="display:none;">
+            <div class="card">
+              <h3>¡Bienvenida Familia! ✨</h3>
+              <p>Para poder brindarte el mejor servicio, por favor completa tu información por única vez:</p>
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label>Nombre completo (Papá o Mamá)</label>
+                  <input id="reg_nombre" type="text" placeholder="Ej. Ana García">
+                </div>
+                <div class="form-group full">
+                  <label>Dirección</label>
+                  <input id="reg_direccion" type="text" placeholder="Calle, número, colonia...">
+                </div>
+                <div class="form-group full">
+                  <label>Ubicación (Link Google Maps)</label>
+                  <input id="reg_ubicacion" type="text" placeholder="https://goo.gl/maps/...">
+                </div>
+                <div class="form-group">
+                  <label>Teléfono de contacto</label>
+                  <input id="reg_tel" type="tel" placeholder="10 dígitos">
+                </div>
+                <div class="form-group">
+                  <label>Contacto de emergencia</label>
+                  <input id="reg_emergencia" type="text" placeholder="Nombre y Teléfono">
+                </div>
+                <div class="form-group">
+                  <label>Nombre del peque</label>
+                  <input id="reg_peque_nombre" type="text">
+                </div>
+                <div class="form-group">
+                  <label>Fecha de nacimiento del peque</label>
+                  <input id="reg_peque_nac" type="date">
+                </div>
+                <div class="form-group full">
+                  <label>Alergias o Cuidados Especiales</label>
+                  <textarea id="reg_alergias" placeholder="Escribe aquí si tiene alguna alergia..."></textarea>
+                </div>
+                <div class="form-group full">
+                  <label>Condición Médica</label>
+                  <input id="reg_condicion" type="text" placeholder="Ninguna">
+                </div>
+                <div class="form-group full">
+                  <label>Servicio médico / Seguro</label>
+                  <input id="reg_salud" type="text" placeholder="Nombre y póliza (opcional)">
+                </div>
+                <div class="form-group full">
+                  <label>Preferencias o Rutinas</label>
+                  <textarea id="reg_preferencias" placeholder="¿Qué le gusta hacer? ¿A qué hora duerme?"></textarea>
+                </div>
+                <div class="form-group full">
+                  <label>¿Hay mascotas en casa?</label>
+                  <input id="reg_mascotas" type="text" placeholder="Ej. Un perro pequeño">
+                </div>
+              </div>
+              <button class="btn-primary" onclick="guardarRegistroCompleto()" style="margin-top:20px;">
+                Guardar y Continuar
+              </button>
+            </div>
+          </div>
+
+          <!-- DASHBOARD CLIENTE: Próximos servicios -->
+          <div id="cliente-dashboard" style="display:none;">
+            <div class="card panel-header" style="background: var(--blue-main);">
+              <div class="panel-header-row">
+                <div class="panel-saludo" style="color:white;">Mi Portal Familia</div>
+                <button class="btn-ghost logout-btn" onclick="logout()" style="color:white; border-color:white;">Cerrar
+                  sesión</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Mis próximos servicios</h3>
+              <p class="muted">Aquí podrás ver el detalle de tus servicios agendados.</p>
+              <div id="servicios-cliente-lista" style="margin-top:15px;"></div>
+            </div>
           </div>
         </div>
 

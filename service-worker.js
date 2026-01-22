@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nannys-pwa-v7';
+const CACHE_NAME = 'nannys-pwa-v8'; // Increment version
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -10,10 +10,8 @@ const ASSETS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
-  console.log('[Service Worker] Instalando...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching app shell');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -21,12 +19,10 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[Service Worker] Activo');
   event.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(keyList.map((key) => {
         if (key !== CACHE_NAME) {
-          console.log('[Service Worker] Borrando cache antiguo', key);
           return caches.delete(key);
         }
       }));
@@ -35,15 +31,33 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Estrategia Network-First para archivos HTML y JS para asegurar actualización
 self.addEventListener('fetch', (event) => {
-  // Ignorar peticiones POST (API)
-  if (event.request.method === 'POST') {
-    return;
-  }
+  if (event.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
-  );
+  const url = new URL(event.request.url);
+
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname === '/') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const clonedResponse = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clonedResponse));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+  } else {
+    // Cache-First para el resto (estilos, imágenes)
+    event.respondWith(
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request).then((res) => {
+          const cloned = res.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
+          return res;
+        });
+      })
+    );
+  }
 });
+

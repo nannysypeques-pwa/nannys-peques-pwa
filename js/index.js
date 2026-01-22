@@ -124,12 +124,10 @@ async function login(rol) {
             mostrarVistaAdmin();
         } else if (SESION.supervision) {
             document.querySelector('.bottom-nav').style.display = 'none';
-            ocultarTodo();
-            document.getElementById('vista-supervision').style.display = 'block';
-            cargarResumenPlaneaciones();
+            irVista('supervision'); // Usar irVista para consistencia
         } else if (SESION.cliente) {
             document.querySelector('.bottom-nav').style.display = 'flex';
-            await mostrarVistaCliente();
+            irVista('servicios'); // Redirigirá a vista-cliente por la lógica de irVista
         } else {
             document.querySelector('.bottom-nav').style.display = 'flex';
             mostrarVistaNinera();
@@ -1166,39 +1164,41 @@ function mostrarVistaNinera() {
 
 function irVista(nombre) {
     document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
-    const vista = document.getElementById('vista-' + nombre);
+
+    let target = nombre;
+    // Si es cliente y pide 'servicios', redirigir a 'cliente'
+    if (SESION.cliente && nombre === 'servicios') target = 'cliente';
+
+    const vista = document.getElementById('vista-' + target);
     if (vista) vista.classList.add('activa');
 
     document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('activo'));
     const btn = [...document.querySelectorAll('.bottom-nav button')].find(b => b.getAttribute('onclick')?.includes(nombre));
     if (btn) btn.classList.add('activo');
 
-    // Lógica para Clientes
+    // Lógica adicional por vista
     if (SESION.cliente) {
-        if (nombre === 'servicios') cargarServiciosCliente();
-        if (nombre === 'perfil') mostrarVistaCliente();
+        if (target === 'cliente') mostrarVistaCliente();
+        if (nombre === 'perfil') irVista('perfil'); // Ya se maneja arriba
         return;
     }
 
-    // Lógica para Staff (Niñera)
     if (nombre === 'disponibilidad') {
+        ocultarTodo();
         document.getElementById('panel').style.display = 'block';
         document.getElementById('tablaActualCard').style.display = 'block';
         document.getElementById('resumenCard').style.display = 'block';
-        document.getElementById('svcCard').style.display = 'none';
-        document.getElementById('planeacionesNineraCard').style.display = 'none';
         cargar();
     }
     if (nombre === 'servicios') {
+        ocultarTodo();
         document.getElementById('svcCard').style.display = 'block';
         document.getElementById('planeacionesNineraCard').style.display = 'block';
-        document.getElementById('panel').style.display = 'none';
-        document.getElementById('tablaActualCard').style.display = 'none';
-        document.getElementById('resumenCard').style.display = 'none';
         cargarServicios();
     }
-    if (nombre === 'perfil') {
-        cargarPerfil();
+    if (nombre === 'supervision') {
+        ocultarTodo();
+        cargarResumenPlaneaciones();
     }
 }
 
@@ -1586,10 +1586,14 @@ window.addEventListener('load', function () {
 
     // Inicializar UI según sesión
     if (SESION.email) {
-        document.body.classList.add(SESION.admin ? 'admin' : SESION.supervision ? 'supervision' : 'ninera');
+        document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente');
+        if (SESION.admin) document.body.classList.add('admin');
+        else if (SESION.supervision) document.body.classList.add('supervision');
+        else if (SESION.cliente) document.body.classList.add('cliente');
+        else document.body.classList.add('ninera');
 
         const saludo = document.getElementById('saludo');
-        if (saludo) saludo.innerHTML = `<b>¡Hola, ${SESION.nombre || SESION.email}!</b>` + (SESION.admin ? ' <span class="pill">Admin</span>' : '');
+        if (saludo) saludo.innerHTML = `<b>¡Hola!</b>`;
 
         const headerAdmin = document.getElementById('header-admin');
         if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
@@ -1602,9 +1606,10 @@ window.addEventListener('load', function () {
             mostrarVistaAdmin();
         } else if (SESION.supervision) {
             document.querySelector('.bottom-nav').style.display = 'none';
-            ocultarTodo();
-            document.getElementById('vista-supervision').style.display = 'block';
-            cargarResumenPlaneaciones();
+            irVista('supervision');
+        } else if (SESION.cliente) {
+            document.querySelector('.bottom-nav').style.display = 'flex';
+            irVista('servicios'); // Esto redirigirá a vista-cliente
         } else {
             document.querySelector('.bottom-nav').style.display = 'flex';
             mostrarVistaNinera();
@@ -1958,25 +1963,25 @@ window.mostrarRegistroCliente = mostrarRegistroCliente;
 
 
 async function mostrarVistaCliente() {
-    ocultarTodo();
-    document.getElementById('vista-cliente').style.display = 'block';
+    // No llamamos a ocultarTodo porque vista-cliente no usa las cards del staff
+    const d = document.getElementById('cliente-dashboard');
+    const o = document.getElementById('cliente-onboarding');
+    // Forzamos visibilidad de vista-cliente (irVista ya puso .activa)
 
-    // Ocultar ambos inicialmente
-    document.getElementById('cliente-onboarding').style.display = 'none';
-    document.getElementById('cliente-dashboard').style.display = 'none';
+    if (d) d.style.display = 'none';
+    if (o) o.style.display = 'none';
 
     try {
         const perf = await api('getProfile', { email: SESION.email });
-        // Si no tiene nombre o el nombre es muy corto/vacío, ir a onboarding
         if (!perf || !perf.nombre || String(perf.nombre).trim().length < 3) {
-            document.getElementById('cliente-onboarding').style.display = 'block';
+            if (o) o.style.display = 'block';
         } else {
-            document.getElementById('cliente-dashboard').style.display = 'block';
+            if (d) d.style.display = 'block';
             cargarServiciosCliente();
         }
     } catch (e) {
         console.error("Error cargando perfil:", e);
-        document.getElementById('cliente-onboarding').style.display = 'block';
+        if (o) o.style.display = 'block';
     }
 }
 window.mostrarVistaCliente = mostrarVistaCliente;
