@@ -102,9 +102,14 @@ async function login() {
         document.getElementById('auth').style.display = 'none';
         document.getElementById('app').style.display = 'block';
 
-        if (SESION.admin || SESION.supervision) {
+        if (SESION.admin) {
             document.querySelector('.bottom-nav').style.display = 'none';
             mostrarVistaAdmin();
+        } else if (SESION.supervision) {
+            document.querySelector('.bottom-nav').style.display = 'none';
+            ocultarTodo();
+            document.getElementById('vista-supervision').style.display = 'block';
+            cargarResumenPlaneaciones();
         } else {
             document.querySelector('.bottom-nav').style.display = 'flex';
             mostrarVistaNinera();
