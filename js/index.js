@@ -102,6 +102,9 @@ async function login() {
         document.getElementById('auth').style.display = 'none';
         document.getElementById('app').style.display = 'block';
 
+        const headerAdmin = document.getElementById('header-admin');
+        if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
+
         if (SESION.admin) {
             document.querySelector('.bottom-nav').style.display = 'none';
             mostrarVistaAdmin();
