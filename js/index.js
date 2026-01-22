@@ -1553,8 +1553,10 @@ window.addEventListener('load', function () {
         document.getElementById('app').style.display = 'block';
 
         if (SESION.admin) {
+            document.querySelector('.bottom-nav').style.display = 'none';
             mostrarVistaAdmin();
         } else if (SESION.supervision) {
+            document.querySelector('.bottom-nav').style.display = 'none';
             ocultarTodo();
             document.getElementById('vista-supervision').style.display = 'block';
             cargarResumenPlaneaciones();
