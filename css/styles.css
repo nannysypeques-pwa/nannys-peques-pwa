@@ -1,23 +1,1123 @@
-html, body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  background: #ffeef6; /* tu rosa */
-}
+  :root {
+      /* Marca */
+      --pink-main: #E84C9A;
+      --pink-soft: #FFE4F1;
 
-.app-root {
-  min-height: 100vh;
-  min-height: -webkit-fill-available;
-  display: flex;
-  flex-direction: column;
-}
+      --blue-main: #3BB6C4;
+      /* azul/turquesa marca */
+      --blue-soft: #E6F7FA;
 
-main {
-  flex: 1;
-  padding-bottom: 90px; /* espacio para menú inferior */
-}
+      --yellow-main: #FACC15;
+      --yellow-soft: #FEF9C3;
 
-/* iOS safe area */
-body {
-  padding-bottom: env(safe-area-inset-bottom);
-}
+      --dark-main: #374151;
+      --gray-soft: #F9FAFB;
+      --gray-border: #E5E7EB;
+
+      --success: #22C55E;
+      --warning: #F59E0B;
+      --error: #EF4444;
+
+      --radius-card: 18px;
+      --radius-btn: 999px;
+      --shadow-card: 0 12px 30px rgba(232, 76, 154, .12);
+  }
+
+
+  /* =========================
+   LOGIN – ESTILO NANNYS
+   ========================= */
+
+
+  .auth-wrapper {
+      height: calc(var(--vh, 1vh) * 100);
+      background: linear-gradient(180deg, var(--pink-soft), #ffffff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+  }
+
+  html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+  }
+
+  .auth-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 420px;
+      border-radius: var(--radius-card);
+      padding: 32px;
+      box-shadow: var(--shadow-card);
+      text-align: center;
+  }
+
+
+  .auth-card h2,
+  .auth-card p,
+  .auth-card label {
+      font-family: 'Poppins', sans-serif;
+      color: var(--dark-main);
+  }
+
+  .auth-card p.muted {
+      font-family: 'Nunito Sans', sans-serif;
+  }
+
+  .auth-card input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--gray-border);
+      margin-bottom: 12px;
+      font-size: 15px;
+      font-family: 'Nunito Sans', sans-serif;
+  }
+
+  .auth-card input:focus {
+      outline: none;
+      border-color: var(--pink-main);
+  }
+
+
+  .auth-card .btn-primary {
+      width: 100%;
+      background: var(--pink-main);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: var(--radius-btn);
+      font-size: 15px;
+      font-weight: 600;
+  }
+
+  body>h2:first-of-type {
+      display: none;
+  }
+
+  /* =========================
+   MARCA – LOGIN
+   ========================= */
+
+
+  .brand-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(28px, 6vw, 40px);
+      font-weight: 400;
+      color: var(--pink-main);
+      margin-bottom: 26px;
+      letter-spacing: 0.8px;
+      line-height: 1.1;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, .6);
+  }
+
+
+  .login-subtitle {
+      font-family: 'Nunito Sans', sans-serif;
+      font-size: 15px;
+      color: #6B7280;
+      margin-bottom: 16px;
+  }
+
+
+  .perfil-card {
+      background: #fff;
+      border-radius: 18px;
+      padding: 24px;
+      max-width: 420px;
+      margin: 20px auto;
+      box-shadow: 0 12px 30px rgba(232, 76, 154, .12);
+  }
+
+
+  .perfil-item {
+      margin-bottom: 18px;
+  }
+
+
+  .perfil-item .label {
+      font-size: 13px;
+      color: #9CA3AF;
+  }
+
+
+  .perfil-item span {
+      font-size: 16px;
+      font-weight: 600;
+      color: #374151;
+  }
+
+
+  .btn-cerrar {
+      margin-top: 20px;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 999px;
+      background: #E84C9A;
+      color: #fff;
+      font-weight: 600;
+  }
+
+
+  .bottom-nav {
+      display: none;
+  }
+
+  :root {
+      --radius: 14px;
+      --border: #e5e7eb;
+      --muted: #6b7280;
+      --ok: #059669;
+      --err: #dc2626;
+      --primary: #2563eb;
+      --bg-soft: #f8fafc;
+      --pending-bg: #FEF9C3;
+      --pending-bd: #F59E0B;
+      --confirmed-bg: #DCFCE7;
+      --confirmed-bd: #22C55E;
+      --inprog-bg: #DBEAFE;
+      --inprog-bd: #60A5FA;
+      --done-bg: #E5E7EB;
+      --done-bd: #9CA3AF;
+  }
+
+  * {
+      box-sizing: border-box;
+  }
+
+  body {
+      font-family: 'Nunito Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      margin: 0;
+      background: var(--bg-soft);
+      color: #0f172a;
+  }
+
+  h2 {
+      margin: 16px;
+  }
+
+  .container {
+      padding: 16px;
+  }
+
+  .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  }
+
+
+
+  /* =========================
+   PANEL NIÑERA – MIS PUNTOS
+   ========================= */
+
+
+  #puntosNineraCard {
+      background: linear-gradient(180deg,
+              #ffffff 0%,
+              var(--blue-soft) 100%);
+      border-radius: 22px;
+      box-shadow: 0 12px 30px rgba(59, 182, 196, .18);
+  }
+
+
+  #puntosNineraCard h3 {
+      font-family: 'DM Serif Display', serif;
+      color: var(--blue-main);
+  }
+
+  #puntosNineraCard .muted {
+      font-size: 14px;
+  }
+
+
+  /* =========================
+   PANEL NIÑERA – ESTILO MARCA
+   ========================= */
+
+  #app {
+      background: linear-gradient(180deg,
+              #ffffff 0%,
+              var(--pink-soft) 100%);
+  }
+
+
+  /* Cards más suaves */
+  #app .card {
+      border: none;
+      border-radius: 20px;
+      box-shadow: var(--shadow-card);
+      padding: 20px;
+  }
+
+
+  /* Títulos */
+  #app h3 {
+      font-family: 'DM Serif Display', serif;
+      font-weight: 400;
+      font-size: 22px;
+      color: var(--pink-main);
+      margin-bottom: 10px;
+  }
+
+  /* Botón principal */
+  #app .btn-primary {
+      background: linear-gradient(135deg,
+              var(--pink-main),
+              var(--blue-main));
+      border: none;
+      color: #fff;
+      border-radius: var(--radius-btn);
+      font-weight: 600;
+  }
+
+
+  /* Botón secundario */
+  #app .btn-ghost {
+      color: var(--pink-main);
+      font-weight: 600;
+  }
+
+
+  /* Calendario – marca Nannys */
+
+  .day {
+      border-radius: 18px;
+      border: none;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  }
+
+
+  .day.today {
+      background: linear-gradient(180deg,
+              #FFFBEB 0%,
+              #FEF3C7 100%);
+      border: 1.5px solid rgba(250, 204, 21, 0.45);
+      box-shadow: 0 8px 18px rgba(250, 204, 21, 0.18);
+  }
+
+
+  .svc-pill.conflict {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #b91c1c;
+  }
+
+
+
+  .svc-pill {
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-weight: 600;
+  }
+
+
+
+  .svc-pill.confirmed {
+      background: var(--blue-soft);
+      border-color: var(--blue-main);
+      color: #036672;
+  }
+
+
+  .svc-pill.pending {
+      background: var(--pink-soft);
+      border-color: var(--pink-main);
+      color: #9d174d;
+  }
+
+
+
+  .svc-pill.completed {
+      background: var(--gray-soft);
+      color: #374151;
+  }
+
+
+  .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+  }
+
+  label {
+      font-weight: 600;
+      font-size: 14px;
+  }
+
+  input[type="email"],
+  input[type="password"],
+  input[type="text"],
+  input[type="date"],
+  input[type="time"],
+  input[type="number"] {
+      width: 100%;
+      max-width: 360px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+  }
+
+  button {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      background: #fff;
+      transition: transform .02s ease-in-out;
+  }
+
+  button:active {
+      transform: scale(0.98);
+  }
+
+  .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+  }
+
+  .btn-ghost {
+      background: transparent;
+      color: var(--pink-main);
+      border: none;
+      font-weight: 600;
+  }
+
+  .muted {
+      color: var(--muted);
+      font-size: 12px;
+  }
+
+  .ok {
+      color: var(--ok);
+  }
+
+  .err {
+      color: var(--err);
+  }
+
+
+  table {
+      border-collapse: collapse;
+      width: 100%;
+  }
+
+  th,
+  td {
+      border: 1px solid var(--border);
+      padding: 6px;
+      font-size: 12px;
+      text-align: left;
+      vertical-align: top;
+  }
+
+  th {
+      background: #fafafa;
+  }
+
+
+
+  .week-title {
+      margin: 6px 0 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+  }
+
+  .day-actions {
+      margin-top: 6px;
+  }
+
+  .pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 12px;
+      background: #fff;
+  }
+
+
+
+  .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+  }
+
+  .day {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px;
+      min-height: 140px;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+  }
+
+  .day header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+  }
+
+  .svc-pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #fff;
+  }
+
+  .svc-pill.pending {
+      background: var(--pending-bg);
+      border-color: var(--pending-bd);
+  }
+
+  .svc-pill.confirmed {
+      background: var(--confirmed-bg);
+      border-color: var(--confirmed-bd);
+  }
+
+  .svc-pill.inprogress {
+      background: var(--inprog-bg);
+      border-color: var(--inprog-bd);
+  }
+
+  .svc-pill.completed {
+      background: var(--done-bg);
+      border-color: var(--done-bd);
+  }
+
+  .today {
+      border-color: var(--primary);
+      background: #eff6ff;
+  }
+
+  .no-svc {
+      color: #9ca3af;
+      font-size: 12px;
+  }
+
+
+
+  .week-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+  }
+
+  .nav-weeks {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+  }
+
+  .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+  }
+
+  .week-col {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #fff;
+      padding: 10px;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+  }
+
+  .week-col header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      font-weight: 600;
+  }
+
+  .week-col .date {
+      color: #475569;
+      font-weight: 500;
+  }
+
+  .is-today {
+      outline: 2px solid var(--primary);
+      outline-offset: -2px;
+      background: #eff6ff;
+  }
+
+  .pill-svc {
+      display: inline-block;
+      margin: 4px 0;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      background: #fff;
+      font-size: 13px;
+      width: 100%;
+      text-align: left;
+  }
+
+  .pill-svc.pending {
+      background: var(--pending-bg);
+      border-color: var(--pending-bd);
+  }
+
+  .pill-svc.confirmed {
+      background: var(--confirmed-bg);
+      border-color: var(--confirmed-bd);
+  }
+
+  .pill-svc.inprogress {
+      background: var(--inprog-bg);
+      border-color: var(--inprog-bd);
+  }
+
+  .pill-svc.completed {
+      background: var(--done-bg);
+      border-color: var(--done-bd);
+  }
+
+  .pill-svc.conflict {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #b91c1c;
+  }
+
+
+  .no-data {
+      color: #9ca3af;
+      font-size: 13px;
+  }
+
+
+
+  @media (max-width:960px) {
+
+      .calendar,
+      .week-grid {
+          grid-template-columns: repeat(2, 1fr);
+      }
+  }
+
+  @media (max-width:560px) {
+
+      .calendar,
+      .week-grid {
+          grid-template-columns: 1fr;
+      }
+
+      .svc-pill {
+          font-size: 14px;
+          padding: 8px 12px;
+      }
+  }
+
+
+
+
+  /* =========================
+    MIS PUNTOS – FONDO BLANCO
+    ========================= */
+  #puntosNineraCard {
+      background: #ffffff !important;
+  }
+
+
+
+
+  /* =========================
+   FIX DEFINITIVO BOTÓN GUARDAR
+   ========================= */
+  button.btn-primary {
+      background-image: none !important;
+      background: #3B82F6 !important;
+      /* azul limpio */
+      color: #ffffff !important;
+      border: none !important;
+      box-shadow: 0 6px 14px rgba(59, 130, 246, 0.25);
+  }
+
+
+
+  button.btn-primary:hover {
+      background: #2563EB !important;
+  }
+
+
+
+  /* =========================
+   HEADER PANEL NIÑERA
+   ========================= */
+  .panel-header {
+      background: #ffffff;
+  }
+
+
+  .panel-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+  }
+
+
+
+  .panel-saludo {
+      font-size: clamp(18px, 4.5vw, 22px);
+      font-weight: 600;
+      color: var(--dark-main);
+  }
+
+
+
+  .logout-btn {
+      font-size: 14px;
+  }
+
+
+
+
+  /* =========================
+   MODAL – SOLO FINALIZAR SERVICIO EN AZUL
+   ========================= */
+
+
+
+
+  /* Primer botón ghost = Finalizar servicio */
+  #modalBackdrop .actions .btn-ghost:first-of-type {
+      background: #3B82F6;
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-btn);
+      padding: 12px 20px;
+      font-weight: 600;
+      box-shadow: 0 6px 14px rgba(59, 130, 246, 0.25);
+  }
+
+
+
+
+  /* Hover solo para finalizar */
+  #modalBackdrop .actions .btn-ghost:first-of-type:hover {
+      background: #2563EB;
+  }
+
+
+
+
+  /* Botón Cerrar (segundo) se queda normal */
+  #modalBackdrop .actions .btn-ghost:last-of-type {
+      background: transparent;
+      color: var(--pink-main);
+      box-shadow: none;
+  }
+
+
+
+
+
+  /* 🔴 SERVICIO EMPALMADO – CALENDARIO NIÑERA */
+  .svc-pill.conflict {
+      background: #fee2e2 !important;
+      border-color: #ef4444 !important;
+      color: #b91c1c !important;
+      font-weight: 700;
+  }
+
+
+
+
+  /* 🔴 SERVICIO EMPALMADO – PRIORIDAD MÁXIMA */
+  .svc-pill.conflict,
+  .svc-pill.conflict.pending,
+  .svc-pill.conflict.confirmed,
+  .svc-pill.conflict.inprogress,
+  .svc-pill.conflict.completed {
+      background: #fee2e2 !important;
+      border-color: #ef4444 !important;
+      color: #b91c1c !important;
+      font-weight: 700;
+  }
+
+
+
+
+  .svc-hidden-admin {
+      background: #4dd0e1;
+      /* cian / azul celeste */
+      color: #00363a;
+  }
+
+
+
+
+  .vista {
+      display: none;
+      padding-bottom: 80px;
+      /* espacio para menú inferior */
+  }
+
+  .vista.activa {
+      display: block;
+  }
+
+
+
+
+  .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: #ffffff;
+      border-top: 1px solid var(--gray-border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 999;
+  }
+
+
+
+
+  .bottom-nav button {
+      background: none;
+      border: none;
+      font-size: 14px;
+      color: #6B7280;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      font-family: 'Nunito Sans', sans-serif;
+  }
+
+
+
+
+  .bottom-nav button.activo {
+      color: var(--pink-main);
+      font-weight: 600;
+  }
+
+
+  .btn-pink {
+      background: #E84C9A;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-weight: 600;
+      cursor: pointer;
+  }
+
+  .btn-pink:hover {
+      background: #d63f86;
+  }
+
+
+
+
+
+
+  .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, .35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+  }
+
+
+  .modal-card {
+      background: #fff;
+      border-radius: 18px;
+      max-width: 640px;
+      width: 100%;
+      padding: 22px;
+
+      max-height: 85vh;
+      /* 👈 límite de alto */
+      overflow-y: auto;
+      /* 👈 SCROLL INTERNO */
+      -webkit-overflow-scrolling: touch;
+  }
+
+
+
+  .modal-planeacion textarea {
+      min-height: 80px;
+      resize: none;
+  }
+
+
+
+  .modal-title {
+      margin-bottom: 16px;
+  }
+
+  .modal-title.pink {
+      color: #E84C9A;
+  }
+
+
+  .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+  }
+
+
+  .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+  }
+
+
+  .form-group input,
+  .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-family: inherit;
+  }
+
+
+  .form-group input:focus,
+  .form-group textarea:focus {
+      outline: none;
+      border-color: #E84C9A;
+  }
+
+
+  .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 18px;
+  }
+
+
+
+
+  .toast {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #E84C9A;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .3s, transform .3s;
+      z-index: 2000;
+  }
+
+  .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-6px);
+  }
+
+
+  /* =========================
+   SUPERVISIÓN – PLANEACIONES
+   ========================= */
+
+  .supervision-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(232, 76, 154, .12);
+      margin-bottom: 24px;
+  }
+
+  .supervision-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px;
+      color: var(--pink-main);
+      margin-bottom: 14px;
+  }
+
+  /* Ciudad */
+  .pl-ciudad {
+      margin-top: 14px;
+  }
+
+  .pl-ciudad-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 16px;
+      color: #374151;
+  }
+
+  .pl-ciudad-header span {
+      font-size: 18px;
+      color: var(--pink-main);
+  }
+
+  /* Lista de planeaciones */
+  .pl-lista {
+      margin-left: 28px;
+      margin-top: 10px;
+  }
+
+  /* Item */
+  .pl-item {
+      background: linear-gradient(180deg, #ECFDF5, #D1FAE5);
+      border: 1px solid #86EFAC;
+      border-radius: 14px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease;
+  }
+
+  .pl-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(16, 185, 129, .18);
+  }
+
+  .pl-item strong {
+      font-weight: 600;
+      color: #065F46;
+  }
+
+  .pl-item small {
+      color: #047857;
+      font-size: 13px;
+  }
+
+  html,
+  body {
+      height: 100%;
+      overflow: auto;
+  }
+
+  #app {
+      height: calc(var(--vh, 1vh) * 100);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+  }
+
+
+  #app {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bottom-nav {
+      padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  input,
+  textarea,
+  button {
+      font-size: 16px;
+  }
+
+  .modal-backdrop {
+      backdrop-filter: blur(6px);
+  }
+
+  .vista {
+      transition: opacity .18s ease, transform .18s ease;
+  }
+
+  .vista.activa {
+      transform: translateY(0);
+      opacity: 1;
+  }
+
+
+  body.ninera .modal-planeacion {
+      scrollbar-gutter: stable;
+  }
+
+  /* ✅ SOLO NIÑERA: hacer el scrollbar del modal más delgado (sin tocar supervisión) */
+  body.ninera #planeacionBackdrop .modal-card {
+      scrollbar-width: thin;
+      /* Firefox */
+      scrollbar-color: rgba(0, 0, 0, .35) transparent;
+      /* Firefox */
+  }
+
+  body.ninera #planeacionBackdrop .modal-card::-webkit-scrollbar {
+      width: 8px;
+      /* Chrome/Edge */
+  }
+
+  body.ninera #planeacionBackdrop .modal-card::-webkit-scrollbar-track {
+      background: transparent;
+      /* sin color */
+  }
+
+  body.ninera #planeacionBackdrop .modal-card::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, .25);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      /* hace que se vea más “fina” */
+      background-clip: content-box;
+  }
+
+  /* =========================================
+   SCROLL MODAL PLANEACIÓN – NIÑERA
+   (copiado del comportamiento de supervisión)
+   ========================================= */
+
+  body.ninera .modal-planeacion {
+      scrollbar-width: thin;
+      /* Firefox */
+      scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
+  }
+
+  /* Chrome / Edge / Safari */
+  body.ninera .modal-planeacion::-webkit-scrollbar {
+      width: 6px;
+  }
+
+  body.ninera .modal-planeacion::-webkit-scrollbar-track {
+      background: transparent;
+  }
+
+  body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.25);
+      border-radius: 999px;
+  }
+
+  /* Hover → se nota más (como supervisión) */
+  body.ninera .modal-planeacion:hover::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.45);
+  }
