@@ -1094,53 +1094,24 @@ function obtenerPerfil(email) {
 
 function obtenerPerfilCompleto(email) {
     email = String(email || '').trim().toLowerCase();
-    if (!_estaAutorizado(email)) throw new Error('No autorizado.');
 
+    // 1. Intentar en Usuarios (Staff)
+    const shU = _hoja(NOMBRE_HOJA_USUARIOS);
+    const filaU = _buscarFilaPorValor(shU, 'email', email);
+    if (filaU !== -1) {
+        const headersU = shU.getRange(1, 1, 1, shU.getLastColumn()).getDisplayValues()[0].map(h => _norm(h));
+        const idxNombre = headersU.indexOf('nombre') + 1;
+        const idxEmail = headersU.indexOf('email') + 1;
+        const idxTelefono = headersU.indexOf('telefono') + 1;
+        return {
+            nombre: idxNombre > 0 ? String(shU.getRange(filaU, idxNombre).getValue() || '').trim() : '',
+            email: idxEmail > 0 ? String(shU.getRange(filaU, idxEmail).getValue() || '').trim() : email,
+            telefono: idxTelefono > 0 ? String(shU.getRange(filaU, idxTelefono).getValue() || '').trim() : ''
+        };
+    }
 
-
-
-
-
-
-
-    const sh = _hoja(NOMBRE_HOJA_USUARIOS);
-    const fila = _buscarFilaPorValor(sh, 'email', email);
-    if (fila === -1) throw new Error('Usuario no encontrado.');
-
-
-
-
-
-
-
-
-    const headers = sh.getRange(1, 1, 1, sh.getLastColumn())
-        .getDisplayValues()[0]
-        .map(h => _norm(h));
-
-
-
-
-
-
-
-
-    const idxNombre = headers.indexOf('nombre') + 1;
-    const idxEmail = headers.indexOf('email') + 1;
-    const idxTelefono = headers.indexOf('telefono') + 1; // teléfono → sin acento
-
-
-
-
-
-
-
-
-    return {
-        nombre: idxNombre > 0 ? String(sh.getRange(fila, idxNombre).getValue() || '').trim() : '',
-        email: idxEmail > 0 ? String(sh.getRange(fila, idxEmail).getValue() || '').trim() : email,
-        telefono: idxTelefono > 0 ? String(sh.getRange(fila, idxTelefono).getValue() || '').trim() : ''
-    };
+    // 2. Intentar en Clientes
+    return getPerfilCliente(email);
 }
 
 
