@@ -109,6 +109,13 @@ a {
     margin-bottom: 20px;
 }
 
+#paso-seleccion .card:hover {
+    transform: translateY(-5px);
+    border-color: var(--pink-main);
+    box-shadow: 0 12px 40px rgba(232, 76, 154, 0.2);
+}
+
+
 /* Buttons */
 button {
     cursor: pointer;

@@ -129,7 +129,7 @@ async function login(rol) {
             cargarResumenPlaneaciones();
         } else if (SESION.cliente) {
             document.querySelector('.bottom-nav').style.display = 'flex';
-            mostrarVistaCliente();
+            await mostrarVistaCliente();
         } else {
             document.querySelector('.bottom-nav').style.display = 'flex';
             mostrarVistaNinera();
@@ -1961,18 +1961,22 @@ async function mostrarVistaCliente() {
     ocultarTodo();
     document.getElementById('vista-cliente').style.display = 'block';
 
+    // Ocultar ambos inicialmente
+    document.getElementById('cliente-onboarding').style.display = 'none';
+    document.getElementById('cliente-dashboard').style.display = 'none';
+
     try {
         const perf = await api('getProfile', { email: SESION.email });
-        if (!perf.nombre || !perf.direccion) {
+        // Si no tiene nombre o el nombre es muy corto/vacío, ir a onboarding
+        if (!perf || !perf.nombre || String(perf.nombre).trim().length < 3) {
             document.getElementById('cliente-onboarding').style.display = 'block';
-            document.getElementById('cliente-dashboard').style.display = 'none';
         } else {
-            document.getElementById('cliente-onboarding').style.display = 'none';
             document.getElementById('cliente-dashboard').style.display = 'block';
             cargarServiciosCliente();
         }
     } catch (e) {
-        console.error(e);
+        console.error("Error cargando perfil:", e);
+        document.getElementById('cliente-onboarding').style.display = 'block';
     }
 }
 window.mostrarVistaCliente = mostrarVistaCliente;

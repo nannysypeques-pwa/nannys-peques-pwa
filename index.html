@@ -51,12 +51,20 @@
 
         <div id="paso-seleccion">
           <div class="brand-title">Nannys y Peques</div>
-          <p class="login-subtitle">Bienvenido, selecciona tu acceso:</p>
-          <div class="row" style="flex-direction: column; gap: 15px;">
-            <button class="btn-pink" onclick="mostrarLoginStaff()" style="width: 100%; padding: 18px;">Soy Niñera /
-              Staff 🧸</button>
-            <button class="btn-pink" onclick="mostrarPortalFamilia()"
-              style="width: 100%; padding: 18px; background: var(--blue-main);">Soy Familia 👨‍👩‍👧‍👦</button>
+          <p class="login-subtitle">¿Cómo vas a ingresar hoy?</p>
+          <div class="row" style="flex-direction: column; gap: 12px; padding: 10px 0;">
+            <div class="card" onclick="mostrarLoginStaff()"
+              style="cursor: pointer; padding: 20px; transition: transform 0.2s; border: 1px solid rgba(255,255,255,0.3);">
+              <div style="font-size: 24px; margin-bottom: 5px;">🍼</div>
+              <div style="font-weight: 700; color: var(--pink-main); font-size: 18px;">Niñera</div>
+              <div class="muted" style="font-size: 11px;">Acceso para colaboradoras</div>
+            </div>
+            <div class="card" onclick="mostrarPortalFamilia()"
+              style="cursor: pointer; padding: 20px; transition: transform 0.2s; border: 1px solid rgba(255,255,255,0.3);">
+              <div style="font-size: 24px; margin-bottom: 5px;">👨‍👩‍👧‍👦</div>
+              <div style="font-weight: 700; color: var(--blue-main); font-size: 18px;">Familia</div>
+              <div class="muted" style="font-size: 11px;">Portal para papás y mamás</div>
+            </div>
           </div>
         </div>
 
