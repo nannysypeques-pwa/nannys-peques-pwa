@@ -6,7 +6,8 @@ let SESION = {
     email: null,
     nombre: '',
     admin: false,
-    supervision: false
+    supervision: false,
+    cliente: false
 };
 
 // Inicializar sesión desde localStorage si existe
@@ -90,12 +91,13 @@ async function login() {
         SESION.nombre = res.nombre || '';
         SESION.admin = !!res.admin;
         SESION.supervision = !!res.supervision;
+        SESION.cliente = !!res.cliente;
 
-        document.body.classList.remove('admin', 'supervision', 'ninera');
-        document.body.classList.add(
-            SESION.admin ? 'admin' :
-                SESION.supervision ? 'supervision' : 'ninera'
-        );
+        document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente');
+        if (SESION.admin) document.body.classList.add('admin');
+        else if (SESION.supervision) document.body.classList.add('supervision');
+        else if (SESION.cliente) document.body.classList.add('cliente');
+        else document.body.classList.add('ninera');
 
         localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
 
@@ -113,6 +115,9 @@ async function login() {
             ocultarTodo();
             document.getElementById('vista-supervision').style.display = 'block';
             cargarResumenPlaneaciones();
+        } else if (SESION.cliente) {
+            document.querySelector('.bottom-nav').style.display = 'flex';
+            mostrarVistaCliente();
         } else {
             document.querySelector('.bottom-nav').style.display = 'flex';
             mostrarVistaNinera();
@@ -158,7 +163,7 @@ async function guardarNueva() {
 
 function logout() {
     localStorage.removeItem('nyp_sesion');
-    SESION = { email: null, nombre: '', admin: false, supervision: false };
+    SESION = { email: null, nombre: '', admin: false, supervision: false, cliente: false };
 
     document.getElementById('app').style.display = 'none';
     document.getElementById('auth').style.display = 'flex';
@@ -1154,33 +1159,33 @@ function irVista(nombre) {
     const btn = [...document.querySelectorAll('.bottom-nav button')].find(b => b.getAttribute('onclick')?.includes(nombre));
     if (btn) btn.classList.add('activo');
 
-    // Validar si es vista de disponibilidad para cargar
+    // Lógica para Clientes
+    if (SESION.cliente) {
+        if (nombre === 'servicios') cargarServiciosCliente();
+        if (nombre === 'perfil') mostrarVistaCliente();
+        return;
+    }
+
+    // Lógica para Staff (Niñera)
     if (nombre === 'disponibilidad') {
-        // Mostrar cards de disponibilidad
         document.getElementById('panel').style.display = 'block';
         document.getElementById('tablaActualCard').style.display = 'block';
         document.getElementById('resumenCard').style.display = 'block';
-
-        // Ocultar cards de servicios (para evitar conflictos si CSS no lo maneja)
         document.getElementById('svcCard').style.display = 'none';
         document.getElementById('planeacionesNineraCard').style.display = 'none';
-
         cargar();
     }
-
     if (nombre === 'servicios') {
         document.getElementById('svcCard').style.display = 'block';
         document.getElementById('planeacionesNineraCard').style.display = 'block';
-        document.getElementById('planeacionesNineraCardSiguiente').style.display = 'block';
-        document.getElementById('puntosNineraCard').style.display = 'block';
-
-        // Ocultar disponibilidad
         document.getElementById('panel').style.display = 'none';
         document.getElementById('tablaActualCard').style.display = 'none';
         document.getElementById('resumenCard').style.display = 'none';
+        cargarServicios();
     }
-
-    if (nombre === 'perfil') cargarPerfil();
+    if (nombre === 'perfil') {
+        cargarPerfil();
+    }
 }
 
 async function cargarPerfil() {

@@ -39,6 +39,12 @@ function doPost(e) {
             case 'getProfile':
                 result = obtenerPerfilCompleto(email);
                 break;
+            case 'updatePerfilCliente':
+                result = updatePerfilCliente(email, payload);
+                break;
+            case 'validarRegistroCliente':
+                result = validarRegistroCliente(email);
+                break;
 
             // --- SERVICIOS NIÑERA ---
             case 'getServiciosNinera':
@@ -52,6 +58,9 @@ function doPost(e) {
                 break;
             case 'registrarFinServicio':
                 result = registrarFinServicio(payload.sheet, payload.row_base, payload.fecha, email);
+                break;
+            case 'getServiciosCliente':
+                result = getServiciosCliente(email);
                 break;
 
             // --- DISPONIBILIDAD ---
@@ -152,6 +161,7 @@ function doOptions(e) {
  *  CONFIG
  *  ========================= */
 const NOMBRE_HOJA_USUARIOS = 'Usuarios';
+const NOMBRE_HOJA_CLIENTES = 'Clientes';
 const NOMBRE_HOJA_DISPONIBILIDAD = 'Disponibilidad';
 const NOMBRE_HOJA_SERVICIOS = 'Servicios';
 const ZONA_HORARIA = Session.getScriptTimeZone() || 'America/Mexico_City';
@@ -360,9 +370,32 @@ function _mapaColumnasPorFecha_(sh) {
  *  AUTORIZACIÓN / ROLES / OTP / LOGIN
  *  ========================= */
 function _estaAutorizado(email) {
-    const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) return false;
-    const idxActivo = _idxCol(sh, 'activo'); if (idxActivo <= 0) return false;
-    const val = sh.getRange(fila, idxActivo).getValue(); return _esVerdadero(val);
+    email = String(email || '').trim().toLowerCase();
+
+    // 1. Revisar si está en hoja Usuarios y activo
+    const shU = _hoja(NOMBRE_HOJA_USUARIOS);
+    const filaU = _buscarFilaPorValor(shU, 'email', email);
+    if (filaU !== -1) {
+        const idxActivo = _idxCol(shU, 'activo');
+        if (idxActivo > 0) {
+            const val = shU.getRange(filaU, idxActivo).getValue();
+            if (_esVerdadero(val)) return true;
+        }
+    }
+
+    // 2. Si no es usuario, revisar si es "Cliente" potencial (tiene servicios)
+    const shS = _hoja(NOMBRE_HOJA_SERVICIOS);
+    const filaS = _buscarFilaPorValor(shS, 'email', email);
+    if (filaS !== -1) return true;
+
+    return false;
+}
+
+function esCliente(email) {
+    email = String(email || '').trim().toLowerCase();
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+    const filaC = _buscarFilaPorValor(shC, 'email', email);
+    return filaC !== -1;
 }
 function esAdmin(email) {
     email = String(email || '').trim().toLowerCase();
@@ -471,17 +504,63 @@ function solicitarOTP(email) {
 
 
 function establecerContrasena(email, otp, nuevaContrasena) {
-    email = String(email || '').trim().toLowerCase(); otp = String(otp || '').trim();
+    email = String(email || '').trim().toLowerCase();
+    otp = String(otp || '').trim();
     if (!email || !otp || !nuevaContrasena) throw new Error('Datos incompletos');
-    if (!_estaAutorizado(email)) throw new Error('Su correo no está autorizado. Contacte a la administración.');
-    const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) throw new Error('Usuario no encontrado');
-    const otpGuard = String(sh.getRange(fila, 4).getValue()).trim();
-    const expStr = sh.getRange(fila, 5).getValue(); const expDate = new Date(expStr);
-    if (otp !== otpGuard) throw new Error('Código incorrecto');
-    if (!(expDate instanceof Date) || isNaN(expDate.getTime()) || new Date() > expDate) throw new Error('Código vencido');
-    const passHash = _sha256(nuevaContrasena);
-    const obj = { email: sh.getRange(fila, 1).getValue(), nombre: sh.getRange(fila, 2).getValue(), pass_hash: passHash, otp: '', otp_expira: '', creado: sh.getRange(fila, 6).getValue() || _ahoraISO(), actualizado: _ahoraISO(), activo: sh.getRange(fila, 8).getValue() };
-    _escribirObjeto(sh, fila, obj); return { ok: true };
+
+    // 1. Buscar en Usuarios
+    const shU = _hoja(NOMBRE_HOJA_USUARIOS);
+    const filaU = _buscarFilaPorValor(shU, 'email', email);
+    if (filaU !== -1) {
+        const otpGuard = String(shU.getRange(filaU, 4).getValue()).trim();
+        const expStr = shU.getRange(filaU, 5).getValue();
+        const expDate = new Date(expStr);
+        if (otp !== otpGuard) throw new Error('Código incorrecto');
+        if (!(expDate instanceof Date) || isNaN(expDate.getTime()) || new Date() > expDate) throw new Error('Código vencido');
+        const passHash = _sha256(nuevaContrasena);
+        shU.getRange(filaU, 3).setValue(passHash);
+        shU.getRange(filaU, 4).setValue('');
+        shU.getRange(filaU, 5).setValue('');
+        shU.getRange(filaU, 7).setValue(_ahoraISO());
+        return { ok: true };
+    }
+
+    // 2. Buscar en Clientes (Registro espontáneo)
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+    const filaC = _buscarFilaPorValor(shC, 'email', email);
+    if (filaC === -1) {
+        // Si no está, validamos que tenga servicios para permitir crear perfil
+        if (!validarRegistroCliente(email)) throw new Error('servicio aún no confirmado');
+        // Crear fila nueva
+        const headers = shC.getRange(1, 1, 1, shC.getLastColumn()).getValues()[0];
+        const newRow = new Array(headers.length).fill('');
+        const idxEmail = _idxCol(shC, 'email');
+        const idxPass = _idxCol(shC, 'pass_hash');
+        const idxOTP = _idxCol(shC, 'otp');
+        const idxCreado = _idxCol(shC, 'creado');
+        const idxActivo = _idxCol(shC, 'activo');
+
+        newRow[idxEmail - 1] = email;
+        newRow[idxPass - 1] = _sha256(nuevaContrasena);
+        newRow[idxCreado - 1] = _ahoraISO();
+        newRow[idxActivo - 1] = true;
+        shC.appendRow(newRow);
+        return { ok: true };
+    } else {
+        // Ya existe en Clientes, validar OTP si lo pidió
+        const idxOTP = _idxCol(shC, 'otp');
+        const idxExp = _idxCol(shC, 'otp_expira');
+        const otpGuard = String(shC.getRange(filaC, idxOTP).getValue()).trim();
+        const expDate = new Date(shC.getRange(filaC, idxExp).getValue());
+        if (otp !== otpGuard) throw new Error('Código incorrecto');
+        if (new Date() > expDate) throw new Error('Código vencido');
+
+        const idxPass = _idxCol(shC, 'pass_hash');
+        shC.getRange(filaC, idxPass).setValue(_sha256(nuevaContrasena));
+        shC.getRange(filaC, idxOTP).setValue('');
+        shC.getRange(filaC, idxExp).setValue('');
+        return { ok: true };
+    }
 }
 
 
