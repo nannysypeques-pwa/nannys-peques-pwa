@@ -1154,8 +1154,33 @@ function irVista(nombre) {
     const btn = [...document.querySelectorAll('.bottom-nav button')].find(b => b.getAttribute('onclick')?.includes(nombre));
     if (btn) btn.classList.add('activo');
 
+    // Validar si es vista de disponibilidad para cargar
+    if (nombre === 'disponibilidad') {
+        // Mostrar cards de disponibilidad
+        document.getElementById('panel').style.display = 'block';
+        document.getElementById('tablaActualCard').style.display = 'block';
+        document.getElementById('resumenCard').style.display = 'block';
+
+        // Ocultar cards de servicios (para evitar conflictos si CSS no lo maneja)
+        document.getElementById('svcCard').style.display = 'none';
+        document.getElementById('planeacionesNineraCard').style.display = 'none';
+
+        cargar();
+    }
+
+    if (nombre === 'servicios') {
+        document.getElementById('svcCard').style.display = 'block';
+        document.getElementById('planeacionesNineraCard').style.display = 'block';
+        document.getElementById('planeacionesNineraCardSiguiente').style.display = 'block';
+        document.getElementById('puntosNineraCard').style.display = 'block';
+
+        // Ocultar disponibilidad
+        document.getElementById('panel').style.display = 'none';
+        document.getElementById('tablaActualCard').style.display = 'none';
+        document.getElementById('resumenCard').style.display = 'none';
+    }
+
     if (nombre === 'perfil') cargarPerfil();
-    if (nombre === 'disponibilidad') cargar();
 }
 
 async function cargarPerfil() {

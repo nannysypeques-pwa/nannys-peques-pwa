@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nannys-pwa-v6';
+const CACHE_NAME = 'nannys-pwa-v7';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
