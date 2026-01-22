@@ -224,7 +224,7 @@
         <!-- ONBOARDING: Completar perfil -->
         <div id="cliente-onboarding" style="display:none;">
           <div class="card">
-            <h3>¡Bienvenida Familia! ✨</h3>
+            <h2 class="welcome-title">¡Bienvenida Familia! ✨</h2>
             <p>Para poder brindarte el mejor servicio, por favor completa tu información por única vez:</p>
             <div class="form-grid">
               <div class="form-group full">
@@ -264,10 +264,6 @@
                 <input id="reg_condicion" type="text" placeholder="Ninguna">
               </div>
               <div class="form-group full">
-                <label>Servicio médico / Seguro</label>
-                <input id="reg_salud" type="text" placeholder="Nombre y póliza (opcional)">
-              </div>
-              <div class="form-group full">
                 <label>Preferencias o Rutinas</label>
                 <textarea id="reg_preferencias" placeholder="¿Qué le gusta hacer? ¿A qué hora duerme?"></textarea>
               </div>
@@ -297,6 +293,14 @@
             <p class="muted">Aquí podrás ver el detalle de tus servicios agendados.</p>
             <div id="servicios-cliente-lista" style="margin-top:15px;"></div>
           </div>
+        </div>
+      </div>
+
+      <div id="vista-actividades-cliente" class="vista">
+        <div class="card">
+          <h3>Actividades del Peque</h3>
+          <p class="muted">Aquí podrás consultar las planeaciones de actividades para tus servicios.</p>
+          <div id="lista-actividades-cliente" style="margin-top:15px;"></div>
         </div>
       </div>
 
@@ -469,16 +473,16 @@
       </div>
 
       <nav class="bottom-nav">
-        <button onclick="irVista('perfil')">
+        <button id="nav-perfil" onclick="irVista('perfil')">
           👤<span>Perfil</span>
         </button>
-        <button onclick="irVista('servicios')" class="activo">
+        <button id="nav-servicios" onclick="irVista('servicios')" class="activo">
           🏠<span>Servicios</span>
         </button>
-        <button onclick="irVista('disponibilidad')">
-          📅<span>Disponibilidad</span>
+        <button id="nav-disponibilidad" onclick="irVista('disponibilidad')">
+          📅<span id="label-disponibilidad">Disponibilidad</span>
         </button>
-        <button onclick="irVista('comunidad')">
+        <button id="nav-comunidad" onclick="irVista('comunidad')">
           💬<span>Comunidad</span>
         </button>
       </nav>

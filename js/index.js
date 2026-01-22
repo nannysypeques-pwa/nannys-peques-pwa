@@ -1166,8 +1166,11 @@ function irVista(nombre) {
     document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
 
     let target = nombre;
-    // Si es cliente y pide 'servicios', redirigir a 'cliente'
-    if (SESION.cliente && nombre === 'servicios') target = 'cliente';
+    // Redirecciones por rol
+    if (SESION.cliente) {
+        if (nombre === 'servicios') target = 'cliente';
+        if (nombre === 'disponibilidad') target = 'actividades-cliente';
+    }
 
     const vista = document.getElementById('vista-' + target);
     if (vista) vista.classList.add('activa');
@@ -1176,12 +1179,24 @@ function irVista(nombre) {
     const btn = [...document.querySelectorAll('.bottom-nav button')].find(b => b.getAttribute('onclick')?.includes(nombre));
     if (btn) btn.classList.add('activo');
 
-    // Lógica adicional por vista
+    // Lógica adicional por vista y rol
+    const btnAct = document.getElementById('nav-disponibilidad');
+    const btnCom = document.getElementById('nav-comunidad');
+    const lblAct = document.getElementById('label-disponibilidad');
+
+    if (btnAct) btnAct.style.display = 'flex';
+    if (btnCom) btnCom.style.display = 'flex';
+
     if (SESION.cliente) {
+        if (lblAct) lblAct.textContent = 'Actividades';
         if (target === 'cliente') mostrarVistaCliente();
+        if (target === 'actividades-cliente') cargarActividadesCliente();
         if (target === 'perfil') cargarPerfil();
         return;
     }
+
+    // Staff
+    if (lblAct) lblAct.textContent = 'Disponibilidad';
 
     if (nombre === 'disponibilidad') {
         ocultarTodo();
@@ -1999,7 +2014,8 @@ async function guardarRegistroCompleto() {
         condicion: document.getElementById('reg_condicion').value,
         salud: document.getElementById('reg_salud').value,
         preferencias: document.getElementById('reg_preferencias').value,
-        mascotas: document.getElementById('reg_mascotas').value
+        mascotas: document.getElementById('reg_mascotas').value,
+        email: SESION.email // ¡CRÍTICO! Necesario para buscar la fila
     };
 
     try {
@@ -2086,6 +2102,54 @@ function volverSeleccion() {
     document.getElementById('paso-olvide').style.display = 'none';
 }
 window.volverSeleccion = volverSeleccion;
+
+async function cargarActividadesCliente() {
+    const lista = document.getElementById('lista-actividades-cliente');
+    if (!lista) return;
+    lista.innerHTML = 'Cargando actividades...';
+    try {
+        const svcs = await api('getServiciosCliente', { email: SESION.email });
+        if (!svcs || svcs.length === 0) {
+            lista.innerHTML = '<p class="muted">No hay actividades programadas para tus servicios actuales.</p>';
+            return;
+        }
+
+        let html = '';
+        for (const s of svcs) {
+            // El backend devuelve objetos con headers exactos. En Servicios suele ser "Tipo de servicio"
+            const tipo = s['Tipo de servicio'] || s['tipo_de_servicio'] || '';
+            if (tipo.toLowerCase() === 'neuronanny') {
+                const plan = await api('obtenerPlaneacionNeuronanny', {
+                    fecha: _toISODate(s.Fecha || s.fecha),
+                    cliente: s.cliente || s.Nombre || s.Nombre_del_Cliente
+                });
+                if (plan && plan.area_desarrollo) {
+                    html += `
+                        <div class="card" style="margin-bottom:15px; border-left: 4px solid var(--pink-main); padding: 15px;">
+                            <div style="font-size:12px; color:var(--pink-main); font-weight:700; margin-bottom:5px;">${_toISODate(s.Fecha || s.fecha)}</div>
+                            <h4 style="margin:0 0 8px 0; color:var(--text-main);">${plan.area_desarrollo}</h4>
+                            <p style="font-size:14px; margin-bottom:10px; color:#4B5563;"><b>Objetivo:</b> ${plan.objetivo}</p>
+                            <details>
+                                <summary style="font-size:13px; color:var(--blue-main); cursor:pointer; font-weight:600;">Ver descripción y materiales</summary>
+                                <div style="font-size:14px; margin-top:10px; line-height:1.5; color:#374151;">
+                                    <p style="margin-bottom:8px;"><b>Descripción:</b><br>${plan.descripcion}</p>
+                                    <p style="margin-bottom:8px;"><b>Materiales:</b><br>${plan.materiales}</p>
+                                    ${plan.imagen ? `<img src="${plan.imagen}" style="max-width:100%; border-radius:8px; margin-top:10px; display:block;">` : ''}
+                                </div>
+                            </details>
+                        </div>
+                    `;
+                }
+            }
+        }
+        lista.innerHTML = html || '<div class="card" style="text-align:center; padding: 20px;"><p class="muted">Aún no hay planeaciones registradas para tus servicios.</p></div>';
+    } catch (e) {
+        console.error(e);
+        lista.innerHTML = '<p class="err">Error al cargar las actividades.</p>';
+    }
+}
+window.cargarActividadesCliente = cargarActividadesCliente;
+
 
 
 

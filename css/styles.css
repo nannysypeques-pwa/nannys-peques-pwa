@@ -555,3 +555,45 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     background: #E5E7EB;
     border-radius: 10px;
 }
+
+/* MEJORAS FORMULARIO FAMILIA */
+.welcome-title {
+    font-family: 'Quicksand', sans-serif;
+    font-size: 28px;
+    color: var(--blue-main);
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.form-group label {
+    font-weight: 700;
+    color: #374151;
+    /* Gris más oscuro para contraste */
+    margin-bottom: 5px;
+    display: block;
+}
+
+.form-group input,
+.form-group textarea {
+    border: 2px solid #D1D5DB;
+    /* Borde más grueso y visible */
+    padding: 12px;
+    font-size: 16px;
+    background: #FFFFFF;
+    transition: border-color 0.2s;
+    border-radius: 8px;
+    width: 100%;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: var(--blue-main);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #9CA3AF;
+}
