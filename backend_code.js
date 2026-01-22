@@ -1914,6 +1914,31 @@ function _disponiblePorTurnos(nombre, fechaISO, hi, hf) {
     const t = _turnosDe(nombre, fechaISO);
     return _rangoDentroDeTurnos(hi, hf, t.M, t.V);
 }
+
+function _extractCoordsFromUrl(url) {
+    if (!url || !url.startsWith('http')) return null;
+    try {
+        // 1. Resolver redirección (ej: maps.app.goo.gl)
+        const response = UrlFetchApp.fetch(url, { followRedirects: false, muteHttpExceptions: true });
+        let longUrl = url;
+        if (response.getResponseCode() >= 300 && response.getResponseCode() < 400) {
+            const loc = response.getHeaders()['Location'];
+            if (loc) longUrl = loc;
+        }
+
+        // 2. Buscar patrón @lat,lng
+        // Ej: https://www.google.com/maps/place/.../@19.4326,-99.1332,17z...
+        // O param ?query=lat,lng
+        let m = longUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (m) return { lat: Number(m[1]), lng: Number(m[2]) };
+
+        // Si no está en el @, buscar query param 'q' o 'll' (menos común en maps nuevos pero posible)
+        // Pero lo más fiable para "Share Location" es el @.
+        return null;
+    } catch (e) {
+        return null;
+    }
+}
 function sugerirNinerasServicio(fechaISO, horaInicio, horaFin, ubicacionServicio, edadNino) {
     fechaISO = _toISODate(fechaISO);
     const hi = _toHM(horaInicio), hf = _toHM(horaFin);
@@ -1931,7 +1956,12 @@ function sugerirNinerasServicio(fechaISO, horaInicio, horaFin, ubicacionServicio
 
 
 
-    const locServicio = _geocode(String(ubicacionServicio || '').trim());
+    // Intentar extraer coordenadas si es un link de Maps, sino geocodificar normal
+    const ubicacionStr = String(ubicacionServicio || '').trim();
+    let locServicio = _extractCoordsFromUrl(ubicacionStr);
+    if (!locServicio) {
+        locServicio = _geocode(ubicacionStr);
+    }
     const { hdrIdx, lista, sheet } = _leerNinerasActivas();
     const candidatos = [];
 
@@ -3998,7 +4028,7 @@ function enviarPushPrueba(email) {
         vapidDetails: {
             subject: 'mailto:nannysypeques@gmail.com',
             publicKey: BAALWaRIxKUyY4J0qKwy0CV1AJKtsloQZHcPzZzHLqF3GQOf8HzLEbe6gYJsgr1BEW0OGbwjfE6QR6twPW27Ghk,
-            privateKey: JPLuyDryD_QHus7kN78fDIMk8fbIBVotPIJGs1dKtKA
+            privateKey: xxxxxxxxxx
         }
     };
 

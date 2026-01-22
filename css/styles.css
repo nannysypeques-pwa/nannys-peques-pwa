@@ -1,1123 +1,522 @@
-  :root {
-      /* Marca */
-      --pink-main: #E84C9A;
-      --pink-soft: #FFE4F1;
+:root {
+    /* =========================
+     🎨 PALETA MODERN GLASS
+     ========================= */
 
-      --blue-main: #3BB6C4;
-      /* azul/turquesa marca */
-      --blue-soft: #E6F7FA;
+    /* PRIMARIOS */
+    --pink-main: #E84C9A;
+    --pink-light: #FCE7F3;
+    --pink-hover: #D63384;
 
-      --yellow-main: #FACC15;
-      --yellow-soft: #FEF9C3;
+    --blue-main: #3BB6C4;
+    --blue-light: #E0F7FA;
 
-      --dark-main: #374151;
-      --gray-soft: #F9FAFB;
-      --gray-border: #E5E7EB;
+    --text-main: #1F2937;
+    /* Gris muy oscuro, suave */
+    --text-muted: #6B7280;
 
-      --success: #22C55E;
-      --warning: #F59E0B;
-      --error: #EF4444;
+    /* ESTADOS */
+    --success-bg: #D1FAE5;
+    --success-text: #065F46;
+    --warning-bg: #FEF3C7;
+    --warning-text: #92400E;
+    --error-bg: #FEE2E2;
+    --error-text: #B91C1C;
 
-      --radius-card: 18px;
-      --radius-btn: 999px;
-      --shadow-card: 0 12px 30px rgba(232, 76, 154, .12);
-  }
+    /* GLASS EFFECTS */
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: 1px solid rgba(255, 255, 255, 0.6);
+    --glass-shadow: 0 8px 32px 0 rgba(232, 76, 154, 0.1);
+    /* Sombra rosada sutil */
+    --glass-blur: blur(12px);
 
+    /* UTILS */
+    --radius-xl: 24px;
+    /* Tarjetas */
+    --radius-lg: 16px;
+    /* Elementos internos */
+    --radius-full: 9999px;
+    /* Botones */
 
-  /* =========================
-   LOGIN – ESTILO NANNYS
+    --vh: 1vh;
+    /* Mobile browser safeguard */
+}
+
+/* =========================
+   RESET & BASE
+   ========================= */
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    height: 100%;
+    overflow: hidden;
+    /* App-like feel */
+}
+
+body {
+    font-family: 'Nunito Sans', system-ui, -apple-system, sans-serif;
+    margin: 0;
+    color: var(--text-main);
+    background: linear-gradient(135deg, #FFF0F5 0%, #E0F7FA 100%);
+    /* Gradiente Marca Suave */
+    background-attachment: fixed;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* App Container Scrollable */
+#app {
+    height: 100%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: 90px;
+    /* Espacio para floating nav */
+}
+
+h1,
+h2,
+h3,
+h4 {
+    font-family: 'DM Serif Display', serif;
+    font-weight: 400;
+    margin: 0 0 12px 0;
+    color: var(--pink-main);
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* =========================
+   🔮 GLASS COMPONENTS
    ========================= */
 
+/* Glass Card */
+.card,
+.auth-card,
+.supervision-card,
+.perfil-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--radius-xl);
+    padding: 20px;
+    margin-bottom: 20px;
+}
 
-  .auth-wrapper {
-      height: calc(var(--vh, 1vh) * 100);
-      background: linear-gradient(180deg, var(--pink-soft), #ffffff);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-  }
+/* Buttons */
+button {
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    transition: transform 0.1s ease, box-shadow 0.2s;
+}
 
-  html {
-      -webkit-text-size-adjust: 100%;
-      text-size-adjust: 100%;
-  }
+button:active {
+    transform: scale(0.97);
+}
 
-  .auth-card {
-      background: #ffffff;
-      width: 100%;
-      max-width: 420px;
-      border-radius: var(--radius-card);
-      padding: 32px;
-      box-shadow: var(--shadow-card);
-      text-align: center;
-  }
+/* Aliases for compatibility */
+.btn-primary,
+.btn-pink {
+    background: linear-gradient(135deg, var(--pink-main), var(--blue-main));
+    /* Gradiente Marca */
+    color: white;
+    padding: 14px 24px;
+    border-radius: var(--radius-full);
+    font-weight: 700;
+    font-size: 16px;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(232, 76, 154, 0.3);
+    letter-spacing: 0.5px;
+}
 
+.btn-primary:hover,
+.btn-pink:hover {
+    box-shadow: 0 6px 20px rgba(59, 182, 196, 0.4);
+}
 
-  .auth-card h2,
-  .auth-card p,
-  .auth-card label {
-      font-family: 'Poppins', sans-serif;
-      color: var(--dark-main);
-  }
+.btn-ghost {
+    background: transparent;
+    color: var(--pink-main);
+    font-weight: 600;
+}
 
-  .auth-card p.muted {
-      font-family: 'Nunito Sans', sans-serif;
-  }
+/* Inputs */
+input,
+textarea,
+select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    font-size: 15px;
+    color: var(--text-main);
+    font-family: 'Nunito Sans', sans-serif;
+    margin-bottom: 12px;
+    transition: all 0.2s;
+}
 
-  .auth-card input {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid var(--gray-border);
-      margin-bottom: 12px;
-      font-size: 15px;
-      font-family: 'Nunito Sans', sans-serif;
-  }
+input:focus,
+textarea:focus {
+    outline: none;
+    background: #fff;
+    border-color: var(--pink-main);
+    box-shadow: 0 0 0 3px var(--pink-light);
+}
 
-  .auth-card input:focus {
-      outline: none;
-      border-color: var(--pink-main);
-  }
-
-
-  .auth-card .btn-primary {
-      width: 100%;
-      background: var(--pink-main);
-      color: #fff;
-      border: none;
-      padding: 14px;
-      border-radius: var(--radius-btn);
-      font-size: 15px;
-      font-weight: 600;
-  }
-
-  body>h2:first-of-type {
-      display: none;
-  }
-
-  /* =========================
-   MARCA – LOGIN
+/* =========================
+   LOGIN & AUTH
    ========================= */
+.auth-wrapper {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.brand-title {
+    font-size: 36px;
+    margin-bottom: 8px;
+    background: -webkit-linear-gradient(45deg, var(--pink-main), var(--blue-main));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.login-subtitle {
+    color: var(--text-muted);
+    margin-bottom: 32px;
+}
+
+/* Esconder el título default del body si existe */
+body>h2:first-of-type {
+    display: none;
+}
 
 
-  .brand-title {
-      font-family: 'DM Serif Display', serif;
-      font-size: clamp(28px, 6vw, 40px);
-      font-weight: 400;
-      color: var(--pink-main);
-      margin-bottom: 26px;
-      letter-spacing: 0.8px;
-      line-height: 1.1;
-      text-shadow: 0 1px 0 rgba(255, 255, 255, .6);
-  }
-
-
-  .login-subtitle {
-      font-family: 'Nunito Sans', sans-serif;
-      font-size: 15px;
-      color: #6B7280;
-      margin-bottom: 16px;
-  }
-
-
-  .perfil-card {
-      background: #fff;
-      border-radius: 18px;
-      padding: 24px;
-      max-width: 420px;
-      margin: 20px auto;
-      box-shadow: 0 12px 30px rgba(232, 76, 154, .12);
-  }
-
-
-  .perfil-item {
-      margin-bottom: 18px;
-  }
-
-
-  .perfil-item .label {
-      font-size: 13px;
-      color: #9CA3AF;
-  }
-
-
-  .perfil-item span {
-      font-size: 16px;
-      font-weight: 600;
-      color: #374151;
-  }
-
-
-  .btn-cerrar {
-      margin-top: 20px;
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 999px;
-      background: #E84C9A;
-      color: #fff;
-      font-weight: 600;
-  }
-
-
-  .bottom-nav {
-      display: none;
-  }
-
-  :root {
-      --radius: 14px;
-      --border: #e5e7eb;
-      --muted: #6b7280;
-      --ok: #059669;
-      --err: #dc2626;
-      --primary: #2563eb;
-      --bg-soft: #f8fafc;
-      --pending-bg: #FEF9C3;
-      --pending-bd: #F59E0B;
-      --confirmed-bg: #DCFCE7;
-      --confirmed-bd: #22C55E;
-      --inprog-bg: #DBEAFE;
-      --inprog-bd: #60A5FA;
-      --done-bg: #E5E7EB;
-      --done-bd: #9CA3AF;
-  }
-
-  * {
-      box-sizing: border-box;
-  }
-
-  body {
-      font-family: 'Nunito Sans', system-ui, -apple-system, Segoe UI, Roboto, Arial;
-      margin: 0;
-      background: var(--bg-soft);
-      color: #0f172a;
-  }
-
-  h2 {
-      margin: 16px;
-  }
-
-  .container {
-      padding: 16px;
-  }
-
-  .card {
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
-      margin-bottom: 14px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  }
-
-
-
-  /* =========================
-   PANEL NIÑERA – MIS PUNTOS
+/* =========================
+   NAVIGATION (FLOATING ISLAND) 🏝️
    ========================= */
+.bottom-nav {
+    position: fixed;
+    bottom: 24px;
+    /* Flotante */
+    left: 20px;
+    right: 20px;
+    max-width: 500px;
+    margin: 0 auto;
+    /* Centrado en desktop */
+
+    height: 70px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    border-radius: 24px;
+    /* Isla redonda */
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: 1000;
+    padding: 0 10px;
+}
+
+.bottom-nav button {
+    background: transparent;
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #9CA3AF;
+    font-size: 22px;
+    /* Emoji Size */
+    gap: 2px;
+}
+
+.bottom-nav button span {
+    font-size: 11px;
+    /* Text Size */
+    font-weight: 600;
+    font-family: 'Nunito Sans', sans-serif;
+    color: #9CA3AF;
+    /* Default label color */
+}
+
+/* Active State */
+.bottom-nav button.activo {
+    /* color: var(--pink-main); // Removed to avoid coloring emoji if unwanted */
+}
+
+.bottom-nav button.activo span {
+    color: var(--pink-main);
+    font-weight: 800;
+}
 
 
-  #puntosNineraCard {
-      background: linear-gradient(180deg,
-              #ffffff 0%,
-              var(--blue-soft) 100%);
-      border-radius: 22px;
-      box-shadow: 0 12px 30px rgba(59, 182, 196, .18);
-  }
-
-
-  #puntosNineraCard h3 {
-      font-family: 'DM Serif Display', serif;
-      color: var(--blue-main);
-  }
-
-  #puntosNineraCard .muted {
-      font-size: 14px;
-  }
-
-
-  /* =========================
-   PANEL NIÑERA – ESTILO MARCA
+/* =========================
+   VISTAS & CONTENIDO
    ========================= */
-
-  #app {
-      background: linear-gradient(180deg,
-              #ffffff 0%,
-              var(--pink-soft) 100%);
-  }
-
-
-  /* Cards más suaves */
-  #app .card {
-      border: none;
-      border-radius: 20px;
-      box-shadow: var(--shadow-card);
-      padding: 20px;
-  }
-
-
-  /* Títulos */
-  #app h3 {
-      font-family: 'DM Serif Display', serif;
-      font-weight: 400;
-      font-size: 22px;
-      color: var(--pink-main);
-      margin-bottom: 10px;
-  }
-
-  /* Botón principal */
-  #app .btn-primary {
-      background: linear-gradient(135deg,
-              var(--pink-main),
-              var(--blue-main));
-      border: none;
-      color: #fff;
-      border-radius: var(--radius-btn);
-      font-weight: 600;
-  }
-
-
-  /* Botón secundario */
-  #app .btn-ghost {
-      color: var(--pink-main);
-      font-weight: 600;
-  }
-
-
-  /* Calendario – marca Nannys */
-
-  .day {
-      border-radius: 18px;
-      border: none;
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
-  }
-
-
-  .day.today {
-      background: linear-gradient(180deg,
-              #FFFBEB 0%,
-              #FEF3C7 100%);
-      border: 1.5px solid rgba(250, 204, 21, 0.45);
-      box-shadow: 0 8px 18px rgba(250, 204, 21, 0.18);
-  }
-
-
-  .svc-pill.conflict {
-      background: #fee2e2;
-      border-color: #ef4444;
-      color: #b91c1c;
-  }
-
-
-
-  .svc-pill {
-      border-radius: 999px;
-      padding: 8px 14px;
-      font-weight: 600;
-  }
-
-
-
-  .svc-pill.confirmed {
-      background: var(--blue-soft);
-      border-color: var(--blue-main);
-      color: #036672;
-  }
-
-
-  .svc-pill.pending {
-      background: var(--pink-soft);
-      border-color: var(--pink-main);
-      color: #9d174d;
-  }
-
-
-
-  .svc-pill.completed {
-      background: var(--gray-soft);
-      color: #374151;
-  }
-
-
-  .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-  }
-
-  label {
-      font-weight: 600;
-      font-size: 14px;
-  }
-
-  input[type="email"],
-  input[type="password"],
-  input[type="text"],
-  input[type="date"],
-  input[type="time"],
-  input[type="number"] {
-      width: 100%;
-      max-width: 360px;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-  }
-
-  button {
-      padding: 10px 14px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      background: #fff;
-      transition: transform .02s ease-in-out;
-  }
-
-  button:active {
-      transform: scale(0.98);
-  }
-
-  .btn-primary {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-  }
-
-  .btn-ghost {
-      background: transparent;
-      color: var(--pink-main);
-      border: none;
-      font-weight: 600;
-  }
-
-  .muted {
-      color: var(--muted);
-      font-size: 12px;
-  }
-
-  .ok {
-      color: var(--ok);
-  }
-
-  .err {
-      color: var(--err);
-  }
-
-
-  table {
-      border-collapse: collapse;
-      width: 100%;
-  }
-
-  th,
-  td {
-      border: 1px solid var(--border);
-      padding: 6px;
-      font-size: 12px;
-      text-align: left;
-      vertical-align: top;
-  }
-
-  th {
-      background: #fafafa;
-  }
-
-
-
-  .week-title {
-      margin: 6px 0 10px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-  }
-
-  .day-actions {
-      margin-top: 6px;
-  }
-
-  .pill {
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 2px 8px;
-      font-size: 12px;
-      background: #fff;
-  }
-
-
-
-  .calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 10px;
-  }
-
-  .day {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 10px;
-      min-height: 140px;
-      display: flex;
-      flex-direction: column;
-      background: #fff;
-  }
-
-  .day header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-  }
-
-  .svc-pill {
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 13px;
-      cursor: pointer;
-      background: #fff;
-  }
-
-  .svc-pill.pending {
-      background: var(--pending-bg);
-      border-color: var(--pending-bd);
-  }
-
-  .svc-pill.confirmed {
-      background: var(--confirmed-bg);
-      border-color: var(--confirmed-bd);
-  }
-
-  .svc-pill.inprogress {
-      background: var(--inprog-bg);
-      border-color: var(--inprog-bd);
-  }
-
-  .svc-pill.completed {
-      background: var(--done-bg);
-      border-color: var(--done-bd);
-  }
-
-  .today {
-      border-color: var(--primary);
-      background: #eff6ff;
-  }
-
-  .no-svc {
-      color: #9ca3af;
-      font-size: 12px;
-  }
-
-
-
-  .week-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 8px;
-  }
-
-  .nav-weeks {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-  }
-
-  .week-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 10px;
-  }
-
-  .week-col {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: #fff;
-      padding: 10px;
-      min-height: 120px;
-      display: flex;
-      flex-direction: column;
-  }
-
-  .week-col header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-      font-weight: 600;
-  }
-
-  .week-col .date {
-      color: #475569;
-      font-weight: 500;
-  }
-
-  .is-today {
-      outline: 2px solid var(--primary);
-      outline-offset: -2px;
-      background: #eff6ff;
-  }
-
-  .pill-svc {
-      display: inline-block;
-      margin: 4px 0;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      background: #fff;
-      font-size: 13px;
-      width: 100%;
-      text-align: left;
-  }
-
-  .pill-svc.pending {
-      background: var(--pending-bg);
-      border-color: var(--pending-bd);
-  }
-
-  .pill-svc.confirmed {
-      background: var(--confirmed-bg);
-      border-color: var(--confirmed-bd);
-  }
-
-  .pill-svc.inprogress {
-      background: var(--inprog-bg);
-      border-color: var(--inprog-bd);
-  }
-
-  .pill-svc.completed {
-      background: var(--done-bg);
-      border-color: var(--done-bd);
-  }
-
-  .pill-svc.conflict {
-      background: #fee2e2;
-      border-color: #ef4444;
-      color: #b91c1c;
-  }
-
-
-  .no-data {
-      color: #9ca3af;
-      font-size: 13px;
-  }
-
-
-
-  @media (max-width:960px) {
-
-      .calendar,
-      .week-grid {
-          grid-template-columns: repeat(2, 1fr);
-      }
-  }
-
-  @media (max-width:560px) {
-
-      .calendar,
-      .week-grid {
-          grid-template-columns: 1fr;
-      }
-
-      .svc-pill {
-          font-size: 14px;
-          padding: 8px 12px;
-      }
-  }
-
-
-
-
-  /* =========================
-    MIS PUNTOS – FONDO BLANCO
-    ========================= */
-  #puntosNineraCard {
-      background: #ffffff !important;
-  }
-
-
-
-
-  /* =========================
-   FIX DEFINITIVO BOTÓN GUARDAR
+.container {
+    padding: 20px;
+    max-width: 800px;
+    /* Límite en desktop */
+    margin: 0 auto;
+}
+
+.vista {
+    display: none;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.vista.activa {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+/* =========================
+   CALENDARIO & LISTAS
    ========================= */
-  button.btn-primary {
-      background-image: none !important;
-      background: #3B82F6 !important;
-      /* azul limpio */
-      color: #ffffff !important;
-      border: none !important;
-      box-shadow: 0 6px 14px rgba(59, 130, 246, 0.25);
-  }
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+}
 
+.day {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    padding: 8px;
+    min-height: 120px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
 
+.day.today {
+    background: #FFFBEB;
+    /* Amarillo muy suave */
+    border-color: #FCD34D;
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
+}
 
-  button.btn-primary:hover {
-      background: #2563EB !important;
-  }
+/* Pills de Servicio */
+.svc-pill {
+    display: block;
+    margin-top: 4px;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s;
+    border-left: 4px solid transparent;
+}
 
+.svc-pill:active {
+    transform: scale(0.98);
+}
 
+/* Variantes de Pills */
+.svc-pill.pending {
+    background: #FEF2F2;
+    color: #BE123C;
+    border-left-color: #F43F5E;
+}
 
-  /* =========================
-   HEADER PANEL NIÑERA
+.svc-pill.confirmed {
+    background: #ECFEFF;
+    color: #0E7490;
+    border-left-color: #06B6D4;
+}
+
+.svc-pill.inprogress {
+    background: #EFF6FF;
+    color: #1D4ED8;
+    border-left-color: #3B82F6;
+}
+
+.svc-pill.completed {
+    background: #F3F4F6;
+    color: #374151;
+    border-left-color: #9CA3AF;
+}
+
+.svc-pill.conflict {
+    background: #FEF2F2 !important;
+    color: #B91C1C !important;
+    border: 2px solid #EF4444 !important;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+/* =========================
+   MODALES (Glass Overlay)
    ========================= */
-  .panel-header {
-      background: #ffffff;
-  }
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4) !important;
+    /* Force override inline styles */
+    backdrop-filter: blur(8px);
+    /* Blur fuerte fondo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+    animation: fadeIn 0.2s;
+}
+
+.modal-card {
+    background: #ffffff;
+    /* Modal solido para legibilidad */
+    width: 100%;
+    max-width: 500px;
+    border-radius: 28px;
+    padding: 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.modal-title {
+    font-size: 22px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.modal-actions button {
+    flex: 1;
+}
 
 
-  .panel-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-  }
-
-
-
-  .panel-saludo {
-      font-size: clamp(18px, 4.5vw, 22px);
-      font-weight: 600;
-      color: var(--dark-main);
-  }
-
-
-
-  .logout-btn {
-      font-size: 14px;
-  }
-
-
-
-
-  /* =========================
-   MODAL – SOLO FINALIZAR SERVICIO EN AZUL
+/* =========================
+   UTILIDADES & EXTRAS
    ========================= */
-
-
-
-
-  /* Primer botón ghost = Finalizar servicio */
-  #modalBackdrop .actions .btn-ghost:first-of-type {
-      background: #3B82F6;
-      color: #ffffff;
-      border: none;
-      border-radius: var(--radius-btn);
-      padding: 12px 20px;
-      font-weight: 600;
-      box-shadow: 0 6px 14px rgba(59, 130, 246, 0.25);
-  }
-
-
-
-
-  /* Hover solo para finalizar */
-  #modalBackdrop .actions .btn-ghost:first-of-type:hover {
-      background: #2563EB;
-  }
-
-
-
-
-  /* Botón Cerrar (segundo) se queda normal */
-  #modalBackdrop .actions .btn-ghost:last-of-type {
-      background: transparent;
-      color: var(--pink-main);
-      box-shadow: none;
-  }
-
-
-
-
-
-  /* 🔴 SERVICIO EMPALMADO – CALENDARIO NIÑERA */
-  .svc-pill.conflict {
-      background: #fee2e2 !important;
-      border-color: #ef4444 !important;
-      color: #b91c1c !important;
-      font-weight: 700;
-  }
-
-
-
-
-  /* 🔴 SERVICIO EMPALMADO – PRIORIDAD MÁXIMA */
-  .svc-pill.conflict,
-  .svc-pill.conflict.pending,
-  .svc-pill.conflict.confirmed,
-  .svc-pill.conflict.inprogress,
-  .svc-pill.conflict.completed {
-      background: #fee2e2 !important;
-      border-color: #ef4444 !important;
-      color: #b91c1c !important;
-      font-weight: 700;
-  }
-
-
-
-
-  .svc-hidden-admin {
-      background: #4dd0e1;
-      /* cian / azul celeste */
-      color: #00363a;
-  }
-
-
-
-
-  .vista {
-      display: none;
-      padding-bottom: 80px;
-      /* espacio para menú inferior */
-  }
-
-  .vista.activa {
-      display: block;
-  }
-
-
-
-
-  .bottom-nav {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 64px;
-      background: #ffffff;
-      border-top: 1px solid var(--gray-border);
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      z-index: 999;
-  }
-
-
-
-
-  .bottom-nav button {
-      background: none;
-      border: none;
-      font-size: 14px;
-      color: #6B7280;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-      font-family: 'Nunito Sans', sans-serif;
-  }
-
-
-
-
-  .bottom-nav button.activo {
-      color: var(--pink-main);
-      font-weight: 600;
-  }
-
-
-  .btn-pink {
-      background: #E84C9A;
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      padding: 10px 16px;
-      font-weight: 600;
-      cursor: pointer;
-  }
-
-  .btn-pink:hover {
-      background: #d63f86;
-  }
-
-
-
-
-
-
-  .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, .35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 1000;
-  }
-
-
-  .modal-card {
-      background: #fff;
-      border-radius: 18px;
-      max-width: 640px;
-      width: 100%;
-      padding: 22px;
-
-      max-height: 85vh;
-      /* 👈 límite de alto */
-      overflow-y: auto;
-      /* 👈 SCROLL INTERNO */
-      -webkit-overflow-scrolling: touch;
-  }
-
-
-
-  .modal-planeacion textarea {
-      min-height: 80px;
-      resize: none;
-  }
-
-
-
-  .modal-title {
-      margin-bottom: 16px;
-  }
-
-  .modal-title.pink {
-      color: #E84C9A;
-  }
-
-
-  .form-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 14px;
-  }
-
-
-  .form-group label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-  }
-
-
-  .form-group input,
-  .form-group textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #ddd;
-      font-family: inherit;
-  }
-
-
-  .form-group input:focus,
-  .form-group textarea:focus {
-      outline: none;
-      border-color: #E84C9A;
-  }
-
-
-  .modal-actions {
-      display: flex;
-      gap: 12px;
-      justify-content: flex-end;
-      margin-top: 18px;
-  }
-
-
-
-
-  .toast {
-      position: fixed;
-      bottom: 90px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #E84C9A;
-      color: #fff;
-      padding: 12px 18px;
-      border-radius: 999px;
-      font-weight: 600;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity .3s, transform .3s;
-      z-index: 2000;
-  }
-
-  .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(-6px);
-  }
-
-
-  /* =========================
-   SUPERVISIÓN – PLANEACIONES
+.no-data {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px;
+    font-style: italic;
+}
+
+.toast {
+    position: fixed;
+    bottom: 110px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(31, 41, 55, 0.9);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s;
+    z-index: 3000;
+    backdrop-filter: blur(4px);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-10px);
+}
+
+/* Supervisión Specifics */
+.pl-item {
+    background: white;
+    border-left: 4px solid var(--success-text);
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.pl-ciudad-header {
+    font-size: 20px;
+    color: var(--pink-main);
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+
+/* =========================
+   MEDIA QUERIES
    ========================= */
+@media (max-width: 768px) {
+    .calendar {
+        grid-template-columns: 1fr;
+        /* Lista en móvil */
+    }
 
-  .supervision-card {
-      background: #ffffff;
-      border-radius: 20px;
-      padding: 24px;
-      box-shadow: 0 12px 30px rgba(232, 76, 154, .12);
-      margin-bottom: 24px;
-  }
+    .day {
+        min-height: auto;
+        margin-bottom: 10px;
+    }
+}
 
-  .supervision-title {
-      font-family: 'DM Serif Display', serif;
-      font-size: 26px;
-      color: var(--pink-main);
-      margin-bottom: 14px;
-  }
+/* Scrollbar Tweaks Nanny */
+body.ninera .modal-planeacion::-webkit-scrollbar {
+    width: 6px;
+}
 
-  /* Ciudad */
-  .pl-ciudad {
-      margin-top: 14px;
-  }
-
-  .pl-ciudad-header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 16px;
-      color: #374151;
-  }
-
-  .pl-ciudad-header span {
-      font-size: 18px;
-      color: var(--pink-main);
-  }
-
-  /* Lista de planeaciones */
-  .pl-lista {
-      margin-left: 28px;
-      margin-top: 10px;
-  }
-
-  /* Item */
-  .pl-item {
-      background: linear-gradient(180deg, #ECFDF5, #D1FAE5);
-      border: 1px solid #86EFAC;
-      border-radius: 14px;
-      padding: 12px 16px;
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      cursor: pointer;
-      transition: transform .15s ease, box-shadow .15s ease;
-  }
-
-  .pl-item:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 8px 18px rgba(16, 185, 129, .18);
-  }
-
-  .pl-item strong {
-      font-weight: 600;
-      color: #065F46;
-  }
-
-  .pl-item small {
-      color: #047857;
-      font-size: 13px;
-  }
-
-  html,
-  body {
-      height: 100%;
-      overflow: auto;
-  }
-
-  #app {
-      height: calc(var(--vh, 1vh) * 100);
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-  }
-
-
-  #app {
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .bottom-nav {
-      padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  input,
-  textarea,
-  button {
-      font-size: 16px;
-  }
-
-  .modal-backdrop {
-      backdrop-filter: blur(6px);
-  }
-
-  .vista {
-      transition: opacity .18s ease, transform .18s ease;
-  }
-
-  .vista.activa {
-      transform: translateY(0);
-      opacity: 1;
-  }
-
-
-  body.ninera .modal-planeacion {
-      scrollbar-gutter: stable;
-  }
-
-  /* ✅ SOLO NIÑERA: hacer el scrollbar del modal más delgado (sin tocar supervisión) */
-  body.ninera #planeacionBackdrop .modal-card {
-      scrollbar-width: thin;
-      /* Firefox */
-      scrollbar-color: rgba(0, 0, 0, .35) transparent;
-      /* Firefox */
-  }
-
-  body.ninera #planeacionBackdrop .modal-card::-webkit-scrollbar {
-      width: 8px;
-      /* Chrome/Edge */
-  }
-
-  body.ninera #planeacionBackdrop .modal-card::-webkit-scrollbar-track {
-      background: transparent;
-      /* sin color */
-  }
-
-  body.ninera #planeacionBackdrop .modal-card::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, .25);
-      border-radius: 999px;
-      border: 2px solid transparent;
-      /* hace que se vea más “fina” */
-      background-clip: content-box;
-  }
-
-  /* =========================================
-   SCROLL MODAL PLANEACIÓN – NIÑERA
-   (copiado del comportamiento de supervisión)
-   ========================================= */
-
-  body.ninera .modal-planeacion {
-      scrollbar-width: thin;
-      /* Firefox */
-      scrollbar-color: rgba(0, 0, 0, 0.25) transparent;
-  }
-
-  /* Chrome / Edge / Safari */
-  body.ninera .modal-planeacion::-webkit-scrollbar {
-      width: 6px;
-  }
-
-  body.ninera .modal-planeacion::-webkit-scrollbar-track {
-      background: transparent;
-  }
-
-  body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.25);
-      border-radius: 999px;
-  }
-
-  /* Hover → se nota más (como supervisión) */
-  body.ninera .modal-planeacion:hover::-webkit-scrollbar-thumb {
-      background-color: rgba(0, 0, 0, 0.45);
-  }
+body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
+    background: #E5E7EB;
+    border-radius: 10px;
+}
