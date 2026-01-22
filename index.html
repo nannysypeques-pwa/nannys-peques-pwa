@@ -99,17 +99,17 @@
           <h3>Mi perfil</h3>
 
           <div class="perfil-item">
-            <span class="perfil-label">Nombre</span>
+            <span class="perfil-label">Nombre:</span>
             <span id="perfil_nombre" class="perfil-valor">—</span>
           </div>
 
           <div class="perfil-item">
-            <span class="perfil-label">Email</span>
+            <span class="perfil-label">Email:</span>
             <span id="perfil_email" class="perfil-valor">—</span>
           </div>
 
           <div class="perfil-item">
-            <span class="perfil-label">Teléfono</span>
+            <span class="perfil-label">Teléfono:</span>
             <span id="perfil_tel" class="perfil-valor">—</span>
           </div>
 
@@ -221,7 +221,7 @@
             <button class="btn-ghost" onclick="cargarSiguiente()">Cargar semana siguiente</button>
             <button class="btn-primary" onclick="guardar()">Guardar</button>
           </div>
-          <p class="muted">Selecciona Matutino (07–15) y/o Vespertino (15–22) por día.</p>
+          <p class="muted">Selecciona Matutino (07–15hrs) y/o Vespertino (15–22hrs) por día.</p>
           <p id="msgApp"></p>
         </div>
 
@@ -364,10 +364,8 @@
   </div>
 
   <!-- MODAL Detalle -->
-  <div id="modalBackdrop"
-    style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;padding:16px;">
-    <div
-      style="background:#fff;max-width:560px;width:100%;border-radius:14px;padding:16px;box-shadow:0 10px 30px rgba(0,0,0,.2);">
+  <div id="modalBackdrop" class="modal-backdrop" style="display:none;">
+    <div class="modal-card">
       <h4 id="mCliente">Detalle del servicio</h4>
       <div><b>Fecha:</b> <span id="mFecha">—</span></div>
       <div><b>Horario:</b> <span id="mHorario">—</span></div>

@@ -465,6 +465,11 @@ body>h2:first-of-type {
     flex: 1;
 }
 
+#mNotas,
+#mDireccion {
+    white-space: pre-wrap;
+}
+
 
 /* =========================
    UTILIDADES & EXTRAS
