@@ -1886,3 +1886,157 @@ async function activarNotificaciones() {
         alert('❌ Error al activar notificaciones:\n' + error.message);
     }
 }
+
+/** =========================
+ *  LÓGICA CLIENTE
+ *  ========================= */
+
+function mostrarRegistroCliente() {
+    document.getElementById('paso-login').style.display = 'none';
+    document.getElementById('paso-registro-cliente').style.display = 'block';
+    document.getElementById('paso-olvide').style.display = 'none';
+}
+window.mostrarRegistroCliente = mostrarRegistroCliente;
+
+async function registrarNuevoCliente() {
+    const email = document.getElementById('email-reg').value.trim().toLowerCase();
+    const pass = document.getElementById('pass-reg').value;
+    const msg = document.getElementById('msgRegistro');
+
+    if (!email || !pass) {
+        msg.innerHTML = '<span class="err">Por favor, llena todos los campos.</span>';
+        return;
+    }
+    if (pass.length < 6) {
+        msg.innerHTML = '<span class="err">La contraseña debe tener al menos 6 caracteres.</span>';
+        return;
+    }
+
+    msg.textContent = 'Procesando registro...';
+
+    try {
+        await api('establecerContrasena', { email, otp: 'NUEVO_REGISTRO', nueva: pass });
+
+        msg.innerHTML = '<span class="ok">¡Cuenta creada con éxito! Ahora puedes iniciar sesión.</span>';
+        setTimeout(() => {
+            volverLogin();
+            const inputEmail = document.getElementById('email');
+            if (inputEmail) inputEmail.value = email;
+        }, 2000);
+
+    } catch (err) {
+        msg.innerHTML = '<span class="err">' + err.message + '</span>';
+    }
+}
+window.registrarNuevoCliente = registrarNuevoCliente;
+
+function volverLogin() {
+    const pLogin = document.getElementById('paso-login');
+    const pReg = document.getElementById('paso-registro-cliente');
+    const pOlvide = document.getElementById('paso-olvide');
+    if (pLogin) pLogin.style.display = 'block';
+    if (pReg) pReg.style.display = 'none';
+    if (pOlvide) pOlvide.style.display = 'none';
+}
+window.volverLogin = volverLogin;
+
+async function mostrarVistaCliente() {
+    ocultarTodo();
+    document.getElementById('vista-cliente').style.display = 'block';
+
+    try {
+        const perf = await api('getProfile', { email: SESION.email });
+        if (!perf.nombre || !perf.direccion) {
+            document.getElementById('cliente-onboarding').style.display = 'block';
+            document.getElementById('cliente-dashboard').style.display = 'none';
+        } else {
+            document.getElementById('cliente-onboarding').style.display = 'none';
+            document.getElementById('cliente-dashboard').style.display = 'block';
+            cargarServiciosCliente();
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+window.mostrarVistaCliente = mostrarVistaCliente;
+
+async function guardarRegistroCompleto() {
+    const payload = {
+        nombre_completo: document.getElementById('reg_nombre').value,
+        direccion: document.getElementById('reg_direccion').value,
+        ubicacion: document.getElementById('reg_ubicacion').value,
+        telefono: document.getElementById('reg_tel').value,
+        emergencia: document.getElementById('reg_emergencia').value,
+        peque_nombre: document.getElementById('reg_peque_nombre').value,
+        peque_nacimiento: document.getElementById('reg_peque_nac').value,
+        alergias: document.getElementById('reg_alergias').value,
+        condicion: document.getElementById('reg_condicion').value,
+        salud: document.getElementById('reg_salud').value,
+        preferencias: document.getElementById('reg_preferencias').value,
+        mascotas: document.getElementById('reg_mascotas').value
+    };
+
+    try {
+        await api('updatePerfilCliente', payload);
+        toast('Perfil completado con éxito');
+        mostrarVistaCliente();
+    } catch (e) {
+        toast('Error: ' + e.message);
+    }
+}
+window.guardarRegistroCompleto = guardarRegistroCompleto;
+
+async function cargarServiciosCliente() {
+    const lista = document.getElementById('servicios-cliente-lista');
+    if (!lista) return;
+    lista.innerHTML = 'Cargando servicios...';
+    try {
+        const svcs = await api('getServiciosCliente', { email: SESION.email });
+        if (!svcs || svcs.length === 0) {
+            lista.innerHTML = '<div class="card" style="text-align:center; padding: 40px 20px;">' +
+                '<h2 style="color:var(--pink-main); margin-bottom:10px;">✨</h2>' +
+                '<h3 style="margin-bottom:10px;">Aún no hay servicios programados</h3>' +
+                '<p class="muted">Cuando agendes tu primer servicio, aparecerá aquí.</p>' +
+                '</div>';
+            return;
+        }
+
+        let html = '';
+        svcs.forEach(s => {
+            html += `
+                <div class="card" style="margin-bottom:12px; border-left: 5px solid var(--pink-main); transition: transform 0.2s;" onclick="mostrarDetalleServicioCliente(${JSON.stringify(s).replace(/"/g, '&quot;')})">
+                    <div style="font-weight:bold; font-size:16px; margin-bottom:4px;">${s.Fecha} | ${s.Horario}</div>
+                    <div class="muted">Niñera: ${s['Nombre de la niñera'] || 'Por asignar'}</div>
+                    <div style="margin-top:8px;"><span class="badge" style="background:var(--pink-light); color:var(--pink-main); font-size:12px;">${s.Estado || 'Programado'}</span></div>
+                </div>
+            `;
+        });
+        lista.innerHTML = html;
+    } catch (e) {
+        lista.innerHTML = '<div class="err">Error al cargar servicios.</div>';
+    }
+}
+window.cargarServiciosCliente = cargarServiciosCliente;
+
+function mostrarDetalleServicioCliente(s) {
+    if (!s) return;
+
+    document.getElementById('mCliente').textContent = 'Tu servicio - ' + s.Fecha;
+    document.getElementById('mFecha').textContent = s.Fecha || '—';
+    document.getElementById('mHorario').textContent = s.Horario || '—';
+    document.getElementById('mContacto').textContent = '(Oculto por seguridad)';
+    document.getElementById('mDireccion').textContent = s.Direccion || 'Dirección confirmada';
+    document.getElementById('mUbicacion').textContent = '—';
+    document.getElementById('mEdad').textContent = s['Edad del niño'] || '—';
+    document.getElementById('mCuota').textContent = '—'; // El cliente ya pagó o sabe su cuota
+    document.getElementById('mNotas').textContent = s.Notas || 'Sin notas adicionales.';
+
+    // Ocultar acciones del staff
+    const actions = document.querySelector('.modal-card .actions');
+    if (actions) actions.innerHTML = '<button class="btn-ghost" onclick="cerrarModal()">Cerrar</button>';
+
+    document.getElementById('modalBackdrop').style.display = 'flex';
+}
+window.mostrarDetalleServicioCliente = mostrarDetalleServicioCliente;
+
+
