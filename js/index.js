@@ -2012,7 +2012,6 @@ async function guardarRegistroCompleto() {
         peque_nacimiento: document.getElementById('reg_peque_nac').value,
         alergias: document.getElementById('reg_alergias').value,
         condicion: document.getElementById('reg_condicion').value,
-        salud: document.getElementById('reg_salud').value,
         preferencias: document.getElementById('reg_preferencias').value,
         mascotas: document.getElementById('reg_mascotas').value,
         email: SESION.email // ¡CRÍTICO! Necesario para buscar la fila
