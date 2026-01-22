@@ -54,8 +54,7 @@ html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     height: 100%;
-    overflow: hidden;
-    /* App-like feel */
+    /* overflow: hidden; removed to allow scroll */
 }
 
 body {
@@ -65,18 +64,15 @@ body {
     background: linear-gradient(135deg, #FFF0F5 0%, #E0F7FA 100%);
     /* Gradiente Marca Suave */
     background-attachment: fixed;
-    height: 100%;
-    overflow: hidden;
+    min-height: 100%;
 }
 
 /* App Container Scrollable */
 #app {
-    height: 100%;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    min-height: 100vh;
     padding-top: env(safe-area-inset-top);
-    padding-bottom: 90px;
-    /* Espacio para floating nav */
+    padding-bottom: 120px;
+    /* Mas espacio para evitar que el nav tape contenido */
 }
 
 h1,
@@ -128,8 +124,8 @@ button:active {
 /* Aliases for compatibility */
 .btn-primary,
 .btn-pink {
-    background: linear-gradient(135deg, var(--pink-main), var(--blue-main));
-    /* Gradiente Marca */
+    background: var(--pink-main);
+    /* Cambio de gradiente a sólido */
     color: white;
     padding: 14px 24px;
     border-radius: var(--radius-full);
@@ -194,15 +190,33 @@ textarea:focus {
 }
 
 .brand-title {
-    font-size: 36px;
-    margin-bottom: 8px;
-    background: -webkit-linear-gradient(45deg, var(--pink-main), var(--blue-main));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    font-family: 'Quicksand', sans-serif;
+    font-size: clamp(34px, 10vw, 48px);
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--pink-main);
+    letter-spacing: -1px;
+    /* Estilo mas compacto/gordito */
+    line-height: 1;
+}
+
+/* Ajustes segun PWA vs Navegador */
+@media (display-mode: standalone) {
+    #app {
+        padding-top: calc(env(safe-area-inset-top) + 10px);
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 16px;
+    }
 }
 
 .login-subtitle {
     color: var(--text-muted);
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 16px;
     margin-bottom: 32px;
 }
 
