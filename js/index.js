@@ -116,6 +116,8 @@ async function login() {
         msg.innerHTML = `<span class="err">${err.message}</span>`;
     }
 }
+window.login = login;
+
 
 async function enviarOTP() {
     const email = document.getElementById('email2').value.trim().toLowerCase();
