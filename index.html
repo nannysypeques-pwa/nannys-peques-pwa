@@ -427,9 +427,32 @@
           </div>
 
           <div class="card">
-            <h3>Mis próximos servicios</h3>
-            <p class="muted">Aquí podrás ver el detalle de tus servicios agendados.</p>
-            <div id="servicios-cliente-lista" style="margin-top:15px;"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h3 style="margin:0;">Mis próximos servicios</h3>
+              <button class="btn-primary" onclick="cargarServiciosCliente()"
+                style="padding: 6px 12px; font-size: 13px; background: var(--blue-main); width: auto;">
+                🔄 Actualizar
+              </button>
+            </div>
+            <p class="muted">Calendario de servicios para las próximas 2 semanas.</p>
+
+            <div class="calendar-section" style="margin-top:20px;">
+              <h4
+                style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
+                🗓️ Semana Actual</h4>
+              <div id="cal-cliente-actual" class="calendar"></div>
+            </div>
+
+            <div class="calendar-section" style="margin-top:25px; padding-top:15px; border-top: 1px dashed #e2e8f0;">
+              <h4
+                style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
+                🗓️ Próxima Semana</h4>
+              <div id="cal-cliente-siguiente" class="calendar"></div>
+            </div>
+
+            <div id="msg-cal-cliente" class="muted" style="font-size: 12px; margin-top:10px;"></div>
+
+            <div id="servicios-cliente-lista" style="display:none; margin-top:15px;"></div>
           </div>
         </div>
       </div>

@@ -2212,35 +2212,112 @@ async function editarPerfilCliente() {
 window.editarPerfilCliente = editarPerfilCliente;
 
 async function cargarServiciosCliente() {
-    const lista = document.getElementById('servicios-cliente-lista');
-    if (!lista) return;
-    lista.innerHTML = 'Cargando servicios...';
+    const calActual = document.getElementById('cal-cliente-actual');
+    const calSig = document.getElementById('cal-cliente-siguiente');
+    const msg = document.getElementById('msg-cal-cliente');
+    if (!calActual || !calSig) return;
+
+    calActual.innerHTML = '';
+    calSig.innerHTML = '';
+    msg.textContent = 'Cargando servicios...';
+
     try {
         const svcs = await api('getServiciosCliente', { email: SESION.email });
         if (!svcs || svcs.length === 0) {
-            lista.innerHTML = '<div class="card" style="text-align:center; padding: 40px 20px;">' +
+            calActual.innerHTML = '<div style="grid-column: 1 / -1; text-align:center; padding: 40px 20px;">' +
                 '<h2 style="color:var(--pink-main); margin-bottom:10px;">✨</h2>' +
                 '<h3 style="margin-bottom:10px;">Aún no hay servicios programados</h3>' +
                 '<p class="muted">Cuando agendes tu primer servicio, aparecerá aquí.</p>' +
                 '</div>';
+            msg.textContent = '';
             return;
         }
 
-        let html = '';
-        svcs.forEach(s => {
-            html += `
-                <div class="card" style="margin-bottom:12px; border-left: 5px solid var(--pink-main); transition: transform 0.2s;" onclick="mostrarDetalleServicioCliente(${JSON.stringify(s).replace(/"/g, '&quot;')})">
-                    <div style="font-weight:bold; font-size:16px; margin-bottom:4px;">${s.Fecha} | ${s.Horario}</div>
-                    <div class="muted">Niñera: ${s['Nombre de la niñera'] || 'Por asignar'}</div>
-                    <div style="margin-top:8px;"><span class="badge" style="background:var(--pink-light); color:var(--pink-main); font-size:12px;">${s.Estado || 'Programado'}</span></div>
-                </div>
-            `;
-        });
-        lista.innerHTML = html;
+        renderCalendarioCliente(svcs);
+        msg.textContent = `Se encontraron ${svcs.length} servicios próximamente.`;
+        setTimeout(() => { if (msg.textContent.includes('servicios')) msg.textContent = ''; }, 3000);
+
     } catch (e) {
-        lista.innerHTML = '<div class="err">Error al cargar servicios.</div>';
+        msg.innerHTML = '<span class="err">Error al cargar servicios.</span>';
+        console.error(e);
     }
 }
+
+function renderCalendarioCliente(svcs) {
+    const contActual = document.getElementById('cal-cliente-actual');
+    const contSiguiente = document.getElementById('cal-cliente-siguiente');
+    if (!contActual || !contSiguiente) return;
+
+    contActual.innerHTML = '';
+    contSiguiente.innerHTML = '';
+
+    const hoy = new Date();
+    // Siempre empezamos desde el lunes de la semana actual
+    const start = startMonday(hoy);
+
+    // Mapear servicios por fecha para fácil acceso
+    const map = {};
+    svcs.forEach(s => {
+        const f = s.Fecha || s.fecha;
+        if (!map[f]) map[f] = [];
+        map[f].push(s);
+    });
+
+    // Renderizar 14 días (2 semanas)
+    for (let i = 0; i < 14; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        const iso = toISO(d);
+        const dow = d.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase();
+        const dom = d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
+
+        const serviciosDia = (map[iso] || []).slice().sort((a, b) => {
+            return (a.hora_inicio || '00:00').localeCompare(b.hora_inicio || '00:00');
+        });
+
+        const dayEl = document.createElement('div');
+        dayEl.className = 'day';
+        if (iso === toISO(hoy)) dayEl.classList.add('today');
+
+        const head = document.createElement('header');
+        head.innerHTML = `<span>${dow}</span><span class="date">${dom}</span>`;
+        dayEl.appendChild(head);
+
+        const body = document.createElement('div');
+        if (serviciosDia.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'no-svc';
+            empty.textContent = '—';
+            body.appendChild(empty);
+        } else {
+            serviciosDia.forEach(s => {
+                const btn = document.createElement('button');
+                // Reusamos las clases de estado si existen
+                const estado = (s.Estado || s.estado || 'pendiente').toLowerCase();
+                let cls = 'svc-pill ' + stateClass(estado);
+
+                btn.className = cls;
+                btn.style.fontSize = '10px';
+                btn.style.padding = '4px 6px';
+                btn.style.marginBottom = '4px';
+
+                // Formato de hora amigable
+                const hora = (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio}` : 'Servicio';
+                btn.textContent = hora;
+                btn.title = `${s.Horario || ''} - Niñera: ${s['Nombre de la niñera'] || 'Por asignar'}`;
+
+                btn.onclick = () => mostrarDetalleServicioCliente(s);
+                body.appendChild(btn);
+            });
+        }
+        dayEl.appendChild(body);
+
+        // Decidir en qué contenedor ponerlo
+        if (i < 7) contActual.appendChild(dayEl);
+        else contSiguiente.appendChild(dayEl);
+    }
+}
+window.renderCalendarioCliente = renderCalendarioCliente;
 window.cargarServiciosCliente = cargarServiciosCliente;
 
 function mostrarDetalleServicioCliente(s) {
