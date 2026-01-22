@@ -4158,7 +4158,6 @@ function updatePerfilCliente(email, payload) {
         'Condición médica o especificaciones adicionales 2': payload.condicion_2,
         'Estado de salud actual 2': payload.salud_2,
         'Preferencias o actividades favoritas 2': payload.preferencias_2,
-        'No. de mascotas 2': payload.mascotas_2,
 
         // Peque 3
         'Nombre del peque 3': payload.peque_nombre_3,
@@ -4167,7 +4166,6 @@ function updatePerfilCliente(email, payload) {
         'Condición médica o especificaciones adicionales 3': payload.condicion_3,
         'Estado de salud actual 3': payload.salud_3,
         'Preferencias o actividades favoritas 3': payload.preferencias_3,
-        'No. de mascotas 3': payload.mascotas_3,
 
         'actualizado': _ahoraISO()
     };

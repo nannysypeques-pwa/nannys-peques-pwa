@@ -1162,7 +1162,7 @@ function mostrarVistaNinera() {
     cargarPuntajeNinera();
 }
 
-function irVista(nombre) {
+function irVista(nombre, skipLogic = false) {
     document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
 
     let target = nombre;
@@ -1189,6 +1189,7 @@ function irVista(nombre) {
 
     if (SESION.cliente) {
         if (lblAct) lblAct.textContent = 'Actividades';
+        if (skipLogic) return; // Saltamos la carga automática si se solicita manual
         if (target === 'cliente') mostrarVistaCliente();
         if (target === 'actividades-cliente') cargarActividadesCliente();
         if (target === 'perfil') cargarPerfil();
@@ -1977,7 +1978,7 @@ function mostrarRegistroCliente() {
 window.mostrarRegistroCliente = mostrarRegistroCliente;
 
 
-async function mostrarVistaCliente() {
+async function mostrarVistaCliente(forceOnboarding = false) {
     // No llamamos a ocultarTodo porque vista-cliente no usa las cards del staff
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
@@ -1985,6 +1986,11 @@ async function mostrarVistaCliente() {
 
     if (d) d.style.display = 'none';
     if (o) o.style.display = 'none';
+
+    if (forceOnboarding) {
+        if (o) o.style.display = 'block';
+        return;
+    }
 
     try {
         const perf = await api('getProfile', { email: SESION.email });
@@ -2025,7 +2031,6 @@ async function guardarRegistroCompleto() {
         condicion_2: document.getElementById('reg_condicion_2').value,
         salud_2: document.getElementById('reg_salud_2').value,
         preferencias_2: document.getElementById('reg_preferencias_2').value,
-        mascotas_2: document.getElementById('reg_mascotas_2').value,
 
         // Peque 3
         peque_nombre_3: document.getElementById('reg_peque_nombre_3').value,
@@ -2034,7 +2039,6 @@ async function guardarRegistroCompleto() {
         condicion_3: document.getElementById('reg_condicion_3').value,
         salud_3: document.getElementById('reg_salud_3').value,
         preferencias_3: document.getElementById('reg_preferencias_3').value,
-        mascotas_3: document.getElementById('reg_mascotas_3').value,
 
         email: SESION.email
     };
@@ -2109,7 +2113,7 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_alergias')) document.getElementById('perfil_alergias').textContent = perf.alergias || '—';
             if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
             if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_salud_actual || '—';
-            if (document.getElementById('perfil_mascotas')) document.getElementById('perfil_mascotas').textContent = perf['no._de_mascotas'] || '—';
+            if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no._de_mascotas'] || '—';
 
             // Peque 2
             const card2 = document.getElementById('perfil-peque-2');
@@ -2146,12 +2150,8 @@ async function cargarPerfil() {
 window.cargarPerfil = cargarPerfil;
 
 async function editarPerfilCliente() {
-    irVista('servicios');
-    const d = document.getElementById('cliente-dashboard');
-    const o = document.getElementById('cliente-onboarding');
-    if (d) d.style.display = 'none';
-    if (o) o.style.display = 'block';
-
+    irVista('servicios', true); // Skip logic para evitar race conditions
+    await mostrarVistaCliente(true); // Forzamos onboarding (formulario)
     try {
         const perf = await api('getProfile', { email: SESION.email });
         if (perf) {
@@ -2189,7 +2189,6 @@ async function editarPerfilCliente() {
                 if (document.getElementById('reg_condicion_2')) document.getElementById('reg_condicion_2').value = perf['condición_médica_o_especificaciones_adicionales_2'] || '';
                 if (document.getElementById('reg_salud_2')) document.getElementById('reg_salud_2').value = perf.estado_de_salud_actual_2 || '';
                 if (document.getElementById('reg_preferencias_2')) document.getElementById('reg_preferencias_2').value = perf.preferencias_o_actividades_favoritas_2 || '';
-                if (document.getElementById('reg_mascotas_2')) document.getElementById('reg_mascotas_2').value = perf['no._de_mascotas_2'] || '';
             }
 
             // Peque 3
@@ -2202,7 +2201,6 @@ async function editarPerfilCliente() {
                 if (document.getElementById('reg_condicion_3')) document.getElementById('reg_condicion_3').value = perf['condición_médica_o_especificaciones_adicionales_3'] || '';
                 if (document.getElementById('reg_salud_3')) document.getElementById('reg_salud_3').value = perf.estado_de_salud_actual_3 || '';
                 if (document.getElementById('reg_preferencias_3')) document.getElementById('reg_preferencias_3').value = perf.preferencias_o_actividades_favoritas_3 || '';
-                if (document.getElementById('reg_mascotas_3')) document.getElementById('reg_mascotas_3').value = perf['no._de_mascotas_3'] || '';
             }
         }
     } catch (e) {
