@@ -4141,6 +4141,8 @@ function updatePerfilCliente(email, payload) {
         'ubicación': payload.ubicacion,
         'Teléfono': payload.telefono,
         'No. de emergencia': payload.emergencia,
+
+        // Peque 1
         'Nombre del peque': payload.peque_nombre,
         'Fecha de nacimiento': payload.peque_nacimiento,
         'Alergias': payload.alergias,
@@ -4148,6 +4150,25 @@ function updatePerfilCliente(email, payload) {
         'Estado de salud actual': payload.salud,
         'Preferencias o actividades favoritas': payload.preferencias,
         'No. de mascotas': payload.mascotas,
+
+        // Peque 2
+        'Nombre del peque 2': payload.peque_nombre_2,
+        'Fecha de nacimiento 2': payload.peque_nac_2,
+        'Alergias 2': payload.alergias_2,
+        'Condición médica o especificaciones adicionales 2': payload.condicion_2,
+        'Estado de salud actual 2': payload.salud_2,
+        'Preferencias o actividades favoritas 2': payload.preferencias_2,
+        'No. de mascotas 2': payload.mascotas_2,
+
+        // Peque 3
+        'Nombre del peque 3': payload.peque_nombre_3,
+        'Fecha de nacimiento 3': payload.peque_nac_3,
+        'Alergias 3': payload.alergias_3,
+        'Condición médica o especificaciones adicionales 3': payload.condicion_3,
+        'Estado de salud actual 3': payload.salud_3,
+        'Preferencias o actividades favoritas 3': payload.preferencias_3,
+        'No. de mascotas 3': payload.mascotas_3,
+
         'actualizado': _ahoraISO()
     };
 

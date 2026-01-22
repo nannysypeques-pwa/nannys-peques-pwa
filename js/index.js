@@ -2008,14 +2008,35 @@ async function guardarRegistroCompleto() {
         ubicacion: document.getElementById('reg_ubicacion').value,
         telefono: document.getElementById('reg_tel').value,
         emergencia: document.getElementById('reg_emergencia').value,
+
+        // Peque 1
         peque_nombre: document.getElementById('reg_peque_nombre').value,
         peque_nacimiento: document.getElementById('reg_peque_nac').value,
         alergias: document.getElementById('reg_alergias').value,
         condicion: document.getElementById('reg_condicion').value,
+        salud: document.getElementById('reg_salud').value,
         preferencias: document.getElementById('reg_preferencias').value,
         mascotas: document.getElementById('reg_mascotas').value,
-        salud: document.getElementById('reg_salud').value,
-        email: SESION.email // ¡CRÍTICO! Necesario para buscar la fila
+
+        // Peque 2
+        peque_nombre_2: document.getElementById('reg_peque_nombre_2').value,
+        peque_nac_2: document.getElementById('reg_peque_nac_2').value,
+        alergias_2: document.getElementById('reg_alergias_2').value,
+        condicion_2: document.getElementById('reg_condicion_2').value,
+        salud_2: document.getElementById('reg_salud_2').value,
+        preferencias_2: document.getElementById('reg_preferencias_2').value,
+        mascotas_2: document.getElementById('reg_mascotas_2').value,
+
+        // Peque 3
+        peque_nombre_3: document.getElementById('reg_peque_nombre_3').value,
+        peque_nac_3: document.getElementById('reg_peque_nac_3').value,
+        alergias_3: document.getElementById('reg_alergias_3').value,
+        condicion_3: document.getElementById('reg_condicion_3').value,
+        salud_3: document.getElementById('reg_salud_3').value,
+        preferencias_3: document.getElementById('reg_preferencias_3').value,
+        mascotas_3: document.getElementById('reg_mascotas_3').value,
+
+        email: SESION.email
     };
 
     try {
@@ -2028,28 +2049,94 @@ async function guardarRegistroCompleto() {
 }
 window.guardarRegistroCompleto = guardarRegistroCompleto;
 
-async function cargarPerfil() {
-    // Si es cliente, mostramos info extendida
-    const contExtra = document.getElementById('perfil-cliente-info');
-    if (contExtra) contExtra.style.display = SESION.cliente ? 'block' : 'none';
+function toggleMultiPeque() {
+    const s2 = document.getElementById('section-peque-2');
+    const s3 = document.getElementById('section-peque-3');
+    const btn = document.getElementById('btn-agregar-peque');
 
+    if (s2.style.display === 'none') {
+        s2.style.display = 'block';
+    } else if (s3.style.display === 'none') {
+        s3.style.display = 'block';
+        if (btn) btn.style.display = 'none'; // Máximo 3
+    }
+}
+window.toggleMultiPeque = toggleMultiPeque;
+
+function formatearFechaElegante(fechaStr) {
+    if (!fechaStr) return '—';
+    try {
+        // GAS suele enviar las fechas como string ISO 'YYYY-MM-DDTHH:mm:ss.sssZ' o similar
+        const d = new Date(fechaStr);
+        if (isNaN(d)) return fechaStr;
+
+        const opciones = { day: '2-digit', month: 'long', year: 'numeric' };
+        // "04 de diciembre de 1994"
+        return d.toLocaleDateString('es-MX', opciones);
+    } catch (e) {
+        return fechaStr;
+    }
+}
+
+async function cargarPerfil() {
     try {
         const perf = await api('getProfile', { email: SESION.email });
         if (perf) {
-            if (document.getElementById('perfil_nombre')) document.getElementById('perfil_nombre').textContent = perf.nombre || '—';
-            if (document.getElementById('perfil_email')) document.getElementById('perfil_email').textContent = perf.email || '—';
-            if (document.getElementById('perfil_tel')) document.getElementById('perfil_tel').textContent = perf.telefono || '—';
+            // Header
+            if (document.getElementById('perfil_nombre_header')) document.getElementById('perfil_nombre_header').textContent = perf.nombre || 'Mi perfil';
+            if (document.getElementById('perfil_email_header')) document.getElementById('perfil_email_header').textContent = perf.email || SESION.email;
 
-            // Campos cliente
-            if (SESION.cliente) {
-                if (document.getElementById('perfil_direccion')) document.getElementById('perfil_direccion').textContent = perf.direccion || '—';
-                if (document.getElementById('perfil_emergencia')) document.getElementById('perfil_emergencia').textContent = perf['no._de_emergencia'] || '—';
-                if (document.getElementById('perfil_peque')) document.getElementById('perfil_peque').textContent = perf.nombre_del_peque || '—';
-                if (document.getElementById('perfil_nac_peque')) document.getElementById('perfil_nac_peque').textContent = perf.fecha_de_nacimiento || '—';
-                if (document.getElementById('perfil_alergias')) document.getElementById('perfil_alergias').textContent = perf.alergias || '—';
-                if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
-                if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_salud_actual || '—';
-                if (document.getElementById('perfil_mascotas')) document.getElementById('perfil_mascotas').textContent = perf['no._de_mascotas'] || '—';
+            // Contacto
+            if (document.getElementById('perfil_tel')) document.getElementById('perfil_tel').textContent = perf.telefono || perf.teléfono || '—';
+            if (document.getElementById('perfil_emergencia')) document.getElementById('perfil_emergencia').textContent = perf['no._de_emergencia'] || '—';
+            if (document.getElementById('perfil_direccion')) document.getElementById('perfil_direccion').textContent = perf.direccion || '—';
+
+            const linkUbic = document.getElementById('perfil_ubicacion');
+            if (linkUbic) {
+                const url = perf.ubicación || perf.ubicacion;
+                if (url && url.startsWith('http')) {
+                    linkUbic.href = url;
+                    linkUbic.style.display = 'inline-block';
+                } else {
+                    linkUbic.style.display = 'none';
+                }
+            }
+
+            // Peque 1
+            if (document.getElementById('perfil_peque')) document.getElementById('perfil_peque').textContent = perf.nombre_del_peque || '—';
+            if (document.getElementById('perfil_nac_peque')) document.getElementById('perfil_nac_peque').textContent = formatearFechaElegante(perf.fecha_de_nacimiento);
+            if (document.getElementById('perfil_edad_peque')) document.getElementById('perfil_edad_peque').textContent = (perf.edad_del_peque || '—') + ' años';
+            if (document.getElementById('perfil_alergias')) document.getElementById('perfil_alergias').textContent = perf.alergias || '—';
+            if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
+            if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_salud_actual || '—';
+            if (document.getElementById('perfil_mascotas')) document.getElementById('perfil_mascotas').textContent = perf['no._de_mascotas'] || '—';
+
+            // Peque 2
+            const card2 = document.getElementById('perfil-peque-2');
+            if (perf.nombre_del_peque_2) {
+                card2.style.display = 'block';
+                if (document.getElementById('perfil_peque_2')) document.getElementById('perfil_peque_2').textContent = perf.nombre_del_peque_2;
+                if (document.getElementById('perfil_nac_peque_2')) document.getElementById('perfil_nac_peque_2').textContent = formatearFechaElegante(perf.fecha_de_nacimiento_2);
+                if (document.getElementById('perfil_edad_peque_2')) document.getElementById('perfil_edad_peque_2').textContent = (perf.edad_del_peque_2 || '—') + ' años';
+                if (document.getElementById('perfil_alergias_2')) document.getElementById('perfil_alergias_2').textContent = perf.alergias_2 || '—';
+                if (document.getElementById('perfil_condicion_2')) document.getElementById('perfil_condicion_2').textContent = perf['condición_médica_o_especificaciones_adicionales_2'] || '—';
+                if (document.getElementById('perfil_salud_2')) document.getElementById('perfil_salud_2').textContent = perf.estado_de_salud_actual_2 || '—';
+            } else {
+                card2.style.display = 'none';
+            }
+
+            // Peque 3
+            const card3 = document.getElementById('perfil-peque-3');
+            if (perf.nombre_del_peque_3) {
+                card3.style.display = 'block';
+                if (document.getElementById('perfil_peque_3')) document.getElementById('perfil_peque_3').textContent = perf.nombre_del_peque_3;
+                if (document.getElementById('perfil_nac_peque_3')) document.getElementById('perfil_nac_peque_3').textContent = formatearFechaElegante(perf.fecha_de_nacimiento_3);
+                if (document.getElementById('perfil_edad_peque_3')) document.getElementById('perfil_edad_peque_3').textContent = (perf.edad_del_peque_3 || '—') + ' años';
+                if (document.getElementById('perfil_alergias_3')) document.getElementById('perfil_alergias_3').textContent = perf.alergias_3 || '—';
+                if (document.getElementById('perfil_condicion_3')) document.getElementById('perfil_condicion_3').textContent = perf['condición_médica_o_especificaciones_adicionales_3'] || '—';
+                if (document.getElementById('perfil_salud_3')) document.getElementById('perfil_salud_3').textContent = perf.estado_de_salud_actual_3 || '—';
+            } else {
+                card3.style.display = 'none';
             }
         }
     } catch (e) {
@@ -2059,40 +2146,64 @@ async function cargarPerfil() {
 window.cargarPerfil = cargarPerfil;
 
 async function editarPerfilCliente() {
-    // Cambiar a vista servicios (que es donde está el onboarding)
-    irVista('servicios'); // Esto nos lleva a 'vista-cliente'
-
+    irVista('servicios');
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
     if (d) d.style.display = 'none';
     if (o) o.style.display = 'block';
 
-    // Pre-llenar campos
     try {
         const perf = await api('getProfile', { email: SESION.email });
         if (perf) {
+            // Datos comunes
             if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || '';
             if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
-            if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || '';
-            if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.teléfono || perf.telefono || '';
+            if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || perf.ubicacion || '';
+            if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.telefono || perf.teléfono || '';
             if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf['no._de_emergencia'] || '';
+
+            // Helper para fechas en inputs
+            const setFecha = (id, fecha) => {
+                if (!fecha) return;
+                try {
+                    const d = new Date(fecha);
+                    if (!isNaN(d)) document.getElementById(id).value = d.toISOString().split('T')[0];
+                } catch (e) { }
+            };
+
+            // Peque 1
             if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || '';
-            if (document.getElementById('reg_peque_nac')) {
-                // Formatear fecha para input date (YYYY-MM-DD)
-                if (perf.fecha_de_nacimiento) {
-                    try {
-                        const f = new Date(perf.fecha_de_nacimiento);
-                        if (!isNaN(f)) {
-                            document.getElementById('reg_peque_nac').value = f.toISOString().split('T')[0];
-                        }
-                    } catch (e) { }
-                }
-            }
+            setFecha('reg_peque_nac', perf.fecha_de_nacimiento);
             if (document.getElementById('reg_alergias')) document.getElementById('reg_alergias').value = perf.alergias || '';
             if (document.getElementById('reg_condicion')) document.getElementById('reg_condicion').value = perf['condición_médica_o_especificaciones_adicionales'] || '';
             if (document.getElementById('reg_salud')) document.getElementById('reg_salud').value = perf.estado_de_salud_actual || '';
             if (document.getElementById('reg_preferencias')) document.getElementById('reg_preferencias').value = perf.preferencias_o_actividades_favoritas || '';
             if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf['no._de_mascotas'] || '';
+
+            // Peque 2
+            if (perf.nombre_del_peque_2) {
+                document.getElementById('section-peque-2').style.display = 'block';
+                if (document.getElementById('reg_peque_nombre_2')) document.getElementById('reg_peque_nombre_2').value = perf.nombre_del_peque_2;
+                setFecha('reg_peque_nac_2', perf.fecha_de_nacimiento_2);
+                if (document.getElementById('reg_alergias_2')) document.getElementById('reg_alergias_2').value = perf.alergias_2 || '';
+                if (document.getElementById('reg_condicion_2')) document.getElementById('reg_condicion_2').value = perf['condición_médica_o_especificaciones_adicionales_2'] || '';
+                if (document.getElementById('reg_salud_2')) document.getElementById('reg_salud_2').value = perf.estado_de_salud_actual_2 || '';
+                if (document.getElementById('reg_preferencias_2')) document.getElementById('reg_preferencias_2').value = perf.preferencias_o_actividades_favoritas_2 || '';
+                if (document.getElementById('reg_mascotas_2')) document.getElementById('reg_mascotas_2').value = perf['no._de_mascotas_2'] || '';
+            }
+
+            // Peque 3
+            if (perf.nombre_del_peque_3) {
+                document.getElementById('section-peque-3').style.display = 'block';
+                document.getElementById('btn-agregar-peque').style.display = 'none';
+                if (document.getElementById('reg_peque_nombre_3')) document.getElementById('reg_peque_nombre_3').value = perf.nombre_del_peque_3;
+                setFecha('reg_peque_nac_3', perf.fecha_de_nacimiento_3);
+                if (document.getElementById('reg_alergias_3')) document.getElementById('reg_alergias_3').value = perf.alergias_3 || '';
+                if (document.getElementById('reg_condicion_3')) document.getElementById('reg_condicion_3').value = perf['condición_médica_o_especificaciones_adicionales_3'] || '';
+                if (document.getElementById('reg_salud_3')) document.getElementById('reg_salud_3').value = perf.estado_de_salud_actual_3 || '';
+                if (document.getElementById('reg_preferencias_3')) document.getElementById('reg_preferencias_3').value = perf.preferencias_o_actividades_favoritas_3 || '';
+                if (document.getElementById('reg_mascotas_3')) document.getElementById('reg_mascotas_3').value = perf['no._de_mascotas_3'] || '';
+            }
         }
     } catch (e) {
         console.error("Error al prellenar perfil:", e);

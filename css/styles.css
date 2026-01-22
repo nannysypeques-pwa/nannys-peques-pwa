@@ -597,3 +597,156 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 .form-group textarea::placeholder {
     color: #9CA3AF;
 }
+
+/* =========================================
+   ESTILOS PREMIUM PERFIL Y ONBOARDING
+   ========================================= */
+.onboarding-section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    color: var(--pink-main);
+    border-bottom: 2px solid var(--pink-light);
+    padding-bottom: 5px;
+    margin: 20px 0 10px 0;
+}
+
+.profile-premium-card {
+    padding: 0 !important;
+    overflow: hidden;
+    border: none;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header {
+    background: linear-gradient(135deg, var(--pink-main), var(--blue-main));
+    padding: 30px 20px;
+    text-align: center;
+    color: white;
+}
+
+.profile-avatar {
+    font-size: 50px;
+    background: white;
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.profile-header h3 {
+    margin: 0;
+    color: white;
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+}
+
+.profile-header .muted {
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 5px;
+}
+
+.profile-section {
+    padding: 20px;
+}
+
+.section-title {
+    font-weight: 800;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94a3b8;
+    margin-bottom: 15px;
+    display: block;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.profile-info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-info-item.full {
+    grid-column: span 2;
+}
+
+.profile-info-item .label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 2px;
+}
+
+.profile-info-item .value {
+    font-size: 14px;
+    color: var(--text-main);
+    word-break: break-word;
+}
+
+.profile-info-item .value.link {
+    color: var(--blue-main);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* Peque Profile Card */
+.peque-profile-card {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 15px;
+    border-left: 5px solid var(--pink-main);
+}
+
+.peque-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.peque-icon {
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.peque-meta {
+    flex-grow: 1;
+}
+
+.peque-name {
+    font-weight: 800;
+    color: var(--text-main);
+    font-size: 16px;
+}
+
+.peque-date {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.peque-age-badge {
+    background: var(--pink-light);
+    color: var(--pink-main);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.peque-details p {
+    font-size: 13px;
+    margin: 5px 0;
+    color: #334155;
+}
+
+.profile-actions {
+    padding: 20px;
+    background: #f1f5f9;
+}
