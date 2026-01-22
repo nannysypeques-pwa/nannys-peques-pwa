@@ -1155,6 +1155,7 @@ function irVista(nombre) {
     if (btn) btn.classList.add('activo');
 
     if (nombre === 'perfil') cargarPerfil();
+    if (nombre === 'disponibilidad') cargar();
 }
 
 async function cargarPerfil() {
