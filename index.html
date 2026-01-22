@@ -49,42 +49,52 @@
     <div id="auth" class="auth-wrapper">
       <div class="auth-card">
 
-        <div id="paso-login">
+        <div id="paso-seleccion">
           <div class="brand-title">Nannys y Peques</div>
-          <p class="login-subtitle">Iniciar sesión</p>
+          <p class="login-subtitle">Bienvenido, selecciona tu acceso:</p>
+          <div class="row" style="flex-direction: column; gap: 15px;">
+            <button class="btn-pink" onclick="mostrarLoginStaff()" style="width: 100%; padding: 18px;">Soy Niñera /
+              Staff 🧸</button>
+            <button class="btn-pink" onclick="mostrarPortalFamilia()"
+              style="width: 100%; padding: 18px; background: var(--blue-main);">Soy Familia 👨‍👩‍👧‍👦</button>
+          </div>
+        </div>
+
+        <div id="paso-login" style="display:none;">
+          <div class="brand-title">Ingreso Staff</div>
+          <p class="login-subtitle">Personal de Nannys y Peques</p>
 
           <div class="row"><label>Email</label><input id="email" type="email" placeholder="nombre@correo.com"></div>
           <div class="row"><label>Contraseña</label><input id="pass" type="password" placeholder="********"></div>
           <div class="row">
-            <button class="btn-primary" onclick="login()">Entrar</button>
+            <button class="btn-primary" onclick="login('staff')">Entrar</button>
             <button class="btn-ghost" onclick="mostrarOlvide()">Olvidé mi contraseña</button>
           </div>
-          <p class="muted">Si es la primera vez (Niñera o Staff), use “Olvidé mi contraseña”. Si eres Cliente, <a
-              href="#" onclick="mostrarRegistroCliente()" style="color:var(--pink-main);font-weight:bold;">regístrate
-              aquí</a>.</p>
+          <button class="btn-ghost" onclick="volverSeleccion()" style="margin-top: 10px;">← Volver</button>
           <p id="msgLogin"></p>
         </div>
 
         <div id="paso-registro-cliente" style="display:none;">
-          <div class="brand-title">¡Bienvenido!</div>
+          <div class="brand-title">Portal Familia</div>
           <p class="login-subtitle" style="font-size: 14px; line-height: 1.4; color: var(--text-main);">
             Gracias por confiar en Nannys y Peques, estamos listos para acompañarte a ti y a tu familia en los momentos
             más bonitos de la niñez. 💗
           </p>
 
           <div class="row">
-            <label>Tu Email</label>
+            <label>Email</label>
             <input id="email-reg" type="email" placeholder="nombre@correo.com">
           </div>
           <div class="row">
-            <label>Crea una contraseña</label>
+            <label>Contraseña</label>
             <input id="pass-reg" type="password" placeholder="Mínimo 6 caracteres">
           </div>
 
           <div class="row">
-            <button class="btn-primary" onclick="registrarNuevoCliente()">Crear mi cuenta</button>
-            <button class="btn-ghost" onclick="volverLogin()">Volver al inicio</button>
+            <button class="btn-primary" onclick="login('cliente')" style="background: var(--blue-main);">Entrar</button>
+            <button class="btn-ghost" onclick="registrarNuevoCliente()">Crear cuenta nueva</button>
           </div>
+          <button class="btn-ghost" onclick="volverSeleccion()" style="margin-top: 10px;">← Volver</button>
           <p id="msgRegistro"></p>
         </div>
 

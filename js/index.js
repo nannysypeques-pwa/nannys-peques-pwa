@@ -77,15 +77,27 @@ function volverLogin() {
     document.getElementById('paso-olvide').style.display = 'none';
 }
 
-async function login() {
-    const email = document.getElementById('email').value.trim().toLowerCase();
-    const pass = document.getElementById('pass').value;
-    const msg = document.getElementById('msgLogin');
+async function login(rol) {
+    let email, pass, msg;
+    if (rol === 'cliente') {
+        email = document.getElementById('email-reg').value.trim().toLowerCase();
+        pass = document.getElementById('pass-reg').value;
+        msg = document.getElementById('msgRegistro');
+    } else {
+        email = document.getElementById('email').value.trim().toLowerCase();
+        pass = document.getElementById('pass').value;
+        msg = document.getElementById('msgLogin');
+    }
+
+    if (!email || !pass) {
+        msg.innerHTML = '<span class="err">Por favor, ingresa tus credenciales.</span>';
+        return;
+    }
 
     msg.textContent = 'Validando...';
 
     try {
-        const res = await api('login', { email, contrasena: pass });
+        const res = await api('login', { email, contrasena: pass, rol: rol });
 
         SESION.email = email;
         SESION.nombre = res.nombre || '';
@@ -129,6 +141,8 @@ async function login() {
         msg.innerHTML = `<span class="err">${err.message}</span>`;
     }
 }
+window.login = login;
+
 window.login = login;
 
 
@@ -1931,14 +1945,17 @@ async function registrarNuevoCliente() {
 window.registrarNuevoCliente = registrarNuevoCliente;
 
 function volverLogin() {
-    const pLogin = document.getElementById('paso-login');
-    const pReg = document.getElementById('paso-registro-cliente');
-    const pOlvide = document.getElementById('paso-olvide');
-    if (pLogin) pLogin.style.display = 'block';
-    if (pReg) pReg.style.display = 'none';
-    if (pOlvide) pOlvide.style.display = 'none';
+    // Para compatibilidad, si algo llama a volverLogin, lo mandamos a selección o al login de staff
+    volverSeleccion();
 }
 window.volverLogin = volverLogin;
+
+function mostrarRegistroCliente() {
+    // Redirigir a portal familia
+    mostrarPortalFamilia();
+}
+window.mostrarRegistroCliente = mostrarRegistroCliente;
+
 
 async function mostrarVistaCliente() {
     ocultarTodo();
@@ -2038,5 +2055,28 @@ function mostrarDetalleServicioCliente(s) {
     document.getElementById('modalBackdrop').style.display = 'flex';
 }
 window.mostrarDetalleServicioCliente = mostrarDetalleServicioCliente;
+
+function mostrarLoginStaff() {
+    document.getElementById('paso-seleccion').style.display = 'none';
+    document.getElementById('paso-login').style.display = 'block';
+    document.getElementById('paso-registro-cliente').style.display = 'none';
+}
+window.mostrarLoginStaff = mostrarLoginStaff;
+
+function mostrarPortalFamilia() {
+    document.getElementById('paso-seleccion').style.display = 'none';
+    document.getElementById('paso-login').style.display = 'none';
+    document.getElementById('paso-registro-cliente').style.display = 'block';
+}
+window.mostrarPortalFamilia = mostrarPortalFamilia;
+
+function volverSeleccion() {
+    document.getElementById('paso-seleccion').style.display = 'block';
+    document.getElementById('paso-login').style.display = 'none';
+    document.getElementById('paso-registro-cliente').style.display = 'none';
+    document.getElementById('paso-olvide').style.display = 'none';
+}
+window.volverSeleccion = volverSeleccion;
+
 
 

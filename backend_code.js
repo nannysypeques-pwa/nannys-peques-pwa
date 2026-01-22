@@ -28,7 +28,7 @@ function doPost(e) {
         switch (action) {
             // --- AUTH ---
             case 'login':
-                result = login(email, payload.contrasena || payload.pass);
+                result = login(email, payload.contrasena || payload.pass, payload.rol);
                 break;
             case 'solicitarOTP':
                 result = solicitarOTP(email);
@@ -580,28 +580,51 @@ function establecerContrasena(email, otp, nuevaContrasena) {
 
 
 
-function login(email, contrasena) {
+function login(email, contrasena, rol) {
     email = String(email || '').trim().toLowerCase();
     if (!email || !contrasena) throw new Error('Datos incompletos');
-    if (!_estaAutorizado(email)) throw new Error('Su correo no está autorizado para iniciar sesión.');
-    const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) throw new Error('Usuario no encontrado');
-    const hashGuardado = String(sh.getRange(fila, 3).getValue()).trim();
-    if (!hashGuardado) throw new Error('Este usuario no tiene contraseña. Use "Olvidé mi contraseña".');
-    const passHash = _sha256(contrasena);
-    if (passHash !== hashGuardado) throw new Error('Credenciales inválidas');
-    const nombre = sh.getRange(fila, 2).getValue() || '';
 
-    return {
-        ok: true,
-        email,
-        nombre,
-        admin: esAdmin(email),
-        supervision: esSupervision(email)
-    };
+    // 1. Usuarios (Staff)
+    if (rol === 'staff') {
+        const shU = _hoja(NOMBRE_HOJA_USUARIOS);
+        const filaU = _buscarFilaPorValor(shU, 'email', email);
+        if (filaU !== -1) {
+            const hashGuardado = String(shU.getRange(filaU, 3).getValue()).trim();
+            if (!hashGuardado) throw new Error('Este usuario no tiene contraseña. Use "Olvidé mi contraseña".');
+            if (_sha256(contrasena) !== hashGuardado) throw new Error('Credenciales inválidas');
+            return {
+                ok: true,
+                email,
+                nombre: shU.getRange(filaU, 2).getValue() || '',
+                admin: esAdmin(email),
+                supervision: esSupervision(email),
+                cliente: false
+            };
+        }
+        throw new Error('Personal no encontrado en la base de datos.');
+    }
 
+    // 2. Familia (Clientes)
+    if (rol === 'cliente') {
+        const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+        const filaC = _buscarFilaPorValor(shC, 'email', email);
+        if (filaC !== -1) {
+            const passH = String(shC.getRange(filaC, _idxCol(shC, 'pass_hash')).getValue()).trim();
+            if (!passH) throw new Error('Este cliente no ha establecido contraseña.');
+            if (_sha256(contrasena) !== passH) throw new Error('Credenciales inválidas');
+            return {
+                ok: true,
+                email,
+                nombre: shC.getRange(filaC, _idxCol(shC, 'nombre completo')).getValue() || '',
+                admin: false,
+                supervision: false,
+                cliente: true
+            };
+        }
+        throw new Error('Familia no encontrada. Por favor, crea una cuenta.');
+    }
 
-
-
+    throw new Error('Rol de acceso no reconocido.');
 }
 
 
@@ -4112,8 +4135,8 @@ function enviarPushPrueba(email) {
     const options = {
         vapidDetails: {
             subject: 'mailto:nannysypeques@gmail.com',
-            publicKey: BAALWaRIxKUyY4J0qKwy0CV1AJKtsloQZHcPzZzHLqF3GQOf8HzLEbe6gYJsgr1BEW0OGbwjfE6QR6twPW27Ghk,
-            privateKey: xxxxxxxxxx
+            publicKey: VAPID_PUBLIC,
+            privateKey: VAPID_PRIVATE
         }
     };
 
@@ -4123,4 +4146,79 @@ function enviarPushPrueba(email) {
     return response;
 }
 
+/** =========================
+ *  CLIENTES SPECIFIC FUNCTIONS
+ *  ========================= */
 
+function validarRegistroCliente(email) {
+    email = String(email || '').trim().toLowerCase();
+    const shS = _hoja(NOMBRE_HOJA_SERVICIOS);
+    const filaS = _buscarFilaPorValor(shS, 'email', email);
+    if (filaS === -1) return false;
+    return true;
+}
+
+function updatePerfilCliente(email, payload) {
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+    const filaC = _buscarFilaPorValor(shC, 'email', email);
+    if (filaC === -1) throw new Error('Cliente no registrado');
+
+    // Mapear campos de payload a columnas
+    const fields = {
+        'nombre completo': payload.nombre_completo,
+        'direccion': payload.direccion,
+        'ubicación': payload.ubicacion,
+        'Teléfono': payload.telefono,
+        'No. de emergencia': payload.emergencia,
+        'Nombre del peque': payload.peque_nombre,
+        'Fecha de nacimiento': payload.peque_nacimiento,
+        'Alergias': payload.alergias,
+        'Condición médica o especificaciones adicionales': payload.condicion,
+        'Estado de salud actual': payload.salud,
+        'Preferencias o actividades favoritas': payload.preferencias,
+        'No. de mascotas': payload.mascotas,
+        'actualizado': _ahoraISO()
+    };
+
+    _escribirObjeto(shC, filaC, fields);
+    return { ok: true };
+}
+
+function getPerfilCliente(email) {
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+    const filaC = _buscarFilaPorValor(shC, 'email', email);
+    if (filaC === -1) return {};
+
+    // Obtenemos los nombres de las columnas
+    const headers = shC.getRange(1, 1, 1, shC.getLastColumn()).getValues()[0];
+    const values = shC.getRange(filaC, 1, 1, shC.getLastColumn()).getValues()[0];
+
+    const obj = {};
+    headers.forEach((h, i) => {
+        if (h) {
+            let key = h.toLowerCase().replace(/\s+/g, '_');
+            if (h === 'nombre completo') key = 'nombre'; // para compatibilidad con header-saludo
+            obj[key] = values[i];
+        }
+    });
+
+    return obj;
+}
+
+function getServiciosCliente(email) {
+    email = String(email || '').trim().toLowerCase();
+    const shS = _hoja(NOMBRE_HOJA_SERVICIOS);
+    const data = _leerComoObjetos(shS);
+
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const limite = new Date();
+    limite.setDate(hoy.getDate() + 14);
+
+    return data.filter(s => {
+        if (String(s.email).trim().toLowerCase() !== email) return false;
+        if (!s.Fecha) return false;
+        const f = new Date(s.Fecha);
+        return f >= hoy && f <= limite;
+    }).sort((a, b) => new Date(a.Fecha) - new Date(b.Fecha));
+}
