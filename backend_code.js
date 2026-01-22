@@ -1224,6 +1224,7 @@ function _expandirServiciosSemanales_(sh) {
 
 
         const cliente = String(row[colIdx['cliente']] || '').trim();
+        const emailServicio = colIdx['email'] != null ? String(row[colIdx['email']] || '').trim().toLowerCase() : '';
         const contacto = String(row[colIdx['numero de contacto']] || '').trim();
         const direccion = String(row[colIdx['direccion']] || '').trim();
         const ubicacion = String(row[colIdx['ubicacion (link)']] || '').trim();
@@ -1285,6 +1286,7 @@ function _expandirServiciosSemanales_(sh) {
                 hora_inicio: hi,
                 hora_fin: hf,
                 cliente,
+                email: emailServicio,
                 numero_contacto: contacto,
                 direccion,
                 ubicacion_link: ubicacion,
@@ -4199,18 +4201,31 @@ function getPerfilCliente(email) {
 
 function getServiciosCliente(email) {
     email = String(email || '').trim().toLowerCase();
-    const shS = _hoja(NOMBRE_HOJA_SERVICIOS);
-    const data = _leerComoObjetos(shS);
 
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0);
-    const limite = new Date();
-    limite.setDate(hoy.getDate() + 14);
+    // Leer ambas hojas para cubrir servicios actuales y de la próxima semana
+    const todos = _leerServiciosDesdeHojas_([
+        'Servicios',
+        'Servicios_Siguiente_semana'
+    ]);
 
-    return data.filter(s => {
-        if (String(s.email).trim().toLowerCase() !== email) return false;
-        if (!s.Fecha) return false;
-        const f = new Date(s.Fecha);
-        return f >= hoy && f <= limite;
-    }).sort((a, b) => new Date(a.Fecha) - new Date(b.Fecha));
+    const hoyISO = _toISODate(new Date());
+
+    return todos.filter(s => {
+        // Filtro por email
+        if (String(s.email || '').toLowerCase() !== email) return false;
+        // Filtro por fecha (solo hoy en adelante para el portal familia)
+        return s.fecha >= hoyISO;
+    }).map(s => {
+        // Mapear al formato que espera el frontend del cliente (PascalCase y nombres específicos)
+        return {
+            ...s,
+            'Fecha': s.fecha,
+            'Horario': (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio} – ${s.hora_fin}` : 'Pendiente',
+            'Nombre de la niñera': s.nombre_ninera || 'Por asignar',
+            'Estado': s.estado || 'Programado',
+            'Direccion': s.direccion || '—',
+            'Edad del niño': s.edad_nino || '—',
+            'Notas': s.notas || '—'
+        };
+    }).sort((a, b) => (a.fecha + ' ' + a.hora_inicio).localeCompare(b.fecha + ' ' + b.hora_inicio));
 }
