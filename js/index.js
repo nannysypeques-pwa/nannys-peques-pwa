@@ -2014,18 +2014,91 @@ async function guardarRegistroCompleto() {
         condicion: document.getElementById('reg_condicion').value,
         preferencias: document.getElementById('reg_preferencias').value,
         mascotas: document.getElementById('reg_mascotas').value,
+        salud: document.getElementById('reg_salud').value,
         email: SESION.email // ¡CRÍTICO! Necesario para buscar la fila
     };
 
     try {
         await api('updatePerfilCliente', payload);
-        toast('Perfil completado con éxito');
+        mostrarToast('Perfil completado con éxito');
         mostrarVistaCliente();
     } catch (e) {
-        toast('Error: ' + e.message);
+        mostrarToast('Error: ' + e.message);
     }
 }
 window.guardarRegistroCompleto = guardarRegistroCompleto;
+
+async function cargarPerfil() {
+    // Si es cliente, mostramos info extendida
+    const contExtra = document.getElementById('perfil-cliente-info');
+    if (contExtra) contExtra.style.display = SESION.cliente ? 'block' : 'none';
+
+    try {
+        const perf = await api('getProfile', { email: SESION.email });
+        if (perf) {
+            if (document.getElementById('perfil_nombre')) document.getElementById('perfil_nombre').textContent = perf.nombre || '—';
+            if (document.getElementById('perfil_email')) document.getElementById('perfil_email').textContent = perf.email || '—';
+            if (document.getElementById('perfil_tel')) document.getElementById('perfil_tel').textContent = perf.telefono || '—';
+
+            // Campos cliente
+            if (SESION.cliente) {
+                if (document.getElementById('perfil_direccion')) document.getElementById('perfil_direccion').textContent = perf.direccion || '—';
+                if (document.getElementById('perfil_emergencia')) document.getElementById('perfil_emergencia').textContent = perf['no._de_emergencia'] || '—';
+                if (document.getElementById('perfil_peque')) document.getElementById('perfil_peque').textContent = perf.nombre_del_peque || '—';
+                if (document.getElementById('perfil_nac_peque')) document.getElementById('perfil_nac_peque').textContent = perf.fecha_de_nacimiento || '—';
+                if (document.getElementById('perfil_alergias')) document.getElementById('perfil_alergias').textContent = perf.alergias || '—';
+                if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
+                if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_salud_actual || '—';
+                if (document.getElementById('perfil_mascotas')) document.getElementById('perfil_mascotas').textContent = perf['no._de_mascotas'] || '—';
+            }
+        }
+    } catch (e) {
+        console.error("Error al cargar perfil:", e);
+    }
+}
+window.cargarPerfil = cargarPerfil;
+
+async function editarPerfilCliente() {
+    // Cambiar a vista servicios (que es donde está el onboarding)
+    irVista('servicios'); // Esto nos lleva a 'vista-cliente'
+
+    const d = document.getElementById('cliente-dashboard');
+    const o = document.getElementById('cliente-onboarding');
+    if (d) d.style.display = 'none';
+    if (o) o.style.display = 'block';
+
+    // Pre-llenar campos
+    try {
+        const perf = await api('getProfile', { email: SESION.email });
+        if (perf) {
+            if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || '';
+            if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
+            if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || '';
+            if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.teléfono || perf.telefono || '';
+            if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf['no._de_emergencia'] || '';
+            if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || '';
+            if (document.getElementById('reg_peque_nac')) {
+                // Formatear fecha para input date (YYYY-MM-DD)
+                if (perf.fecha_de_nacimiento) {
+                    try {
+                        const f = new Date(perf.fecha_de_nacimiento);
+                        if (!isNaN(f)) {
+                            document.getElementById('reg_peque_nac').value = f.toISOString().split('T')[0];
+                        }
+                    } catch (e) { }
+                }
+            }
+            if (document.getElementById('reg_alergias')) document.getElementById('reg_alergias').value = perf.alergias || '';
+            if (document.getElementById('reg_condicion')) document.getElementById('reg_condicion').value = perf['condición_médica_o_especificaciones_adicionales'] || '';
+            if (document.getElementById('reg_salud')) document.getElementById('reg_salud').value = perf.estado_de_salud_actual || '';
+            if (document.getElementById('reg_preferencias')) document.getElementById('reg_preferencias').value = perf.preferencias_o_actividades_favoritas || '';
+            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf['no._de_mascotas'] || '';
+        }
+    } catch (e) {
+        console.error("Error al prellenar perfil:", e);
+    }
+}
+window.editarPerfilCliente = editarPerfilCliente;
 
 async function cargarServiciosCliente() {
     const lista = document.getElementById('servicios-cliente-lista');

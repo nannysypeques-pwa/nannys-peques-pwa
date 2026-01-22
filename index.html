@@ -155,14 +155,45 @@
             <span id="perfil_tel" class="perfil-valor">—</span>
           </div>
 
-          <div class="card">
-            <h3>Notificaciones</h3>
-            <button onclick="activarNotificaciones()">
-              🔔 Activar notificaciones
+          <div id="perfil-cliente-info"
+            style="display:none; margin-top:20px; border-top:1px solid #eee; padding-top:20px;">
+            <div class="perfil-item">
+              <span class="perfil-label">Dirección:</span>
+              <span id="perfil_direccion" class="perfil-valor">—</span>
+            </div>
+            <div class="perfil-item">
+              <span class="perfil-label">Contacto Emergencia:</span>
+              <span id="perfil_emergencia" class="perfil-valor">—</span>
+            </div>
+            <div class="perfil-item">
+              <span class="perfil-label">Nombre del Peque:</span>
+              <span id="perfil_peque" class="perfil-valor">—</span>
+            </div>
+            <div class="perfil-item">
+              <span class="perfil-label">Fecha Nac. Peque:</span>
+              <span id="perfil_nac_peque" class="perfil-valor">—</span>
+            </div>
+            <div class="perfil-item">
+              <span class="perfil-label">Alergias:</span>
+              <span id="perfil_alergias" class="perfil-valor">—</span>
+            </div>
+            <div class="perfil-item">
+              <span class="perfil-label">Condición Médica:</span>
+              <span id="perfil_condicion" class="perfil-valor">—</span>
+            </div>
+            <div class="perfil-item">
+              <span class="perfil-label">Salud actual:</span>
+              <span id="perfil_salud" class="perfil-valor">—</span>
+            </div>
+            <div class="perfil-item">
+              <span class="perfil-label">Mascotas:</span>
+              <span id="perfil_mascotas" class="perfil-valor">—</span>
+            </div>
+
+            <button class="btn-ghost" onclick="editarPerfilCliente()"
+              style="width:100%; margin-top:10px; border:1px solid var(--blue-main); color:var(--blue-main);">
+              📝 Editar perfil
             </button>
-            <p class="muted">
-              Recibe avisos cuando tengas un nuevo servicio asignado.
-            </p>
           </div>
 
           <div style="margin-top:20px;">
@@ -270,6 +301,10 @@
               <div class="form-group full">
                 <label>¿Hay mascotas en casa?</label>
                 <input id="reg_mascotas" type="text" placeholder="Ej. Un perro pequeño">
+              </div>
+              <div class="form-group full">
+                <label>Estado de salud actual</label>
+                <textarea id="reg_salud" placeholder="¿Cómo se encuentra el peque hoy?"></textarea>
               </div>
             </div>
             <button class="btn-primary" onclick="guardarRegistroCompleto()" style="margin-top:20px;">
