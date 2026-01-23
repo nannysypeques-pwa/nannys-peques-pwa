@@ -857,6 +857,47 @@
     </div>
   </div>
 
+  <!-- Modal Registro Obligatorio Staff/Niñera -->
+  <div id="modalRegistroStaff" class="modal-backdrop"
+    style="display: none; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);">
+    <div class="modal-content" style="max-width: 400px; padding: 30px;">
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">🍼</div>
+        <h2 style="color: var(--blue-main); margin-bottom: 10px;">¡Casi listo!</h2>
+        <p class="muted" style="font-size: 14px;">Para poder utilizar la aplicación, necesitamos que completes tu
+          información de contacto. <b>Estos datos se guardarán una sola vez.</b></p>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label style="font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Dirección
+          Completa</label>
+        <textarea id="reg_staff_direccion" class="input" placeholder="Calle, número, colonia, CP..."
+          style="min-height: 80px; padding: 12px;"></textarea>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 15px;">
+        <label style="font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Teléfono de
+          Emergencia</label>
+        <input type="tel" id="reg_staff_emergencia" class="input" placeholder="Número de un familiar o contacto">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 25px;">
+        <label style="font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Link de Ubicación
+          (Google Maps)</label>
+        <input type="url" id="reg_staff_ubicacion" class="input" placeholder="Google Maps Link">
+        <span class="muted" style="font-size: 11px; margin-top: 4px; display: block;">Esto nos ayuda a saber tu zona de
+          cobertura.</span>
+      </div>
+
+      <div id="msgRegistroStaff" style="margin-bottom: 15px; text-align: center; font-size: 13px;"></div>
+
+      <button class="btn-primary" onclick="guardarDatosStaff()"
+        style="width: 100%; height: 50px; font-weight: 700; letter-spacing: 0.5px;">
+        Guardar Información y Comenzar
+      </button>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script src="js/app.js"></script>

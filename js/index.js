@@ -10,7 +10,7 @@ let SESION = {
     cliente: false
 };
 
-// Inicializar sesión desde localStorage si existe
+//Inicializar sesión desde localStorage si existe
 try {
     const s = localStorage.getItem('nyp_sesion');
     if (s) SESION = JSON.parse(s);
@@ -124,10 +124,10 @@ async function login(rol) {
             mostrarVistaAdmin();
         } else if (SESION.supervision) {
             document.querySelector('.bottom-nav').style.display = 'none';
-            irVista('supervision'); // Usar irVista para consistencia
+            irVista('supervision'); //Usar irVista para consistencia
         } else if (SESION.cliente) {
             document.querySelector('.bottom-nav').style.display = 'flex';
-            irVista('servicios'); // Redirigirá a vista-cliente por la lógica de irVista
+            irVista('servicios'); //Redirigirá a vista-cliente por la lógica de irVista
         } else {
             document.querySelector('.bottom-nav').style.display = 'flex';
             mostrarVistaNinera();
@@ -263,7 +263,7 @@ async function cargarSiguiente() {
 
 function copiarSemanaAnterior() {
     if (!SEM2.cargada) {
-        // Pequeño hack para asegurar carga antes de copiar, idealmente se maneja con estado
+        //Pequeño hack para asegurar carga antes de copiar, idealmente se maneja con estado
         cargarSiguiente().then(() => { if (SEM2.cargada) _doCopiar(); });
     }
     else _doCopiar();
@@ -280,12 +280,12 @@ async function guardar() {
     const p1 = { dias: SEM1.dias };
 
     try {
-        // Guardar semana 1
+        //Guardar semana 1
         await api('guardarDisponibilidad', { email: SESION.email, dias: SEM1.dias });
 
         let msgText = 'Disponibilidad guardada.';
 
-        // Guardar semana 2 si cargada
+        //Guardar semana 2 si cargada
         if (SEM2.cargada) {
             await api('guardarDisponibilidad', { email: SESION.email, dias: SEM2.dias });
             msgText = 'Disponibilidad de ambas semanas guardada.';
@@ -364,11 +364,11 @@ async function refreshServicios() {
 }
 
 function actualizarPlaneaciones() {
-    // ⛔ si hay un modal abierto, no interferir
+    //⛔ si hay un modal abierto, no interferir
     if (document.getElementById('planeacionBackdrop').style.display === 'flex') {
         cerrarPlaneacionNeuronanny();
     }
-    // 🧹 limpiar cache y sesiones
+    //🧹 limpiar cache y sesiones
     CACHE_PLANEACIONES = {};
     PLANEACION_SESSION_ID++;
 
@@ -408,7 +408,7 @@ async function cargarServicios() {
         CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
         msg.textContent = `Servicios recibidos: ${CAL_SERVICIOS.length}`;
 
-        // Normalizar campo "ver"
+        //Normalizar campo "ver"
         CAL_SERVICIOS = CAL_SERVICIOS.map(s => {
             let ver = s.ver;
             if (ver === undefined || ver === null || ver === '') ver = true;
@@ -508,15 +508,15 @@ function renderCalendario2Semanas() {
                     nombreCliente = partes[0];
                 }
 
-                // Add name to label with a separator or line break. JS textContent doesn't handle BR, 
-                // but we can use innerHTML or just text. The pill is a button.
-                // The pill uses flex/block layout? styles.css says .svc-pill is block usually.
-                // Let's use innerHTML to style it a bit or just append text.
-                // The user request said "Show client name... below the time".
-                // I will use innerHTML to add a div/span.
+                //Add name to label with a separator or line break. JS textContent doesn't handle BR, 
+                //but we can use innerHTML or just text. The pill is a button.
+                //The pill uses flex/block layout? styles.css says .svc-pill is block usually.
+                //Let's use innerHTML to style it a bit or just append text.
+                //The user request said "Show client name... below the time".
+                //I will use innerHTML to add a div/span.
                 btn.innerHTML = `<span style="display:block; font-size:13px; font-weight:700;">${label}</span>
                                  <span style="display:block; font-size:12px; margin-top:2px; opacity:0.9;">${nombreCliente}</span>`;
-                // btn.textContent = label; <-- Removing this
+                //btn.textContent = label; <-- Removing this
                 btn.onclick = () => abrirModalServicio(s);
                 body.appendChild(btn);
             });
@@ -531,13 +531,13 @@ function renderCalendario2Semanas() {
 function abrirModalServicio(s) {
     document.getElementById('mCliente').textContent = s.cliente || 'Detalle del servicio';
 
-    // Formatear fecha: Lunes 19 de Enero
+    //Formatear fecha: Lunes 19 de Enero
     let fechaTexto = s.fecha || '—';
     if (s.fecha && s.fecha.includes('-')) {
         const [yyyy, mm, dd] = s.fecha.split('-').map(Number);
         const dateObj = new Date(yyyy, mm - 1, dd);
         const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
-        // Capitalizar primera letra
+        //Capitalizar primera letra
         const f = dateObj.toLocaleDateString('es-ES', opciones);
         fechaTexto = f.charAt(0).toUpperCase() + f.slice(1);
     }
@@ -555,30 +555,30 @@ function abrirModalServicio(s) {
     }
 
     document.getElementById('mEdad').textContent = s.edad_nino || '—';
-    // --- LÓGICA MEJORADA PARA NOTAS DE PEQUES (PARSING) ---
+    //--- LÓGICA MEJORADA PARA NOTAS DE PEQUES (PARSING) ---
     const rawNotas = s.notas || '—';
     const containerNotas = document.getElementById('mNotas');
-    const containerEdad = document.getElementById('mEdad')?.parentElement; // Contenedor de la edad global
+    const containerEdad = document.getElementById('mEdad')?.parentElement; //Contenedor de la edad global
 
-    // Resetear visibilidad de edad global por defecto
+    //Resetear visibilidad de edad global por defecto
     if (containerEdad) containerEdad.style.display = 'block';
 
     if (s.notas && (s.notas.includes('👶') || s.notas.includes('•'))) {
-        // Modo parseo: Intentar separar por peques
+        //Modo parseo: Intentar separar por peques
         containerNotas.innerHTML = '';
 
-        const labelNotas = containerNotas.previousElementSibling; // El div con 📝 Notas:
+        const labelNotas = containerNotas.previousElementSibling; //El div con 📝 Notas:
         if (labelNotas && labelNotas.textContent.includes('Notas:')) {
-            labelNotas.style.display = 'block'; // Reset por defecto
+            labelNotas.style.display = 'block'; //Reset por defecto
         }
 
-        // Estrategia: Separar por el emoji de bebé o doble salto de línea
-        // El backend usa: 👶 Nombre\n• Campo...
-        // Split por 👶, pero ojo con el primero
+        //Estrategia: Separar por el emoji de bebé o doble salto de línea
+        //El backend usa: 👶 Nombre\n• Campo...
+        //Split por 👶, pero ojo con el primero
         const bloques = rawNotas.split('👶').filter(b => b.trim().length > 0);
 
         if (bloques.length > 0) {
-            // SI hay info de peques parseada, ocultamos la edad global y el label "Notas:"
+            //SI hay info de peques parseada, ocultamos la edad global y el label "Notas:"
             if (containerEdad) containerEdad.style.display = 'none';
 
             if (labelNotas && labelNotas.textContent.includes('Notas:')) {
@@ -586,12 +586,12 @@ function abrirModalServicio(s) {
             }
 
             bloques.forEach(bloque => {
-                // Reconstruir el emoji que split quitó
+                //Reconstruir el emoji que split quitó
                 const texto = '👶 ' + bloque.trim();
 
-                // Parsear líneas
+                //Parsear líneas
                 const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
-                const nombreRow = lineas[0].replace('👶', '').trim(); // Nombre
+                const nombreRow = lineas[0].replace('👶', '').trim(); //Nombre
 
                 const card = document.createElement('div');
                 card.classList.add('peque-profile-card');
@@ -602,14 +602,14 @@ function abrirModalServicio(s) {
                 card.style.marginBottom = '15px';
                 card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
 
-                // Extraer datos clave para el header (Edad)
+                //Extraer datos clave para el header (Edad)
                 let edad = '—';
                 const infoRestante = [];
 
                 for (let i = 1; i < lineas.length; i++) {
                     const l = lineas[i];
                     if (l.includes('Edad:')) {
-                        // Formato esperado: "• Edad: XX años..."
+                        //Formato esperado: "• Edad: XX años..."
                         const parts = l.split(':');
                         if (parts.length > 1) edad = parts[1].trim();
                         continue;
@@ -650,11 +650,11 @@ function abrirModalServicio(s) {
                 containerNotas.appendChild(card);
             });
         } else {
-            // Fallback si el split falla pero tiene formato
+            //Fallback si el split falla pero tiene formato
             containerNotas.textContent = rawNotas;
         }
     } else {
-        // Texto plano normal (o fallback puro)
+        //Texto plano normal (o fallback puro)
         containerNotas.textContent = rawNotas;
     }
     document.getElementById('mCuota').textContent = s.cuota_nanny || '—';
@@ -740,7 +740,7 @@ function cerrarModal() {
     if (mb) mb.style.display = 'none';
 }
 
-// Event listener added in init block later
+//Event listener added in init block later
 
 async function accionConfirmar(s) {
     cerrarModal();
@@ -757,7 +757,7 @@ async function accionConfirmar(s) {
             email: SESION.email
         });
 
-        // Actualizar localmente
+        //Actualizar localmente
         CAL_SERVICIOS.forEach(x => {
             if (x.sheet === s.sheet && x.row_base === s.row_base) {
                 x.estado = 'confirmado';
@@ -1019,12 +1019,12 @@ function cargarResumenPlaneaciones() {
     const isoActual = toISO(lunesActual);
     const isoSiguiente = toISO(lunesSiguiente);
 
-    // Semana actual
+    //Semana actual
     api('getResumenPlaneacionesSemana', { fechaBase: isoActual, email: SESION.email, tipo: 'actual' })
         .then(data => renderResumenPlaneaciones(data, document.getElementById('resumenPlaneacionesActual')))
         .catch(console.error);
 
-    // Semana siguiente
+    //Semana siguiente
     api('getResumenPlaneacionesSemana', { fechaBase: isoSiguiente, email: SESION.email, tipo: 'siguiente' })
         .then(data => renderResumenPlaneaciones(data, document.getElementById('resumenPlaneacionesSiguiente'), 'siguiente'))
         .catch(console.error);
@@ -1123,14 +1123,14 @@ function renderResumenDisponibilidadAdmin(lista) {
         grupo.nineras.forEach(n => {
             const colorDisponibilidad = n.tiene ? '#16a34a' : '#dc2626';
             const textoDisponibilidad = n.tiene ? 'ya capturó horarios' : 'sin horarios esta semana';
-            // Note: 'p' was used in HTML, but defined here? In HTML it was using 'p.estado_revision' inside the loop? 
-            // Ah, lines 2795 used 'p', but loop variable is 'n'. That was a bug in original code? Or 'p' was global?
-            // 'p' is not defined in this scope. I will ignore 'p' logic or fix. The original code seemed copy-pasted.
-            // I will omit the revision indicator if it relies on undefined 'p'.
-            // Wait, line 2796 "p.estado_revision". 'p' comes from nowhere. 'n' is the nanny.
-            // Assuming the loop variable is 'n', does 'n' have 'estado_revision'?
-            // The loop in HTML (line 2780) iterates 'n'. Line 2796 uses 'p'. This was likely a BUG in the original HTML.
-            // I will stick to 'n.tiene' and omit the broken revision part or check if 'n' has it.
+            //Note: 'p' was used in HTML, but defined here? In HTML it was using 'p.estado_revision' inside the loop? 
+            //Ah, lines 2795 used 'p', but loop variable is 'n'. That was a bug in original code? Or 'p' was global?
+            //'p' is not defined in this scope. I will ignore 'p' logic or fix. The original code seemed copy-pasted.
+            //I will omit the revision indicator if it relies on undefined 'p'.
+            //Wait, line 2796 "p.estado_revision". 'p' comes from nowhere. 'n' is the nanny.
+            //Assuming the loop variable is 'n', does 'n' have 'estado_revision'?
+            //The loop in HTML (line 2780) iterates 'n'. Line 2796 uses 'p'. This was likely a BUG in the original HTML.
+            //I will stick to 'n.tiene' and omit the broken revision part or check if 'n' has it.
             html += `<li style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
           <span style="width:10px;height:10px;border-radius:999px;background:${colorDisponibilidad};display:inline-block;"></span>
           <span>${n.nombre}</span><span class="muted">(${textoDisponibilidad})</span></li>`;
@@ -1256,7 +1256,7 @@ async function cargarListaNinerasAdmin() {
 }
 
 /* =========================================
-   RUTEO / VISTAS
+   RUTEO /VISTAS
    ========================================= */
 function ocultarTodo() {
     const ids = ['svcCard', 'puntosNineraCard', 'panel', 'tablaActualCard', 'tablaSiguienteCard', 'resumenCard', 'resumenCard2', 'adminCard', 'adminAgendaCard', 'adminPuntosCard', 'adminResumenDispCard'];
@@ -1297,7 +1297,7 @@ function irVista(nombre, skipLogic = false) {
     document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
 
     let target = nombre;
-    // Redirecciones por rol
+    //Redirecciones por rol
     if (SESION.cliente) {
         if (nombre === 'servicios') target = 'cliente';
         if (nombre === 'disponibilidad') target = 'actividades-cliente';
@@ -1310,7 +1310,7 @@ function irVista(nombre, skipLogic = false) {
     const btn = [...document.querySelectorAll('.bottom-nav button')].find(b => b.getAttribute('onclick')?.includes(nombre));
     if (btn) btn.classList.add('activo');
 
-    // Lógica adicional por vista y rol
+    //Lógica adicional por vista y rol
     const btnAct = document.getElementById('nav-disponibilidad');
     const btnCom = document.getElementById('nav-comunidad');
     const lblAct = document.getElementById('label-disponibilidad');
@@ -1322,14 +1322,21 @@ function irVista(nombre, skipLogic = false) {
 
     if (SESION.cliente) {
         if (lblAct) lblAct.textContent = 'Actividades';
-        if (skipLogic) return; // Saltamos la carga automática si se solicita manual
+        if (skipLogic) return; //Saltamos la carga automática si se solicita manual
         if (target === 'cliente') mostrarVistaCliente();
         if (target === 'actividades-cliente') cargarActividadesCliente();
         return;
     }
 
-    // Staff
+    //Staff
     if (lblAct) lblAct.textContent = 'Disponibilidad';
+
+    // Si es niñera (y no admin/supervision/cliente), obligar a completar perfil
+    if (!SESION.cliente && !SESION.admin && !SESION.supervision) {
+        api('getProfile', { email: SESION.email }).then(p => {
+            verificarDatosFaltantesNinera(p);
+        }).catch(err => console.error("Error validando perfi en irVista:", err));
+    }
 
     if (nombre === 'disponibilidad') {
         ocultarTodo();
@@ -1350,7 +1357,7 @@ function irVista(nombre, skipLogic = false) {
     }
 }
 
-// La implementación robusta de cargarPerfil está al final del archivo.
+//La implementación robusta de cargarPerfil está al final del archivo.
 
 
 function verificarDatosFaltantesNinera(p) {
@@ -1366,7 +1373,7 @@ function verificarDatosFaltantesNinera(p) {
 }
 
 function mostrarModalFaltantesNinera(p, lista) {
-    // Crear el modal dinámicamente si no existe
+    //Crear el modal dinámicamente si no existe
     let modal = document.getElementById('modal-faltantes-ninera');
     if (!modal) {
         modal = document.createElement('div');
@@ -1397,52 +1404,69 @@ function mostrarModalFaltantesNinera(p, lista) {
                        <label>Número de Emergencia</label>
                        <input id="iny_emergencia" type="text" placeholder="Nombre y Teléfono" value="${p.emergencia || ''}">
                     </div>
-                    <button type="button" class="btn-primary" onclick="guardarFaltantesNinera()">Guardar Información</button>
-                    <p id="msg-faltantes" class="muted" style="text-align:center; margin-top:10px;"></p>
-                </form>
-            </div>
-        `;
-        document.body.appendChild(modal);
+
+/**
+ * Verifica si a la niñera le faltan datos críticos.
+ * Si faltan, abre el modal obligatorio y bloquea el uso de la app.
+ */
+function verificarDatosFaltantesNinera(p) {
+    if (!p || SESION.cliente) return;
+
+    const faltantes = [];
+    if (!p.direccion || p.direccion.trim().length <8) faltantes.push('Dirección completa');
+    if (!p.emergencia || p.emergencia.trim().length <8) faltantes.push('Teléfono de emergencia');
+    if (!p.ubicacion || !p.ubicacion.trim().startsWith('http')) faltantes.push('Link de Ubicación (Google Maps)');
+
+    const modal = document.getElementById('modalRegistroStaff');
+    if (faltantes.length> 0) {
+        if (modal) modal.style.display = 'flex';
+        //Pre-llenar si hay algo
+        if (document.getElementById('reg_staff_direccion')) document.getElementById('reg_staff_direccion').value = p.direccion || '';
+        if (document.getElementById('reg_staff_emergencia')) document.getElementById('reg_staff_emergencia').value = p.emergencia || '';
+        if (document.getElementById('reg_staff_ubicacion')) document.getElementById('reg_staff_ubicacion').value = p.ubicacion || '';
     } else {
-        modal.style.display = 'flex';
+        if (modal) modal.style.display = 'none';
     }
 }
 
-async function guardarFaltantesNinera() {
-    const direccion = document.getElementById('iny_direccion').value.trim();
-    const ubicacion = document.getElementById('iny_ubicacion').value.trim();
-    const emergencia = document.getElementById('iny_emergencia').value.trim();
-    const msg = document.getElementById('msg-faltantes');
+async function guardarDatosStaff() {
+    const dir = document.getElementById('reg_staff_direccion').value.trim();
+    const eme = document.getElementById('reg_staff_emergencia').value.trim();
+    const ubi = document.getElementById('reg_staff_ubicacion').value.trim();
+    const msg = document.getElementById('msgRegistroStaff');
 
-    if (!direccion || !ubicacion || !emergencia) {
-        msg.innerHTML = '<span class="err">Por favor completa todos los campos.</span>';
+    if (dir.length <8 || eme.length <8 || !ubi.startsWith('http')) {
+        msg.innerHTML = '<span class="err">Por favor, completa todos los campos correctamente.</span>';
         return;
     }
 
-    const btn = document.querySelector('#form-faltantes-ninera button');
-    feedbackBotonInmediato(btn, 'Guardando...');
+    msg.textContent = 'Guardando...';
 
     try {
-        await api('updatePerfilNinera', {
+        const res = await api('updatePerfilNinera', {
             email: SESION.email,
-            direccion,
-            ubicacion,
-            emergencia,
-            telefono: SESION.telefono // mantener telefono si existe, o agregarlo si se pidiera
+            direccion: dir,
+            emergencia: eme,
+            ubicacion: ubi
         });
 
-        mostrarToast('¡Información guardada correctamente!');
-        document.getElementById('modal-faltantes-ninera').style.display = 'none';
-
-        // Recargar perfil para ver cambios reflejados
-        cargarPerfil();
-
-    } catch (e) {
-        console.error(e);
-        msg.innerHTML = '<span class="err">Error al guardar: ' + e.message + '</span>';
-        restaurarBoton(btn);
+        if (res.ok) {
+            msg.innerHTML = '<span class="ok">¡Información guardada! Cargando...</span>';
+            setTimeout(() => {
+                const modal = document.getElementById('modalRegistroStaff');
+                if (modal) modal.style.display = 'none';
+                cargarPerfil(); //Recargar para ver los cambios
+            }, 1500);
+        } else {
+            throw new Error(res.error || 'Error al guardar');
+        }
+    } catch (err) {
+        msg.innerHTML = `< span class="err" > ${ err.message }</span > `;
     }
 }
+
+window.guardarDatosStaff = guardarDatosStaff;
+
 
 /* =========================================
    PLANEACIONES (NEURONANNY)
@@ -1459,7 +1483,7 @@ function formatearFechaPlaneacion(fechaStr) {
     const diaNum = d.getDate();
     const horas = String(d.getHours()).padStart(2, '0');
     const minutos = String(d.getMinutes()).padStart(2, '0');
-    return `${diaNombre} ${diaNum} - ${horas}:${minutos} hrs`;
+    return `${ diaNombre } ${ diaNum } - ${ horas }:${ minutos } hrs`;
 }
 
 function abrirPlaneacionNeuronanny(servicio, planeacion) {
@@ -1477,12 +1501,12 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
 
         if (fechaRevision) {
             const f = formatearFechaPlaneacion(fechaRevision);
-            if (f) { lblRevision.textContent = `🆕 Creación: ${f}`; mostrar = true; }
+            if (f) { lblRevision.textContent = `🆕 Creación: ${ f } `; mostrar = true; }
         } else lblRevision.textContent = '';
 
         if (fechaCorreccion) {
             const f = formatearFechaPlaneacion(fechaCorreccion);
-            if (f) { lblCorreccion.textContent = `✏ Corrección enviada: ${f}`; mostrar = true; }
+            if (f) { lblCorreccion.textContent = `✏ Corrección enviada: ${ f } `; mostrar = true; }
         } else lblCorreccion.textContent = '';
 
         contFechas.style.display = mostrar ? 'flex' : 'none';
@@ -1499,15 +1523,15 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
         if (tipo === 'neuronanny') tituloBase = 'Planeación Neuronanny';
         else if (tipo === 'nanny educativa') tituloBase = 'Planeación Nanny Educativa';
         else if (tipo === 'miss nanny') tituloBase = 'Planeación Miss Nanny';
-        titulo.textContent = MODO_SOLO_LECTURA ? `${tituloBase} (solo lectura)` : tituloBase;
+        titulo.textContent = MODO_SOLO_LECTURA ? `${ tituloBase } (solo lectura)` : tituloBase;
     }
-    if (infoCliente) infoCliente.textContent = `👶 Cliente: ${servicio.cliente || '—'}`;
+    if (infoCliente) infoCliente.textContent = `👶 Cliente: ${ servicio.cliente || '—' } `;
     if (infoNinera) {
         let nombreNinera = '—';
         if (planeacion?.nombre_ninera) nombreNinera = planeacion.nombre_ninera;
         else if (!SESION.supervision && !SESION.admin && SESION.nombre) nombreNinera = SESION.nombre;
         else if (servicio?.nombre_ninera) nombreNinera = servicio.nombre_ninera;
-        infoNinera.textContent = `🧸 Niñera: ${nombreNinera}`;
+        infoNinera.textContent = `🧸 Niñera: ${ nombreNinera } `;
     }
 
     const area = document.getElementById('pl_area');
@@ -1593,9 +1617,9 @@ async function reenviarPlaneacionCorregida() {
         await api('reenviarPlaneacionCorregida', { ...payload, email: SESION.email });
         btn.textContent = 'Enviado ✓';
         setTimeout(() => restaurarBoton(btn), 800);
-        cargarResumenPlaneaciones(); // Wait, this updates local view? No, this is for admin? Or ninera?
-        // PWA: Nina sees her own list updated? The logic in HTML was calling 'loadResumenPlaneaciones'?
-        // Original HTML called 'cargarResumenPlaneaciones()' which is defined for both.
+        cargarResumenPlaneaciones(); //Wait, this updates local view? No, this is for admin? Or ninera?
+        //PWA: Nina sees her own list updated? The logic in HTML was calling 'loadResumenPlaneaciones'?
+        //Original HTML called 'cargarResumenPlaneaciones()' which is defined for both.
     } catch (err) {
         restaurarBoton(btn);
         mostrarToast('❌ Error al reenviar');
@@ -1628,7 +1652,7 @@ async function guardarPlaneacionNeuronanny() {
         await api(fn, { ...payload, email: SESION.email });
         btn.textContent = 'Guardado ✓';
         setTimeout(() => restaurarBoton(btn), 800);
-        // Wait, should we close modal or refresh list? Original code: just feedback.
+        //Wait, should we close modal or refresh list? Original code: just feedback.
     } catch (err) {
         restaurarBoton(btn);
         mostrarToast('❌ Error al guardar');
@@ -1675,16 +1699,16 @@ async function cargarResumenPlaneacionesNinera() {
     const isoSig = toISO(lunesSig);
 
     try {
-        // Semana Actual
+        //Semana Actual
         const dataActual = await api('getResumenPlaneacionesSemana', {
             email: SESION.email,
             fechaBase: isoActual,
             tipo: 'actual'
         });
-        // Reutilizamos la función de renderizado que aplana los datos por ciudad
+        //Reutilizamos la función de renderizado que aplana los datos por ciudad
         renderResumenPlaneaciones(dataActual, contActual, 'ninera_actual');
 
-        // Semana Siguiente
+        //Semana Siguiente
         const dataSig = await api('getResumenPlaneacionesSemana', {
             email: SESION.email,
             fechaBase: isoSig,
@@ -1693,52 +1717,52 @@ async function cargarResumenPlaneacionesNinera() {
         renderResumenPlaneaciones(dataSig, contSig, 'ninera_siguiente');
 
     } catch (err) {
-        if (contActual) contActual.innerHTML = `<span class="err">${err.message}</span>`;
+        if (contActual) contActual.innerHTML = `< span class="err" > ${ err.message }</span > `;
         if (contSig) contSig.innerHTML = '';
         console.error(err);
     }
 }
 
-// Logic for abrirPlaneacionesCliente needs PLANEACION_FUENTE and CACHE_PLANEACIONES
-// I must include that logic. It was around line 3774 in HTML.
+//Logic for abrirPlaneacionesCliente needs PLANEACION_FUENTE and CACHE_PLANEACIONES
+//I must include that logic. It was around line 3774 in HTML.
 
 async function abrirPlaneacionesCliente(cliente, esSiguiente, tipoServicio) {
     PLANEACION_CLIENTE = cliente;
     PLANEACION_INDEX = 0;
 
-    // Determine dates from PLANEACION_FUENTE or fetch?
-    // In HTML, PLANEACION_FUENTE was populated by scanning CAL_SERVICIOS? No.
-    // HTML had a complex logic for PLANEACION_FUENTE (lines 3788-3825).
-    // I should replicate that logic.
+    //Determine dates from PLANEACION_FUENTE or fetch?
+    //In HTML, PLANEACION_FUENTE was populated by scanning CAL_SERVICIOS? No.
+    //HTML had a complex logic for PLANEACION_FUENTE (lines 3788-3825).
+    //I should replicate that logic.
 
-    // But since I lost the 'source' logic in extraction (it was inline in HTML), I need to reconstruct it.
-    // Ah, 'getResumenPlaneacionesNinera' returns list of planeaciones needed.
-    // 'abrirPlaneacionesCliente' takes the clicked client and finds all dates for that client in the active week?
-    // Let's implement a simpler version that fetches planeacion data for the clicked item?
-    // But the modal has navigation (< >).
-    // For now, I'll fetch the specific one.
+    //But since I lost the 'source' logic in extraction (it was inline in HTML), I need to reconstruct it.
+    //Ah, 'getResumenPlaneacionesNinera' returns list of planeaciones needed.
+    //'abrirPlaneacionesCliente' takes the clicked client and finds all dates for that client in the active week?
+    //Let's implement a simpler version that fetches planeacion data for the clicked item?
+    //But the modal has navigation (<>).
+    //For now, I'll fetch the specific one.
 
-    // Wait, the user wants "no loss of functionality".
-    // I need to properly implement the array of dates to navigate.
+    //Wait, the user wants "no loss of functionality".
+    //I need to properly implement the array of dates to navigate.
 
-    // Reconstructing:
-    // When we click a resume item, we know the CLIENT and if it's NEXT week.
-    // We should find all services for that client in that week to build the navigation list.
+    //Reconstructing:
+    //When we click a resume item, we know the CLIENT and if it's NEXT week.
+    //We should find all services for that client in that week to build the navigation list.
 
     let serviciosFuente = esSiguiente ? CAL_SERVICIOS_SIG : CAL_SERVICIOS;
-    // Filter by client and type
+    //Filter by client and type
     PLANEACIONES_FECHAS = serviciosFuente
         .filter(s => s.cliente === cliente && TIPOS_CON_PLANEACION.includes(normalizarTexto(s.tipo_servicio)))
         .map(s => s.fecha)
         .sort();
 
-    // Remove duplicates
+    //Remove duplicates
     PLANEACIONES_FECHAS = [...new Set(PLANEACIONES_FECHAS)];
 
     if (PLANEACIONES_FECHAS.length === 0) {
-        // Fallback if not found in calendar (maybe hidden?)
-        // Try fetching directly?
-        // For now alert.
+        //Fallback if not found in calendar (maybe hidden?)
+        //Try fetching directly?
+        //For now alert.
         alert('No se encontraron fechas de servicio para este cliente en la semana seleccionada.');
         return;
     }
@@ -1747,14 +1771,14 @@ async function abrirPlaneacionesCliente(cliente, esSiguiente, tipoServicio) {
     actualizarNavegacionPlaneacion();
 
     const fecha = PLANEACIONES_FECHAS[0];
-    const key = `${cliente}|${fecha}`;
+    const key = `${ cliente }| ${ fecha } `;
     const sessionAtRequest = ++PLANEACION_SESSION_ID;
 
-    // Cache or fetch
+    //Cache or fetch
     if (CACHE_PLANEACIONES[key]) {
         abrirPlaneacionNeuronanny(buscarServicio(fecha, cliente, serviciosFuente), CACHE_PLANEACIONES[key]);
     } else {
-        // Show loading?
+        //Show loading?
         try {
             const p = await api('obtenerPlaneacionNeuronanny', { fecha, cliente, email: SESION.email });
             if (sessionAtRequest !== PLANEACION_SESSION_ID) return;
@@ -1762,7 +1786,7 @@ async function abrirPlaneacionesCliente(cliente, esSiguiente, tipoServicio) {
             abrirPlaneacionNeuronanny(buscarServicio(fecha, cliente, serviciosFuente), p);
         } catch (err) {
             console.error(err);
-            // Open empty
+            //Open empty
             abrirPlaneacionNeuronanny(buscarServicio(fecha, cliente, serviciosFuente), null);
         }
     }
@@ -1773,9 +1797,9 @@ function buscarServicio(fecha, cliente, fuente) {
 }
 
 function actualizarNavegacionPlaneacion() {
-    // Render dots and arrows for modal navigation
-    // Not critical for API refactor but good for UX.
-    // Skipping visual dots logic for brevity, can add if requested.
+    //Render dots and arrows for modal navigation
+    //Not critical for API refactor but good for UX.
+    //Skipping visual dots logic for brevity, can add if requested.
 }
 
 function cerrarPlaneacionNeuronanny() {
@@ -1788,11 +1812,11 @@ async function guardarObservaciones() {
         await api('guardarObservacionesSupervision', {
             fila: PLANEACION_EXISTENTE?.fila,
             observaciones: texto,
-            tipo: 'revisada', // o 'correccion' depend button?
-            // Wait, original HTML had separate buttons for "corrección" and "revisada".
-            // This function 'guardarObservaciones' was probably for auto-save or generic?
-            // Ah, the buttons called specific functions.
-            // I will assume this is generic save.
+            tipo: 'revisada', //o 'correccion' depend button?
+            //Wait, original HTML had separate buttons for "corrección" and "revisada".
+            //This function 'guardarObservaciones' was probably for auto-save or generic?
+            //Ah, the buttons called specific functions.
+            //I will assume this is generic save.
             email: SESION.email
         });
         mostrarToast('Observaciones guardadas');
@@ -1805,14 +1829,14 @@ async function guardarObservaciones() {
    INICIALIZACIÓN
    ========================================= */
 window.addEventListener('load', function () {
-    // Registrar SW
+    //Registrar SW
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./service-worker.js')
             .then(() => console.log('SW registrado'))
             .catch(e => console.error('Error SW:', e));
     }
 
-    // Inicializar UI según sesión
+    //Inicializar UI según sesión
     if (SESION.email) {
         document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente');
         if (SESION.admin) document.body.classList.add('admin');
@@ -1821,7 +1845,7 @@ window.addEventListener('load', function () {
         else document.body.classList.add('ninera');
 
         const saludo = document.getElementById('saludo');
-        if (saludo) saludo.innerHTML = `<b>¡Hola!</b>`;
+        if (saludo) saludo.innerHTML = `< b >¡Hola!</b > `;
 
         const headerAdmin = document.getElementById('header-admin');
         if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
@@ -1837,17 +1861,17 @@ window.addEventListener('load', function () {
             irVista('supervision');
         } else if (SESION.cliente) {
             document.querySelector('.bottom-nav').style.display = 'flex';
-            irVista('servicios'); // Esto redirigirá a vista-cliente
+            irVista('servicios'); //Esto redirigirá a vista-cliente
         } else {
             document.querySelector('.bottom-nav').style.display = 'flex';
             mostrarVistaNinera();
         }
     } else {
-        // Mostrar login
+        //Mostrar login
         document.getElementById('auth').style.display = 'flex';
         document.getElementById('app').style.display = 'none';
     }
-    // Close modal when clicking outside
+    //Close modal when clicking outside
     const back = document.getElementById('modalBackdrop');
     if (back) {
         back.addEventListener('click', (e) => {
@@ -1867,8 +1891,8 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
     MODO_SOLO_LECTURA = false;
     PLANEACION_CLIENTE = cliente;
 
-    // 🔑 USAR FECHAS DEL RESUMEN
-    const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}|${cliente}|${normalizarTexto(SESION.nombre || '')}`;
+    //🔑 USAR FECHAS DEL RESUMEN
+    const key = `${ esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual' }| ${ cliente }| ${ normalizarTexto(SESION.nombre || '') } `;
     const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
 
     if (!fechas.length) {
@@ -1893,7 +1917,7 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
 
 function abrirPlaneacionPorIndice() {
     const fecha = PLANEACIONES_FECHAS[PLANEACION_INDEX];
-    const key = `${PLANEACION_CLIENTE}|${fecha}`;
+    const key = `${ PLANEACION_CLIENTE }| ${ fecha } `;
 
     const servicio = PLANEACION_FUENTE.find(
         s => s.cliente === PLANEACION_CLIENTE && s.fecha === fecha
@@ -1912,7 +1936,7 @@ function abrirPlaneacionPorIndice() {
 
     const sessionAtRequest = PLANEACION_SESSION_ID;
 
-    // Refactored to api
+    //Refactored to api
     api('obtenerPlaneacionNeuronanny', { fecha, cliente: PLANEACION_CLIENTE, email: SESION.email })
         .then(res => {
             if (sessionAtRequest !== PLANEACION_SESSION_ID) return;
@@ -1931,7 +1955,7 @@ function abrirPlaneacionPorIndice() {
 
 function planeacionAnterior() {
     guardarPlaneacionEnCache();
-    if (PLANEACION_INDEX > 0) {
+    if (PLANEACION_INDEX> 0) {
         PLANEACION_INDEX--;
         abrirPlaneacionPorIndice();
     }
@@ -1939,7 +1963,7 @@ function planeacionAnterior() {
 
 function planeacionSiguiente() {
     guardarPlaneacionEnCache();
-    if (PLANEACION_INDEX < PLANEACIONES_FECHAS.length - 1) {
+    if (PLANEACION_INDEX <PLANEACIONES_FECHAS.length - 1) {
         PLANEACION_INDEX++;
         abrirPlaneacionPorIndice();
     }
@@ -1951,7 +1975,7 @@ function actualizarNavegacionPlaneacion() {
     const actual = PLANEACION_INDEX + 1;
     const d = new Date(fechaISO + 'T00:00:00');
     const textoFecha = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric' });
-    const textoFinal = total > 1 ? `${textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1)} · Día ${actual} de ${total}` : textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
+    const textoFinal = total> 1 ? `${ textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1) } · Día ${ actual } de ${ total } ` : textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
 
     const elFecha = document.getElementById('pl_fecha_actual');
     if (elFecha) elFecha.textContent = textoFinal;
@@ -1988,7 +2012,7 @@ function cerrarPlaneacionNeuronanny() {
 
 function precargarPlaneacionesCliente() {
     PLANEACIONES_FECHAS.forEach(fecha => {
-        const key = `${PLANEACION_CLIENTE}|${fecha}`;
+        const key = `${ PLANEACION_CLIENTE }| ${ fecha } `;
         if (key in CACHE_PLANEACIONES) return;
 
         api('obtenerPlaneacionNeuronanny', { fecha, cliente: PLANEACION_CLIENTE, email: SESION.email })
@@ -2001,7 +2025,7 @@ function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServicioResu
     PLANEACION_SESSION_ID++;
     MODO_SOLO_LECTURA = true;
     PLANEACION_CLIENTE = cliente;
-    const key = `${prefijo}|${cliente}|${nombreNineraResumen || ''}`;
+    const key = `${ prefijo }| ${ cliente }| ${ nombreNineraResumen || '' } `;
     const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
 
     if (!fechas.length) {
@@ -2073,7 +2097,7 @@ document.addEventListener('click', function (e) {
 
 function setAppHeight() {
     const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${vh}px`);
+    document.documentElement.style.setProperty('--vh', `${ vh } px`);
 }
 window.addEventListener('resize', setAppHeight);
 window.addEventListener('orientationchange', setAppHeight);
@@ -2089,7 +2113,7 @@ function urlBase64ToUint8Array(base64String) {
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    for (let i = 0; i <rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
     return outputArray;
 }
 
@@ -2109,9 +2133,9 @@ async function activarNotificaciones() {
         let subscription = await registration.pushManager.getSubscription();
 
         if (!subscription) {
-            // VAPID_PUBLIC_KEY must be global or defined here. 
-            // It is defined in app.js or index.html logic. 
-            // Assuming defined in app.js or let's redefine locally to be safe as in HTML it was const.
+            //VAPID_PUBLIC_KEY must be global or defined here. 
+            //It is defined in app.js or index.html logic. 
+            //Assuming defined in app.js or let's redefine locally to be safe as in HTML it was const.
             const vapidKey = 'BAALWaRIxKUyY4J0qKwy0CV1AJKtsloQZHcPzZzHLqF3GQOf8HzLEbe6gYJsgr1BEW0OGbwjfE6QR6twPW27Ghk';
             const applicationServerKey = urlBase64ToUint8Array(vapidKey);
             subscription = await registration.pushManager.subscribe({
@@ -2120,8 +2144,8 @@ async function activarNotificaciones() {
             });
         }
 
-        // Guardar en backend via api()
-        // The original code used direct fetch. We use api().
+        //Guardar en backend via api()
+        //The original code used direct fetch. We use api().
         await api('guardarPushSubscription', {
             email: SESION.email,
             subscription: subscription.toJSON()
@@ -2163,7 +2187,7 @@ async function registrarNuevoCliente() {
         msg.innerHTML = '<span class="err">Por favor, llena todos los campos.</span>';
         return;
     }
-    if (pass.length < 6) {
+    if (pass.length <6) {
         msg.innerHTML = '<span class="err">La contraseña debe tener al menos 6 caracteres.</span>';
         return;
     }
@@ -2187,23 +2211,23 @@ async function registrarNuevoCliente() {
 window.registrarNuevoCliente = registrarNuevoCliente;
 
 function volverLogin() {
-    // Para compatibilidad, si algo llama a volverLogin, lo mandamos a selección o al login de staff
+    //Para compatibilidad, si algo llama a volverLogin, lo mandamos a selección o al login de staff
     volverSeleccion();
 }
 window.volverLogin = volverLogin;
 
 function mostrarRegistroCliente() {
-    // Redirigir a portal familia
+    //Redirigir a portal familia
     mostrarPortalFamilia();
 }
 window.mostrarRegistroCliente = mostrarRegistroCliente;
 
 
 async function mostrarVistaCliente(forceOnboarding = false) {
-    // No llamamos a ocultarTodo porque vista-cliente no usa las cards del staff
+    //No llamamos a ocultarTodo porque vista-cliente no usa las cards del staff
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
-    // Forzamos visibilidad de vista-cliente (irVista ya puso .activa)
+    //Forzamos visibilidad de vista-cliente (irVista ya puso .activa)
 
     if (d) d.style.display = 'none';
     if (o) o.style.display = 'none';
@@ -2215,7 +2239,7 @@ async function mostrarVistaCliente(forceOnboarding = false) {
 
     try {
         const perf = await api('getProfile', { email: SESION.email });
-        if (!perf || !perf.nombre || String(perf.nombre).trim().length < 3) {
+        if (!perf || !perf.nombre || String(perf.nombre).trim().length <3) {
             if (o) o.style.display = 'block';
         } else {
             if (d) d.style.display = 'block';
@@ -2236,7 +2260,7 @@ async function guardarRegistroCompleto() {
         telefono: document.getElementById('reg_tel').value,
         emergencia: document.getElementById('reg_emergencia').value,
 
-        // Peque 1
+        //Peque 1
         peque_nombre: document.getElementById('reg_peque_nombre').value,
         peque_nacimiento: document.getElementById('reg_peque_nac').value,
         alergias: document.getElementById('reg_alergias').value,
@@ -2245,7 +2269,7 @@ async function guardarRegistroCompleto() {
         preferencias: document.getElementById('reg_preferencias').value,
         mascotas: document.getElementById('reg_mascotas').value,
 
-        // Peque 2
+        //Peque 2
         peque_nombre_2: document.getElementById('reg_peque_nombre_2').value,
         peque_nac_2: document.getElementById('reg_peque_nac_2').value,
         alergias_2: document.getElementById('reg_alergias_2').value,
@@ -2253,7 +2277,7 @@ async function guardarRegistroCompleto() {
         salud_2: document.getElementById('reg_salud_2').value,
         preferencias_2: document.getElementById('reg_preferencias_2').value,
 
-        // Peque 3
+        //Peque 3
         peque_nombre_3: document.getElementById('reg_peque_nombre_3').value,
         peque_nac_3: document.getElementById('reg_peque_nac_3').value,
         alergias_3: document.getElementById('reg_alergias_3').value,
@@ -2283,7 +2307,7 @@ function toggleMultiPeque() {
         s2.style.display = 'block';
     } else if (s3.style.display === 'none') {
         s3.style.display = 'block';
-        if (btn) btn.style.display = 'none'; // Máximo 3
+        if (btn) btn.style.display = 'none'; //Máximo 3
     }
 }
 window.toggleMultiPeque = toggleMultiPeque;
@@ -2291,12 +2315,12 @@ window.toggleMultiPeque = toggleMultiPeque;
 function formatearFechaElegante(fechaStr) {
     if (!fechaStr) return '—';
     try {
-        // GAS suele enviar las fechas como string ISO 'YYYY-MM-DDTHH:mm:ss.sssZ' o similar
+        //GAS suele enviar las fechas como string ISO 'YYYY-MM-DDTHH:mm:ss.sssZ' o similar
         const d = new Date(fechaStr);
         if (isNaN(d)) return fechaStr;
 
         const opciones = { day: '2-digit', month: 'long', year: 'numeric' };
-        // "04 de diciembre de 1994"
+        //"04 de diciembre de 1994"
         return d.toLocaleDateString('es-MX', opciones);
     } catch (e) {
         return fechaStr;
@@ -2307,11 +2331,11 @@ async function cargarPerfil() {
     try {
         const perf = await api('getProfile', { email: SESION.email });
         if (perf) {
-            // Header
+            //Header
             if (document.getElementById('perfil_nombre_header')) document.getElementById('perfil_nombre_header').textContent = perf.nombre || 'Mi perfil';
             if (document.getElementById('perfil_email_header')) document.getElementById('perfil_email_header').textContent = perf.email || SESION.email;
 
-            // Detectar rol REAL desde el backend para visibilidad
+            //Detectar rol REAL desde el backend para visibilidad
             const esNanny = !!perf.isNanny;
             const seccionPeques = document.getElementById('perfil-peques-container');
             const itemMascotas = document.getElementById('perfil_mascotas_gral')?.closest('.profile-info-item');
@@ -2333,7 +2357,7 @@ async function cargarPerfil() {
                 if (btnEditar) btnEditar.style.display = 'block';
             }
 
-            // Contacto
+            //Contacto
             if (document.getElementById('perfil_tel')) document.getElementById('perfil_tel').textContent = perf.telefono || perf.teléfono || '—';
             if (document.getElementById('perfil_emergencia')) {
                 document.getElementById('perfil_emergencia').textContent = perf.emergencia || perf['no._de_emergencia'] || '—';
@@ -2351,9 +2375,12 @@ async function cargarPerfil() {
                 }
             }
 
-            if (esNanny) return; // Terminar aquí para niñeras
+            if (esNanny) {
+                verificarDatosFaltantesNinera(perf);
+                return;
+            }
 
-            // Peque 1 (Solo para clientes)
+            //Peque 1 (Solo para clientes)
             if (document.getElementById('perfil_peque')) document.getElementById('perfil_peque').textContent = perf.nombre_del_peque || '—';
             if (document.getElementById('perfil_nac_peque')) document.getElementById('perfil_nac_peque').textContent = formatearFechaElegante(perf.fecha_de_nacimiento);
             if (document.getElementById('perfil_edad_peque')) document.getElementById('perfil_edad_peque').textContent = (perf.edad_del_peque || '—') + ' años';
@@ -2362,7 +2389,7 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_sal_actual || perf.estado_de_salud_actual || '—';
             if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no._de_mascotas'] || '—';
 
-            // Peque 2
+            //Peque 2
             const card2 = document.getElementById('perfil-peque-2');
             if (perf.nombre_del_peque_2) {
                 card2.style.display = 'block';
@@ -2376,7 +2403,7 @@ async function cargarPerfil() {
                 card2.style.display = 'none';
             }
 
-            // Peque 3
+            //Peque 3
             const card3 = document.getElementById('perfil-peque-3');
             if (perf.nombre_del_peque_3) {
                 card3.style.display = 'block';
@@ -2397,19 +2424,19 @@ async function cargarPerfil() {
 window.cargarPerfil = cargarPerfil;
 
 async function editarPerfilCliente() {
-    irVista('servicios', true); // Skip logic para evitar race conditions
-    await mostrarVistaCliente(true); // Forzamos onboarding (formulario)
+    irVista('servicios', true); //Skip logic para evitar race conditions
+    await mostrarVistaCliente(true); //Forzamos onboarding (formulario)
     try {
         const perf = await api('getProfile', { email: SESION.email });
         if (perf) {
-            // Datos comunes
+            //Datos comunes
             if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || '';
             if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
             if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || perf.ubicacion || '';
             if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.telefono || perf.teléfono || '';
             if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf['no._de_emergencia'] || '';
 
-            // Helper para fechas en inputs
+            //Helper para fechas en inputs
             const setFecha = (id, fecha) => {
                 if (!fecha) return;
                 try {
@@ -2418,7 +2445,7 @@ async function editarPerfilCliente() {
                 } catch (e) { }
             };
 
-            // Peque 1
+            //Peque 1
             if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || '';
             setFecha('reg_peque_nac', perf.fecha_de_nacimiento);
             if (document.getElementById('reg_alergias')) document.getElementById('reg_alergias').value = perf.alergias || '';
@@ -2427,7 +2454,7 @@ async function editarPerfilCliente() {
             if (document.getElementById('reg_preferencias')) document.getElementById('reg_preferencias').value = perf.preferencias_o_actividades_favoritas || '';
             if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf['no._de_mascotas'] || '';
 
-            // Peque 2
+            //Peque 2
             if (perf.nombre_del_peque_2) {
                 document.getElementById('section-peque-2').style.display = 'block';
                 if (document.getElementById('reg_peque_nombre_2')) document.getElementById('reg_peque_nombre_2').value = perf.nombre_del_peque_2;
@@ -2438,7 +2465,7 @@ async function editarPerfilCliente() {
                 if (document.getElementById('reg_preferencias_2')) document.getElementById('reg_preferencias_2').value = perf.preferencias_o_actividades_favoritas_2 || '';
             }
 
-            // Peque 3
+            //Peque 3
             if (perf.nombre_del_peque_3) {
                 document.getElementById('section-peque-3').style.display = 'block';
                 document.getElementById('btn-agregar-peque').style.display = 'none';
@@ -2471,7 +2498,7 @@ async function cargarServiciosCliente() {
         const svcs = Array.isArray(res) ? res : [];
 
         if (svcs.length === 0) {
-            calActual.innerHTML = '<div style="grid-column: 1 / -1; text-align:center; padding: 40px 20px;">' +
+            calActual.innerHTML = '<div style="grid-column: 1 /-1; text-align:center; padding: 40px 20px;">' +
                 '<h2 style="color:var(--pink-main); margin-bottom:10px;">✨</h2>' +
                 '<h3 style="margin-bottom:10px;">Aún no hay servicios programados</h3>' +
                 '<p class="muted">Cuando agendes tu primer servicio, aparecerá aquí.</p>' +
@@ -2481,7 +2508,7 @@ async function cargarServiciosCliente() {
         }
 
         renderCalendarioCliente(svcs);
-        msg.textContent = `Se encontraron ${svcs.length} servicios próximamente.`;
+        msg.textContent = `Se encontraron ${ svcs.length } servicios próximamente.`;
         setTimeout(() => { if (msg.textContent.includes('servicios')) msg.textContent = ''; }, 3000);
 
     } catch (e) {
@@ -2499,10 +2526,10 @@ function renderCalendarioCliente(svcs) {
     contSiguiente.innerHTML = '';
 
     const hoy = new Date();
-    // Siempre empezamos desde el lunes de la semana actual
+    //Siempre empezamos desde el lunes de la semana actual
     const start = startMonday(hoy);
 
-    // Mapear servicios por fecha para fácil acceso
+    //Mapear servicios por fecha para fácil acceso
     const map = {};
     svcs.forEach(s => {
         const f = s.Fecha || s.fecha;
@@ -2510,9 +2537,9 @@ function renderCalendarioCliente(svcs) {
         map[f].push(s);
     });
 
-    // Renderizar 14 días (2 semanas)
+    //Renderizar 14 días (2 semanas)
     console.log("Renderizando calendario cliente para", svcs.length, "servicios");
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i <14; i++) {
         try {
             const d = new Date(start);
             d.setDate(start.getDate() + i);
@@ -2531,7 +2558,7 @@ function renderCalendarioCliente(svcs) {
             if (iso === toISO(hoy)) dayEl.classList.add('today');
 
             const head = document.createElement('header');
-            head.innerHTML = `<span>${dow}</span><span class="date">${dom}</span>`;
+            head.innerHTML = `< span > ${ dow }</span > <span class="date">${dom}</span>`;
             dayEl.appendChild(head);
 
             const body = document.createElement('div');
@@ -2546,25 +2573,25 @@ function renderCalendarioCliente(svcs) {
                     const estado = (s.Estado || s.estado || 'pendiente').toLowerCase();
                     btn.className = 'svc-pill svc-pill-cliente ' + (typeof stateClass === 'function' ? stateClass(estado) : 'pending');
 
-                    // Extraer primer nombre de la niñera
+                    //Extraer primer nombre de la niñera
                     const nombreCompleto = s['Nombre de la niñera'] || s.nombre_ninera || 'Por asignar';
                     const primerNombre = nombreCompleto.split(' ')[0];
 
-                    // Crear estructura HTML con horario completo y nombre
-                    const horario = `${s.hora_inicio || '—'} - ${s.hora_fin || '—'}`;
+                    //Crear estructura HTML con horario completo y nombre
+                    const horario = `${ s.hora_inicio || '—' } - ${ s.hora_fin || '—' } `;
                     btn.innerHTML = `
-                        <div style="font-weight: 700; font-size: 13px; margin-bottom: 3px;">${horario}</div>
-                        <div style="font-size: 11px; opacity: 0.9;">${primerNombre}</div>
-                    `;
-                    btn.title = `${s.Horario || ''} - Niñera: ${nombreCompleto}`;
+            < div style = "font-weight: 700; font-size: 13px; margin-bottom: 3px;" > ${ horario }</div >
+                <div style="font-size: 11px; opacity: 0.9;">${primerNombre}</div>
+        `;
+                    btn.title = `${ s.Horario || '' } - Niñera: ${ nombreCompleto } `;
                     btn.onclick = () => mostrarDetalleServicioCliente(s);
                     body.appendChild(btn);
                 });
             }
             dayEl.appendChild(body);
 
-            // Decidir en qué contenedor ponerlo
-            if (i < 7) contActual.appendChild(dayEl);
+            //Decidir en qué contenedor ponerlo
+            if (i <7) contActual.appendChild(dayEl);
             else contSiguiente.appendChild(dayEl);
         } catch (err) {
             console.error("Error en render día " + i, err);
@@ -2577,7 +2604,7 @@ window.cargarServiciosCliente = cargarServiciosCliente;
 function mostrarDetalleServicioCliente(s) {
     if (!s) return;
 
-    // Formatear fecha con día de semana y mes en español
+    //Formatear fecha con día de semana y mes en español
     const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -2586,15 +2613,15 @@ function mostrarDetalleServicioCliente(s) {
     const diaSemana = diasSemana[fechaObj.getDay()];
     const dia = fechaObj.getDate();
     const mes = meses[fechaObj.getMonth()];
-    const fechaFormateada = `${diaSemana} ${dia} de ${mes}`;
+    const fechaFormateada = `${ diaSemana } ${ dia } de ${ mes } `;
 
-    // Llenar el modal con la información
+    //Llenar el modal con la información
     document.getElementById('mClienteFecha').textContent = fechaFormateada;
     document.getElementById('mClienteHorario').textContent = s.Horario || '—';
     document.getElementById('mClienteDireccion').textContent = s.Direccion || 'Por confirmar';
     document.getElementById('mClienteNinera').textContent = s['Nombre de la niñera'] || 'Por asignar';
 
-    // Manejar ubicación (link o texto vacío)
+    //Manejar ubicación (link o texto vacío)
     const ubicacionLink = document.getElementById('mClienteUbicacion');
     const ubicacionVacio = document.getElementById('mClienteUbicacionVacio');
 
@@ -2607,7 +2634,7 @@ function mostrarDetalleServicioCliente(s) {
         ubicacionVacio.style.display = 'block';
     }
 
-    // Mostrar el modal
+    //Mostrar el modal
     document.getElementById('modalServicioCliente').style.display = 'flex';
 }
 window.mostrarDetalleServicioCliente = mostrarDetalleServicioCliente;
@@ -2652,7 +2679,7 @@ async function cargarActividadesCliente() {
 
         let html = '';
         for (const s of svcs) {
-            // El backend devuelve objetos con headers exactos. En Servicios suele ser "Tipo de servicio"
+            //El backend devuelve objetos con headers exactos. En Servicios suele ser "Tipo de servicio"
             const tipo = s['Tipo de servicio'] || s['tipo_de_servicio'] || '';
             if (tipo.toLowerCase() === 'neuronanny') {
                 const plan = await api('obtenerPlaneacionNeuronanny', {
@@ -2661,7 +2688,7 @@ async function cargarActividadesCliente() {
                 });
                 if (plan && plan.area_desarrollo) {
                     html += `
-                        <div class="card" style="margin-bottom:15px; border-left: 4px solid var(--pink-main); padding: 15px;">
+            < div class="card" style = "margin-bottom:15px; border-left: 4px solid var(--pink-main); padding: 15px;" >
                             <div style="font-size:12px; color:var(--pink-main); font-weight:700; margin-bottom:5px;">${_toISODate(s.Fecha || s.fecha)}</div>
                             <h4 style="margin:0 0 8px 0; color:var(--text-main);">${plan.area_desarrollo}</h4>
                             <p style="font-size:14px; margin-bottom:10px; color:#4B5563;"><b>Objetivo:</b> ${plan.objetivo}</p>
@@ -2673,8 +2700,8 @@ async function cargarActividadesCliente() {
                                     ${plan.imagen ? `<img src="${plan.imagen}" style="max-width:100%; border-radius:8px; margin-top:10px; display:block;">` : ''}
                                 </div>
                             </details>
-                        </div>
-                    `;
+                        </div >
+            `;
                 }
             }
         }
