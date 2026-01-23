@@ -3,7 +3,7 @@
         let action = '';
         let payload = {};
 
-        // 1ï¸âƒ£ LEER BODY
+        // 1ï¸ƒ£ LEER BODY
         if (e && e.postData && e.postData.contents) {
             const type = String(e.postData.type || '').toLowerCase();
             if (type.includes('application/json')) {
@@ -49,7 +49,7 @@
                 result = validarRegistroCliente(email);
                 break;
 
-            // --- SERVICIOS NIÃ‘ERA ---
+            // --- SERVICIOS NIó‘ERA ---
             case 'getServiciosNinera':
                 result = obtenerServiciosProximosPorNombre(email, payload.dias || 14);
                 break;
@@ -94,7 +94,7 @@
                 result = reenviarPlaneacionCorregida(payload, email);
                 break;
 
-            // --- SUPERVISIÃ“N ---
+            // --- SUPERVISIó“N ---
             case 'guardarObservacionesSupervision':
                 result = guardarObservacionesSupervision(payload, email);
                 break;
@@ -121,7 +121,7 @@
 
             // --- PUNTOS ---
             case 'obtenerPuntajePorNombre':
-                // Puede verlo la propia niÃ±era o admin
+                // Puede verlo la propia nió±era o admin
                 result = obtenerPuntajePorNombre(payload.nombre || SESION.nombre); // Frontend should send nombre
                 break;
             case 'registrarPuntosManual':
@@ -135,7 +135,7 @@
                 break;
 
             default:
-                throw new Error('AcciÃ³n no soportada: ' + action);
+                throw new Error('Acció³n no soportada: ' + action);
         }
 
         return ContentService.createTextOutput(JSON.stringify({ ok: true, data: result }))
@@ -189,7 +189,7 @@ const MINUTOS_REENVIO_OTP = 2;
  *  UTILIDADES
  *  ========================= */
 function _ss() { return SpreadsheetApp.getActive(); }
-function _hoja(nombre) { const sh = _ss().getSheetByName(nombre); if (!sh) throw new Error('No se encontrÃ³ la hoja: ' + nombre); return sh; }
+function _hoja(nombre) { const sh = _ss().getSheetByName(nombre); if (!sh) throw new Error('No se encontró³ la hoja: ' + nombre); return sh; }
 function _ahoraISO() { return Utilities.formatDate(new Date(), ZONA_HORARIA, "yyyy-MM-dd'T'HH:mm:ss"); }
 function _nowHuman() { return Utilities.formatDate(new Date(), ZONA_HORARIA, "yyyy-MM-dd HH:mm:ss"); }
 function _sha256(t) { const raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, t, Utilities.Charset.UTF_8); return raw.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join(''); }
@@ -206,7 +206,7 @@ function _idxCol(hoja, nombreCol) {
     const headers = hoja.getRange(1, 1, 1, hoja.getLastColumn()).getDisplayValues()[0].map(h => String(h).trim().toLowerCase());
     return headers.indexOf(String(nombreCol).toLowerCase().trim()) + 1;
 }
-function _esVerdadero(val) { if (typeof val === 'boolean') return val === true; const s = String(val).trim().toLowerCase(); return s === 'true' || s === '1' || s === 'si' || s === 'sÃ­' || s === 'yes' || s === 'y'; }
+function _esVerdadero(val) { if (typeof val === 'boolean') return val === true; const s = String(val).trim().toLowerCase(); return s === 'true' || s === '1' || s === 'si' || s === 'só­' || s === 'yes' || s === 'y'; }
 function _norm(s) { return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
 function _toISODate(v) {
     if (v instanceof Date) return Utilities.formatDate(v, ZONA_HORARIA, 'yyyy-MM-dd');
@@ -229,7 +229,7 @@ function _nombrePorEmail(email) { const sh = _hoja(NOMBRE_HOJA_USUARIOS); const 
 
 /**
  * Construye notas detalladas desde los datos del cliente
- * Incluye informaciÃ³n de hasta 3 peques y mascotas
+ * Incluye informació³n de hasta 3 peques y mascotas
  */
 function _construirNotasDesdeCliente(clienteData) {
     const partes = [];
@@ -240,16 +240,16 @@ function _construirNotasDesdeCliente(clienteData) {
         partes.push(`ðŸ‘¶ ${nombre1}`);
 
         const alergias1 = String(clienteData.alergias || '').trim();
-        if (alergias1) partes.push(`â€¢ Alergias: ${alergias1}`);
+        if (alergias1) partes.push(`€¢ Alergias: ${alergias1}`);
 
         const condicion1 = String(clienteData.condicion_medica_o_especificaciones_adicionales || '').trim();
-        if (condicion1) partes.push(`â€¢ CondiciÃ³n mÃ©dica: ${condicion1}`);
+        if (condicion1) partes.push(`€¢ Condició³n mó©dica: ${condicion1}`);
 
         const salud1 = String(clienteData.estado_de_salud_actual || '').trim();
-        if (salud1) partes.push(`â€¢ Estado de salud: ${salud1}`);
+        if (salud1) partes.push(`€¢ Estado de salud: ${salud1}`);
 
         const pref1 = String(clienteData.preferencias_o_actividades_favoritas || '').trim();
-        if (pref1) partes.push(`â€¢ Preferencias: ${pref1}`);
+        if (pref1) partes.push(`€¢ Preferencias: ${pref1}`);
 
         // Mascotas al final del primer peque
         const mascotas = String(clienteData.no_de_mascotas || '').trim();
@@ -259,39 +259,39 @@ function _construirNotasDesdeCliente(clienteData) {
     // Peque 2
     const nombre2 = String(clienteData.nombre_del_peque_2 || '').trim();
     if (nombre2) {
-        partes.push(''); // lÃ­nea en blanco
+        partes.push(''); // ló­nea en blanco
         partes.push(`ðŸ‘¶ ${nombre2}`);
 
         const alergias2 = String(clienteData.alergias_2 || '').trim();
-        if (alergias2) partes.push(`â€¢ Alergias: ${alergias2}`);
+        if (alergias2) partes.push(`€¢ Alergias: ${alergias2}`);
 
         const condicion2 = String(clienteData.condicion_medica_o_especificaciones_adicionales_2 || '').trim();
-        if (condicion2) partes.push(`â€¢ CondiciÃ³n mÃ©dica: ${condicion2}`);
+        if (condicion2) partes.push(`€¢ Condició³n mó©dica: ${condicion2}`);
 
         const salud2 = String(clienteData.estado_de_salud_actual_2 || '').trim();
-        if (salud2) partes.push(`â€¢ Estado de salud: ${salud2}`);
+        if (salud2) partes.push(`€¢ Estado de salud: ${salud2}`);
 
         const pref2 = String(clienteData.preferencias_o_actividades_favoritas_2 || '').trim();
-        if (pref2) partes.push(`â€¢ Preferencias: ${pref2}`);
+        if (pref2) partes.push(`€¢ Preferencias: ${pref2}`);
     }
 
     // Peque 3
     const nombre3 = String(clienteData.nombre_del_peque_3 || '').trim();
     if (nombre3) {
-        partes.push(''); // lÃ­nea en blanco
+        partes.push(''); // ló­nea en blanco
         partes.push(`ðŸ‘¶ ${nombre3}`);
 
         const alergias3 = String(clienteData.alergias_3 || '').trim();
-        if (alergias3) partes.push(`â€¢ Alergias: ${alergias3}`);
+        if (alergias3) partes.push(`€¢ Alergias: ${alergias3}`);
 
         const condicion3 = String(clienteData.condicion_medica_o_especificaciones_adicionales_3 || '').trim();
-        if (condicion3) partes.push(`â€¢ CondiciÃ³n mÃ©dica: ${condicion3}`);
+        if (condicion3) partes.push(`€¢ Condició³n mó©dica: ${condicion3}`);
 
         const salud3 = String(clienteData.estado_de_salud_actual_3 || '').trim();
-        if (salud3) partes.push(`â€¢ Estado de salud: ${salud3}`);
+        if (salud3) partes.push(`€¢ Estado de salud: ${salud3}`);
 
         const pref3 = String(clienteData.preferencias_o_actividades_favoritas_3 || '').trim();
-        if (pref3) partes.push(`â€¢ Preferencias: ${pref3}`);
+        if (pref3) partes.push(`€¢ Preferencias: ${pref3}`);
     }
 
     return partes.length > 0 ? partes.join('\n') : '';
@@ -327,7 +327,7 @@ function _leerServiciosDesdeHojas_(nombres) {
                 out.push(s);
             });
         } catch (e) {
-            // Si la hoja no existe o estÃ¡ vacÃ­a, NO rompemos nada
+            // Si la hoja no existe o Está vacó­a, NO rompemos nada
         }
     });
     return out;
@@ -440,12 +440,12 @@ function _mapaColumnasPorFecha_(sh) {
 
 
 /** =========================
- *  AUTORIZACIÃ“N / ROLES / OTP / LOGIN
+ *  AUTORIZACIó“N / ROLES / OTP / LOGIN
  *  ========================= */
 function _estaAutorizado(email) {
     email = String(email || '').trim().toLowerCase();
 
-    // 1. Revisar si estÃ¡ en hoja Usuarios y activo
+    // 1. Revisar si Está en hoja Usuarios y activo
     const shU = _hoja(NOMBRE_HOJA_USUARIOS);
     const filaU = _buscarFilaPorValor(shU, 'email', email);
     if (filaU !== -1) {
@@ -465,9 +465,9 @@ function _estaAutorizado(email) {
     const filaS = _buscarFilaPorValor(shS, 'email', email);
     if (filaS !== -1) return true;
 
-    // 3. Permitir autorizar nuevos registros de clientes (la lÃ³gica de registro manejarÃ¡ la creaciÃ³n)
+    // 3. Permitir autorizar nuevos registros de clientes (la ló³gica de registro manejaró¡ la creació³n)
     // Para que el login no falle antes de dar clic en registrar, permitimos pasar esta fase
-    // si el backend lo permite dinÃ¡micamente.
+    // si el backend lo permite dinó¡micamente.
     return true;
 }
 
@@ -539,7 +539,7 @@ function _enVentanaDeBloqueo(email) {
     return (!isNaN(last) && (now - last) < MINUTOS_REENVIO_OTP * 60 * 1000);
 }
 function _marcarEnvioOTP(email) { PropertiesService.getScriptProperties().setProperty('otp_last_' + email, String(Date.now())); }
-function _verificarCuotaOTP() { const r = MailApp.getRemainingDailyQuota(); if (r <= 0) throw new Error('Se alcanzÃ³ el lÃ­mite diario de envÃ­os. Intente maÃ±ana.'); return r; }
+function _verificarCuotaOTP() { const r = MailApp.getRemainingDailyQuota(); if (r <= 0) throw new Error('Se alcanzó³ el ló­mite diario de envó­os. Intente maó±ana.'); return r; }
 
 
 
@@ -555,19 +555,19 @@ function _verificarCuotaOTP() { const r = MailApp.getRemainingDailyQuota(); if (
 function solicitarOTP(email) {
     email = String(email || '').trim().toLowerCase();
     if (!email) throw new Error('Email requerido');
-    if (!_estaAutorizado(email)) throw new Error('Su correo no estÃ¡ autorizado. Contacte a la administraciÃ³n.');
+    if (!_estaAutorizado(email)) throw new Error('Su correo no Está autorizado. Contacte a la administració³n.');
     const lock = LockService.getScriptLock(); if (!lock.tryLock(5000)) throw new Error('Sistema ocupado. Intente de nuevo en unos segundos.');
     try {
-        if (_enVentanaDeBloqueo(email)) throw new Error('Ya se enviÃ³ un cÃ³digo hace poco. Espere unos minutos para solicitar otro.');
+        if (_enVentanaDeBloqueo(email)) throw new Error('Ya se envió³ un có³digo hace poco. Espere unos minutos para solicitar otro.');
         _verificarCuotaOTP();
-        const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) throw new Error('Su correo no estÃ¡ autorizado. Contacte a la administraciÃ³n.');
+        const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) throw new Error('Su correo no Está autorizado. Contacte a la administració³n.');
         const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
         const expira = new Date(Date.now() + 15 * 60 * 1000);
         const expiraStr = Utilities.formatDate(expira, ZONA_HORARIA, "yyyy-MM-dd HH:mm:ss");
         const obj = { email: sh.getRange(fila, 1).getValue(), nombre: sh.getRange(fila, 2).getValue(), pass_hash: sh.getRange(fila, 3).getValue(), otp, otp_expira: expiraStr, creado: sh.getRange(fila, 6).getValue() || _ahoraISO(), actualizado: _ahoraISO(), activo: sh.getRange(fila, 8).getValue() };
         _escribirObjeto(sh, fila, obj);
         _marcarEnvioOTP(email);
-        MailApp.sendEmail({ to: email, subject: 'CÃ³digo de verificaciÃ³n (Nannys y Peques)', htmlBody: '<p>Su cÃ³digo de verificaciÃ³n es: <b>' + otp + '</b><br>Vence en 15 minutos.</p>' });
+        MailApp.sendEmail({ to: email, subject: 'Có³digo de verificació³n (Nannys y Peques)', htmlBody: '<p>Su có³digo de verificació³n es: <b>' + otp + '</b><br>Vence en 15 minutos.</p>' });
         return { ok: true, restante: MailApp.getRemainingDailyQuota() };
     } finally { lock.releaseLock(); }
 }
@@ -595,8 +595,8 @@ function establecerContrasena(email, otp, nuevaContrasena) {
         const otpGuard = String(shU.getRange(filaU, 4).getValue()).trim();
         const expStr = shU.getRange(filaU, 5).getValue();
         const expDate = new Date(expStr);
-        if (otp !== otpGuard) throw new Error('CÃ³digo incorrecto');
-        if (!(expDate instanceof Date) || isNaN(expDate.getTime()) || new Date() > expDate) throw new Error('CÃ³digo vencido');
+        if (otp !== otpGuard) throw new Error('Có³digo incorrecto');
+        if (!(expDate instanceof Date) || isNaN(expDate.getTime()) || new Date() > expDate) throw new Error('Có³digo vencido');
         const passHash = _sha256(nuevaContrasena);
         shU.getRange(filaU, 3).setValue(passHash);
         shU.getRange(filaU, 4).setValue('');
@@ -605,11 +605,11 @@ function establecerContrasena(email, otp, nuevaContrasena) {
         return { ok: true };
     }
 
-    // 2. Buscar en Clientes (Registro espontÃ¡neo)
+    // 2. Buscar en Clientes (Registro espontó¡neo)
     const shC = _hoja(NOMBRE_HOJA_CLIENTES);
     const filaC = _buscarFilaPorValor(shC, 'email', email);
     if (filaC === -1) {
-        // Permitimos el registro espontÃ¡neo de cualquier usuario como cliente
+        // Permitimos el registro espontó¡neo de cualquier usuario como cliente
         // Crear fila nueva
         const headers = shC.getRange(1, 1, 1, shC.getLastColumn()).getValues()[0];
         const newRow = new Array(headers.length).fill('');
@@ -626,13 +626,13 @@ function establecerContrasena(email, otp, nuevaContrasena) {
         shC.appendRow(newRow);
         return { ok: true };
     } else {
-        // Ya existe en Clientes, validar OTP si lo pidiÃ³
+        // Ya existe en Clientes, validar OTP si lo pidió³
         const idxOTP = _idxCol(shC, 'otp');
         const idxExp = _idxCol(shC, 'otp_expira');
         const otpGuard = String(shC.getRange(filaC, idxOTP).getValue()).trim();
         const expDate = new Date(shC.getRange(filaC, idxExp).getValue());
-        if (otp !== otpGuard) throw new Error('CÃ³digo incorrecto');
-        if (new Date() > expDate) throw new Error('CÃ³digo vencido');
+        if (otp !== otpGuard) throw new Error('Có³digo incorrecto');
+        if (new Date() > expDate) throw new Error('Có³digo vencido');
 
         const idxPass = _idxCol(shC, 'pass_hash');
         shC.getRange(filaC, idxPass).setValue(_sha256(nuevaContrasena));
@@ -663,8 +663,8 @@ function login(email, contrasena, rol) {
         const filaU = _buscarFilaPorValor(shU, 'email', email);
         if (filaU !== -1) {
             const hashGuardado = String(shU.getRange(filaU, 3).getValue()).trim();
-            if (!hashGuardado) throw new Error('Este usuario no tiene contraseÃ±a. Use "OlvidÃ© mi contraseÃ±a".');
-            if (_sha256(contrasena) !== hashGuardado) throw new Error('Credenciales invÃ¡lidas');
+            if (!hashGuardado) throw new Error('Este usuario no tiene contraseó±a. Use "Olvidó© mi contraseó±a".');
+            if (_sha256(contrasena) !== hashGuardado) throw new Error('Credenciales invó¡lidas');
             return {
                 ok: true,
                 email,
@@ -683,8 +683,8 @@ function login(email, contrasena, rol) {
         const filaC = _buscarFilaPorValor(shC, 'email', email);
         if (filaC !== -1) {
             const passH = String(shC.getRange(filaC, _idxCol(shC, 'pass_hash')).getValue()).trim();
-            if (!passH) throw new Error('Este cliente no ha establecido contraseÃ±a.');
-            if (_sha256(contrasena) !== passH) throw new Error('Credenciales invÃ¡lidas');
+            if (!passH) throw new Error('Este cliente no ha establecido contraseó±a.');
+            if (_sha256(contrasena) !== passH) throw new Error('Credenciales invó¡lidas');
             return {
                 ok: true,
                 email,
@@ -727,10 +727,10 @@ const TURNOS = [
 
 
 function _asegurarEstructuraTurnos(sh) {
-    // Crea encabezados: nombre de niÃ±era | fecha | dÃ­a | Matutino | Vespertino
+    // Crea encabezados: nombre de nió±era | fecha | dó­a | Matutino | Vespertino
     if (sh.getLastRow() === 0 || sh.getLastColumn() < 3) {
         sh.clear();
-        sh.getRange(1, 1, 1, 5).setValues([['nombre de niÃ±era', 'fecha', 'dÃ­a', 'Matutino', 'Vespertino']]);
+        sh.getRange(1, 1, 1, 5).setValues([['nombre de nió±era', 'fecha', 'dó­a', 'Matutino', 'Vespertino']]);
         return;
     }
     const hdr = sh.getRange(1, 1, 1, Math.max(5, sh.getLastColumn())).getDisplayValues()[0].map(h => String(h).trim());
@@ -756,13 +756,13 @@ function _asegurarEstructuraTurnos(sh) {
 
 function _diasDeSemana(baseFechaISO) {
     // Si viene una fecha tipo "2025-12-08", le agregamos hora fija
-    // para evitar que al ajustar zona horaria se recorra al dÃ­a anterior.
+    // para evitar que al ajustar zona horaria se recorra al dó­a anterior.
     let base;
     if (baseFechaISO) {
-        // Forzamos hora media (mediodÃ­a) para evitar saltos por huso horario
+        // Forzamos hora media (mediodó­a) para evitar saltos por huso horario
         base = new Date(baseFechaISO + 'T12:00:00');
     } else {
-        // Hoy pero â€œsin horaâ€
+        // Hoy pero €œsin hora€
         const hoy = new Date();
         base = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
     }
@@ -797,7 +797,7 @@ function _diasDeSemana(baseFechaISO) {
 
 
     const out = [];
-    const nombres = ['Lunes', 'Martes', 'MiÃ©rcoles', 'Jueves', 'Viernes', 'SÃ¡bado', 'Domingo'];
+    const nombres = ['Lunes', 'Martes', 'Mió©rcoles', 'Jueves', 'Viernes', 'Só¡bado', 'Domingo'];
 
 
 
@@ -856,7 +856,7 @@ function _setPlaneacionesExistentesSemana_(fechasSemana) {
         if (!fecha) continue;
 
 
-        // Solo semana actual (Lunâ€“Dom)
+        // Solo semana actual (Lun€“Dom)
         if (fechasSemana.indexOf(fecha) === -1) continue;
 
 
@@ -864,7 +864,7 @@ function _setPlaneacionesExistentesSemana_(fechasSemana) {
         if (!cliente) continue;
 
 
-        // âœ… CLAVE NORMALIZADA (acentos, dobles espacios, mayÃºsculas)
+        // œ… CLAVE NORMALIZADA (acentos, dobles espacios, mayóºsculas)
         set.add(fecha + '|' + _norm(cliente));
     }
 
@@ -1054,7 +1054,7 @@ function obtenerDisponiblesSemana(email, fechaISO) {
 
 
 /** =========================
- *  SERVICIOS por NOMBRE + CONFIRMACIÃ“N (con timestamp)
+ *  SERVICIOS por NOMBRE + CONFIRMACIó“N (con timestamp)
  *  ========================= */
 function _ensureColumnsServicios(sh) {
     const hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0];
@@ -1070,7 +1070,7 @@ function _ensureColumnsServicios(sh) {
     if (idxConfirm === -1) {
         sh.insertColumnAfter(sh.getLastColumn());
         const col2 = sh.getLastColumn();
-        sh.getRange(1, col2).setValue('fecha y hora de confirmaciÃ³n');
+        sh.getRange(1, col2).setValue('fecha y hora de confirmació³n');
         idxConfirm = col2 - 1;
     }
     return { idxEstado: idxEstado + 1, idxConfirm: idxConfirm + 1 };
@@ -1103,8 +1103,8 @@ function _telefonoPorEmail(email) {
 
 
 
-    // IMPORTANTE: debe coincidir con el encabezado EXACTO "telÃ©fono"
-    const idxTel = _idxCol(sh, 'telÃ©fono');
+    // IMPORTANTE: debe coincidir con el encabezado EXACTO "teló©fono"
+    const idxTel = _idxCol(sh, 'teló©fono');
     if (idxTel <= 0) return '';
 
 
@@ -1242,7 +1242,7 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-    // columnas fijas (cliente, direcciÃ³n, etc.) en fila 1 (no-fechas)
+    // columnas fijas (cliente, direcció³n, etc.) en fila 1 (no-fechas)
     const colIdx = {};
     fechas.forEach((h, i) => {
         if (h instanceof Date) return;
@@ -1257,7 +1257,7 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-    // âœ… ya no tronar: si falta algo, mejor no devolver servicios
+    // œ… ya no tronar: si falta algo, mejor no devolver servicios
     const required = ['cliente', 'numero de contacto', 'direccion', 'ubicacion (link)', 'nombre de ninera'];
     for (const k of required) {
         if (colIdx[k] === undefined) return [];
@@ -1331,7 +1331,7 @@ function _expandirServiciosSemanales_(sh) {
 
             const hi = _toHM(row[m.hora_inicio - 1]);
             const hf = _toHM(row[m.hora_fin - 1]);
-            if (!hi || !hf) return; // si ese dÃ­a no tiene horas, no hay servicio ese dÃ­a
+            if (!hi || !hf) return; // si ese dó­a no tiene horas, no hay servicio ese dó­a
             const estado = (m.estado ? String(row[m.estado - 1] || '').trim().toLowerCase() : 'pendiente') || 'pendiente';
             const confirmadoEn = m.confirmado_en ? String(row[m.confirmado_en - 1] || '').trim() : '';
             const inicioReal = m.inicio_real ? String(row[m.inicio_real - 1] || '').trim() : '';
@@ -1354,7 +1354,7 @@ function _expandirServiciosSemanales_(sh) {
 
 
             servicios.push({
-                sheet: sh.getName(),   // âœ… clave para escribir despuÃ©s
+                sheet: sh.getName(),   // œ… clave para escribir despuó©s
                 row_base: r + 1,       // fila real
                 fecha: fechaISO,
                 hora_inicio: hi,
@@ -1472,7 +1472,7 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante) {
         if (emailServicio && mapaClientes[emailServicio]) {
             const clienteData = mapaClientes[emailServicio];
 
-            // Fallback para direcciÃ³n y ubicaciÃ³n
+            // Fallback para direcció³n y ubicació³n
             if (!String(s.direccion || '').trim()) {
                 s.direccion = clienteData.direccion || s.direccion;
             }
@@ -1484,7 +1484,7 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante) {
             if (!String(s.numero_contacto || '').trim()) {
                 s.numero_contacto = clienteData.telefono || s.numero_contacto;
             }
-            // Siempre intentar poner el de emergencia del cliente (sin condiciÃ³n, como solicitado)
+            // Siempre intentar poner el de emergencia del cliente (sin condició³n, como solicitado)
             s.numero_de_emergencia = clienteData.no_de_emergencia || s.numero_de_emergencia;
 
             // Fallback para edad
@@ -1500,7 +1500,7 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante) {
     });
 
     out.sort((a, b) => (a.fecha + ' ' + a.hora_inicio).localeCompare(b.fecha + ' ' + b.hora_inicio));
-    // Detectar empalmes ENTRE LOS SERVICIOS DE LA NIÃ‘ERA
+    // Detectar empalmes ENTRE LOS SERVICIOS DE LA NIó‘ERA
     for (let i = 0; i < out.length; i++) {
         out[i].empalmado = false;
     }
@@ -1585,13 +1585,13 @@ function confirmarServicioPorFila(sheetName, row, email) {
     const sh = _hoja(sheetName);
     const rowNum = Number(row);
     if (rowNum < 3 || rowNum > sh.getLastRow()) {
-        throw new Error('Fila invÃ¡lida.');
+        throw new Error('Fila invó¡lida.');
     }
 
 
 
 
-    // Validar que el servicio sea de la niÃ±era
+    // Validar que el servicio sea de la nió±era
     const hdrs = sh.getRange(1, 1, 1, sh.getLastColumn())
         .getDisplayValues()[0]
         .map(h => _norm(h));
@@ -1600,7 +1600,7 @@ function confirmarServicioPorFila(sheetName, row, email) {
 
 
     const idxNombre = hdrs.indexOf('nombre de ninera') + 1;
-    if (idxNombre <= 0) throw new Error('Falta columna "nombre de niÃ±era".');
+    if (idxNombre <= 0) throw new Error('Falta columna "nombre de nió±era".');
 
 
 
@@ -1608,7 +1608,7 @@ function confirmarServicioPorFila(sheetName, row, email) {
     const nombreFila = String(sh.getRange(rowNum, idxNombre).getValue() || '').trim();
     const nombreNanny = _nombrePorEmail(email);
     if (_norm(nombreFila) !== _norm(nombreNanny)) {
-        throw new Error('No puede confirmar servicios de otra niÃ±era.');
+        throw new Error('No puede confirmar servicios de otra nió±era.');
     }
 
 
@@ -1645,7 +1645,7 @@ function confirmarServicioPorFila(sheetName, row, email) {
 
 
 
-        // Solo confirmar dÃ­as que SÃ tengan horas
+        // Solo confirmar dó­as que Só tengan horas
         if (!m.hora_inicio || !m.hora_fin) return;
 
 
@@ -1653,7 +1653,7 @@ function confirmarServicioPorFila(sheetName, row, email) {
 
         const hi = sh.getRange(rowNum, m.hora_inicio).getValue();
         const hf = sh.getRange(rowNum, m.hora_fin).getValue();
-        if (!hi || !hf) return; // ese dÃ­a no hay servicio
+        if (!hi || !hf) return; // ese dó­a no hay servicio
 
 
 
@@ -1662,7 +1662,7 @@ function confirmarServicioPorFila(sheetName, row, email) {
 
 
 
-        // Escribir estado y confirmaciÃ³n
+        // Escribir estado y confirmació³n
         if (m.estado) {
             sh.getRange(rowNum, m.estado).setValue('confirmado');
         }
@@ -1684,7 +1684,7 @@ function confirmarServicioPorFila(sheetName, row, email) {
 
 
     if (confirmados === 0) {
-        throw new Error('No se encontraron dÃ­as con servicio para confirmar.');
+        throw new Error('No se encontraron dó­as con servicio para confirmar.');
     }
 
 
@@ -1728,7 +1728,7 @@ function registrarInicioServicio(sheetName, row, fechaISO, email) {
     // validar que sea su servicio
     const hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(h => _norm(h));
     const idxNombre = hdrs.indexOf('nombre de ninera') + 1;
-    if (idxNombre <= 0) throw new Error('Falta columna "nombre de niÃ±era".');
+    if (idxNombre <= 0) throw new Error('Falta columna "nombre de nió±era".');
 
 
 
@@ -1788,7 +1788,7 @@ function registrarFinServicio(sheetName, row, fechaISO, email) {
     // validar que sea su servicio
     const hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0].map(h => _norm(h));
     const idxNombre = hdrs.indexOf('nombre de ninera') + 1;
-    if (idxNombre <= 0) throw new Error('Falta columna "nombre de niÃ±era".');
+    if (idxNombre <= 0) throw new Error('Falta columna "nombre de nió±era".');
 
 
 
@@ -1838,7 +1838,7 @@ function registrarFinServicio(sheetName, row, fechaISO, email) {
 
 
 /** =========================
- *  SELECCIÃ“N â€“ con TURNOS + no empalmes
+ *  SELECCIó“N €“ con TURNOS + no empalmes
  *  ========================= */
 function _hmToMinutes(hm) {
     if (!hm) return NaN;
@@ -1850,7 +1850,7 @@ function _hmToMinutes(hm) {
     return h * 60 + min;
 }
 function _rangoDentroDeTurnos(reqIni, reqFin, tieneMat, tieneVes) {
-    // Verifica si [reqIni, reqFin) estÃ¡ contenido en los turnos seleccionados
+    // Verifica si [reqIni, reqFin) Está contenido en los turnos seleccionados
     const a = _hmToMinutes(reqIni), b = _hmToMinutes(reqFin);
     if (isNaN(a) || isNaN(b) || b <= a) return false;
 
@@ -1890,7 +1890,7 @@ function _rangoDentroDeTurnos(reqIni, reqFin, tieneMat, tieneVes) {
 
 
 
-    // Cruza 15:00 => necesita ambos y estar de 07â€“22
+    // Cruza 15:00 => necesita ambos y estar de 07€“22
     if (tieneMat && tieneVes && a >= mI && b <= vF) return true;
 
 
@@ -2126,7 +2126,7 @@ function _disponiblePorTurnos(nombre, fechaISO, hi, hf) {
 function _extractCoordsFromUrl(url) {
     if (!url || !url.startsWith('http')) return null;
     try {
-        // 1. Resolver redirecciÃ³n (ej: maps.app.goo.gl)
+        // 1. Resolver redirecció³n (ej: maps.app.goo.gl)
         const response = UrlFetchApp.fetch(url, { followRedirects: false, muteHttpExceptions: true });
         let longUrl = url;
         if (response.getResponseCode() >= 300 && response.getResponseCode() < 400) {
@@ -2134,14 +2134,14 @@ function _extractCoordsFromUrl(url) {
             if (loc) longUrl = loc;
         }
 
-        // 2. Buscar patrÃ³n @lat,lng
+        // 2. Buscar patró³n @lat,lng
         // Ej: https://www.google.com/maps/place/.../@19.4326,-99.1332,17z...
         // O param ?query=lat,lng
         let m = longUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
         if (m) return { lat: Number(m[1]), lng: Number(m[2]) };
 
-        // Si no estÃ¡ en el @, buscar query param 'q' o 'll' (menos comÃºn en maps nuevos pero posible)
-        // Pero lo mÃ¡s fiable para "Share Location" es el @.
+        // Si no Está en el @, buscar query param 'q' o 'll' (menos comóºn en maps nuevos pero posible)
+        // Pero lo mó¡s fiable para "Share Location" es el @.
         return null;
     } catch (e) {
         return null;
@@ -2150,8 +2150,8 @@ function _extractCoordsFromUrl(url) {
 function sugerirNinerasServicio(fechaISO, horaInicio, horaFin, ubicacionServicio, edadNino) {
     fechaISO = _toISODate(fechaISO);
     const hi = _toHM(horaInicio), hf = _toHM(horaFin);
-    if (!fechaISO || !hi || !hf) throw new Error('Fecha u horario invÃ¡lidos');
-    const edad = Number(edadNino); if (isNaN(edad)) throw new Error('Edad del niÃ±o invÃ¡lida');
+    if (!fechaISO || !hi || !hf) throw new Error('Fecha u horario invó¡lidos');
+    const edad = Number(edadNino); if (isNaN(edad)) throw new Error('Edad del nió±o invó¡lida');
 
 
 
@@ -2204,7 +2204,7 @@ function sugerirNinerasServicio(fechaISO, horaInicio, horaFin, ubicacionServicio
         // Empalmes con servicios asignados (pendiente o confirmado)
         const emp = _conflictoServicioAsignado(n.nombre, fechaISO, hi, hf);
         if (emp) {
-            candidatos.push({ nombre: n.nombre, email: n.email, cumple_edad: true, disponible: false, distancia_km: null, motivo: `Conflicto con servicio ${emp.estado} ${emp.hi}â€“${emp.hf}` });
+            candidatos.push({ nombre: n.nombre, email: n.email, cumple_edad: true, disponible: false, distancia_km: null, motivo: `Conflicto con servicio ${emp.estado} ${emp.hi}€“${emp.hf}` });
             continue;
         }
 
@@ -2249,7 +2249,7 @@ function sugerirNinerasServicio(fechaISO, horaInicio, horaFin, ubicacionServicio
 }
 function apiSugerirNinerasServicio(payload, emailEjecutor) {
     if (!esAdmin(emailEjecutor)) throw new Error('Acceso solo para administradores.');
-    if (!payload) throw new Error('Payload vacÃ­o');
+    if (!payload) throw new Error('Payload vacó­o');
     return sugerirNinerasServicio(payload.fecha, payload.hora_inicio, payload.hora_fin, payload.ubicacion, payload.edad);
 }
 
@@ -2338,7 +2338,7 @@ function obtenerListaNineras() {
 
     const colNombre = headers.indexOf('nombre');
     if (colNombre === -1) {
-        throw new Error('No se encontrÃ³ la columna "nombre" en Usuarios.');
+        throw new Error('No se encontró³ la columna "nombre" en Usuarios.');
     }
 
 
@@ -2394,7 +2394,7 @@ function obtenerServiciosAdminRango(desdeISO, hastaISO) {
 
     const d0 = _toISODate(desdeISO || '');
     const d1 = _toISODate(hastaISO || '');
-    if (!d0 || !d1) throw new Error('Rango invÃ¡lido');
+    if (!d0 || !d1) throw new Error('Rango invó¡lido');
 
 
 
@@ -2464,8 +2464,8 @@ function include(filename) { return HtmlService.createHtmlOutputFromFile(filenam
 
 
 /*******************************************************
- *   SISTEMA DE PUNTAJES DE NIÃ‘ERAS â€“ NANNYS Y PEQUES  *
- *   (basado en nombre de niÃ±era y servicios eventuales)
+ *   SISTEMA DE PUNTAJES DE NIó‘ERAS €“ NANNYS Y PEQUES  *
+ *   (basado en nombre de nió±era y servicios eventuales)
  *******************************************************/
 
 
@@ -2485,12 +2485,12 @@ const HOJA_PUNTOS_MANUAL = 'PuntosManual';
 
 
 
-// DefiniciÃ³n de puntos para eventos manuales
+// Definició³n de puntos para eventos manuales
 const PUNTOS_DEFINICIONES = {
     // POSITIVOS
     'SERVICIO_ULTIMO_MINUTO': {
         puntos: 2,
-        descripcion: 'Servicio de Ãºltimo minuto'
+        descripcion: 'Servicio de óºltimo minuto'
     },
     'FAMILIA_REPITE': {
         puntos: 1,
@@ -2498,7 +2498,7 @@ const PUNTOS_DEFINICIONES = {
     },
     'CAPACITACION_NO_OBLIGATORIA': {
         puntos: 7,
-        descripcion: 'Participar en capacitaciÃ³n no obligatoria'
+        descripcion: 'Participar en capacitació³n no obligatoria'
     },
     'INICIAR_SERVICIO_FIJO': {
         puntos: 20,
@@ -2635,11 +2635,11 @@ function weekKeyFromDate_(d) {
 
 /**
  * Lee la hoja "Servicios" y devuelve todos los servicios EVENTUALES
- * para una niÃ±era por NOMBRE.
+ * para una nió±era por NOMBRE.
  *
  * Se asume:
  * - Columna "fecha"
- * - Columna "nombre_ninera" (o "niÃ±era"/"nanny")
+ * - Columna "nombre_ninera" (o "nió±era"/"nanny")
  * - Columna "estado"
  * - Opcional: "tipo_servicio" o "tipo" (si existe y es != "eventual", se omite)
  */
@@ -2687,7 +2687,7 @@ function obtenerServiciosEventualesPorNombre_(nombreNinera) {
 
 
     const iFecha = findIdx('fecha');
-    const iNombre = findIdx(['nombre de niÃ±era', 'niÃ±era', 'nanny']);
+    const iNombre = findIdx(['nombre de nió±era', 'nió±era', 'nanny']);
     const iEstado = findIdx('estado');
     const iTipo = findIdx(['tipo_servicio', 'tipo']);
 
@@ -2752,7 +2752,7 @@ function obtenerServiciosEventualesPorNombre_(nombreNinera) {
 
 
 /**
- * Lee puntos manuales de la hoja PuntosManual para una niÃ±era por NOMBRE.
+ * Lee puntos manuales de la hoja PuntosManual para una nió±era por NOMBRE.
  * Devuelve:
  *  - totalManual: suma de todos los puntos manuales
  *  - manualByWeek: { semanaKey: [ {tipo, puntos}, ... ] }
@@ -2865,22 +2865,22 @@ function leerPuntosManualPorNombre_(nombreNinera) {
 
 
 /**
- * Calcula puntos AUTOMÃTICOS por semanas a partir de servicios eventuales
+ * Calcula puntos AUTOMóTICOS por semanas a partir de servicios eventuales
  * y restricciones por castigos manuales.
  *
- * Reglas automÃ¡ticas:
- *  - En una semana donde la niÃ±era haya cubierto >= 2 servicios COMPLETADOS:
+ * Reglas automó¡ticas:
+ *  - En una semana donde la nió±era haya cubierto >= 2 servicios COMPLETADOS:
  *       Puntualidad en los servicios: +2
- *       EvaluaciÃ³n positiva del cliente: +2
+ *       Evaluació³n positiva del cliente: +2
  *       Reportes puntuales y completos: +3
  *  - Si en esa misma semana cubre >= 3 servicios COMPLETADOS:
- *       Tres servicios seguidos sin cancelaciÃ³n: +2
+ *       Tres servicios seguidos sin cancelació³n: +2
  *
- * Reglas de castigo que afectan automÃ¡ticos:
+ * Reglas de castigo que afectan automó¡ticos:
  *  - Si hay un evento manual "FALTA_SERVICIO" en esa semana:
- *       -> No se suman NINGUNOS puntos automÃ¡ticos de esa semana.
+ *       -> No se suman NINGUNOS puntos automó¡ticos de esa semana.
  *  - Si hay un evento manual "REPORTE_NEGATIVO" en esa semana:
- *       -> No se suman los +2 de "EvaluaciÃ³n positiva del cliente".
+ *       -> No se suman los +2 de "Evaluació³n positiva del cliente".
  */
 function calcularPuntosAutomaticos_(servicios, manualByWeek) {
     // Agrupamos servicios COMPLETADOS por semana
@@ -2961,13 +2961,13 @@ function calcularPuntosAutomaticos_(servicios, manualByWeek) {
 
 
         if (hasFalta) {
-            // No se suman puntos automÃ¡ticos de esa semana
+            // No se suman puntos automó¡ticos de esa semana
             ptsPuntualidad = 0;
             ptsEvalPositiva = 0;
             ptsReportes = 0;
             ptsTresSinCancel = 0;
         } else if (hasReporteNegativo) {
-            // No se suma la parte de evaluaciÃ³n positiva
+            // No se suma la parte de evaluació³n positiva
             ptsEvalPositiva = 0;
         }
 
@@ -3099,21 +3099,21 @@ function calcularPuntosPorHitos_(totalServiciosEventuales) {
 
 
 /**
- * FunciÃ³n principal: calcula el puntaje completo para una niÃ±era por NOMBRE.
+ * Funció³n principal: calcula el puntaje completo para una nió±era por NOMBRE.
  * Devuelve:
  *  {
  *    nombre,
  *    total,            // puntos totales
  *    nivel,            // Pink / Yellow / Blue / Golden Nanny
  *    servicios,        // cantidad de servicios eventuales cubiertos
- *    auto,             // detalle de puntos automÃ¡ticos
+ *    auto,             // detalle de puntos automó¡ticos
  *    manual,           // detalle de puntos manuales
  *    milestones        // detalle de hitos por cantidad de servicios
  *  }
  */
 function obtenerPuntajePorNombre(nombreNinera) {
     nombreNinera = String(nombreNinera || '').trim();
-    if (!nombreNinera) throw new Error('Nombre de niÃ±era vacÃ­o.');
+    if (!nombreNinera) throw new Error('Nombre de nió±era vacó­o.');
 
 
 
@@ -3179,18 +3179,18 @@ function obtenerPuntajePorNombre(nombreNinera) {
 
 
 /**
- * Registra un evento de puntos MANUAL para una niÃ±era por NOMBRE.
+ * Registra un evento de puntos MANUAL para una nió±era por NOMBRE.
  * Respeta la tabla de puntos PUNTOS_DEFINICIONES.
- * Devuelve el puntaje recalculado de la niÃ±era.
+ * Devuelve el puntaje recalculado de la nió±era.
  *
  * NOTA: las reglas especiales de:
- *  - FALTA_SERVICIO (anula automÃ¡ticos de la semana),
- *  - REPORTE_NEGATIVO (anula la evaluaciÃ³n positiva automÃ¡tica),
- * se aplican al calcular el total, NO aquÃ­.
+ *  - FALTA_SERVICIO (anula automó¡ticos de la semana),
+ *  - REPORTE_NEGATIVO (anula la evaluació³n positiva automó¡tica),
+ * se aplican al calcular el total, NO aquí­.
  */
 function registrarPuntosManual(nombreNinera, tipoId) {
     nombreNinera = String(nombreNinera || '').trim();
-    if (!nombreNinera) throw new Error('Debe indicar el nombre de la niÃ±era.');
+    if (!nombreNinera) throw new Error('Debe indicar el nombre de la nió±era.');
 
 
 
@@ -3269,7 +3269,7 @@ function registrarPuntosManual(nombreNinera, tipoId) {
  *  ADMIN: RESUMEN DISPONIBILIDAD SEMANAL
  *  ========================= */
 function obtenerResumenDisponibilidadSemanaActual() {
-    // 1) Leer usuarios (niÃ±eras) una sola vez
+    // 1) Leer usuarios (nió±eras) una sola vez
     const shU = _hoja(NOMBRE_HOJA_USUARIOS);
     const valsU = shU.getDataRange().getValues();
     if (valsU.length < 2) return [];
@@ -3312,9 +3312,9 @@ function obtenerResumenDisponibilidadSemanaActual() {
 
 
 
-    // 2) Calcular las fechas de la semana actual (Lunâ€“Dom)
+    // 2) Calcular las fechas de la semana actual (Lun€“Dom)
     const hoyISO = Utilities.formatDate(new Date(), ZONA_HORARIA, 'yyyy-MM-dd');
-    const fechasSemana = _diasDeSemana(hoyISO).map(d => d.fecha); // reutiliza funciÃ³n existente
+    const fechasSemana = _diasDeSemana(hoyISO).map(d => d.fecha); // reutiliza funció³n existente
 
 
 
@@ -3432,7 +3432,7 @@ function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
 
     const fechasSemana = _diasDeSemana(fechaBaseISO).map(d => d.fecha);
 
-    // ðŸ”‘ SEGREGACIÃ“N POR HOJA SEGÃšN TIPO
+    // ðŸ”‘ SEGREGACIó“N POR HOJA SEGóšN TIPO
     let hojasALeer = ['Servicios', 'Servicios_Siguiente_semana'];
     if (tipo === 'actual') hojasALeer = ['Servicios'];
     else if (tipo === 'siguiente') hojasALeer = ['Servicios_Siguiente_semana'];
@@ -3451,7 +3451,7 @@ function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
     const idxFechaP = hdrP.indexOf('fecha');
     const idxClienteP = hdrP.indexOf('cliente');
 
-    // ðŸ”‘ columna estado revisiÃ³n (robusta)
+    // ðŸ”‘ columna estado revisió³n (robusta)
     const idxEstadoR = hdrP.findIndex(h =>
         h.includes('estado') && h.includes('revision')
     );
@@ -3476,7 +3476,7 @@ function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
             _norm(tipoServicio)
         ].join('|').toLowerCase();
 
-        // â›” evitar duplicados
+        // ›” evitar duplicados
         if (serviciosProcesados.has(servicioKey)) return;
         serviciosProcesados.add(servicioKey);
 
@@ -3519,7 +3519,7 @@ function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
             diasServicio.length > 0 &&
             planeacionesEncontradas === diasServicio.length;
 
-        // ðŸ”‘ estado FINAL que sÃ­ entiende el frontend
+        // ðŸ”‘ estado FINAL que só­ entiende el frontend
         let estadoRevision = 'pendiente';
 
         if (tienePlaneacion) {
@@ -3570,18 +3570,18 @@ function guardarPlaneacionNeuronanny(payload, email) {
     const fechaPayload = _toISODate(payload.fecha);
     const clientePayload = String(payload.cliente || '').trim();
 
-    // ðŸ”’ ValidaciÃ³n existente (NO se toca)
+    // ðŸ”’ Validació³n existente (NO se toca)
     for (let i = 1; i < data.length; i++) {
         const rFecha = _toISODate(data[i][idxFecha]);
         const rCliente = String(data[i][idxCliente] || '').trim();
 
         if (rFecha === fechaPayload && rCliente === clientePayload) {
-            throw new Error('Ya existe una planeaciÃ³n para este cliente en esta fecha.');
+            throw new Error('Ya existe una planeació³n para este cliente en esta fecha.');
         }
     }
 
     // ====================================================
-    // ðŸ”‘ ASEGURAR NOMBRE DE NIÃ‘ERA (ARREGLO REAL)
+    // ðŸ”‘ ASEGURAR NOMBRE DE NIó‘ERA (ARREGLO REAL)
     // ====================================================
     let nombreNinera =
         payload.nombre_ninera ||
@@ -3593,11 +3593,11 @@ function guardarPlaneacionNeuronanny(payload, email) {
     nombreNinera = String(nombreNinera || '').trim();
 
     // ====================================================
-    // âœï¸ GUARDADO (MISMO appendRow, SIN ROMPER NADA)
+    // œï¸ GUARDADO (MISMO appendRow, SIN ROMPER NADA)
     // ====================================================
     sh.appendRow([
         payload.fecha || '',
-        nombreNinera,                 // âœ… AQUÃ YA VA GARANTIZADO
+        nombreNinera,                 // œ… aquí YA VA GARANTIZADO
         payload.cliente || '',
         payload.edad_nino || '',
         payload.area_desarrollo || '',
@@ -3623,14 +3623,14 @@ function reenviarPlaneacionCorregida(payload, email) {
     }
 
     if (!payload || !payload.fecha || !payload.cliente) {
-        throw new Error('Datos incompletos para reenviar planeaciÃ³n.');
+        throw new Error('Datos incompletos para reenviar planeació³n.');
     }
 
     const sh = _hoja('Planeaciones_Neuronanny');
     const data = sh.getDataRange().getValues();
     const headers = data[0].map(h => _norm(h));
 
-    // ðŸ”Ž Ãndices por encabezado
+    // ðŸ”Ž óndices por encabezado
     const idxFecha = headers.indexOf('fecha');
     const idxCliente = headers.indexOf('cliente');
     const idxArea = headers.indexOf('area de desarrollo');
@@ -3650,7 +3650,7 @@ function reenviarPlaneacionCorregida(payload, email) {
 
     let fila = -1;
 
-    // ðŸ” Buscar la planeaciÃ³n existente
+    // ðŸ” Buscar la planeació³n existente
     for (let i = 1; i < data.length; i++) {
         const f = _toISODate(data[i][idxFecha]);
         const c = String(data[i][idxCliente] || '').trim();
@@ -3662,22 +3662,22 @@ function reenviarPlaneacionCorregida(payload, email) {
     }
 
     if (fila === -1) {
-        throw new Error('No se encontrÃ³ la planeaciÃ³n a reenviar.');
+        throw new Error('No se encontró³ la planeació³n a reenviar.');
     }
 
-    // âœï¸ Actualizar datos de la planeaciÃ³n
+    // œï¸ Actualizar datos de la planeació³n
     if (idxArea >= 0) sh.getRange(fila, idxArea + 1).setValue(payload.area_desarrollo || '');
     if (idxObjetivo >= 0) sh.getRange(fila, idxObjetivo + 1).setValue(payload.objetivo || '');
     if (idxDescripcion >= 0) sh.getRange(fila, idxDescripcion + 1).setValue(payload.descripcion || '');
     if (idxMateriales >= 0) sh.getRange(fila, idxMateriales + 1).setValue(payload.materiales || '');
     if (idxImagen >= 0) sh.getRange(fila, idxImagen + 1).setValue(payload.imagen || '');
 
-    // ðŸ” Cambiar estado de revisiÃ³n â†’ pendiente
+    // ðŸ” Cambiar estado de revisió³n †’ pendiente
     if (idxEstadoRev >= 0) {
         sh.getRange(fila, idxEstadoRev + 1).setValue('pendiente');
     }
 
-    // ðŸ•’ Guardar fecha y hora de correcciÃ³n
+    // ðŸ•’ Guardar fecha y hora de correcció³n
     if (idxFechaCorr >= 0) {
         sh.getRange(fila, idxFechaCorr + 1).setValue(_nowHuman());
     }
@@ -3729,19 +3729,19 @@ function obtenerPlaneacionNeuronanny(payload, email) {
             return {
                 fila: i + 1,
 
-                // ðŸ“‹ PLANEACIÃ“N
+                // ðŸ“‹ PLANEACIó“N
                 area_desarrollo: data[i][headers.indexOf('area de desarrollo')] || '',
                 objetivo: data[i][headers.indexOf('objetivo')] || '',
                 descripcion: data[i][headers.indexOf('descripcion')] || '',
                 materiales: data[i][headers.indexOf('materiales')] || '',
                 imagen: data[i][headers.indexOf('imagen')] || '',
 
-                // ðŸ§¸ NIÃ‘ERA
+                // ðŸ§¸ NIó‘ERA
                 nombre_ninera: idxNinera >= 0
                     ? String(data[i][idxNinera] || '').trim()
                     : '',
 
-                // ðŸ” REVISIÃ“N
+                // ðŸ” REVISIó“N
                 estado_revision: idxEstado >= 0
                     ? String(data[i][idxEstado] || '').trim()
                     : '',
@@ -3750,7 +3750,7 @@ function obtenerPlaneacionNeuronanny(payload, email) {
                     ? String(data[i][idxObsSup] || '').trim()
                     : '',
 
-                // ðŸ“… FECHAS (AHORA SÃ EXISTEN)
+                // ðŸ“… FECHAS (AHORA Só EXISTEN)
                 fecha_revision: idxFechaCreacion >= 0
                     ? String(data[i][idxFechaCreacion] || '').trim()
                     : '',
@@ -3777,7 +3777,7 @@ function obtenerPlaneacionNeuronanny(payload, email) {
 
 function editarPlaneacionNeuronanny(payload, email) {
     if (!_estaAutorizado(email)) throw new Error('No autorizado.');
-    if (!payload || !payload.fila) throw new Error('PlaneaciÃ³n no identificada.');
+    if (!payload || !payload.fila) throw new Error('Planeació³n no identificada.');
 
 
 
@@ -3790,7 +3790,7 @@ function editarPlaneacionNeuronanny(payload, email) {
 
     const fila = Number(payload.fila);
     if (fila < 2 || fila > sh.getLastRow()) {
-        throw new Error('Fila invÃ¡lida.');
+        throw new Error('Fila invó¡lida.');
     }
 
 
@@ -3801,7 +3801,7 @@ function editarPlaneacionNeuronanny(payload, email) {
     sh.getRange(fila, 7).setValue(payload.descripcion || '');
     sh.getRange(fila, 8).setValue(payload.materiales || '');
     sh.getRange(fila, 9).setValue(payload.imagen || '');
-    sh.getRange(fila, 10).setValue(_nowHuman()); // fecha de actualizaciÃ³n
+    sh.getRange(fila, 10).setValue(_nowHuman()); // fecha de actualizació³n
 
 
 
@@ -3815,7 +3815,7 @@ function guardarObservacionesSupervision(payload, email) {
     }
 
     if (!payload || !payload.fila) {
-        throw new Error('PlaneaciÃ³n no identificada.');
+        throw new Error('Planeació³n no identificada.');
     }
 
     const sh = _hoja('Planeaciones_Neuronanny');
@@ -3825,7 +3825,7 @@ function guardarObservacionesSupervision(payload, email) {
         .getDisplayValues()[0]
         .map(h => _norm(h));
 
-    // ---- OBSERVACIONES SUPERVISIÃ“N ----
+    // ---- OBSERVACIONES SUPERVISIó“N ----
     let idxObs = headers.indexOf('observaciones supervision');
     if (idxObs === -1) {
         sh.insertColumnAfter(sh.getLastColumn());
@@ -3833,48 +3833,48 @@ function guardarObservacionesSupervision(payload, email) {
         idxObs = sh.getLastColumn() - 1;
     }
 
-    // ---- FECHA REVISIÃ“N ----
+    // ---- FECHA REVISIó“N ----
     let idxRevision = headers.indexOf('fecha revision');
     if (idxRevision === -1) {
         sh.insertColumnAfter(sh.getLastColumn());
-        sh.getRange(1, sh.getLastColumn()).setValue('fecha revisiÃ³n');
+        sh.getRange(1, sh.getLastColumn()).setValue('fecha revisió³n');
         idxRevision = sh.getLastColumn() - 1;
     }
 
-    // ---- FECHA ENVÃO A CORRECCIÃ“N ----
+    // ---- FECHA ENVóO A CORRECCIó“N ----
     let idxCorreccion = headers.indexOf('fecha de envio a correccion');
     if (idxCorreccion === -1) {
         sh.insertColumnAfter(sh.getLastColumn());
-        sh.getRange(1, sh.getLastColumn()).setValue('fecha de envÃ­o a correcciÃ³n');
+        sh.getRange(1, sh.getLastColumn()).setValue('fecha de envó­o a correcció³n');
         idxCorreccion = sh.getLastColumn() - 1;
     }
 
-    // ---- ESTADO REVISIÃ“N ----
+    // ---- ESTADO REVISIó“N ----
     let idxEstado = headers.indexOf('estado revision');
     if (idxEstado === -1) {
         sh.insertColumnAfter(sh.getLastColumn());
-        sh.getRange(1, sh.getLastColumn()).setValue('estado revisiÃ³n');
+        sh.getRange(1, sh.getLastColumn()).setValue('estado revisió³n');
         idxEstado = sh.getLastColumn() - 1;
     }
 
     const fila = Number(payload.fila);
     if (fila < 2 || fila > sh.getLastRow()) {
-        throw new Error('Fila invÃ¡lida.');
+        throw new Error('Fila invó¡lida.');
     }
 
     const ahora = _nowHuman();
 
-    // 1ï¸âƒ£ Guardar observaciones
+    // 1ï¸ƒ£ Guardar observaciones
     sh.getRange(fila, idxObs + 1).setValue(payload.observaciones || '');
 
-    // 2ï¸âƒ£ Guardar estado + fecha segÃºn acciÃ³n
+    // 2ï¸ƒ£ Guardar estado + fecha segóºn acció³n
     if (payload.tipo === 'revisada') {
         sh.getRange(fila, idxEstado + 1).setValue('revisada');
         sh.getRange(fila, idxRevision + 1).setValue(ahora);
     }
 
     if (payload.tipo === 'correccion') {
-        sh.getRange(fila, idxEstado + 1).setValue('a correcciÃ³n');
+        sh.getRange(fila, idxEstado + 1).setValue('a correcció³n');
         sh.getRange(fila, idxCorreccion + 1).setValue(ahora);
     }
 
@@ -3888,7 +3888,7 @@ function guardarObservacionesSupervision(payload, email) {
 function obtenerResumenPlaneacionesNinera(emailNinera) {
     if (!emailNinera) return [];
 
-    // 1. Obtener nombre de la niÃ±era por email
+    // 1. Obtener nombre de la nió±era por email
     const shUsuarios = _hoja(NOMBRE_HOJA_USUARIOS);
     const dataUsuarios = shUsuarios.getDataRange().getValues();
     const headersU = dataUsuarios.shift();
@@ -3909,7 +3909,7 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
     const headersS = dataServ.shift();
 
     const idxCliente = headersS.indexOf('cliente');
-    const idxNinera = headersS.indexOf('nombre de niÃ±era');
+    const idxNinera = headersS.indexOf('nombre de nió±era');
     const idxTipo = headersS.indexOf('Tipo de servicio');
     const idxFecha = headersS.indexOf('fecha');
 
@@ -3997,7 +3997,7 @@ function _asegurarColumnaObservacionesSupervision_() {
 
 
 
-// SecciÃ³n de enviÃ³ de notificaciÃ³nes cuando hay un nuevo servicio para la niÃ±era
+// Secció³n de envió³ de notificació³nes cuando hay un nuevo servicio para la nió±era
 
 
 function guardarPushSubscription(data) {
@@ -4061,12 +4061,12 @@ function notificarNuevoServicioDesdeFila_(sh, fila) {
         return idx >= 0 ? sh.getRange(fila, idx + 1).getValue() : '';
     }
 
-    const nombreNinera = String(val('nombre de niÃ±era')).trim();
+    const nombreNinera = String(val('nombre de nió±era')).trim();
     if (!nombreNinera) return;
 
     const cliente = String(val('cliente')).trim();
 
-    // fecha: tomamos la PRIMER fecha vÃ¡lida de encabezado
+    // fecha: tomamos la PRIMER fecha vó¡lida de encabezado
     const fechas = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
     let fechaServicio = '';
     for (const f of fechas) {
@@ -4076,7 +4076,7 @@ function notificarNuevoServicioDesdeFila_(sh, fila) {
         }
     }
 
-    // obtener email de la niÃ±era
+    // obtener email de la nió±era
     const emailNinera = obtenerEmailPorNombre_(nombreNinera);
     if (!emailNinera) return;
 
@@ -4144,7 +4144,7 @@ function enviarNotificacionNuevoServicio_(emailNinera, info) {
 
 function guardarPushSubscription(email, sub) {
     if (!email || !sub || !sub.endpoint) {
-        throw new Error('Datos incompletos para guardar suscripciÃ³n');
+        throw new Error('Datos incompletos para guardar suscripció³n');
     }
 
     const ss = SpreadsheetApp.getActive();
@@ -4170,7 +4170,7 @@ function guardarPushSubscription(email, sub) {
         fecha
     ]);
 
-    return 'SuscripciÃ³n guardada correctamente';
+    return 'Suscripció³n guardada correctamente';
 }
 
 
@@ -4214,7 +4214,7 @@ function enviarPushPrueba(email) {
     const idxAuth = headers.indexOf('auth');
 
     const row = rows.find(r => r[idxEmail] === email);
-    if (!row) throw new Error('No hay suscripciÃ³n para ese email');
+    if (!row) throw new Error('No hay suscripció³n para ese email');
 
     const subscription = {
         endpoint: row[idxEndpoint],
@@ -4269,15 +4269,15 @@ function updatePerfilCliente(email, payload) {
     const fields = {
         'nombre completo': payload.nombre_completo,
         'direccion': payload.direccion,
-        'ubicaciÃ³n': payload.ubicacion,
-        'TelÃ©fono': payload.telefono,
+        'ubicació³n': payload.ubicacion,
+        'Teló©fono': payload.telefono,
         'No. de emergencia': payload.emergencia,
 
         // Peque 1
         'Nombre del peque': payload.peque_nombre,
         'Fecha de nacimiento': payload.peque_nacimiento,
         'Alergias': payload.alergias,
-        'CondiciÃ³n mÃ©dica o especificaciones adicionales': payload.condicion,
+        'Condició³n mó©dica o especificaciones adicionales': payload.condicion,
         'Estado de salud actual': payload.salud,
         'Preferencias o actividades favoritas': payload.preferencias,
         'No. de mascotas': payload.mascotas,
@@ -4286,7 +4286,7 @@ function updatePerfilCliente(email, payload) {
         'Nombre del peque 2': payload.peque_nombre_2,
         'Fecha de nacimiento 2': payload.peque_nac_2,
         'Alergias 2': payload.alergias_2,
-        'CondiciÃ³n mÃ©dica o especificaciones adicionales 2': payload.condicion_2,
+        'Condició³n mó©dica o especificaciones adicionales 2': payload.condicion_2,
         'Estado de salud actual 2': payload.salud_2,
         'Preferencias o actividades favoritas 2': payload.preferencias_2,
 
@@ -4294,7 +4294,7 @@ function updatePerfilCliente(email, payload) {
         'Nombre del peque 3': payload.peque_nombre_3,
         'Fecha de nacimiento 3': payload.peque_nac_3,
         'Alergias 3': payload.alergias_3,
-        'CondiciÃ³n mÃ©dica o especificaciones adicionales 3': payload.condicion_3,
+        'Condició³n mó©dica o especificaciones adicionales 3': payload.condicion_3,
         'Estado de salud actual 3': payload.salud_3,
         'Preferencias o actividades favoritas 3': payload.preferencias_3,
 
@@ -4329,7 +4329,7 @@ function getPerfilCliente(email) {
 function getServiciosCliente(email) {
     email = String(email || '').trim().toLowerCase();
 
-    // Leer ambas hojas para cubrir servicios actuales y de la prÃ³xima semana
+    // Leer ambas hojas para cubrir servicios actuales y de la pró³xima semana
     const todos = _leerServiciosDesdeHojas_([
         'Servicios',
         'Servicios_Siguiente_semana'
@@ -4363,7 +4363,7 @@ function getServiciosCliente(email) {
         // Filtro por fecha (solo hoy en adelante para el portal familia)
         return s.fecha >= hoyISO;
     }).map(s => {
-        // Aplicar lÃ³gica de fallback para todos los campos
+        // Aplicar ló³gica de fallback para todos los campos
         const direccionServicio = String(s.direccion || '').trim();
         const ubicacionServicio = String(s.ubicacion_link || '').trim();
         const contactoServicio = String(s.numero_de_contacto || '').trim();
@@ -4372,25 +4372,25 @@ function getServiciosCliente(email) {
         const notasServicio = String(s.notas || '').trim();
 
         // Valores finales con fallback
-        const direccionFinal = direccionServicio || (clienteData ? clienteData.direccion : '') || 'â€”';
+        const direccionFinal = direccionServicio || (clienteData ? clienteData.direccion : '') || '€”';
         const ubicacionFinal = ubicacionServicio || (clienteData ? clienteData.ubicacion : '') || '';
-        const contactoFinal = contactoServicio || (clienteData ? clienteData.telefono : '') || 'â€”';
-        const emergenciaFinal = emergenciaServicio || (clienteData ? clienteData.no_de_emergencia : '') || 'â€”';
-        const edadFinal = edadServicio || (clienteData ? clienteData.edad_del_peque : '') || 'â€”';
-        const notasFinal = notasServicio || (clienteData ? _construirNotasDesdeCliente(clienteData) : '') || 'â€”';
+        const contactoFinal = contactoServicio || (clienteData ? clienteData.telefono : '') || '€”';
+        const emergenciaFinal = emergenciaServicio || (clienteData ? clienteData.no_de_emergencia : '') || '€”';
+        const edadFinal = edadServicio || (clienteData ? clienteData.edad_del_peque : '') || '€”';
+        const notasFinal = notasServicio || (clienteData ? _construirNotasDesdeCliente(clienteData) : '') || '€”';
 
-        // Mapear al formato que espera el frontend del cliente (PascalCase y nombres especÃ­ficos)
+        // Mapear al formato que espera el frontend del cliente (PascalCase y nombres especó­ficos)
         return {
             ...s,
             'Fecha': s.fecha,
-            'Horario': (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio} â€“ ${s.hora_fin}` : 'Pendiente',
-            'Nombre de la niÃ±era': s.nombre_ninera || 'Por asignar',
+            'Horario': (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio} €“ ${s.hora_fin}` : 'Pendiente',
+            'Nombre de la nió±era': s.nombre_ninera || 'Por asignar',
             'Estado': s.estado || 'Programado',
             'Direccion': direccionFinal,
             'Ubicacion': ubicacionFinal,
             'Contacto': contactoFinal,
             'Emergencia': emergenciaFinal,
-            'Edad del niÃ±o': edadFinal,
+            'Edad del nió±o': edadFinal,
             'Notas': notasFinal
         };
     }).sort((a, b) => (a.fecha + ' ' + a.hora_inicio).localeCompare(b.fecha + ' ' + b.hora_inicio));
@@ -4455,4 +4455,6 @@ function updatePerfilNinera(email, payload) {
 
     return { ok: true };
 }
+
+
 
