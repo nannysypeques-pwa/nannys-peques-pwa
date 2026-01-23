@@ -1444,7 +1444,9 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante) {
     // Obtener datos de clientes para fallback completo
     const shClientes = _hoja(NOMBRE_HOJA_CLIENTES);
     const dataClientes = shClientes.getDataRange().getValues();
-    const headersC = dataClientes[0].map(h => _norm(h));
+    const headersC = dataClientes[0].map(h =>
+        _norm(h).replace(/\./g, '').replace(/\s+/g, '_')
+    );
 
     // Crear mapa de clientes por email con todos sus datos
     const mapaClientes = {};
