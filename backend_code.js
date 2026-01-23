@@ -237,61 +237,63 @@ function _construirNotasDesdeCliente(clienteData) {
     // Peque 1
     const nombre1 = String(clienteData.nombre_del_peque || '').trim();
     if (nombre1) {
-        partes.push(`ðŸ‘¶ ${nombre1}`);
+        partes.push(`👶 ${nombre1}`);
 
         const alergias1 = String(clienteData.alergias || '').trim();
-        if (alergias1) partes.push(`€¢ Alergias: ${alergias1}`);
+        if (alergias1) partes.push(`• Alergias: ${alergias1}`);
 
         const condicion1 = String(clienteData.condicion_medica_o_especificaciones_adicionales || '').trim();
-        if (condicion1) partes.push(`€¢ Condició³n mó©dica: ${condicion1}`);
+        if (condicion1) partes.push(`• Condición médica: ${condicion1}`);
 
         const salud1 = String(clienteData.estado_de_salud_actual || '').trim();
-        if (salud1) partes.push(`€¢ Estado de salud: ${salud1}`);
+        if (salud1) partes.push(`• Estado de salud: ${salud1}`);
 
         const pref1 = String(clienteData.preferencias_o_actividades_favoritas || '').trim();
-        if (pref1) partes.push(`€¢ Preferencias: ${pref1}`);
+        if (pref1) partes.push(`• Preferencias: ${pref1}`);
 
         // Mascotas al final del primer peque
         const mascotas = String(clienteData.no_de_mascotas || '').trim();
-        if (mascotas) partes.push(`ðŸ¾ Mascotas: ${mascotas}`);
+        if (mascotas && mascotas !== '0' && mascotas.toLowerCase() !== 'no') {
+            partes.push(`🐾 Mascotas: ${mascotas}`);
+        }
     }
 
     // Peque 2
     const nombre2 = String(clienteData.nombre_del_peque_2 || '').trim();
     if (nombre2) {
-        partes.push(''); // ló­nea en blanco
-        partes.push(`ðŸ‘¶ ${nombre2}`);
+        partes.push(''); // Separador
+        partes.push(`👶 ${nombre2}`);
 
         const alergias2 = String(clienteData.alergias_2 || '').trim();
-        if (alergias2) partes.push(`€¢ Alergias: ${alergias2}`);
+        if (alergias2) partes.push(`• Alergias: ${alergias2}`);
 
         const condicion2 = String(clienteData.condicion_medica_o_especificaciones_adicionales_2 || '').trim();
-        if (condicion2) partes.push(`€¢ Condició³n mó©dica: ${condicion2}`);
+        if (condicion2) partes.push(`• Condición médica: ${condicion2}`);
 
         const salud2 = String(clienteData.estado_de_salud_actual_2 || '').trim();
-        if (salud2) partes.push(`€¢ Estado de salud: ${salud2}`);
+        if (salud2) partes.push(`• Estado de salud: ${salud2}`);
 
         const pref2 = String(clienteData.preferencias_o_actividades_favoritas_2 || '').trim();
-        if (pref2) partes.push(`€¢ Preferencias: ${pref2}`);
+        if (pref2) partes.push(`• Preferencias: ${pref2}`);
     }
 
     // Peque 3
     const nombre3 = String(clienteData.nombre_del_peque_3 || '').trim();
     if (nombre3) {
-        partes.push(''); // ló­nea en blanco
-        partes.push(`ðŸ‘¶ ${nombre3}`);
+        partes.push(''); // Separador
+        partes.push(`👶 ${nombre3}`);
 
         const alergias3 = String(clienteData.alergias_3 || '').trim();
-        if (alergias3) partes.push(`€¢ Alergias: ${alergias3}`);
+        if (alergias3) partes.push(`• Alergias: ${alergias3}`);
 
         const condicion3 = String(clienteData.condicion_medica_o_especificaciones_adicionales_3 || '').trim();
-        if (condicion3) partes.push(`€¢ Condició³n mó©dica: ${condicion3}`);
+        if (condicion3) partes.push(`• Condición médica: ${condicion3}`);
 
         const salud3 = String(clienteData.estado_de_salud_actual_3 || '').trim();
-        if (salud3) partes.push(`€¢ Estado de salud: ${salud3}`);
+        if (salud3) partes.push(`• Estado de salud: ${salud3}`);
 
         const pref3 = String(clienteData.preferencias_o_actividades_favoritas_3 || '').trim();
-        if (pref3) partes.push(`€¢ Preferencias: ${pref3}`);
+        if (pref3) partes.push(`• Preferencias: ${pref3}`);
     }
 
     return partes.length > 0 ? partes.join('\n') : '';
@@ -4269,15 +4271,15 @@ function updatePerfilCliente(email, payload) {
     const fields = {
         'nombre completo': payload.nombre_completo,
         'direccion': payload.direccion,
-        'ubicació³n': payload.ubicacion,
-        'Teló©fono': payload.telefono,
+        'ubicación': payload.ubicacion,
+        'Teléfono': payload.telefono,
         'No. de emergencia': payload.emergencia,
 
         // Peque 1
         'Nombre del peque': payload.peque_nombre,
         'Fecha de nacimiento': payload.peque_nacimiento,
         'Alergias': payload.alergias,
-        'Condició³n mó©dica o especificaciones adicionales': payload.condicion,
+        'Condición médica o especificaciones adicionales': payload.condicion,
         'Estado de salud actual': payload.salud,
         'Preferencias o actividades favoritas': payload.preferencias,
         'No. de mascotas': payload.mascotas,
@@ -4286,7 +4288,7 @@ function updatePerfilCliente(email, payload) {
         'Nombre del peque 2': payload.peque_nombre_2,
         'Fecha de nacimiento 2': payload.peque_nac_2,
         'Alergias 2': payload.alergias_2,
-        'Condició³n mó©dica o especificaciones adicionales 2': payload.condicion_2,
+        'Condición médica o especificaciones adicionales 2': payload.condicion_2,
         'Estado de salud actual 2': payload.salud_2,
         'Preferencias o actividades favoritas 2': payload.preferencias_2,
 
@@ -4294,7 +4296,7 @@ function updatePerfilCliente(email, payload) {
         'Nombre del peque 3': payload.peque_nombre_3,
         'Fecha de nacimiento 3': payload.peque_nac_3,
         'Alergias 3': payload.alergias_3,
-        'Condició³n mó©dica o especificaciones adicionales 3': payload.condicion_3,
+        'Condición médica o especificaciones adicionales 3': payload.condicion_3,
         'Estado de salud actual 3': payload.salud_3,
         'Preferencias o actividades favoritas 3': payload.preferencias_3,
 
@@ -4377,20 +4379,20 @@ function getServiciosCliente(email) {
         const contactoFinal = contactoServicio || (clienteData ? clienteData.telefono : '') || '€”';
         const emergenciaFinal = emergenciaServicio || (clienteData ? clienteData.no_de_emergencia : '') || '€”';
         const edadFinal = edadServicio || (clienteData ? clienteData.edad_del_peque : '') || '€”';
-        const notasFinal = notasServicio || (clienteData ? _construirNotasDesdeCliente(clienteData) : '') || '€”';
+        const notasFinal = notasServicio || (clienteData ? _construirNotasDesdeCliente(clienteData) : '') || '—';
 
-        // Mapear al formato que espera el frontend del cliente (PascalCase y nombres especó­ficos)
+        // Mapear al formato que espera el frontend del cliente (PascalCase y nombres específicos)
         return {
             ...s,
             'Fecha': s.fecha,
-            'Horario': (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio} €“ ${s.hora_fin}` : 'Pendiente',
-            'Nombre de la nió±era': s.nombre_ninera || 'Por asignar',
+            'Horario': (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio} – ${s.hora_fin}` : 'Pendiente',
+            'Nombre de la niñera': s.nombre_ninera || 'Por asignar',
             'Estado': s.estado || 'Programado',
             'Direccion': direccionFinal,
             'Ubicacion': ubicacionFinal,
             'Contacto': contactoFinal,
             'Emergencia': emergenciaFinal,
-            'Edad del nió±o': edadFinal,
+            'Edad del niño': edadFinal,
             'Notas': notasFinal
         };
     }).sort((a, b) => (a.fecha + ' ' + a.hora_inicio).localeCompare(b.fecha + ' ' + b.hora_inicio));
