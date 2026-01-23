@@ -555,7 +555,68 @@ function abrirModalServicio(s) {
     }
 
     document.getElementById('mEdad').textContent = s.edad_nino || '—';
-    document.getElementById('mNotas').textContent = s.notas || '—';
+    // --- LÓGICA MEJORADA PARA NOTAS DE PEQUES (PARSING) ---
+    const rawNotas = s.notas || '—';
+    const containerNotas = document.getElementById('mNotas');
+
+    if (s.notas && (s.notas.includes('👶') || s.notas.includes('•'))) {
+        // Modo parseo: Intentar separar por peques
+        containerNotas.innerHTML = '';
+
+        // Estrategia: Separar por el emoji de bebé o doble salto de línea
+        // El backend usa: 👶 Nombre\n• Campo...
+        // Split por 👶, pero ojo con el primero
+        const bloques = rawNotas.split('👶').filter(b => b.trim().length > 0);
+
+        if (bloques.length > 0) {
+            bloques.forEach(bloque => {
+                // Reconstruir el emoji que split quitó
+                const texto = '👶 ' + bloque.trim();
+
+                // Parsear líneas
+                const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
+                const nombreRow = lineas[0].replace('👶', '').trim(); // Nombre
+
+                const card = document.createElement('div');
+                card.style.background = '#FFF5F9';
+                card.style.borderLeft = '4px solid var(--pink-main)';
+                card.style.borderRadius = '8px';
+                card.style.padding = '12px 16px';
+                card.style.marginBottom = '12px';
+
+                let htmlInterno = `<div style="font-weight:700; color:var(--pink-main); margin-bottom:6px; font-size:15px;">👶 ${nombreRow}</div>`;
+
+                // Procesar el resto de líneas (Campos con •)
+                for (let i = 1; i < lineas.length; i++) {
+                    const l = lineas[i];
+                    if (l.startsWith('•') || l.startsWith('🐾')) {
+                        // Formato: • Clave: Valor
+                        const partes = l.split(':');
+                        const label = partes[0].replace(/[•🐾]/g, '').trim();
+                        const val = partes.slice(1).join(':').trim();
+
+                        if (l.startsWith('🐾')) {
+                            htmlInterno += `<div style="margin-top:8px; font-weight:600; font-size:13px; color:#4b5563;">🐾 ${label}: <span style="font-weight:400;">${val}</span></div>`;
+                        } else {
+                            htmlInterno += `<div style="font-size:13px; color:#374151; margin-bottom:2px;"><b>${label}:</b> ${val}</div>`;
+                        }
+                    } else {
+                        // Texto suelto (notas manuales adicionales)
+                        htmlInterno += `<div style="font-size:13px; color:#6b7280; font-style:italic; margin-top:2px;">${l}</div>`;
+                    }
+                }
+
+                card.innerHTML = htmlInterno;
+                containerNotas.appendChild(card);
+            });
+        } else {
+            // Fallback si el split falla pero tiene formato
+            containerNotas.textContent = rawNotas;
+        }
+    } else {
+        // Texto plano normal (o fallback puro)
+        containerNotas.textContent = rawNotas;
+    }
     document.getElementById('mCuota').textContent = s.cuota_nanny || '—';
 
     const estado = (s.estado || 'pendiente').toLowerCase();
