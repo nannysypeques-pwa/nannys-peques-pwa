@@ -1650,6 +1650,15 @@ window.addEventListener('load', function () {
         document.getElementById('auth').style.display = 'flex';
         document.getElementById('app').style.display = 'none';
     }
+    // Close modal when clicking outside
+    const back = document.getElementById('modalBackdrop');
+    if (back) {
+        back.addEventListener('click', (e) => {
+            if (e.target === back) {
+                cerrarModal();
+            }
+        });
+    }
 });
 
 /* =========================================

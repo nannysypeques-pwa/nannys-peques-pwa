@@ -780,6 +780,10 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     border: none;
     border-radius: 20px;
     background: #fff;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    /* Allow it to be tall but not overflow viewport */
 }
 
 .modal-header-gradient {
@@ -787,6 +791,8 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     padding: 20px 24px 10px 24px;
     text-align: left;
     border-bottom: none;
+    flex-shrink: 0;
+    /* Header stays fixed */
 }
 
 .modal-header-gradient h3 {
@@ -807,8 +813,11 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 
 .modal-body-scroll {
     padding: 20px;
-    max-height: 60vh;
     overflow-y: auto;
+    flex: 1;
+    /* Take remaining space */
+    min-height: 0;
+    /* Important for flex scrolling */
 }
 
 /* Sections */
@@ -922,6 +931,8 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     padding: 16px 20px;
     background: #fff;
     border-top: 1px solid #f3f4f6;
+    flex-shrink: 0;
+    /* Always visible */
 }
 
 /* Overrides for specific existing elements being moved */
