@@ -1358,7 +1358,7 @@ function _expandirServiciosSemanales_(sh) {
                 hora_fin: hf,
                 cliente,
                 email: emailServicio,
-                numero_de_contacto: contacto,
+                numero_contacto: contacto,
                 numero_de_emergencia: emergencia,
                 direccion,
                 ubicacion_link: ubicacion,
@@ -1478,8 +1478,8 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante) {
             }
 
             // Fallback para contacto y emergencia
-            if (!String(s.numero_de_contacto || '').trim()) {
-                s.numero_de_contacto = clienteData.telefono || s.numero_de_contacto;
+            if (!String(s.numero_contacto || '').trim()) {
+                s.numero_contacto = clienteData.telefono || s.numero_contacto;
             }
             if (!String(s.numero_de_emergencia || '').trim()) {
                 s.numero_de_emergencia = clienteData.no_de_emergencia || s.numero_de_emergencia;
