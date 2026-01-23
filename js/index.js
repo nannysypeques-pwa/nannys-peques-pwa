@@ -513,7 +513,19 @@ function renderCalendario2Semanas() {
    ========================================= */
 function abrirModalServicio(s) {
     document.getElementById('mCliente').textContent = s.cliente || 'Detalle del servicio';
-    document.getElementById('mFecha').textContent = s.fecha || '—';
+
+    // Formatear fecha: Lunes 19 de Enero
+    let fechaTexto = s.fecha || '—';
+    if (s.fecha && s.fecha.includes('-')) {
+        const [yyyy, mm, dd] = s.fecha.split('-').map(Number);
+        const dateObj = new Date(yyyy, mm - 1, dd);
+        const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
+        // Capitalizar primera letra
+        const f = dateObj.toLocaleDateString('es-ES', opciones);
+        fechaTexto = f.charAt(0).toUpperCase() + f.slice(1);
+    }
+    document.getElementById('mFecha').textContent = fechaTexto;
+
     document.getElementById('mHorario').textContent = [s.hora_inicio || '', s.hora_fin || ''].filter(Boolean).join(' – ') || '—';
     document.getElementById('mContacto').textContent = s.numero_contacto || '—';
     document.getElementById('mEmergencia').textContent = s.numero_de_emergencia || '—';
