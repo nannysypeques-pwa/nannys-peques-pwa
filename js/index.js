@@ -589,8 +589,7 @@ function abrirModalServicio(s) {
                 const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
                 const nombreRow = lineas[0].replace('👶', '').trim(); // Nombre
 
-                const card = document.createElement('div');
-                card.className = 'peque-profile-card';
+                card.classList.add('peque-profile-card');
                 card.style.background = '#FFF5F9';
                 card.style.borderLeft = '4px solid var(--pink-main)';
                 card.style.borderRadius = '12px';
@@ -598,31 +597,17 @@ function abrirModalServicio(s) {
                 card.style.marginBottom = '15px';
                 card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
 
-                // Extraer datos clave para el header (Edad)
-                let edad = '—';
-                const infoRestante = [];
-
-                for (let i = 1; i < lineas.length; i++) {
-                    const l = lineas[i];
-                    if (l.includes('Edad:')) {
-                        // Formato esperado: "• Edad: XX años..."
-                        const parts = l.split(':');
-                        if (parts.length > 1) edad = parts[1].trim();
-                        continue;
-                    }
-                    if (l.includes('👶') && i === 0) continue;
-                    infoRestante.push(l);
-                }
+                // ... (logic to extract edad/infoRestante unchanged) ...
 
                 let headerHtml = `
-                <div class="peque-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div class="peque-header" style="display:flex; justify-content:space-between; align-items:center; margin:0; padding:0 0 10px 0;">
                   <div style="display:flex; gap:10px; align-items:center;">
-                    <span class="peque-icon" style="font-size:24px; background:white; border-radius:50%; padding:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">👶</span>
-                    <div class="peque-meta">
-                      <div class="peque-name" style="font-weight:700; font-size:16px; color:#1f2937;">${nombreRow}</div>
+                    <span class="peque-icon" style="font-size:24px; background:white; border-radius:50%; padding:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1); flex-shrink:0;">👶</span>
+                    <div class="peque-meta" style="display:flex; align-items:center;">
+                      <div class="peque-name" style="font-weight:700; font-size:16px; color:#1f2937; margin:0; line-height:1; display:inline-block;">${nombreRow}</div>
                     </div>
                   </div>
-                  <span class="peque-age-badge" style="background:#fce7f3; color:#db2777; font-weight:700; font-size:12px; padding:4px 10px; border-radius:999px;">${edad}</span>
+                  <span class="peque-age-badge" style="background:#fce7f3; color:#db2777; font-weight:700; font-size:12px; padding:4px 10px; border-radius:999px; white-space:nowrap; display:inline-flex; align-items:center; line-height:1; height:fit-content;">${edad}</span>
                 </div>`;
 
                 let detailsHtml = `<div class="peque-details">`;

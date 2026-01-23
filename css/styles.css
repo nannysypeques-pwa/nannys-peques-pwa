@@ -895,14 +895,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-size: 14px;
 }
 
-.child-notes {
-    font-size: 13px;
-    color: #4b5563;
-    line-height: 1.5;
-    background: rgba(255, 255, 255, 0.6);
-    padding: 8px;
-    border-radius: 6px;
-}
+.child-notes { font-size: 13px; color: #4b5563; line-height: 1.5; }
 
 /* Financial */
 .financial-box {
@@ -934,3 +927,4 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-size: 13px;
     text-align: center;
 }
+
