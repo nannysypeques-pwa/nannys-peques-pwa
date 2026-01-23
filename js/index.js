@@ -2355,8 +2355,8 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_nombre_header')) document.getElementById('perfil_nombre_header').textContent = perf.nombre || 'Mi perfil';
             if (document.getElementById('perfil_email_header')) document.getElementById('perfil_email_header').textContent = perf.email || SESION.email;
 
-            // Detectar rol para visibilidad
-            const esNanny = !SESION.cliente;
+            // Detectar rol REAL desde el backend para visibilidad
+            const esNanny = !!perf.isNanny;
             const seccionPeques = document.getElementById('perfil-peques-container');
             const itemMascotas = document.getElementById('perfil_mascotas_gral')?.closest('.profile-info-item');
             const avatar = document.querySelector('.profile-avatar');
