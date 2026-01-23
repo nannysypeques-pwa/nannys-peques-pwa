@@ -2332,23 +2332,45 @@ window.cargarServiciosCliente = cargarServiciosCliente;
 function mostrarDetalleServicioCliente(s) {
     if (!s) return;
 
-    document.getElementById('mCliente').textContent = 'Tu servicio - ' + s.Fecha;
-    document.getElementById('mFecha').textContent = s.Fecha || '—';
-    document.getElementById('mHorario').textContent = s.Horario || '—';
-    document.getElementById('mContacto').textContent = '(Oculto por seguridad)';
-    document.getElementById('mDireccion').textContent = s.Direccion || 'Dirección confirmada';
-    document.getElementById('mUbicacion').textContent = '—';
-    document.getElementById('mEdad').textContent = s['Edad del niño'] || '—';
-    document.getElementById('mCuota').textContent = '—'; // El cliente ya pagó o sabe su cuota
-    document.getElementById('mNotas').textContent = s.Notas || 'Sin notas adicionales.';
+    // Formatear fecha con día de semana y mes en español
+    const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-    // Ocultar acciones del staff
-    const actions = document.querySelector('.modal-card .actions');
-    if (actions) actions.innerHTML = '<button class="btn-ghost" onclick="cerrarModal()">Cerrar</button>';
+    const fechaObj = new Date(s.Fecha + 'T00:00:00');
+    const diaSemana = diasSemana[fechaObj.getDay()];
+    const dia = fechaObj.getDate();
+    const mes = meses[fechaObj.getMonth()];
+    const fechaFormateada = `${diaSemana} ${dia} de ${mes}`;
 
-    document.getElementById('modalBackdrop').style.display = 'flex';
+    // Llenar el modal con la información
+    document.getElementById('mClienteFecha').textContent = fechaFormateada;
+    document.getElementById('mClienteHorario').textContent = s.Horario || '—';
+    document.getElementById('mClienteDireccion').textContent = s.Direccion || 'Por confirmar';
+    document.getElementById('mClienteNinera').textContent = s['Nombre de la niñera'] || 'Por asignar';
+
+    // Manejar ubicación (link o texto vacío)
+    const ubicacionLink = document.getElementById('mClienteUbicacion');
+    const ubicacionVacio = document.getElementById('mClienteUbicacionVacio');
+
+    if (s.Ubicacion && s.Ubicacion.trim()) {
+        ubicacionLink.href = s.Ubicacion;
+        ubicacionLink.style.display = 'block';
+        ubicacionVacio.style.display = 'none';
+    } else {
+        ubicacionLink.style.display = 'none';
+        ubicacionVacio.style.display = 'block';
+    }
+
+    // Mostrar el modal
+    document.getElementById('modalServicioCliente').style.display = 'flex';
 }
 window.mostrarDetalleServicioCliente = mostrarDetalleServicioCliente;
+
+function cerrarModalCliente() {
+    document.getElementById('modalServicioCliente').style.display = 'none';
+}
+window.cerrarModalCliente = cerrarModalCliente;
 
 function mostrarLoginStaff() {
     document.getElementById('paso-seleccion').style.display = 'none';

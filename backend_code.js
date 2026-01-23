@@ -1369,8 +1369,38 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante) {
         s.fecha <= limISO
     );
 
+    // Obtener datos de clientes para fallback de dirección/ubicación
+    const shClientes = _hoja(NOMBRE_HOJA_CLIENTES);
+    const dataClientes = shClientes.getDataRange().getValues();
+    const headersC = dataClientes[0].map(h => _norm(h));
 
+    const idxEmailC = headersC.indexOf('email');
+    const idxDireccionC = headersC.indexOf('direccion');
+    const idxUbicacionC = headersC.indexOf('ubicacion');
 
+    // Crear mapa de clientes por email
+    const mapaClientes = {};
+    for (let i = 1; i < dataClientes.length; i++) {
+        const emailCliente = String(dataClientes[i][idxEmailC] || '').trim().toLowerCase();
+        if (emailCliente) {
+            mapaClientes[emailCliente] = {
+                direccion: String(dataClientes[i][idxDireccionC] || '').trim(),
+                ubicacion: String(dataClientes[i][idxUbicacionC] || '').trim()
+            };
+        }
+    }
+
+    // Enriquecer servicios con fallback
+    out.forEach(s => {
+        const emailServicio = String(s.email || '').trim().toLowerCase();
+        const direccionServicio = String(s.direccion || '').trim();
+        const ubicacionServicio = String(s.ubicacion_link || '').trim();
+
+        if (emailServicio && mapaClientes[emailServicio]) {
+            if (!direccionServicio) s.direccion = mapaClientes[emailServicio].direccion || s.direccion;
+            if (!ubicacionServicio) s.ubicacion_link = mapaClientes[emailServicio].ubicacion || s.ubicacion_link;
+        }
+    });
 
     out.sort((a, b) => (a.fecha + ' ' + a.hora_inicio).localeCompare(b.fecha + ' ' + b.hora_inicio));
     // Detectar empalmes ENTRE LOS SERVICIOS DE LA NIÑERA
@@ -4210,12 +4240,40 @@ function getServiciosCliente(email) {
 
     const hoyISO = _toISODate(new Date());
 
+    // Obtener datos del cliente para fallback de dirección/ubicación
+    const shClientes = _hoja(NOMBRE_HOJA_CLIENTES);
+    const dataClientes = shClientes.getDataRange().getValues();
+    const headersC = dataClientes[0].map(h => _norm(h));
+
+    const idxEmailC = headersC.indexOf('email');
+    const idxDireccionC = headersC.indexOf('direccion');
+    const idxUbicacionC = headersC.indexOf('ubicacion');
+
+    let clienteDireccion = '';
+    let clienteUbicacion = '';
+
+    // Buscar datos del cliente
+    for (let i = 1; i < dataClientes.length; i++) {
+        if (String(dataClientes[i][idxEmailC] || '').trim().toLowerCase() === email) {
+            clienteDireccion = String(dataClientes[i][idxDireccionC] || '').trim();
+            clienteUbicacion = String(dataClientes[i][idxUbicacionC] || '').trim();
+            break;
+        }
+    }
+
     return todos.filter(s => {
         // Filtro por email
         if (String(s.email || '').toLowerCase() !== email) return false;
         // Filtro por fecha (solo hoy en adelante para el portal familia)
         return s.fecha >= hoyISO;
     }).map(s => {
+        // Aplicar lógica de fallback para dirección y ubicación
+        const direccionServicio = String(s.direccion || '').trim();
+        const ubicacionServicio = String(s.ubicacion_link || '').trim();
+
+        const direccionFinal = direccionServicio || clienteDireccion || '—';
+        const ubicacionFinal = ubicacionServicio || clienteUbicacion || '';
+
         // Mapear al formato que espera el frontend del cliente (PascalCase y nombres específicos)
         return {
             ...s,
@@ -4223,7 +4281,8 @@ function getServiciosCliente(email) {
             'Horario': (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio} – ${s.hora_fin}` : 'Pendiente',
             'Nombre de la niñera': s.nombre_ninera || 'Por asignar',
             'Estado': s.estado || 'Programado',
-            'Direccion': s.direccion || '—',
+            'Direccion': direccionFinal,
+            'Ubicacion': ubicacionFinal,
             'Edad del niño': s.edad_nino || '—',
             'Notas': s.notas || '—'
         };
