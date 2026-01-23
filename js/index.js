@@ -2356,7 +2356,7 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_email_header')) document.getElementById('perfil_email_header').textContent = perf.email || SESION.email;
 
             // Detectar rol para visibilidad
-            const esNanny = !!perf.isNanny;
+            const esNanny = !SESION.cliente;
             const seccionPeques = document.getElementById('perfil-peques-container');
             const itemMascotas = document.getElementById('perfil_mascotas_gral')?.closest('.profile-info-item');
             const avatar = document.querySelector('.profile-avatar');
@@ -2366,7 +2366,6 @@ async function cargarPerfil() {
                 if (itemMascotas) itemMascotas.style.display = 'none';
                 if (avatar) avatar.textContent = '🍼';
 
-                // Ocultar botón editar para niñeras (el form actual es de clientes)
                 const btnEditar = document.querySelector('.profile-actions .btn-primary');
                 if (btnEditar) btnEditar.style.display = 'none';
             } else {

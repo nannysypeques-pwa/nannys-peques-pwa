@@ -1177,27 +1177,8 @@ function obtenerPerfil(email) {
 
 
 
-function obtenerPerfilCompleto(email) {
-    email = String(email || '').trim().toLowerCase();
+// La implementación completa de obtenerPerfilCompleto está al final del archivo.
 
-    // 1. Intentar en Usuarios (Staff)
-    const shU = _hoja(NOMBRE_HOJA_USUARIOS);
-    const filaU = _buscarFilaPorValor(shU, 'email', email);
-    if (filaU !== -1) {
-        const headersU = shU.getRange(1, 1, 1, shU.getLastColumn()).getDisplayValues()[0].map(h => _norm(h));
-        const idxNombre = headersU.indexOf('nombre') + 1;
-        const idxEmail = headersU.indexOf('email') + 1;
-        const idxTelefono = headersU.indexOf('telefono') + 1;
-        return {
-            nombre: idxNombre > 0 ? String(shU.getRange(filaU, idxNombre).getValue() || '').trim() : '',
-            email: idxEmail > 0 ? String(shU.getRange(filaU, idxEmail).getValue() || '').trim() : email,
-            telefono: idxTelefono > 0 ? String(shU.getRange(filaU, idxTelefono).getValue() || '').trim() : ''
-        };
-    }
-
-    // 2. Intentar en Clientes
-    return getPerfilCliente(email);
-}
 
 
 function _mapaCiudadPorNinera() {
@@ -4413,35 +4394,33 @@ function getServiciosCliente(email) {
 function obtenerPerfilCompleto(email) {
     email = String(email || '').trim().toLowerCase();
 
-    // 1. Revisar si es CLIENTE
-    if (esCliente(email)) {
-        return getPerfilCliente(email);
+    // 1. Intentar PRIMERO en Usuarios (Staff/Nannies)
+    const shU = _hoja(NOMBRE_HOJA_USUARIOS);
+    const filaU = _buscarFilaPorValor(shU, 'email', email);
+
+    if (filaU !== -1) {
+        const headersU = shU.getRange(1, 1, 1, shU.getLastColumn()).getValues()[0].map(h => _norm(h));
+        const valuesU = shU.getRange(filaU, 1, 1, shU.getLastColumn()).getValues()[0];
+
+        const getStaffVal = (colName) => {
+            const idx = headersU.indexOf(_norm(colName));
+            return idx >= 0 ? valuesU[idx] : '';
+        };
+
+        return {
+            isNanny: true,
+            email: email,
+            nombre: getStaffVal('nombre'),
+            telefono: getStaffVal('telefono'),
+            direccion: getStaffVal('direccion base'),
+            ubicacion: getStaffVal('ubicacion'),
+            emergencia: getStaffVal('no. emergencia'),
+            imagen: getStaffVal('imagen')
+        };
     }
 
-    // 2. Si no es cliente (es Staff/Nanny/Admin), leer de USUARIOS
-    const sh = _hoja(NOMBRE_HOJA_USUARIOS);
-    const fila = _buscarFilaPorValor(sh, 'email', email);
-    if (fila === -1) return {};
-
-    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => _norm(h));
-    const values = sh.getRange(fila, 1, 1, sh.getLastColumn()).getValues()[0];
-
-    // Mapeo dinámico de columnas
-    const getVal = (colName) => {
-        const idx = headers.indexOf(_norm(colName));
-        return idx >= 0 ? values[idx] : '';
-    };
-
-    return {
-        isNanny: true, // Flag para el frontend
-        email: getVal('email'),
-        nombre: getVal('nombre'),
-        telefono: getVal('telefono'),
-        direccion: getVal('direccion base'),
-        ubicacion: getVal('ubicacion'),
-        emergencia: getVal('no. emergencia'),
-        imagen: getVal('imagen')
-    };
+    // 2. Si no es staff, buscar en Clientes
+    return getPerfilCliente(email);
 }
 
 function updatePerfilNinera(email, payload) {
