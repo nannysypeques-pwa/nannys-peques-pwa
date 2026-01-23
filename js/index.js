@@ -2355,9 +2355,34 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_nombre_header')) document.getElementById('perfil_nombre_header').textContent = perf.nombre || 'Mi perfil';
             if (document.getElementById('perfil_email_header')) document.getElementById('perfil_email_header').textContent = perf.email || SESION.email;
 
+            // Detectar rol para visibilidad
+            const esNanny = !!perf.isNanny;
+            const seccionPeques = document.getElementById('perfil-peques-container');
+            const itemMascotas = document.getElementById('perfil_mascotas_gral')?.closest('.profile-info-item');
+            const avatar = document.querySelector('.profile-avatar');
+
+            if (esNanny) {
+                if (seccionPeques) seccionPeques.style.display = 'none';
+                if (itemMascotas) itemMascotas.style.display = 'none';
+                if (avatar) avatar.textContent = '🍼';
+
+                // Ocultar botón editar para niñeras (el form actual es de clientes)
+                const btnEditar = document.querySelector('.profile-actions .btn-primary');
+                if (btnEditar) btnEditar.style.display = 'none';
+            } else {
+                if (seccionPeques) seccionPeques.style.display = 'block';
+                if (itemMascotas) itemMascotas.style.display = 'block';
+                if (avatar) avatar.textContent = '👨‍👩‍👧‍👦';
+
+                const btnEditar = document.querySelector('.profile-actions .btn-primary');
+                if (btnEditar) btnEditar.style.display = 'block';
+            }
+
             // Contacto
             if (document.getElementById('perfil_tel')) document.getElementById('perfil_tel').textContent = perf.telefono || perf.teléfono || '—';
-            if (document.getElementById('perfil_emergencia')) document.getElementById('perfil_emergencia').textContent = perf['no._de_emergencia'] || '—';
+            if (document.getElementById('perfil_emergencia')) {
+                document.getElementById('perfil_emergencia').textContent = perf.emergencia || perf['no._de_emergencia'] || '—';
+            }
             if (document.getElementById('perfil_direccion')) document.getElementById('perfil_direccion').textContent = perf.direccion || '—';
 
             const linkUbic = document.getElementById('perfil_ubicacion');
@@ -2371,13 +2396,15 @@ async function cargarPerfil() {
                 }
             }
 
-            // Peque 1
+            if (esNanny) return; // Terminar aquí para niñeras
+
+            // Peque 1 (Solo para clientes)
             if (document.getElementById('perfil_peque')) document.getElementById('perfil_peque').textContent = perf.nombre_del_peque || '—';
             if (document.getElementById('perfil_nac_peque')) document.getElementById('perfil_nac_peque').textContent = formatearFechaElegante(perf.fecha_de_nacimiento);
             if (document.getElementById('perfil_edad_peque')) document.getElementById('perfil_edad_peque').textContent = (perf.edad_del_peque || '—') + ' años';
             if (document.getElementById('perfil_alergias')) document.getElementById('perfil_alergias').textContent = perf.alergias || '—';
             if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
-            if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_salud_actual || '—';
+            if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_sal_actual || perf.estado_de_salud_actual || '—';
             if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no._de_mascotas'] || '—';
 
             // Peque 2
