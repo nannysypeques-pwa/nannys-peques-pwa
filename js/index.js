@@ -567,6 +567,11 @@ function abrirModalServicio(s) {
         // Modo parseo: Intentar separar por peques
         containerNotas.innerHTML = '';
 
+        const labelNotas = containerNotas.previousElementSibling; // El div con 📝 Notas:
+        if (labelNotas && labelNotas.textContent.includes('Notas:')) {
+            labelNotas.style.display = 'block'; // Reset por defecto
+        }
+
         // Estrategia: Separar por el emoji de bebé o doble salto de línea
         // El backend usa: 👶 Nombre\n• Campo...
         // Split por 👶, pero ojo con el primero
@@ -576,7 +581,6 @@ function abrirModalServicio(s) {
             // SI hay info de peques parseada, ocultamos la edad global y el label "Notas:"
             if (containerEdad) containerEdad.style.display = 'none';
 
-            const labelNotas = containerNotas.previousElementSibling; // El div con 📝 Notas:
             if (labelNotas && labelNotas.textContent.includes('Notas:')) {
                 labelNotas.style.display = 'none';
             }
@@ -589,6 +593,7 @@ function abrirModalServicio(s) {
                 const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
                 const nombreRow = lineas[0].replace('👶', '').trim(); // Nombre
 
+                const card = document.createElement('div');
                 card.classList.add('peque-profile-card');
                 card.style.background = '#FFF5F9';
                 card.style.borderLeft = '4px solid var(--pink-main)';
@@ -665,7 +670,7 @@ function abrirModalServicio(s) {
     if (!SESION.admin && s.empalmado) {
         const warn = document.createElement('div');
         warn.className = 'pill';
-        warn.style.background = '#fee2e2'; warning;
+        warn.style.background = '#fee2e2';
         warn.style.borderColor = '#ef4444';
         warn.style.color = '#b91c1c';
         warn.textContent = '⚠️ Servicio empalmado';
