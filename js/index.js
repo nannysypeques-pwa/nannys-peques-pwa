@@ -597,7 +597,21 @@ function abrirModalServicio(s) {
                 card.style.marginBottom = '15px';
                 card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
 
-                // ... (logic to extract edad/infoRestante unchanged) ...
+                // Extraer datos clave para el header (Edad)
+                let edad = '—';
+                const infoRestante = [];
+
+                for (let i = 1; i < lineas.length; i++) {
+                    const l = lineas[i];
+                    if (l.includes('Edad:')) {
+                        // Formato esperado: "• Edad: XX años..."
+                        const parts = l.split(':');
+                        if (parts.length > 1) edad = parts[1].trim();
+                        continue;
+                    }
+                    if (l.includes('👶') && i === 0) continue;
+                    infoRestante.push(l);
+                }
 
                 let headerHtml = `
                 <div class="peque-header" style="display:flex; justify-content:space-between; align-items:center; margin:0; padding:0 0 10px 0;">
