@@ -1318,12 +1318,13 @@ function irVista(nombre, skipLogic = false) {
     if (btnAct) btnAct.style.display = 'flex';
     if (btnCom) btnCom.style.display = 'flex';
 
+    if (target === 'perfil') cargarPerfil();
+
     if (SESION.cliente) {
         if (lblAct) lblAct.textContent = 'Actividades';
         if (skipLogic) return; // Saltamos la carga automática si se solicita manual
         if (target === 'cliente') mostrarVistaCliente();
         if (target === 'actividades-cliente') cargarActividadesCliente();
-        if (target === 'perfil') cargarPerfil();
         return;
     }
 
@@ -1349,53 +1350,8 @@ function irVista(nombre, skipLogic = false) {
     }
 }
 
-async function cargarPerfil() {
-    try {
-        const p = await api('getProfile', { email: SESION.email });
-        document.getElementById('perfil_nombre').textContent = p?.nombre || '—';
-        document.getElementById('perfil_email').textContent = p?.email || '—';
-        document.getElementById('perfil_tel').textContent = p?.telefono || '—';
+// La implementación robusta de cargarPerfil está al final del archivo.
 
-        if (p?.nombre) {
-            SESION.nombre = p.nombre;
-            localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
-            const saludo = document.getElementById('saludo');
-            if (saludo) saludo.innerHTML = `<b>¡Hola, ${SESION.nombre || SESION.email}!</b>`;
-        }
-
-        // --- LÓGICA ROL NIÑERA ---
-        if (!SESION.cliente) {
-            // Ocultar sección de peques y botón editar
-            const secPeques = document.getElementById('perfil-peques-container');
-            if (secPeques) secPeques.style.display = 'none';
-
-            const btns = document.querySelectorAll('.profile-actions button');
-            btns.forEach(b => {
-                if (b.textContent && b.textContent.includes('Editar')) b.style.display = 'none';
-            });
-
-            // Poblar campos extra de niñera (desde Usuarios)
-            if (p) {
-                document.getElementById('perfil_direccion').textContent = p.direccion || '—';
-                document.getElementById('perfil_emergencia').textContent = p.emergencia || '—';
-                const elUbic = document.getElementById('perfil_ubicacion');
-                if (elUbic) {
-                    if (p.ubicacion && p.ubicacion.startsWith('http')) {
-                        elUbic.href = p.ubicacion;
-                        elUbic.style.display = 'inline-block';
-                        elUbic.textContent = 'Ver en mapa 📍';
-                    } else {
-                        elUbic.removeAttribute('href');
-                        elUbic.textContent = p.ubicacion || '—';
-                    }
-                }
-            }
-
-            // Validar faltantes
-            setTimeout(() => verificarDatosFaltantesNinera(p), 1000);
-        }
-    } catch (err) { console.error('Error cargarPerfil:', err?.message || err); }
-}
 
 function verificarDatosFaltantesNinera(p) {
     if (!p) return;
