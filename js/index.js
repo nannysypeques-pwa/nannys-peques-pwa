@@ -2298,18 +2298,20 @@ function renderCalendarioCliente(svcs) {
             } else {
                 serviciosDia.forEach(s => {
                     const btn = document.createElement('button');
-                    // Reusamos las clases de estado si existen
                     const estado = (s.Estado || s.estado || 'pendiente').toLowerCase();
-                    btn.className = 'svc-pill ' + (typeof stateClass === 'function' ? stateClass(estado) : 'pending');
-                    btn.style.fontSize = '10px';
-                    btn.style.padding = '4px 6px';
-                    btn.style.marginBottom = '4px';
+                    btn.className = 'svc-pill svc-pill-cliente ' + (typeof stateClass === 'function' ? stateClass(estado) : 'pending');
 
-                    // Formato de hora amigable
-                    const hora = s.hora_inicio || 'Servicio';
-                    btn.textContent = hora;
-                    btn.title = `${s.Horario || ''} - Niñera: ${s['Nombre de la niñera'] || 'Por asignar'}`;
+                    // Extraer primer nombre de la niñera
+                    const nombreCompleto = s['Nombre de la niñera'] || s.nombre_ninera || 'Por asignar';
+                    const primerNombre = nombreCompleto.split(' ')[0];
 
+                    // Crear estructura HTML con horario completo y nombre
+                    const horario = `${s.hora_inicio || '—'} - ${s.hora_fin || '—'}`;
+                    btn.innerHTML = `
+                        <div style="font-weight: 700; font-size: 13px; margin-bottom: 3px;">${horario}</div>
+                        <div style="font-size: 11px; opacity: 0.9;">${primerNombre}</div>
+                    `;
+                    btn.title = `${s.Horario || ''} - Niñera: ${nombreCompleto}`;
                     btn.onclick = () => mostrarDetalleServicioCliente(s);
                     body.appendChild(btn);
                 });
