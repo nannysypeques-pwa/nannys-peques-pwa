@@ -239,6 +239,10 @@ function _construirNotasDesdeCliente(clienteData) {
     if (nombre1) {
         partes.push(`👶 ${nombre1}`);
 
+        // Preferir edad calculada, fallback a nacimiento
+        const edad1 = String(clienteData.edad_del_peque || clienteData.fecha_de_nacimiento || '').trim();
+        if (edad1) partes.push(`• Edad: ${edad1}`);
+
         const alergias1 = String(clienteData.alergias || '').trim();
         if (alergias1) partes.push(`• Alergias: ${alergias1}`);
 
@@ -264,6 +268,9 @@ function _construirNotasDesdeCliente(clienteData) {
         partes.push(''); // Separador
         partes.push(`👶 ${nombre2}`);
 
+        const edad2 = String(clienteData.edad_del_peque_2 || clienteData.fecha_de_nacimiento_2 || '').trim();
+        if (edad2) partes.push(`• Edad: ${edad2}`);
+
         const alergias2 = String(clienteData.alergias_2 || '').trim();
         if (alergias2) partes.push(`• Alergias: ${alergias2}`);
 
@@ -282,6 +289,9 @@ function _construirNotasDesdeCliente(clienteData) {
     if (nombre3) {
         partes.push(''); // Separador
         partes.push(`👶 ${nombre3}`);
+
+        const edad3 = String(clienteData.edad_del_peque_3 || clienteData.fecha_de_nacimiento_3 || '').trim();
+        if (edad3) partes.push(`• Edad: ${edad3}`);
 
         const alergias3 = String(clienteData.alergias_3 || '').trim();
         if (alergias3) partes.push(`• Alergias: ${alergias3}`);

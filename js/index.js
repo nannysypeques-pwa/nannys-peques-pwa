@@ -558,6 +558,10 @@ function abrirModalServicio(s) {
     // --- LÓGICA MEJORADA PARA NOTAS DE PEQUES (PARSING) ---
     const rawNotas = s.notas || '—';
     const containerNotas = document.getElementById('mNotas');
+    const containerEdad = document.getElementById('mEdad')?.parentElement; // Contenedor de la edad global
+
+    // Resetear visibilidad de edad global por defecto
+    if (containerEdad) containerEdad.style.display = 'block';
 
     if (s.notas && (s.notas.includes('👶') || s.notas.includes('•'))) {
         // Modo parseo: Intentar separar por peques
@@ -569,6 +573,9 @@ function abrirModalServicio(s) {
         const bloques = rawNotas.split('👶').filter(b => b.trim().length > 0);
 
         if (bloques.length > 0) {
+            // SI hay info de peques parseada, ocultamos la edad global
+            if (containerEdad) containerEdad.style.display = 'none';
+
             bloques.forEach(bloque => {
                 // Reconstruir el emoji que split quitó
                 const texto = '👶 ' + bloque.trim();
