@@ -2222,8 +2222,10 @@ async function cargarServiciosCliente() {
     msg.textContent = 'Cargando servicios...';
 
     try {
-        const svcs = await api('getServiciosCliente', { email: SESION.email });
-        if (!svcs || svcs.length === 0) {
+        const res = await api('getServiciosCliente', { email: SESION.email });
+        const svcs = Array.isArray(res) ? res : [];
+
+        if (svcs.length === 0) {
             calActual.innerHTML = '<div style="grid-column: 1 / -1; text-align:center; padding: 40px 20px;">' +
                 '<h2 style="color:var(--pink-main); margin-bottom:10px;">✨</h2>' +
                 '<h3 style="margin-bottom:10px;">Aún no hay servicios programados</h3>' +
@@ -2264,57 +2266,62 @@ function renderCalendarioCliente(svcs) {
     });
 
     // Renderizar 14 días (2 semanas)
+    console.log("Renderizando calendario cliente para", svcs.length, "servicios");
     for (let i = 0; i < 14; i++) {
-        const d = new Date(start);
-        d.setDate(start.getDate() + i);
-        const iso = toISO(d);
-        const dow = d.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase();
-        const dom = d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
+        try {
+            const d = new Date(start);
+            d.setDate(start.getDate() + i);
+            const iso = toISO(d);
+            const dow = d.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase();
+            const dom = d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
 
-        const serviciosDia = (map[iso] || []).slice().sort((a, b) => {
-            return (a.hora_inicio || '00:00').localeCompare(b.hora_inicio || '00:00');
-        });
-
-        const dayEl = document.createElement('div');
-        dayEl.className = 'day';
-        if (iso === toISO(hoy)) dayEl.classList.add('today');
-
-        const head = document.createElement('header');
-        head.innerHTML = `<span>${dow}</span><span class="date">${dom}</span>`;
-        dayEl.appendChild(head);
-
-        const body = document.createElement('div');
-        if (serviciosDia.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'no-svc';
-            empty.textContent = '—';
-            body.appendChild(empty);
-        } else {
-            serviciosDia.forEach(s => {
-                const btn = document.createElement('button');
-                // Reusamos las clases de estado si existen
-                const estado = (s.Estado || s.estado || 'pendiente').toLowerCase();
-                let cls = 'svc-pill ' + stateClass(estado);
-
-                btn.className = cls;
-                btn.style.fontSize = '10px';
-                btn.style.padding = '4px 6px';
-                btn.style.marginBottom = '4px';
-
-                // Formato de hora amigable
-                const hora = (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio}` : 'Servicio';
-                btn.textContent = hora;
-                btn.title = `${s.Horario || ''} - Niñera: ${s['Nombre de la niñera'] || 'Por asignar'}`;
-
-                btn.onclick = () => mostrarDetalleServicioCliente(s);
-                body.appendChild(btn);
+            const serviciosDia = (map[iso] || []).slice().sort((a, b) => {
+                const ha = a.hora_inicio || '00:00';
+                const hb = b.hora_inicio || '00:00';
+                return ha.localeCompare(hb);
             });
-        }
-        dayEl.appendChild(body);
 
-        // Decidir en qué contenedor ponerlo
-        if (i < 7) contActual.appendChild(dayEl);
-        else contSiguiente.appendChild(dayEl);
+            const dayEl = document.createElement('div');
+            dayEl.className = 'day';
+            if (iso === toISO(hoy)) dayEl.classList.add('today');
+
+            const head = document.createElement('header');
+            head.innerHTML = `<span>${dow}</span><span class="date">${dom}</span>`;
+            dayEl.appendChild(head);
+
+            const body = document.createElement('div');
+            if (serviciosDia.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'no-svc';
+                empty.textContent = '—';
+                body.appendChild(empty);
+            } else {
+                serviciosDia.forEach(s => {
+                    const btn = document.createElement('button');
+                    // Reusamos las clases de estado si existen
+                    const estado = (s.Estado || s.estado || 'pendiente').toLowerCase();
+                    btn.className = 'svc-pill ' + (typeof stateClass === 'function' ? stateClass(estado) : 'pending');
+                    btn.style.fontSize = '10px';
+                    btn.style.padding = '4px 6px';
+                    btn.style.marginBottom = '4px';
+
+                    // Formato de hora amigable
+                    const hora = s.hora_inicio || 'Servicio';
+                    btn.textContent = hora;
+                    btn.title = `${s.Horario || ''} - Niñera: ${s['Nombre de la niñera'] || 'Por asignar'}`;
+
+                    btn.onclick = () => mostrarDetalleServicioCliente(s);
+                    body.appendChild(btn);
+                });
+            }
+            dayEl.appendChild(body);
+
+            // Decidir en qué contenedor ponerlo
+            if (i < 7) contActual.appendChild(dayEl);
+            else contSiguiente.appendChild(dayEl);
+        } catch (err) {
+            console.error("Error en render día " + i, err);
+        }
     }
 }
 window.renderCalendarioCliente = renderCalendarioCliente;
