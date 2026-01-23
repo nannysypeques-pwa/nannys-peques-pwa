@@ -42,6 +42,9 @@ function doPost(e) {
             case 'updatePerfilCliente':
                 result = updatePerfilCliente(email, payload);
                 break;
+            case 'updatePerfilNinera':
+                result = updatePerfilNinera(email, payload);
+                break;
             case 'validarRegistroCliente':
                 result = validarRegistroCliente(email);
                 break;

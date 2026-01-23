@@ -493,13 +493,23 @@ function renderCalendario2Semanas() {
             body.appendChild(empty);
         } else {
             serviciosVisibles.forEach(s => {
-                const label = (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio}–${s.hora_fin}` : (s.hora_inicio || s.hora_fin || 'Servicio');
-                const btn = document.createElement('button');
-                let cls = 'svc-pill ' + stateClass(s.estado);
-                if (s.empalmado) cls += ' conflict';
+                let nombreCliente = s.cliente || 'Cliente';
+                const partes = nombreCliente.split(' ');
+                if (partes.length >= 2) {
+                    nombreCliente = partes[0] + ' ' + partes[1];
+                } else if (partes.length === 1) {
+                    nombreCliente = partes[0];
+                }
 
-                btn.className = cls;
-                btn.textContent = label;
+                // Add name to label with a separator or line break. JS textContent doesn't handle BR, 
+                // but we can use innerHTML or just text. The pill is a button.
+                // The pill uses flex/block layout? styles.css says .svc-pill is block usually.
+                // Let's use innerHTML to style it a bit or just append text.
+                // The user request said "Show client name... below the time".
+                // I will use innerHTML to add a div/span.
+                btn.innerHTML = `<span style="display:block; font-size:13px; font-weight:700;">${label}</span>
+                                 <span style="display:block; font-size:12px; margin-top:2px; opacity:0.9;">${nombreCliente}</span>`;
+                // btn.textContent = label; <-- Removing this
                 btn.onclick = () => abrirModalServicio(s);
                 body.appendChild(btn);
             });
@@ -1244,7 +1254,130 @@ async function cargarPerfil() {
             const saludo = document.getElementById('saludo');
             if (saludo) saludo.innerHTML = `<b>¡Hola, ${SESION.nombre || SESION.email}!</b>`;
         }
+
+        // --- LÓGICA ROL NIÑERA ---
+        if (!SESION.cliente) {
+            // Ocultar sección de peques y botón editar
+            const secPeques = document.getElementById('perfil-peques-container');
+            if (secPeques) secPeques.style.display = 'none';
+
+            const btns = document.querySelectorAll('.profile-actions button');
+            btns.forEach(b => {
+                if (b.textContent && b.textContent.includes('Editar')) b.style.display = 'none';
+            });
+
+            // Poblar campos extra de niñera (desde Usuarios)
+            if (p) {
+                document.getElementById('perfil_direccion').textContent = p.direccion || '—';
+                document.getElementById('perfil_emergencia').textContent = p.emergencia || '—';
+                const elUbic = document.getElementById('perfil_ubicacion');
+                if (elUbic) {
+                    if (p.ubicacion && p.ubicacion.startsWith('http')) {
+                        elUbic.href = p.ubicacion;
+                        elUbic.style.display = 'inline-block';
+                        elUbic.textContent = 'Ver en mapa 📍';
+                    } else {
+                        elUbic.removeAttribute('href');
+                        elUbic.textContent = p.ubicacion || '—';
+                    }
+                }
+            }
+
+            // Validar faltantes
+            setTimeout(() => verificarDatosFaltantesNinera(p), 1000);
+        }
     } catch (err) { console.error('Error cargarPerfil:', err?.message || err); }
+}
+
+function verificarDatosFaltantesNinera(p) {
+    if (!p) return;
+    const faltantes = [];
+    if (!p.direccion || p.direccion.length < 5) faltantes.push('Dirección completa');
+    if (!p.ubicacion || p.ubicacion.length < 5) faltantes.push('Link de ubicación (Google Maps)');
+    if (!p.emergencia || p.emergencia.length < 5) faltantes.push('Número de emergencia');
+
+    if (faltantes.length > 0) {
+        mostrarModalFaltantesNinera(p, faltantes);
+    }
+}
+
+function mostrarModalFaltantesNinera(p, lista) {
+    // Crear el modal dinámicamente si no existe
+    let modal = document.getElementById('modal-faltantes-ninera');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modal-faltantes-ninera';
+        modal.className = 'modal-backdrop';
+        modal.style.display = 'flex';
+        modal.innerHTML = `
+            <div class="modal-card" style="max-width:400px;">
+                <h3 style="color:var(--pink-main); text-align:center;">¡Completa tu perfil! 📋</h3>
+                <p style="text-align:center; color:#555;">Para poder asignarte servicios, necesitamos que completes la siguiente información:</p>
+                
+                <div style="background:#FFF5F9; border-left:4px solid var(--pink-main); padding:10px; margin-bottom:15px;">
+                    <ul style="margin:0; padding-left:20px; color:#BE123C; font-size:14px; font-weight:600;">
+                        ${lista.map(item => `<li>${item}</li>`).join('')}
+                    </ul>
+                </div>
+                
+                <form id="form-faltantes-ninera">
+                    <div class="form-group">
+                       <label>Dirección completa</label>
+                       <input id="iny_direccion" type="text" placeholder="Calle, número, colonia..." value="${p.direccion || ''}">
+                    </div>
+                    <div class="form-group">
+                       <label>Link de Ubicación (Google Maps)</label>
+                       <input id="iny_ubicacion" type="text" placeholder="https://..." value="${p.ubicacion || ''}">
+                    </div>
+                    <div class="form-group">
+                       <label>Número de Emergencia</label>
+                       <input id="iny_emergencia" type="text" placeholder="Nombre y Teléfono" value="${p.emergencia || ''}">
+                    </div>
+                    <button type="button" class="btn-primary" onclick="guardarFaltantesNinera()">Guardar Información</button>
+                    <p id="msg-faltantes" class="muted" style="text-align:center; margin-top:10px;"></p>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        modal.style.display = 'flex';
+    }
+}
+
+async function guardarFaltantesNinera() {
+    const direccion = document.getElementById('iny_direccion').value.trim();
+    const ubicacion = document.getElementById('iny_ubicacion').value.trim();
+    const emergencia = document.getElementById('iny_emergencia').value.trim();
+    const msg = document.getElementById('msg-faltantes');
+
+    if (!direccion || !ubicacion || !emergencia) {
+        msg.innerHTML = '<span class="err">Por favor completa todos los campos.</span>';
+        return;
+    }
+
+    const btn = document.querySelector('#form-faltantes-ninera button');
+    feedbackBotonInmediato(btn, 'Guardando...');
+
+    try {
+        await api('updatePerfilNinera', {
+            email: SESION.email,
+            direccion,
+            ubicacion,
+            emergencia,
+            telefono: SESION.telefono // mantener telefono si existe, o agregarlo si se pidiera
+        });
+
+        mostrarToast('¡Información guardada correctamente!');
+        document.getElementById('modal-faltantes-ninera').style.display = 'none';
+
+        // Recargar perfil para ver cambios reflejados
+        cargarPerfil();
+
+    } catch (e) {
+        console.error(e);
+        msg.innerHTML = '<span class="err">Error al guardar: ' + e.message + '</span>';
+        restaurarBoton(btn);
+    }
 }
 
 /* =========================================
