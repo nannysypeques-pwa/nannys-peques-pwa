@@ -615,7 +615,7 @@ function abrirModalServicio(s) {
                 }
 
                 let headerHtml = `
-                <div class="peque-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                <div class="peque-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                   <div style="display:flex; gap:10px; align-items:center;">
                     <span class="peque-icon" style="font-size:24px; background:white; border-radius:50%; padding:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">👶</span>
                     <div class="peque-meta">

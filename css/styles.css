@@ -1,6 +1,6 @@
-:root {
+﻿:root {
     /* =========================
-     🎨 PALETA MODERN GLASS
+     ðŸŽ¨ PALETA MODERN GLASS
      ========================= */
 
     /* PRIMARIOS */
@@ -91,7 +91,7 @@ a {
 }
 
 /* =========================
-   🔮 GLASS COMPONENTS
+   ðŸ”® GLASS COMPONENTS
    ========================= */
 
 /* Glass Card */
@@ -132,7 +132,7 @@ button:active {
 .btn-primary,
 .btn-pink {
     background: var(--pink-main);
-    /* Cambio de gradiente a sólido */
+    /* Cambio de gradiente a sÃ³lido */
     color: white;
     padding: 14px 24px;
     border-radius: var(--radius-full);
@@ -227,14 +227,14 @@ textarea:focus {
     margin-bottom: 32px;
 }
 
-/* Esconder el título default del body si existe */
+/* Esconder el tÃ­tulo default del body si existe */
 body>h2:first-of-type {
     display: none;
 }
 
 
 /* =========================
-   NAVIGATION (FLOATING ISLAND) 🏝️
+   NAVIGATION (FLOATING ISLAND) ðŸï¸
    ========================= */
 .bottom-nav {
     position: fixed;
@@ -412,7 +412,7 @@ body>h2:first-of-type {
     animation: pulse 2s infinite;
 }
 
-/* Pills de Servicio para Cliente - Más grandes y legibles */
+/* Pills de Servicio para Cliente - MÃ¡s grandes y legibles */
 .svc-pill-cliente {
     padding: 10px 12px;
     min-height: 60px;
@@ -528,7 +528,7 @@ body>h2:first-of-type {
     transform: translateX(-50%) translateY(-10px);
 }
 
-/* Supervisión Specifics */
+/* SupervisiÃ³n Specifics */
 .pl-item {
     background: white;
     border-left: 4px solid var(--success-text);
@@ -555,7 +555,7 @@ body>h2:first-of-type {
 @media (max-width: 768px) {
     .calendar {
         grid-template-columns: 1fr;
-        /* Lista en móvil */
+        /* Lista en mÃ³vil */
     }
 
     .day {
@@ -587,7 +587,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 .form-group label {
     font-weight: 700;
     color: #374151;
-    /* Gris más oscuro para contraste */
+    /* Gris mÃ¡s oscuro para contraste */
     margin-bottom: 5px;
     display: block;
 }
@@ -595,7 +595,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 .form-group input,
 .form-group textarea {
     border: 2px solid #D1D5DB;
-    /* Borde más grueso y visible */
+    /* Borde mÃ¡s grueso y visible */
     padding: 12px;
     font-size: 16px;
     background: #FFFFFF;
@@ -885,14 +885,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 }
 
 /* Child Card */
-.child-info-card {
-    background: #FFF5F9;
-    /* very light pink */
-    border-left: 4px solid var(--pink-main);
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 12px;
-}
+
 
 .child-info-row {
     display: flex;
