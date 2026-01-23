@@ -516,6 +516,7 @@ function abrirModalServicio(s) {
     document.getElementById('mFecha').textContent = s.fecha || '—';
     document.getElementById('mHorario').textContent = [s.hora_inicio || '', s.hora_fin || ''].filter(Boolean).join(' – ') || '—';
     document.getElementById('mContacto').textContent = s.numero_contacto || '—';
+    document.getElementById('mEmergencia').textContent = s.numero_de_emergencia || '—';
     document.getElementById('mDireccion').textContent = s.direccion || '—';
 
     const u = document.getElementById('mUbicacion');

@@ -1481,9 +1481,8 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante) {
             if (!String(s.numero_contacto || '').trim()) {
                 s.numero_contacto = clienteData.telefono || s.numero_contacto;
             }
-            if (!String(s.numero_de_emergencia || '').trim()) {
-                s.numero_de_emergencia = clienteData.no_de_emergencia || s.numero_de_emergencia;
-            }
+            // Siempre intentar poner el de emergencia del cliente (sin condición, como solicitado)
+            s.numero_de_emergencia = clienteData.no_de_emergencia || s.numero_de_emergencia;
 
             // Fallback para edad
             if (!String(s.edad_nino || '').trim()) {
