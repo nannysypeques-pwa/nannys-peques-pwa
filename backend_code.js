@@ -1296,6 +1296,7 @@ function _expandirServiciosSemanales_(sh) {
         const cliente = String(row[colIdx['cliente']] || '').trim();
         const emailServicio = colIdx['email'] != null ? String(row[colIdx['email']] || '').trim().toLowerCase() : '';
         const contacto = String(row[colIdx['numero de contacto']] || '').trim();
+        const emergencia = colIdx['numero de emergencia'] != null ? String(row[colIdx['numero de emergencia']] || '').trim() : '';
         const direccion = String(row[colIdx['direccion']] || '').trim();
         const ubicacion = String(row[colIdx['ubicacion (link)']] || '').trim();
         const cuota = colIdx['cuota nanny'] != null ? String(row[colIdx['cuota nanny']] || '').trim() : '';
@@ -1357,7 +1358,8 @@ function _expandirServiciosSemanales_(sh) {
                 hora_fin: hf,
                 cliente,
                 email: emailServicio,
-                numero_contacto: contacto,
+                numero_de_contacto: contacto,
+                numero_de_emergencia: emergencia,
                 direccion,
                 ubicacion_link: ubicacion,
                 nombre_ninera: nombreNinera,
