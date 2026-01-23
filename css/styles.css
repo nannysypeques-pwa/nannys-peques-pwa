@@ -400,12 +400,12 @@ body>h2:first-of-type {
 }
 
 .svc-pill.inprogress {
-    background: #DBEAFE;
-    /* Blue 100 */
-    color: #1E40AF;
-    /* Blue 800 */
-    border-left-color: #3B82F6;
-    /* Blue 500 */
+    background: #E0F7FA;
+    /* Turquoise Light */
+    color: #0E7490;
+    /* Darker Turquoise */
+    border-left-color: #3BB6C4;
+    /* Brand Turquoise */
 }
 
 .svc-pill.completed {
