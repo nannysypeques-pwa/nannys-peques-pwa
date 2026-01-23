@@ -224,6 +224,76 @@ function _toHM(v) {
 }
 function _nombrePorEmail(email) { const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) return ''; return String(sh.getRange(fila, 2).getValue() || '').trim(); }
 
+/**
+ * Construye notas detalladas desde los datos del cliente
+ * Incluye información de hasta 3 peques y mascotas
+ */
+function _construirNotasDesdeCliente(clienteData) {
+    const partes = [];
+
+    // Peque 1
+    const nombre1 = String(clienteData.nombre_del_peque || '').trim();
+    if (nombre1) {
+        partes.push(`👶 ${nombre1}`);
+
+        const alergias1 = String(clienteData.alergias || '').trim();
+        if (alergias1) partes.push(`• Alergias: ${alergias1}`);
+
+        const condicion1 = String(clienteData.condicion_medica_o_especificaciones_adicionales || '').trim();
+        if (condicion1) partes.push(`• Condición médica: ${condicion1}`);
+
+        const salud1 = String(clienteData.estado_de_salud_actual || '').trim();
+        if (salud1) partes.push(`• Estado de salud: ${salud1}`);
+
+        const pref1 = String(clienteData.preferencias_o_actividades_favoritas || '').trim();
+        if (pref1) partes.push(`• Preferencias: ${pref1}`);
+
+        // Mascotas al final del primer peque
+        const mascotas = String(clienteData.no_de_mascotas || '').trim();
+        if (mascotas) partes.push(`🐾 Mascotas: ${mascotas}`);
+    }
+
+    // Peque 2
+    const nombre2 = String(clienteData.nombre_del_peque_2 || '').trim();
+    if (nombre2) {
+        partes.push(''); // línea en blanco
+        partes.push(`👶 ${nombre2}`);
+
+        const alergias2 = String(clienteData.alergias_2 || '').trim();
+        if (alergias2) partes.push(`• Alergias: ${alergias2}`);
+
+        const condicion2 = String(clienteData.condicion_medica_o_especificaciones_adicionales_2 || '').trim();
+        if (condicion2) partes.push(`• Condición médica: ${condicion2}`);
+
+        const salud2 = String(clienteData.estado_de_salud_actual_2 || '').trim();
+        if (salud2) partes.push(`• Estado de salud: ${salud2}`);
+
+        const pref2 = String(clienteData.preferencias_o_actividades_favoritas_2 || '').trim();
+        if (pref2) partes.push(`• Preferencias: ${pref2}`);
+    }
+
+    // Peque 3
+    const nombre3 = String(clienteData.nombre_del_peque_3 || '').trim();
+    if (nombre3) {
+        partes.push(''); // línea en blanco
+        partes.push(`👶 ${nombre3}`);
+
+        const alergias3 = String(clienteData.alergias_3 || '').trim();
+        if (alergias3) partes.push(`• Alergias: ${alergias3}`);
+
+        const condicion3 = String(clienteData.condicion_medica_o_especificaciones_adicionales_3 || '').trim();
+        if (condicion3) partes.push(`• Condición médica: ${condicion3}`);
+
+        const salud3 = String(clienteData.estado_de_salud_actual_3 || '').trim();
+        if (salud3) partes.push(`• Estado de salud: ${salud3}`);
+
+        const pref3 = String(clienteData.preferencias_o_actividades_favoritas_3 || '').trim();
+        if (pref3) partes.push(`• Preferencias: ${pref3}`);
+    }
+
+    return partes.length > 0 ? partes.join('\n') : '';
+}
+
 
 
 
@@ -1369,36 +1439,57 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante) {
         s.fecha <= limISO
     );
 
-    // Obtener datos de clientes para fallback de dirección/ubicación
+    // Obtener datos de clientes para fallback completo
     const shClientes = _hoja(NOMBRE_HOJA_CLIENTES);
     const dataClientes = shClientes.getDataRange().getValues();
     const headersC = dataClientes[0].map(h => _norm(h));
 
-    const idxEmailC = headersC.indexOf('email');
-    const idxDireccionC = headersC.indexOf('direccion');
-    const idxUbicacionC = headersC.indexOf('ubicacion');
-
-    // Crear mapa de clientes por email
+    // Crear mapa de clientes por email con todos sus datos
     const mapaClientes = {};
     for (let i = 1; i < dataClientes.length; i++) {
-        const emailCliente = String(dataClientes[i][idxEmailC] || '').trim().toLowerCase();
+        const emailCliente = String(dataClientes[i][headersC.indexOf('email')] || '').trim().toLowerCase();
         if (emailCliente) {
-            mapaClientes[emailCliente] = {
-                direccion: String(dataClientes[i][idxDireccionC] || '').trim(),
-                ubicacion: String(dataClientes[i][idxUbicacionC] || '').trim()
-            };
+            // Construir objeto completo con todos los datos del cliente
+            const clienteData = {};
+            headersC.forEach((header, idx) => {
+                clienteData[header] = String(dataClientes[i][idx] || '').trim();
+            });
+            mapaClientes[emailCliente] = clienteData;
         }
     }
 
-    // Enriquecer servicios con fallback
+    // Enriquecer servicios con fallback completo
     out.forEach(s => {
         const emailServicio = String(s.email || '').trim().toLowerCase();
-        const direccionServicio = String(s.direccion || '').trim();
-        const ubicacionServicio = String(s.ubicacion_link || '').trim();
 
         if (emailServicio && mapaClientes[emailServicio]) {
-            if (!direccionServicio) s.direccion = mapaClientes[emailServicio].direccion || s.direccion;
-            if (!ubicacionServicio) s.ubicacion_link = mapaClientes[emailServicio].ubicacion || s.ubicacion_link;
+            const clienteData = mapaClientes[emailServicio];
+
+            // Fallback para dirección y ubicación
+            if (!String(s.direccion || '').trim()) {
+                s.direccion = clienteData.direccion || s.direccion;
+            }
+            if (!String(s.ubicacion_link || '').trim()) {
+                s.ubicacion_link = clienteData.ubicacion || s.ubicacion_link;
+            }
+
+            // Fallback para contacto y emergencia
+            if (!String(s.numero_de_contacto || '').trim()) {
+                s.numero_de_contacto = clienteData.telefono || s.numero_de_contacto;
+            }
+            if (!String(s.numero_de_emergencia || '').trim()) {
+                s.numero_de_emergencia = clienteData.no_de_emergencia || s.numero_de_emergencia;
+            }
+
+            // Fallback para edad
+            if (!String(s.edad_nino || '').trim()) {
+                s.edad_nino = clienteData.edad_del_peque || s.edad_nino;
+            }
+
+            // Fallback para notas (construir desde datos del cliente)
+            if (!String(s.notas || '').trim()) {
+                s.notas = _construirNotasDesdeCliente(clienteData) || s.notas;
+            }
         }
     });
 
@@ -4240,23 +4331,22 @@ function getServiciosCliente(email) {
 
     const hoyISO = _toISODate(new Date());
 
-    // Obtener datos del cliente para fallback de dirección/ubicación
+    // Obtener datos del cliente para fallback completo
     const shClientes = _hoja(NOMBRE_HOJA_CLIENTES);
     const dataClientes = shClientes.getDataRange().getValues();
     const headersC = dataClientes[0].map(h => _norm(h));
 
-    const idxEmailC = headersC.indexOf('email');
-    const idxDireccionC = headersC.indexOf('direccion');
-    const idxUbicacionC = headersC.indexOf('ubicacion');
-
-    let clienteDireccion = '';
-    let clienteUbicacion = '';
+    // Crear objeto con datos del cliente para fallback
+    let clienteData = null;
 
     // Buscar datos del cliente
     for (let i = 1; i < dataClientes.length; i++) {
-        if (String(dataClientes[i][idxEmailC] || '').trim().toLowerCase() === email) {
-            clienteDireccion = String(dataClientes[i][idxDireccionC] || '').trim();
-            clienteUbicacion = String(dataClientes[i][idxUbicacionC] || '').trim();
+        if (String(dataClientes[i][headersC.indexOf('email')] || '').trim().toLowerCase() === email) {
+            // Construir objeto con todos los datos del cliente
+            clienteData = {};
+            headersC.forEach((header, idx) => {
+                clienteData[header] = String(dataClientes[i][idx] || '').trim();
+            });
             break;
         }
     }
@@ -4267,12 +4357,21 @@ function getServiciosCliente(email) {
         // Filtro por fecha (solo hoy en adelante para el portal familia)
         return s.fecha >= hoyISO;
     }).map(s => {
-        // Aplicar lógica de fallback para dirección y ubicación
+        // Aplicar lógica de fallback para todos los campos
         const direccionServicio = String(s.direccion || '').trim();
         const ubicacionServicio = String(s.ubicacion_link || '').trim();
+        const contactoServicio = String(s.numero_de_contacto || '').trim();
+        const emergenciaServicio = String(s.numero_de_emergencia || '').trim();
+        const edadServicio = String(s.edad_nino || '').trim();
+        const notasServicio = String(s.notas || '').trim();
 
-        const direccionFinal = direccionServicio || clienteDireccion || '—';
-        const ubicacionFinal = ubicacionServicio || clienteUbicacion || '';
+        // Valores finales con fallback
+        const direccionFinal = direccionServicio || (clienteData ? clienteData.direccion : '') || '—';
+        const ubicacionFinal = ubicacionServicio || (clienteData ? clienteData.ubicacion : '') || '';
+        const contactoFinal = contactoServicio || (clienteData ? clienteData.telefono : '') || '—';
+        const emergenciaFinal = emergenciaServicio || (clienteData ? clienteData.no_de_emergencia : '') || '—';
+        const edadFinal = edadServicio || (clienteData ? clienteData.edad_del_peque : '') || '—';
+        const notasFinal = notasServicio || (clienteData ? _construirNotasDesdeCliente(clienteData) : '') || '—';
 
         // Mapear al formato que espera el frontend del cliente (PascalCase y nombres específicos)
         return {
@@ -4283,8 +4382,10 @@ function getServiciosCliente(email) {
             'Estado': s.estado || 'Programado',
             'Direccion': direccionFinal,
             'Ubicacion': ubicacionFinal,
-            'Edad del niño': s.edad_nino || '—',
-            'Notas': s.notas || '—'
+            'Contacto': contactoFinal,
+            'Emergencia': emergenciaFinal,
+            'Edad del niño': edadFinal,
+            'Notas': notasFinal
         };
     }).sort((a, b) => (a.fecha + ' ' + a.hora_inicio).localeCompare(b.fecha + ' ' + b.hora_inicio));
 }
