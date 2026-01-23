@@ -382,27 +382,39 @@ body>h2:first-of-type {
 
 /* Variantes de Pills */
 .svc-pill.pending {
-    background: #FEF2F2;
-    color: #BE123C;
-    border-left-color: #F43F5E;
+    background: #FEF9C3;
+    /* Yellow 100 */
+    color: #854D0E;
+    /* Yellow 800 */
+    border-left-color: #EAB308;
+    /* Yellow 500 */
 }
 
 .svc-pill.confirmed {
-    background: #ECFEFF;
-    color: #0E7490;
-    border-left-color: #06B6D4;
+    background: #DCFCE7;
+    /* Green 100 */
+    color: #166534;
+    /* Green 800 */
+    border-left-color: #22C55E;
+    /* Green 500 */
 }
 
 .svc-pill.inprogress {
-    background: #EFF6FF;
-    color: #1D4ED8;
+    background: #DBEAFE;
+    /* Blue 100 */
+    color: #1E40AF;
+    /* Blue 800 */
     border-left-color: #3B82F6;
+    /* Blue 500 */
 }
 
 .svc-pill.completed {
     background: #F3F4F6;
+    /* Gray 100 */
     color: #374151;
+    /* Gray 700 */
     border-left-color: #9CA3AF;
+    /* Gray 400 */
 }
 
 .svc-pill.conflict {
@@ -895,7 +907,11 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-size: 14px;
 }
 
-.child-notes { font-size: 13px; color: #4b5563; line-height: 1.5; }
+.child-notes {
+    font-size: 13px;
+    color: #4b5563;
+    line-height: 1.5;
+}
 
 /* Financial */
 .financial-box {
@@ -927,4 +943,3 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-size: 13px;
     text-align: center;
 }
-
