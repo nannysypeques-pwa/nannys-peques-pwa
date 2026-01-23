@@ -493,6 +493,13 @@ function renderCalendario2Semanas() {
             body.appendChild(empty);
         } else {
             serviciosVisibles.forEach(s => {
+                const label = (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio}–${s.hora_fin}` : (s.hora_inicio || s.hora_fin || 'Servicio');
+                const btn = document.createElement('button');
+                let cls = 'svc-pill ' + stateClass(s.estado);
+                if (s.empalmado) cls += ' conflict';
+
+                btn.className = cls;
+
                 let nombreCliente = s.cliente || 'Cliente';
                 const partes = nombreCliente.split(' ');
                 if (partes.length >= 2) {
