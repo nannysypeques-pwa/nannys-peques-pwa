@@ -573,8 +573,13 @@ function abrirModalServicio(s) {
         const bloques = rawNotas.split('👶').filter(b => b.trim().length > 0);
 
         if (bloques.length > 0) {
-            // SI hay info de peques parseada, ocultamos la edad global
+            // SI hay info de peques parseada, ocultamos la edad global y el label "Notas:"
             if (containerEdad) containerEdad.style.display = 'none';
+
+            const labelNotas = containerNotas.previousElementSibling; // El div con 📝 Notas:
+            if (labelNotas && labelNotas.textContent.includes('Notas:')) {
+                labelNotas.style.display = 'none';
+            }
 
             bloques.forEach(bloque => {
                 // Reconstruir el emoji que split quitó
