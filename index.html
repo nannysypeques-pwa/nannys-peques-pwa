@@ -652,19 +652,69 @@
 
   <!-- MODAL Detalle -->
   <div id="modalBackdrop" class="modal-backdrop" style="display:none;">
-    <div class="modal-card">
-      <h4 id="mCliente">Detalle del servicio</h4>
-      <div><b>Fecha:</b> <span id="mFecha">—</span></div>
-      <div><b>Horario:</b> <span id="mHorario">—</span></div>
-      <div><b>Número de contacto:</b> <span id="mContacto">—</span></div>
-      <div><b>No. de emergencia:</b> <span id="mEmergencia">—</span></div>
-      <div><b>Dirección:</b> <span id="mDireccion">—</span></div>
-      <div><b>Ubicación:</b> <span id="mUbicacion">—</span></div>
-      <div><b>Edad del niño:</b> <span id="mEdad">—</span></div>
-      <div><b>Cuota nanny:</b> <span id="mCuota">—</span></div>
-      <div><b>Notas:</b> <span id="mNotas">—</span></div>
-      <div id="mMsg" class="muted" style="margin-top:6px;"></div>
-      <div class="actions" style="margin-top:10px;"></div>
+    <div class="modal-card service-premium-modal">
+      <div class="modal-header-gradient">
+        <h3 id="mCliente">Detalle del servicio</h3>
+        <span id="mFecha" class="modal-subtitle">—</span>
+      </div>
+
+      <div class="modal-body-scroll">
+        <!-- Section: Time -->
+        <div class="info-section">
+          <span class="section-label">Horario</span>
+          <div class="info-box">
+            <label>⏰ Horario del servicio</label>
+            <div id="mHorario" class="value highlight">—</div>
+          </div>
+        </div>
+
+        <!-- Section: Contact (Grid) -->
+        <div class="info-section">
+          <span class="section-label">Contacto y Ubicación</span>
+          <div class="modal-grid-2">
+            <div class="info-box">
+              <label>📞 Contacto</label>
+              <div id="mContacto" class="value">—</div>
+            </div>
+            <div class="info-box">
+              <label>🚨 Emergencia</label>
+              <div id="mEmergencia" class="value emergency">—</div>
+            </div>
+            <div class="info-box full">
+              <label>📍 Dirección</label>
+              <div id="mDireccion" class="value">—</div>
+            </div>
+            <div class="info-box full">
+              <label>🗺️ Ubicación</label>
+              <div id="mUbicacion" class="value">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Child Info -->
+        <div class="info-section">
+          <span class="section-label">Información del Peque</span>
+          <div class="child-info-card">
+            <div class="child-info-row">
+              <span style="font-weight:700; color:#db2777;">👶 Edad del niño/a:</span>
+              <span id="mEdad" style="font-weight:600;">—</span>
+            </div>
+            <div class="child-notes">
+              <div style="font-weight:700; margin-bottom:4px;">📝 Notas:</div>
+              <div id="mNotas">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section: Financial -->
+        <div class="financial-box">
+          Cuota Nanny: <b id="mCuota">—</b>
+        </div>
+
+        <div id="mMsg" class="muted"></div>
+      </div>
+
+      <div class="actions modal-footer" style="margin-top:0;"></div>
     </div>
   </div>
 
