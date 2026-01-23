@@ -4397,9 +4397,10 @@ function getServiciosCliente(email) {
 }
 
 // -----------------------------------------
+// -----------------------------------------
 function obtenerPerfilCompleto(email) {
     email = String(email || '').trim().toLowerCase();
-    
+
     // 1. Revisar si es CLIENTE
     if (esCliente(email)) {
         return getPerfilCliente(email);
@@ -4426,7 +4427,7 @@ function obtenerPerfilCompleto(email) {
         telefono: getVal('telefono'),
         direccion: getVal('direccion base'),
         ubicacion: getVal('ubicacion'),
-        emergencia: getVal('no. emergencia'), 
+        emergencia: getVal('no. emergencia'),
         imagen: getVal('imagen')
     };
 }
@@ -4439,7 +4440,7 @@ function updatePerfilNinera(email, payload) {
     if (fila === -1) throw new Error('Usuario no encontrado');
 
     const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => _norm(h));
-    
+
     const setVal = (colName, val) => {
         let idx = headers.indexOf(_norm(colName));
         if (idx !== -1) {
