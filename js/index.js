@@ -585,35 +585,59 @@ function abrirModalServicio(s) {
                 const nombreRow = lineas[0].replace('👶', '').trim(); // Nombre
 
                 const card = document.createElement('div');
+                card.className = 'peque-profile-card';
                 card.style.background = '#FFF5F9';
                 card.style.borderLeft = '4px solid var(--pink-main)';
-                card.style.borderRadius = '8px';
+                card.style.borderRadius = '12px';
                 card.style.padding = '12px 16px';
-                card.style.marginBottom = '12px';
+                card.style.marginBottom = '15px';
+                card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
 
-                let htmlInterno = `<div style="font-weight:700; color:var(--pink-main); margin-bottom:6px; font-size:15px;">👶 ${nombreRow}</div>`;
+                // Extraer datos clave para el header (Edad)
+                let edad = '—';
+                const infoRestante = [];
 
-                // Procesar el resto de líneas (Campos con •)
                 for (let i = 1; i < lineas.length; i++) {
                     const l = lineas[i];
+                    if (l.includes('Edad:')) {
+                        // Formato esperado: "• Edad: XX años..."
+                        const parts = l.split(':');
+                        if (parts.length > 1) edad = parts[1].trim();
+                        continue;
+                    }
+                    if (l.includes('👶') && i === 0) continue;
+                    infoRestante.push(l);
+                }
+
+                let headerHtml = `
+                <div class="peque-header" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                  <div style="display:flex; gap:10px; align-items:center;">
+                    <span class="peque-icon" style="font-size:24px; background:white; border-radius:50%; padding:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">👶</span>
+                    <div class="peque-meta">
+                      <div class="peque-name" style="font-weight:700; font-size:16px; color:#1f2937;">${nombreRow}</div>
+                    </div>
+                  </div>
+                  <span class="peque-age-badge" style="background:#fce7f3; color:#db2777; font-weight:700; font-size:12px; padding:4px 10px; border-radius:999px;">${edad}</span>
+                </div>`;
+
+                let detailsHtml = `<div class="peque-details">`;
+                infoRestante.forEach(l => {
                     if (l.startsWith('•') || l.startsWith('🐾')) {
-                        // Formato: • Clave: Valor
                         const partes = l.split(':');
                         const label = partes[0].replace(/[•🐾]/g, '').trim();
                         const val = partes.slice(1).join(':').trim();
-
                         if (l.startsWith('🐾')) {
-                            htmlInterno += `<div style="margin-top:8px; font-weight:600; font-size:13px; color:#4b5563;">🐾 ${label}: <span style="font-weight:400;">${val}</span></div>`;
+                            detailsHtml += `<div style="margin-top:6px; font-weight:600; font-size:13px; color:#4b5563;">🐾 ${label}: <span style="font-weight:400;">${val}</span></div>`;
                         } else {
-                            htmlInterno += `<div style="font-size:13px; color:#374151; margin-bottom:2px;"><b>${label}:</b> ${val}</div>`;
+                            detailsHtml += `<div style="font-size:13px; color:#374151; margin-bottom:3px;"><b style="color:#4b5563;">${label}:</b> ${val}</div>`;
                         }
                     } else {
-                        // Texto suelto (notas manuales adicionales)
-                        htmlInterno += `<div style="font-size:13px; color:#6b7280; font-style:italic; margin-top:2px;">${l}</div>`;
+                        detailsHtml += `<div style="font-size:13px; color:#6b7280; margin-top:2px;">${l}</div>`;
                     }
-                }
+                });
+                detailsHtml += `</div>`;
 
-                card.innerHTML = htmlInterno;
+                card.innerHTML = headerHtml + detailsHtml;
                 containerNotas.appendChild(card);
             });
         } else {
