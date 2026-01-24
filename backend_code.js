@@ -4402,19 +4402,23 @@ function obtenerPerfilCompleto(email) {
         const headersU = shU.getRange(1, 1, 1, shU.getLastColumn()).getValues()[0].map(h => _norm(h));
         const valuesU = shU.getRange(filaU, 1, 1, shU.getLastColumn()).getValues()[0];
 
-        const getStaffVal = (colName) => {
-            const idx = headersU.indexOf(_norm(colName));
-            return idx >= 0 ? valuesU[idx] : '';
+        const getStaffVal = (aliases) => {
+            if (typeof aliases === 'string') aliases = [aliases];
+            for (let a of aliases) {
+                const idx = headersU.indexOf(_norm(a));
+                if (idx >= 0) return valuesU[idx];
+            }
+            return '';
         };
 
         return {
             isNanny: true,
             email: email,
             nombre: getStaffVal('nombre'),
-            telefono: getStaffVal('telefono'),
-            direccion: getStaffVal('direccion base'),
-            ubicacion: getStaffVal('ubicacion'),
-            emergencia: getStaffVal('no. emergencia'),
+            telefono: getStaffVal(['teléfono', 'telefono']),
+            direccion: getStaffVal(['dirección', 'direccion', 'direccion base']),
+            ubicacion: getStaffVal(['ubicación', 'ubicacion']),
+            emergencia: getStaffVal(['no. de emergencia', 'no. emergencia', 'emergencia']),
             imagen: getStaffVal('imagen')
         };
     }
