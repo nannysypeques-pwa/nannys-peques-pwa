@@ -3812,7 +3812,7 @@ function guardarObservacionesSupervision(payload, email) {
     }
 
     if (!payload || !payload.fila) {
-        throw new Error('Planeació³n no identificada.');
+        throw new Error('Planeación no identificada.');
     }
 
     const sh = _hoja('Planeaciones_Neuronanny');
@@ -3834,7 +3834,7 @@ function guardarObservacionesSupervision(payload, email) {
     let idxRevision = headers.indexOf('fecha revision');
     if (idxRevision === -1) {
         sh.insertColumnAfter(sh.getLastColumn());
-        sh.getRange(1, sh.getLastColumn()).setValue('fecha revisió³n');
+        sh.getRange(1, sh.getLastColumn()).setValue('fecha revisión');
         idxRevision = sh.getLastColumn() - 1;
     }
 
@@ -3842,7 +3842,7 @@ function guardarObservacionesSupervision(payload, email) {
     let idxCorreccion = headers.indexOf('fecha de envio a correccion');
     if (idxCorreccion === -1) {
         sh.insertColumnAfter(sh.getLastColumn());
-        sh.getRange(1, sh.getLastColumn()).setValue('fecha de envó­o a correcció³n');
+        sh.getRange(1, sh.getLastColumn()).setValue('fecha de envio a corrección');
         idxCorreccion = sh.getLastColumn() - 1;
     }
 
@@ -3850,7 +3850,7 @@ function guardarObservacionesSupervision(payload, email) {
     let idxEstado = headers.indexOf('estado revision');
     if (idxEstado === -1) {
         sh.insertColumnAfter(sh.getLastColumn());
-        sh.getRange(1, sh.getLastColumn()).setValue('estado revisió³n');
+        sh.getRange(1, sh.getLastColumn()).setValue('estado revisión');
         idxEstado = sh.getLastColumn() - 1;
     }
 
@@ -3871,7 +3871,7 @@ function guardarObservacionesSupervision(payload, email) {
     }
 
     if (payload.tipo === 'correccion') {
-        sh.getRange(fila, idxEstado + 1).setValue('a correcció³n');
+        sh.getRange(fila, idxEstado + 1).setValue('a corrección');
         sh.getRange(fila, idxCorreccion + 1).setValue(ahora);
     }
 
@@ -3885,7 +3885,7 @@ function guardarObservacionesSupervision(payload, email) {
 function obtenerResumenPlaneacionesNinera(emailNinera) {
     if (!emailNinera) return [];
 
-    // 1. Obtener nombre de la nió±era por email
+    // 1. Obtener nombre de la niñera por email
     const shUsuarios = _hoja(NOMBRE_HOJA_USUARIOS);
     const dataUsuarios = shUsuarios.getDataRange().getValues();
     const headersU = dataUsuarios.shift();
@@ -3906,7 +3906,7 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
     const headersS = dataServ.shift();
 
     const idxCliente = headersS.indexOf('cliente');
-    const idxNinera = headersS.indexOf('nombre de nió±era');
+    const idxNinera = headersS.indexOf('nombre de niñera');
     const idxTipo = headersS.indexOf('Tipo de servicio');
     const idxFecha = headersS.indexOf('fecha');
 

@@ -1565,6 +1565,8 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
     } else {
         MODO_SOLO_LECTURA = false;
         if (estadoRevisionActual === 'revisada') MODO_SOLO_LECTURA = true;
+        // Si está a corrección, PERMITIR edición para que la niñera pueda corregir
+        if (estadoRevisionActual.includes('correccion')) MODO_SOLO_LECTURA = false;
     }
 
     [area, objetivo, descripcion, materiales, imagen].forEach(el => { el.readOnly = MODO_SOLO_LECTURA; el.disabled = MODO_SOLO_LECTURA; });
@@ -1583,7 +1585,7 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
         }
     } else {
         if (!estadoRevisionActual) { if (btnGuardar) btnGuardar.style.display = 'inline-flex'; }
-        else if (estadoRevisionActual === 'pendiente' || estadoRevisionActual === 'a correccion') { if (btnReenviar) btnReenviar.style.display = 'inline-flex'; }
+        else if (estadoRevisionActual === 'pendiente' || estadoRevisionActual.includes('correccion')) { if (btnReenviar) btnReenviar.style.display = 'inline-flex'; }
     }
     document.getElementById('planeacionBackdrop').style.display = 'flex';
 }
@@ -1985,12 +1987,14 @@ function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServicioResu
 
 function marcarPlaneacionRevisada() {
     const texto = document.getElementById('obsSupervision').value;
-    mostrarToast('✅ Planeación marcada como revisada');
     api('guardarObservacionesSupervision', {
         fila: PLANEACION_EXISTENTE?.fila,
         observaciones: texto,
         tipo: 'revisada',
         email: SESION.email
+    }).then(() => {
+        mostrarToast('✅ Planeación marcada como revisada');
+        actualizarPlaneacionesSupervision();
     }).catch(err => {
         mostrarToast('❌ Error al guardar revisión');
         console.error(err);
@@ -1999,12 +2003,14 @@ function marcarPlaneacionRevisada() {
 
 function enviarACorreccion() {
     const texto = document.getElementById('obsSupervision').value;
-    mostrarToast('🟠 Observaciones enviadas a corrección');
     api('guardarObservacionesSupervision', {
         fila: PLANEACION_EXISTENTE?.fila,
         observaciones: texto,
         tipo: 'correccion',
         email: SESION.email
+    }).then(() => {
+        mostrarToast('🟠 Observaciones enviadas a corrección');
+        actualizarPlaneacionesSupervision();
     }).catch(err => {
         mostrarToast('❌ Error al enviar a corrección');
         console.error(err);
