@@ -1355,7 +1355,20 @@ function irVista(nombre, skipLogic = false) {
 
     if (SESION.cliente) {
         if (lblAct) lblAct.textContent = 'Actividades';
-        if (skipLogic) return; //Saltamos la carga automática si se solicita manual
+        if (skipLogic) return;
+
+        // Validar perfil completo antes de permitir navegación
+        if (CACHE_CLIENTE.profile) {
+            const faltanDatos = verificarDatosFaltantesCliente(CACHE_CLIENTE.profile);
+            if (faltanDatos) {
+                // Forzar vista de cliente con onboarding
+                const vistaCliente = document.getElementById('vista-cliente');
+                if (vistaCliente) vistaCliente.classList.add('activa');
+                mostrarVistaCliente();
+                return;
+            }
+        }
+
         if (target === 'cliente') mostrarVistaCliente();
         if (target === 'actividades-cliente') cargarActividadesCliente();
         return;
@@ -2229,13 +2242,13 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
     if (forceOnboarding || faltanDatos) {
         if (o) {
             o.style.display = 'block';
-            // Pre-llenar campos
-            if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || '';
+            // Pre-llenar campos con nombres normalizados del backend
+            if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || perf.nombre_completo || '';
             if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
             if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || '';
             if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.teléfono || '';
-            if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf.no._de_emergencia || '';
-            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf.no._de_mascotas || '';
+            if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf.no_de_emergencia || perf['no._de_emergencia'] || '';
+            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf.no_de_mascotas || perf['no._de_mascotas'] || '';
             if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || '';
 
             // Fecha de nacimiento (ajuste de formato si es necesario)
@@ -2247,7 +2260,7 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
             }
 
             if (document.getElementById('reg_alergias')) document.getElementById('reg_alergias').value = perf.alergias || '';
-            if (document.getElementById('reg_condicion')) document.getElementById('reg_condicion').value = perf.condición_médica_o_especificaciones_adicionales || '';
+            if (document.getElementById('reg_condicion')) document.getElementById('reg_condicion').value = perf.condición_médica_o_especificaciones_adicionales || perf['condición_médica_o_especificaciones_adicionales'] || '';
             if (document.getElementById('reg_salud')) document.getElementById('reg_salud').value = perf.estado_de_salud_actual || '';
             if (document.getElementById('reg_preferencias')) document.getElementById('reg_preferencias').value = perf.preferencias_o_actividades_favoritas || '';
         }
