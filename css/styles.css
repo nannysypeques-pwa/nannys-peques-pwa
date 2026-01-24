@@ -531,7 +531,7 @@ body>h2:first-of-type {
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s;
-    z-index: 3000;
+    z-index: 100001;
     backdrop-filter: blur(4px);
 }
 
