@@ -30,6 +30,7 @@ let CACHE_PLANEACION_MODAL = {};
 let MODO_SOLO_LECTURA = false;
 let PLANEACION_SESSION_ID = 0;
 const RESUMEN_PLANEACIONES_SUP = {};
+let CACHE_CLIENTE = { profile: null, servicios: null, actividades: null }; // Caché para mejorar UX del cliente
 let ADMIN_WEEK_START_ISO = null;
 
 const TIPOS_CON_PLANEACION = [
@@ -2175,7 +2176,24 @@ function mostrarRegistroCliente() {
 window.mostrarRegistroCliente = mostrarRegistroCliente;
 
 
-async function mostrarVistaCliente(forceOnboarding = false) {
+async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) {
+    if (!forceFetch && CACHE_CLIENTE.profile) {
+        // Usar perfil cacheado para verificar onboarding
+        const perf = CACHE_CLIENTE.profile;
+        const d = document.getElementById('cliente-dashboard');
+        const o = document.getElementById('cliente-onboarding');
+        if (d) d.style.display = 'none';
+        if (o) o.style.display = 'none';
+
+        if (forceOnboarding || !perf.nombre || String(perf.nombre).trim().length < 3) {
+            if (o) o.style.display = 'block';
+        } else {
+            if (d) d.style.display = 'block';
+            cargarServiciosCliente(false); // Usar cache
+        }
+        return;
+    }
+
     //No llamamos a ocultarTodo porque vista-cliente no usa las cards del staff
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
@@ -2191,11 +2209,13 @@ async function mostrarVistaCliente(forceOnboarding = false) {
 
     try {
         const perf = await api('getProfile', { email: SESION.email });
+        CACHE_CLIENTE.profile = perf; // Guardar en caché
+
         if (!perf || !perf.nombre || String(perf.nombre).trim().length < 3) {
             if (o) o.style.display = 'block';
         } else {
             if (d) d.style.display = 'block';
-            cargarServiciosCliente();
+            cargarServiciosCliente(forceFetch);
         }
     } catch (e) {
         console.error("Error cargando perfil:", e);
@@ -2435,11 +2455,17 @@ async function editarPerfilCliente() {
 }
 window.editarPerfilCliente = editarPerfilCliente;
 
-async function cargarServiciosCliente() {
+async function cargarServiciosCliente(force = false) {
     const calActual = document.getElementById('cal-cliente-actual');
     const calSig = document.getElementById('cal-cliente-siguiente');
     const msg = document.getElementById('msg-cal-cliente');
     if (!calActual || !calSig) return;
+
+    if (!force && CACHE_CLIENTE.servicios) {
+        renderServiciosCliente(CACHE_CLIENTE.servicios);
+        if (msg) msg.textContent = '';
+        return;
+    }
 
     calActual.innerHTML = '';
     calSig.innerHTML = '';
@@ -2447,25 +2473,37 @@ async function cargarServiciosCliente() {
 
     try {
         const res = await api('getServiciosCliente', { email: SESION.email });
-        const svcs = Array.isArray(res) ? res : [];
+        CACHE_CLIENTE.servicios = Array.isArray(res) ? res : [];
+        renderServiciosCliente(CACHE_CLIENTE.servicios);
+        if (msg) msg.textContent = '';
+    } catch (err) {
+        console.error('Error cargarServiciosCliente:', err);
+        msg.innerHTML = `<span class="err">${err.message}</span>`;
+    }
+}
 
-        if (svcs.length === 0) {
-            calActual.innerHTML = '<div style="grid-column: 1 /-1; text-align:center; padding: 40px 20px;">' +
-                '<h2 style="color:var(--pink-main); margin-bottom:10px;">✨</h2>' +
-                '<h3 style="margin-bottom:10px;">Aún no hay servicios programados</h3>' +
-                '<p class="muted">Cuando agendes tu primer servicio, aparecerá aquí.</p>' +
-                '</div>';
-            msg.textContent = '';
-            return;
-        }
+function renderServiciosCliente(svcs) {
+    const calActual = document.getElementById('cal-cliente-actual');
+    const calSig = document.getElementById('cal-cliente-siguiente');
+    const msg = document.getElementById('msg-cal-cliente');
+    if (!calActual || !calSig) return;
 
-        renderCalendarioCliente(svcs);
+    calActual.innerHTML = '';
+    calSig.innerHTML = '';
+
+    if (!svcs || svcs.length === 0) {
+        calActual.innerHTML = '<div style="grid-column: 1 /-1; text-align:center; padding: 40px 20px;">' +
+            '<h2 style="color:var(--pink-main); margin-bottom:10px;">✨</h2>' +
+            '<h3 style="margin-bottom:10px;">Aún no hay servicios programados</h3>' +
+            '<p class="muted">Cuando agendes tu primer servicio, aparecerá aquí.</p>' +
+            '</div>';
+        return;
+    }
+
+    renderCalendarioCliente(svcs);
+    if (msg) {
         msg.textContent = `Se encontraron ${svcs.length} servicios próximamente.`;
         setTimeout(() => { if (msg.textContent.includes('servicios')) msg.textContent = ''; }, 3000);
-
-    } catch (e) {
-        msg.innerHTML = '<span class="err">Error al cargar servicios.</span>';
-        console.error(e);
     }
 }
 
@@ -2618,10 +2656,15 @@ function volverSeleccion() {
 }
 window.volverSeleccion = volverSeleccion;
 
-async function cargarActividadesCliente() {
+async function cargarActividadesCliente(force = false) {
     const contActual = document.getElementById('lista-actividades-actual');
     const contSiguiente = document.getElementById('lista-actividades-siguiente');
     if (!contActual || !contSiguiente) return;
+
+    if (!force && CACHE_CLIENTE.actividades) {
+        renderActividadesCliente(CACHE_CLIENTE.actividades);
+        return;
+    }
 
     contActual.innerHTML = '<p class="muted">Buscando actividades...</p>';
     contSiguiente.innerHTML = '';
@@ -2630,26 +2673,42 @@ async function cargarActividadesCliente() {
         const res = await api('getActividadesClientePlanificadas', { email: SESION.email });
         if (!res) throw new Error('No se recibió respuesta del servidor');
 
-        const renderLista = (lista, container) => {
-            if (!lista || lista.length === 0) {
-                container.innerHTML = '<div class="card" style="text-align:center; padding:20px; border:1px dashed #cbd5e1;"><p class="muted">No hay planeaciones para esta semana.</p></div>';
-                return;
-            }
+        CACHE_CLIENTE.actividades = res;
+        renderActividadesCliente(res);
+    } catch (err) {
+        contActual.innerHTML = `<span class="err">${err.message}</span>`;
+        console.error(err);
+    }
+}
 
-            let html = '';
-            lista.forEach(p => {
-                const area = normalizarTexto(p['area de desarrollo'] || '');
-                let emoji = '✨';
-                if (area.includes('motriz')) emoji = '🏃';
-                else if (area.includes('cognitivo')) emoji = '🧠';
-                else if (area.includes('lenguaje')) emoji = '🗣️';
-                else if (area.includes('socio')) emoji = '🤝';
-                else if (area.includes('sensorial')) emoji = '👂';
+function renderActividadesCliente(res) {
+    const contActual = document.getElementById('lista-actividades-actual');
+    const contSiguiente = document.getElementById('lista-actividades-siguiente');
+    if (!contActual || !contSiguiente || !res) return;
 
-                const fechaStr = toISO(new Date(p.fecha));
-                const diaNombre = new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' });
+    contActual.innerHTML = '';
+    contSiguiente.innerHTML = '';
 
-                html += `
+    const renderLista = (lista, container) => {
+        if (!lista || lista.length === 0) {
+            container.innerHTML = '<div class="card" style="text-align:center; padding:20px; border:1px dashed #cbd5e1;"><p class="muted">No hay planeaciones para esta semana.</p></div>';
+            return;
+        }
+
+        let html = '';
+        lista.forEach(p => {
+            const area = normalizarTexto(p['area de desarrollo'] || '');
+            let emoji = '✨';
+            if (area.includes('motriz')) emoji = '🏃';
+            else if (area.includes('cognitivo')) emoji = '🧠';
+            else if (area.includes('lenguaje')) emoji = '🗣️';
+            else if (area.includes('socio')) emoji = '🤝';
+            else if (area.includes('sensorial')) emoji = '👂';
+
+            const fechaStr = toISO(new Date(p.fecha));
+            const diaNombre = new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' });
+
+            html += `
                     <div class="activity-card">
                         <span class="activity-label-pink">${diaNombre.toUpperCase()}</span>
                         <div class="activity-area-title">${emoji} ${p['area de desarrollo'] || 'Actividad'}</div>
@@ -2665,10 +2724,10 @@ async function cargarActividadesCliente() {
                                 
                                 <div class="activity-gallery">
                                     ${(p.imagen || '').split(',').map(img => {
-                    const src = img.trim();
-                    if (!src) return '';
-                    return `<img src="${src}" class="activity-img" loading="lazy" onclick="window.open('${src}', '_blank')">`;
-                }).join('')}
+                const src = img.trim();
+                if (!src) return '';
+                return `<img src="${src}" class="activity-img" loading="lazy" onclick="window.open('${src}', '_blank')">`;
+            }).join('')}
                                 </div>
 
                                 <div style="font-size:11px; color:#94a3b8; margin-top:15px; border-top:1px solid #f1f5f9; padding-top:8px;">
@@ -2678,17 +2737,12 @@ async function cargarActividadesCliente() {
                         </details>
                     </div>
                 `;
-            });
-            container.innerHTML = html;
-        };
+        });
+        container.innerHTML = html;
+    };
 
-        renderLista(res.actual, contActual);
-        renderLista(res.siguiente, contSiguiente);
-
-    } catch (e) {
-        console.error(e);
-        contActual.innerHTML = '<p class="err">Error al cargar las actividades. Por favor, intenta de nuevo.</p>';
-    }
+    renderLista(res.actual, contActual);
+    renderLista(res.siguiente, contSiguiente);
 }
 window.cargarActividadesCliente = cargarActividadesCliente;
 
