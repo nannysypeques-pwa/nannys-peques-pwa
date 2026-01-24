@@ -1040,6 +1040,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 }
 
 .activity-img {
+    max-width: 280px;
     width: 100%;
     height: auto;
     border-radius: 12px;
