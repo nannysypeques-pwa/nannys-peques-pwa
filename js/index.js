@@ -1555,18 +1555,26 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
 
     if (SESION.supervision || SESION.admin) {
         if (cont) cont.style.display = 'block';
-        if (obsSup) { obsSup.style.display = 'block'; obsSup.readOnly = false; obsSup.disabled = false; obsSup.value = planeacion?.observaciones_supervision || ''; }
+        if (obsSup) {
+            obsSup.style.display = 'block';
+            obsSup.readOnly = false;
+            obsSup.disabled = false;
+            obsSup.value = planeacion?.observaciones_supervision || '';
+        }
         if (obsNin) obsNin.style.display = 'none';
         MODO_SOLO_LECTURA = true;
-    } else if (planeacion?.observaciones_supervision) {
-        if (cont) cont.style.display = 'block';
-        if (obsNin) { obsNin.style.display = 'block'; obsNin.value = planeacion.observaciones_supervision; }
-        if (obsSup) obsSup.style.display = 'none';
     } else {
+        // Lógica de Niñera: Editable por defecto, solo lectura solo si ya está REVISADA
         MODO_SOLO_LECTURA = false;
         if (estadoRevisionActual === 'revisada') MODO_SOLO_LECTURA = true;
-        // Si está a corrección, PERMITIR edición para que la niñera pueda corregir
-        if (estadoRevisionActual.includes('correccion')) MODO_SOLO_LECTURA = false;
+
+        if (planeacion?.observaciones_supervision) {
+            if (cont) cont.style.display = 'block';
+            if (obsNin) { obsNin.style.display = 'block'; obsNin.value = planeacion.observaciones_supervision; }
+            if (obsSup) obsSup.style.display = 'none';
+        } else {
+            if (cont) cont.style.display = 'none';
+        }
     }
 
     [area, objetivo, descripcion, materiales, imagen].forEach(el => { el.readOnly = MODO_SOLO_LECTURA; el.disabled = MODO_SOLO_LECTURA; });
@@ -1987,6 +1995,7 @@ function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServicioResu
 
 function marcarPlaneacionRevisada() {
     const texto = document.getElementById('obsSupervision').value;
+    mostrarToast('💾 Guardando revisión...');
     api('guardarObservacionesSupervision', {
         fila: PLANEACION_EXISTENTE?.fila,
         observaciones: texto,
@@ -2003,6 +2012,7 @@ function marcarPlaneacionRevisada() {
 
 function enviarACorreccion() {
     const texto = document.getElementById('obsSupervision').value;
+    mostrarToast('💾 Enviando a corrección...');
     api('guardarObservacionesSupervision', {
         fila: PLANEACION_EXISTENTE?.fila,
         observaciones: texto,
