@@ -464,7 +464,7 @@ function renderCalendario2Semanas() {
 
     const map = {}; CAL_SERVICIOS.forEach(s => { if (!map[s.fecha]) map[s.fecha] = []; map[s.fecha].push(s); });
 
-    for (let i = 0; i <14; i++) {
+    for (let i = 0; i < 14; i++) {
         const d = new Date(start); d.setDate(start.getDate() + i);
         const iso = toISO(d); const dow = d.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase(); const dom = d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
         const servicios = (map[iso] || []).slice().sort(compararServicios);
@@ -606,12 +606,12 @@ function abrirModalServicio(s) {
                 let edad = '—';
                 const infoRestante = [];
 
-                for (let i = 1; i <lineas.length; i++) {
+                for (let i = 1; i < lineas.length; i++) {
                     const l = lineas[i];
                     if (l.includes('Edad:')) {
                         //Formato esperado: "• Edad: XX años..."
                         const parts = l.split(':');
-                        if (parts.length> 1) edad = parts[1].trim();
+                        if (parts.length > 1) edad = parts[1].trim();
                         continue;
                     }
                     if (l.includes('👶') && i === 0) continue;
@@ -907,14 +907,14 @@ function renderAgendaAdminSemana(lista, lunesISO) {
         const c = _hmToMinutes(b1);
         const d = _hmToMinutes(b2);
         if ([a, b, c, d].some(x => !isFinite(x))) return false;
-        return (a <d) && (c <b);
+        return (a < d) && (c < b);
     }
 
     cont.innerHTML = '';
     const grid = document.createElement('div');
     grid.className = 'week-grid';
 
-    for (let i = 0; i <7; i++) {
+    for (let i = 0; i < 7; i++) {
         const d = new Date(lunesISO + 'T00:00:00');
         d.setDate(d.getDate() + i);
         const iso = toISO(d);
@@ -947,8 +947,8 @@ function renderAgendaAdminSemana(lista, lunesISO) {
                 Object.keys(porNinera).forEach(k => {
                     const arr = porNinera[k];
                     arr.sort((a, b) => (a.s.hora_inicio || '00:00').localeCompare(b.s.hora_inicio || '00:00'));
-                    for (let x = 0; x <arr.length; x++) {
-                        for (let y = x + 1; y <arr.length; y++) {
+                    for (let x = 0; x < arr.length; x++) {
+                        for (let y = x + 1; y < arr.length; y++) {
                             const s1 = arr[x].s;
                             const s2 = arr[y].s;
                             if (overlap(s1.hora_inicio, s1.hora_fin, s2.hora_inicio, s2.hora_fin)) {
@@ -1177,9 +1177,9 @@ async function cargarPuntajeNinera() {
         serv.textContent = res.servicios || 0;
         let texto = '';
         const pts = res.total || 0;
-        if (pts <100) texto = 'Te faltan ' + (100 - pts) + ' puntos para ser Yellow Nanny.';
-        else if (pts <200) texto = 'Te faltan ' + (200 - pts) + ' puntos para ser Blue Nanny.';
-        else if (pts <300) texto = 'Te faltan ' + (300 - pts) + ' puntos para ser Golden Nanny.';
+        if (pts < 100) texto = 'Te faltan ' + (100 - pts) + ' puntos para ser Yellow Nanny.';
+        else if (pts < 200) texto = 'Te faltan ' + (200 - pts) + ' puntos para ser Blue Nanny.';
+        else if (pts < 300) texto = 'Te faltan ' + (300 - pts) + ' puntos para ser Golden Nanny.';
         else texto = '¡Felicidades! Ya eres Golden Nanny.';
         msg.textContent = texto;
 
@@ -1360,50 +1360,7 @@ function irVista(nombre, skipLogic = false) {
 //La implementación robusta de cargarPerfil está al final del archivo.
 
 
-function verificarDatosFaltantesNinera(p) {
-    if (!p) return;
-    const faltantes = [];
-    if (!p.direccion || p.direccion.length <5) faltantes.push('Dirección completa');
-    if (!p.ubicacion || p.ubicacion.length <5) faltantes.push('Link de ubicación (Google Maps)');
-    if (!p.emergencia || p.emergencia.length <5) faltantes.push('Número de emergencia');
 
-    if (faltantes.length> 0) {
-        mostrarModalFaltantesNinera(p, faltantes);
-    }
-}
-
-function mostrarModalFaltantesNinera(p, lista) {
-    //Crear el modal dinámicamente si no existe
-    let modal = document.getElementById('modal-faltantes-ninera');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'modal-faltantes-ninera';
-        modal.className = 'modal-backdrop';
-        modal.style.display = 'flex';
-        modal.innerHTML = `
-            <div class="modal-card" style="max-width:400px;">
-                <h3 style="color:var(--pink-main); text-align:center;">¡Completa tu perfil! 📋</h3>
-                <p style="text-align:center; color:#555;">Para poder asignarte servicios, necesitamos que completes la siguiente información:</p>
-                
-                <div style="background:#FFF5F9; border-left:4px solid var(--pink-main); padding:10px; margin-bottom:15px;">
-                    <ul style="margin:0; padding-left:20px; color:#BE123C; font-size:14px; font-weight:600;">
-                        ${lista.map(item => `<li>${item}</li>`).join('')}
-                    </ul>
-                </div>
-                
-                <form id="form-faltantes-ninera">
-                    <div class="form-group">
-                       <label>Dirección completa</label>
-                       <input id="iny_direccion" type="text" placeholder="Calle, número, colonia..." value="${p.direccion || ''}">
-                    </div>
-                    <div class="form-group">
-                       <label>Link de Ubicación (Google Maps)</label>
-                       <input id="iny_ubicacion" type="text" placeholder="https://..." value="${p.ubicacion || ''}">
-                    </div>
-                    <div class="form-group">
-                       <label>Número de Emergencia</label>
-                       <input id="iny_emergencia" type="text" placeholder="Nombre y Teléfono" value="${p.emergencia || ''}">
-                    </div>
 
 /**
  * Verifica si a la niñera le faltan datos críticos.
@@ -1413,12 +1370,12 @@ function verificarDatosFaltantesNinera(p) {
     if (!p || SESION.cliente) return;
 
     const faltantes = [];
-    if (!p.direccion || p.direccion.trim().length <8) faltantes.push('Dirección completa');
-    if (!p.emergencia || p.emergencia.trim().length <8) faltantes.push('Teléfono de emergencia');
+    if (!p.direccion || p.direccion.trim().length < 8) faltantes.push('Dirección completa');
+    if (!p.emergencia || p.emergencia.trim().length < 8) faltantes.push('Teléfono de emergencia');
     if (!p.ubicacion || !p.ubicacion.trim().startsWith('http')) faltantes.push('Link de Ubicación (Google Maps)');
 
     const modal = document.getElementById('modalRegistroStaff');
-    if (faltantes.length> 0) {
+    if (faltantes.length > 0) {
         if (modal) modal.style.display = 'flex';
         //Pre-llenar si hay algo
         if (document.getElementById('reg_staff_direccion')) document.getElementById('reg_staff_direccion').value = p.direccion || '';
@@ -1435,7 +1392,7 @@ async function guardarDatosStaff() {
     const ubi = document.getElementById('reg_staff_ubicacion').value.trim();
     const msg = document.getElementById('msgRegistroStaff');
 
-    if (dir.length <8 || eme.length <8 || !ubi.startsWith('http')) {
+    if (dir.length < 8 || eme.length < 8 || !ubi.startsWith('http')) {
         msg.innerHTML = '<span class="err">Por favor, completa todos los campos correctamente.</span>';
         return;
     }
@@ -1483,7 +1440,7 @@ function formatearFechaPlaneacion(fechaStr) {
     const diaNum = d.getDate();
     const horas = String(d.getHours()).padStart(2, '0');
     const minutos = String(d.getMinutes()).padStart(2, '0');
-    return `${ diaNombre } ${ diaNum } - ${ horas }:${ minutos } hrs`;
+    return `${diaNombre} ${diaNum} - ${horas}:${minutos} hrs`;
 }
 
 function abrirPlaneacionNeuronanny(servicio, planeacion) {
@@ -1501,12 +1458,12 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
 
         if (fechaRevision) {
             const f = formatearFechaPlaneacion(fechaRevision);
-            if (f) { lblRevision.textContent = `🆕 Creación: ${ f } `; mostrar = true; }
+            if (f) { lblRevision.textContent = `🆕 Creación: ${f} `; mostrar = true; }
         } else lblRevision.textContent = '';
 
         if (fechaCorreccion) {
             const f = formatearFechaPlaneacion(fechaCorreccion);
-            if (f) { lblCorreccion.textContent = `✏ Corrección enviada: ${ f } `; mostrar = true; }
+            if (f) { lblCorreccion.textContent = `✏ Corrección enviada: ${f} `; mostrar = true; }
         } else lblCorreccion.textContent = '';
 
         contFechas.style.display = mostrar ? 'flex' : 'none';
@@ -1523,15 +1480,15 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
         if (tipo === 'neuronanny') tituloBase = 'Planeación Neuronanny';
         else if (tipo === 'nanny educativa') tituloBase = 'Planeación Nanny Educativa';
         else if (tipo === 'miss nanny') tituloBase = 'Planeación Miss Nanny';
-        titulo.textContent = MODO_SOLO_LECTURA ? `${ tituloBase } (solo lectura)` : tituloBase;
+        titulo.textContent = MODO_SOLO_LECTURA ? `${tituloBase} (solo lectura)` : tituloBase;
     }
-    if (infoCliente) infoCliente.textContent = `👶 Cliente: ${ servicio.cliente || '—' } `;
+    if (infoCliente) infoCliente.textContent = `👶 Cliente: ${servicio.cliente || '—'} `;
     if (infoNinera) {
         let nombreNinera = '—';
         if (planeacion?.nombre_ninera) nombreNinera = planeacion.nombre_ninera;
         else if (!SESION.supervision && !SESION.admin && SESION.nombre) nombreNinera = SESION.nombre;
         else if (servicio?.nombre_ninera) nombreNinera = servicio.nombre_ninera;
-        infoNinera.textContent = `🧸 Niñera: ${ nombreNinera } `;
+        infoNinera.textContent = `🧸 Niñera: ${nombreNinera} `;
     }
 
     const area = document.getElementById('pl_area');
@@ -1771,7 +1728,7 @@ async function abrirPlaneacionesCliente(cliente, esSiguiente, tipoServicio) {
     actualizarNavegacionPlaneacion();
 
     const fecha = PLANEACIONES_FECHAS[0];
-    const key = `${ cliente }| ${ fecha } `;
+    const key = `${cliente}| ${fecha} `;
     const sessionAtRequest = ++PLANEACION_SESSION_ID;
 
     //Cache or fetch
@@ -1892,7 +1849,7 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
     PLANEACION_CLIENTE = cliente;
 
     //🔑 USAR FECHAS DEL RESUMEN
-    const key = `${ esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual' }| ${ cliente }| ${ normalizarTexto(SESION.nombre || '') } `;
+    const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}| ${cliente}| ${normalizarTexto(SESION.nombre || '')} `;
     const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
 
     if (!fechas.length) {
@@ -1917,7 +1874,7 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
 
 function abrirPlaneacionPorIndice() {
     const fecha = PLANEACIONES_FECHAS[PLANEACION_INDEX];
-    const key = `${ PLANEACION_CLIENTE }| ${ fecha } `;
+    const key = `${PLANEACION_CLIENTE}| ${fecha} `;
 
     const servicio = PLANEACION_FUENTE.find(
         s => s.cliente === PLANEACION_CLIENTE && s.fecha === fecha
@@ -1955,7 +1912,7 @@ function abrirPlaneacionPorIndice() {
 
 function planeacionAnterior() {
     guardarPlaneacionEnCache();
-    if (PLANEACION_INDEX> 0) {
+    if (PLANEACION_INDEX > 0) {
         PLANEACION_INDEX--;
         abrirPlaneacionPorIndice();
     }
@@ -1963,7 +1920,7 @@ function planeacionAnterior() {
 
 function planeacionSiguiente() {
     guardarPlaneacionEnCache();
-    if (PLANEACION_INDEX <PLANEACIONES_FECHAS.length - 1) {
+    if (PLANEACION_INDEX < PLANEACIONES_FECHAS.length - 1) {
         PLANEACION_INDEX++;
         abrirPlaneacionPorIndice();
     }
@@ -1975,7 +1932,7 @@ function actualizarNavegacionPlaneacion() {
     const actual = PLANEACION_INDEX + 1;
     const d = new Date(fechaISO + 'T00:00:00');
     const textoFecha = d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric' });
-    const textoFinal = total> 1 ? `${ textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1) } · Día ${ actual } de ${ total } ` : textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
+    const textoFinal = total > 1 ? `${textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1)} · Día ${actual} de ${total} ` : textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
 
     const elFecha = document.getElementById('pl_fecha_actual');
     if (elFecha) elFecha.textContent = textoFinal;
@@ -2012,7 +1969,7 @@ function cerrarPlaneacionNeuronanny() {
 
 function precargarPlaneacionesCliente() {
     PLANEACIONES_FECHAS.forEach(fecha => {
-        const key = `${ PLANEACION_CLIENTE }| ${ fecha } `;
+        const key = `${PLANEACION_CLIENTE}| ${fecha} `;
         if (key in CACHE_PLANEACIONES) return;
 
         api('obtenerPlaneacionNeuronanny', { fecha, cliente: PLANEACION_CLIENTE, email: SESION.email })
@@ -2025,7 +1982,7 @@ function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServicioResu
     PLANEACION_SESSION_ID++;
     MODO_SOLO_LECTURA = true;
     PLANEACION_CLIENTE = cliente;
-    const key = `${ prefijo }| ${ cliente }| ${ nombreNineraResumen || '' } `;
+    const key = `${prefijo}| ${cliente}| ${nombreNineraResumen || ''} `;
     const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
 
     if (!fechas.length) {
@@ -2097,7 +2054,7 @@ document.addEventListener('click', function (e) {
 
 function setAppHeight() {
     const vh = window.innerHeight * 0.01;
-    document.documentElement.style.setProperty('--vh', `${ vh } px`);
+    document.documentElement.style.setProperty('--vh', `${vh} px`);
 }
 window.addEventListener('resize', setAppHeight);
 window.addEventListener('orientationchange', setAppHeight);
@@ -2113,7 +2070,7 @@ function urlBase64ToUint8Array(base64String) {
     const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i <rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
     return outputArray;
 }
 
@@ -2187,7 +2144,7 @@ async function registrarNuevoCliente() {
         msg.innerHTML = '<span class="err">Por favor, llena todos los campos.</span>';
         return;
     }
-    if (pass.length <6) {
+    if (pass.length < 6) {
         msg.innerHTML = '<span class="err">La contraseña debe tener al menos 6 caracteres.</span>';
         return;
     }
@@ -2239,7 +2196,7 @@ async function mostrarVistaCliente(forceOnboarding = false) {
 
     try {
         const perf = await api('getProfile', { email: SESION.email });
-        if (!perf || !perf.nombre || String(perf.nombre).trim().length <3) {
+        if (!perf || !perf.nombre || String(perf.nombre).trim().length < 3) {
             if (o) o.style.display = 'block';
         } else {
             if (d) d.style.display = 'block';
@@ -2539,7 +2496,7 @@ function renderCalendarioCliente(svcs) {
 
     //Renderizar 14 días (2 semanas)
     console.log("Renderizando calendario cliente para", svcs.length, "servicios");
-    for (let i = 0; i <14; i++) {
+    for (let i = 0; i < 14; i++) {
         try {
             const d = new Date(start);
             d.setDate(start.getDate() + i);
@@ -2558,7 +2515,7 @@ function renderCalendarioCliente(svcs) {
             if (iso === toISO(hoy)) dayEl.classList.add('today');
 
             const head = document.createElement('header');
-            head.innerHTML = `<span> ${ dow }</span> <span class="date">${dom}</span>`;
+            head.innerHTML = `<span> ${dow}</span> <span class="date">${dom}</span>`;
             dayEl.appendChild(head);
 
             const body = document.createElement('div');
@@ -2578,12 +2535,12 @@ function renderCalendarioCliente(svcs) {
                     const primerNombre = nombreCompleto.split(' ')[0];
 
                     //Crear estructura HTML con horario completo y nombre
-                    const horario = `${ s.hora_inicio || '—' } - ${ s.hora_fin || '—' } `;
+                    const horario = `${s.hora_inicio || '—'} - ${s.hora_fin || '—'} `;
                     btn.innerHTML = `
-            <div style = "font-weight: 700; font-size: 13px; margin-bottom: 3px;"> ${ horario }</div>
+            <div style = "font-weight: 700; font-size: 13px; margin-bottom: 3px;"> ${horario}</div>
                 <div style="font-size: 11px; opacity: 0.9;">${primerNombre}</div>
         `;
-                    btn.title = `${ s.Horario || '' } - Niñera: ${ nombreCompleto } `;
+                    btn.title = `${s.Horario || ''} - Niñera: ${nombreCompleto} `;
                     btn.onclick = () => mostrarDetalleServicioCliente(s);
                     body.appendChild(btn);
                 });
@@ -2591,7 +2548,7 @@ function renderCalendarioCliente(svcs) {
             dayEl.appendChild(body);
 
             //Decidir en qué contenedor ponerlo
-            if (i <7) contActual.appendChild(dayEl);
+            if (i < 7) contActual.appendChild(dayEl);
             else contSiguiente.appendChild(dayEl);
         } catch (err) {
             console.error("Error en render día " + i, err);
@@ -2613,7 +2570,7 @@ function mostrarDetalleServicioCliente(s) {
     const diaSemana = diasSemana[fechaObj.getDay()];
     const dia = fechaObj.getDate();
     const mes = meses[fechaObj.getMonth()];
-    const fechaFormateada = `${ diaSemana } ${ dia } de ${ mes } `;
+    const fechaFormateada = `${diaSemana} ${dia} de ${mes} `;
 
     //Llenar el modal con la información
     document.getElementById('mClienteFecha').textContent = fechaFormateada;
