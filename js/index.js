@@ -464,7 +464,7 @@ function renderCalendario2Semanas() {
 
     const map = {}; CAL_SERVICIOS.forEach(s => { if (!map[s.fecha]) map[s.fecha] = []; map[s.fecha].push(s); });
 
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i <14; i++) {
         const d = new Date(start); d.setDate(start.getDate() + i);
         const iso = toISO(d); const dow = d.toLocaleDateString('es-MX', { weekday: 'short' }).toUpperCase(); const dom = d.toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' });
         const servicios = (map[iso] || []).slice().sort(compararServicios);
@@ -606,12 +606,12 @@ function abrirModalServicio(s) {
                 let edad = '—';
                 const infoRestante = [];
 
-                for (let i = 1; i < lineas.length; i++) {
+                for (let i = 1; i <lineas.length; i++) {
                     const l = lineas[i];
                     if (l.includes('Edad:')) {
                         //Formato esperado: "• Edad: XX años..."
                         const parts = l.split(':');
-                        if (parts.length > 1) edad = parts[1].trim();
+                        if (parts.length> 1) edad = parts[1].trim();
                         continue;
                     }
                     if (l.includes('👶') && i === 0) continue;
@@ -907,14 +907,14 @@ function renderAgendaAdminSemana(lista, lunesISO) {
         const c = _hmToMinutes(b1);
         const d = _hmToMinutes(b2);
         if ([a, b, c, d].some(x => !isFinite(x))) return false;
-        return (a < d) && (c < b);
+        return (a <d) && (c <b);
     }
 
     cont.innerHTML = '';
     const grid = document.createElement('div');
     grid.className = 'week-grid';
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i <7; i++) {
         const d = new Date(lunesISO + 'T00:00:00');
         d.setDate(d.getDate() + i);
         const iso = toISO(d);
@@ -947,8 +947,8 @@ function renderAgendaAdminSemana(lista, lunesISO) {
                 Object.keys(porNinera).forEach(k => {
                     const arr = porNinera[k];
                     arr.sort((a, b) => (a.s.hora_inicio || '00:00').localeCompare(b.s.hora_inicio || '00:00'));
-                    for (let x = 0; x < arr.length; x++) {
-                        for (let y = x + 1; y < arr.length; y++) {
+                    for (let x = 0; x <arr.length; x++) {
+                        for (let y = x + 1; y <arr.length; y++) {
                             const s1 = arr[x].s;
                             const s2 = arr[y].s;
                             if (overlap(s1.hora_inicio, s1.hora_fin, s2.hora_inicio, s2.hora_fin)) {
@@ -1177,9 +1177,9 @@ async function cargarPuntajeNinera() {
         serv.textContent = res.servicios || 0;
         let texto = '';
         const pts = res.total || 0;
-        if (pts < 100) texto = 'Te faltan ' + (100 - pts) + ' puntos para ser Yellow Nanny.';
-        else if (pts < 200) texto = 'Te faltan ' + (200 - pts) + ' puntos para ser Blue Nanny.';
-        else if (pts < 300) texto = 'Te faltan ' + (300 - pts) + ' puntos para ser Golden Nanny.';
+        if (pts <100) texto = 'Te faltan ' + (100 - pts) + ' puntos para ser Yellow Nanny.';
+        else if (pts <200) texto = 'Te faltan ' + (200 - pts) + ' puntos para ser Blue Nanny.';
+        else if (pts <300) texto = 'Te faltan ' + (300 - pts) + ' puntos para ser Golden Nanny.';
         else texto = '¡Felicidades! Ya eres Golden Nanny.';
         msg.textContent = texto;
 
@@ -1363,11 +1363,11 @@ function irVista(nombre, skipLogic = false) {
 function verificarDatosFaltantesNinera(p) {
     if (!p) return;
     const faltantes = [];
-    if (!p.direccion || p.direccion.length < 5) faltantes.push('Dirección completa');
-    if (!p.ubicacion || p.ubicacion.length < 5) faltantes.push('Link de ubicación (Google Maps)');
-    if (!p.emergencia || p.emergencia.length < 5) faltantes.push('Número de emergencia');
+    if (!p.direccion || p.direccion.length <5) faltantes.push('Dirección completa');
+    if (!p.ubicacion || p.ubicacion.length <5) faltantes.push('Link de ubicación (Google Maps)');
+    if (!p.emergencia || p.emergencia.length <5) faltantes.push('Número de emergencia');
 
-    if (faltantes.length > 0) {
+    if (faltantes.length> 0) {
         mostrarModalFaltantesNinera(p, faltantes);
     }
 }
@@ -1461,7 +1461,7 @@ async function guardarDatosStaff() {
             throw new Error(res.error || 'Error al guardar');
         }
     } catch (err) {
-        msg.innerHTML = `< span class="err" > ${ err.message }</span > `;
+        msg.innerHTML = `<span class="err"> ${err.message}</span> `;
     }
 }
 
@@ -1717,7 +1717,7 @@ async function cargarResumenPlaneacionesNinera() {
         renderResumenPlaneaciones(dataSig, contSig, 'ninera_siguiente');
 
     } catch (err) {
-        if (contActual) contActual.innerHTML = `< span class="err" > ${ err.message }</span > `;
+        if (contActual) contActual.innerHTML = `<span class="err"> ${err.message}</span> `;
         if (contSig) contSig.innerHTML = '';
         console.error(err);
     }
@@ -1845,7 +1845,7 @@ window.addEventListener('load', function () {
         else document.body.classList.add('ninera');
 
         const saludo = document.getElementById('saludo');
-        if (saludo) saludo.innerHTML = `< b >¡Hola!</b > `;
+        if (saludo) saludo.innerHTML = `<b>¡Hola!</b> `;
 
         const headerAdmin = document.getElementById('header-admin');
         if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
@@ -2508,7 +2508,7 @@ async function cargarServiciosCliente() {
         }
 
         renderCalendarioCliente(svcs);
-        msg.textContent = `Se encontraron ${ svcs.length } servicios próximamente.`;
+        msg.textContent = `Se encontraron ${svcs.length} servicios próximamente.`;
         setTimeout(() => { if (msg.textContent.includes('servicios')) msg.textContent = ''; }, 3000);
 
     } catch (e) {
@@ -2558,7 +2558,7 @@ function renderCalendarioCliente(svcs) {
             if (iso === toISO(hoy)) dayEl.classList.add('today');
 
             const head = document.createElement('header');
-            head.innerHTML = `< span > ${ dow }</span > <span class="date">${dom}</span>`;
+            head.innerHTML = `<span> ${ dow }</span> <span class="date">${dom}</span>`;
             dayEl.appendChild(head);
 
             const body = document.createElement('div');
@@ -2580,7 +2580,7 @@ function renderCalendarioCliente(svcs) {
                     //Crear estructura HTML con horario completo y nombre
                     const horario = `${ s.hora_inicio || '—' } - ${ s.hora_fin || '—' } `;
                     btn.innerHTML = `
-            < div style = "font-weight: 700; font-size: 13px; margin-bottom: 3px;" > ${ horario }</div >
+            <div style = "font-weight: 700; font-size: 13px; margin-bottom: 3px;"> ${ horario }</div>
                 <div style="font-size: 11px; opacity: 0.9;">${primerNombre}</div>
         `;
                     btn.title = `${ s.Horario || '' } - Niñera: ${ nombreCompleto } `;
@@ -2688,7 +2688,7 @@ async function cargarActividadesCliente() {
                 });
                 if (plan && plan.area_desarrollo) {
                     html += `
-            < div class="card" style = "margin-bottom:15px; border-left: 4px solid var(--pink-main); padding: 15px;" >
+            <div class="card" style = "margin-bottom:15px; border-left: 4px solid var(--pink-main); padding: 15px;">
                             <div style="font-size:12px; color:var(--pink-main); font-weight:700; margin-bottom:5px;">${_toISODate(s.Fecha || s.fecha)}</div>
                             <h4 style="margin:0 0 8px 0; color:var(--text-main);">${plan.area_desarrollo}</h4>
                             <p style="font-size:14px; margin-bottom:10px; color:#4B5563;"><b>Objetivo:</b> ${plan.objetivo}</p>
@@ -2700,7 +2700,7 @@ async function cargarActividadesCliente() {
                                     ${plan.imagen ? `<img src="${plan.imagen}" style="max-width:100%; border-radius:8px; margin-top:10px; display:block;">` : ''}
                                 </div>
                             </details>
-                        </div >
+                        </div>
             `;
                 }
             }
