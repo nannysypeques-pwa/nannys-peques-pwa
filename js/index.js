@@ -2673,7 +2673,7 @@ async function cargarActividadesCliente() {
                                 <p style="margin-bottom:10px;"><b>Materiales:</b><br>${p.materiales || '—'}</p>
                                 ${p.imagen ? `<img src="${p.imagen}" class="activity-img" loading="lazy">` : ''}
                                 <div style="font-size:11px; color:#94a3b8; margin-top:15px; border-top:1px solid #f1f5f9; padding-top:8px;">
-                                    Niñera: ${p['nombre de niñera'] || '—'}
+                                    Niñera: ${p['nombre de ninera'] || '—'}
                                 </div>
                             </div>
                         </details>

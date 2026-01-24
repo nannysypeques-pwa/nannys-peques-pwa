@@ -4471,55 +4471,62 @@ function startMonday(date) {
 
 function getActividadesClientePlanificadas(email) {
     if (!email) throw new Error('Acceso denegado: falta email');
+    email = email.toLowerCase().trim();
 
     const shPlaneaciones = _hoja('Planeaciones_Neuronanny');
-    const dataPlaneaciones = _leerComoObjetos(shPlaneaciones);
+    const dataRows = shPlaneaciones.getDataRange().getValues();
+    if (dataRows.length < 2) return { actual: [], siguiente: [] };
 
+    // 1. Obtener nombres válidos para este cliente (email y nombre real desde el perfil)
+    const nombresValidParaFiltrar = [email];
+    try {
+        const perf = obtenerPerfilCompleto(email);
+        if (perf && perf.nombre) {
+            const n = _norm(perf.nombre);
+            if (n && !nombresValidParaFiltrar.includes(n)) nombresValidParaFiltrar.push(n);
+        }
+    } catch (e) { }
+
+    // 2. Normalizar encabezados
+    const headers = dataRows[0].map(h => _norm(h));
+
+    // 3. Procesar filas
     const hoy = new Date();
     const l_actual = startMonday(hoy);
     const l_siguiente = new Date(l_actual);
     l_siguiente.setDate(l_siguiente.getDate() + 7);
-    const d_siguiente = new Date(l_siguiente);
-    d_siguiente.setDate(d_siguiente.getDate() + 6);
 
-    const iso = (d) => _toISODate(d);
-    const actual_inicio = iso(l_actual);
-    const actual_fin = iso(new Date(l_actual.getTime() + 6 * 24 * 60 * 60 * 1000));
-    const sig_inicio = iso(l_siguiente);
-    const sig_fin = iso(d_siguiente);
+    const isoStrActual = _toISODate(l_actual);
+    const isoStrSiguiente = _toISODate(l_siguiente);
+    const isoStrSiguienteFin = _toISODate(new Date(l_siguiente.getTime() + 6 * 24 * 60 * 60 * 1000));
+    const isoStrActualFin = _toISODate(new Date(l_actual.getTime() + 6 * 24 * 60 * 60 * 1000));
 
-    const misPlaneaciones = dataPlaneaciones.filter(p =>
-        _norm(p.cliente) === _norm(email) ||
-        _norm(p.cliente).includes(_norm(email))
-    );
+    const result = { actual: [], siguiente: [] };
 
-    // Simplificar: el frontend enviará el email y el backend buscará por coincidencia de nombre de cliente o email si el header es 'cliente'
-    // Pero en la hoja Planeaciones_Neuronanny, la columna 'cliente' suele tener el nombre. 
-    // Vamos a buscar servicios del cliente primero para obtener su nombre real.
-    const servicios = getServiciosCliente(email);
-    const nombresPosibles = [email.toLowerCase()];
-    servicios.forEach(s => {
-        const n = String(s.cliente || s.Nombre || '').trim().toLowerCase();
-        if (n && !nombresPosibles.includes(n)) nombresPosibles.push(n);
-    });
+    for (let i = 1; i < dataRows.length; i++) {
+        const row = dataRows[i];
+        const rowObj = {};
+        headers.forEach((h, idx) => {
+            rowObj[h] = row[idx];
+        });
 
-    const filtradas = dataPlaneaciones.filter(p => {
-        const pCliente = String(p.cliente || '').trim().toLowerCase();
-        return nombresPosibles.some(name => pCliente.includes(name));
-    });
+        // Filtrar por cliente
+        const pCliente = _norm(rowObj['cliente']);
+        const coincide = nombresValidParaFiltrar.some(name =>
+            pCliente === name || pCliente.includes(name) || name.includes(pCliente)
+        );
 
-    const semana_actual = filtradas.filter(p => {
-        const f = _toISODate(p.fecha);
-        return f >= actual_inicio && f <= actual_fin;
-    });
+        if (!coincide) continue;
 
-    const proxima_semana = filtradas.filter(p => {
-        const f = _toISODate(p.fecha);
-        return f >= sig_inicio && f <= sig_fin;
-    });
+        const f = _toISODate(rowObj['fecha']);
+        if (!f) continue;
 
-    return {
-        actual: semana_actual,
-        siguiente: proxima_semana
-    };
+        if (f >= isoStrActual && f <= isoStrActualFin) {
+            result.actual.push(rowObj);
+        } else if (f >= isoStrSiguiente && f <= isoStrSiguienteFin) {
+            result.siguiente.push(rowObj);
+        }
+    }
+
+    return result;
 }
