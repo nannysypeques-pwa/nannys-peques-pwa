@@ -1961,7 +1961,7 @@ function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServicioResu
     PLANEACION_SESSION_ID++;
     MODO_SOLO_LECTURA = true;
     PLANEACION_CLIENTE = cliente;
-    const key = `${prefijo}| ${cliente}| ${nombreNineraResumen || ''} `;
+    const key = `${prefijo}|${cliente}|${nombreNineraResumen || ''}`;
     const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
 
     if (!fechas.length) {
