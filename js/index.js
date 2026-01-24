@@ -1370,6 +1370,7 @@ function verificarDatosFaltantesNinera(p) {
     if (!p || SESION.cliente) return;
 
     const faltantes = [];
+    if (!p.telefono || p.telefono.trim().length < 8) faltantes.push('Teléfono personal');
     if (!p.direccion || p.direccion.trim().length < 8) faltantes.push('Dirección completa');
     if (!p.emergencia || p.emergencia.trim().length < 8) faltantes.push('Teléfono de emergencia');
     if (!p.ubicacion || !p.ubicacion.trim().startsWith('http')) faltantes.push('Link de Ubicación (Google Maps)');
@@ -1378,6 +1379,7 @@ function verificarDatosFaltantesNinera(p) {
     if (faltantes.length > 0) {
         if (modal) modal.style.display = 'flex';
         //Pre-llenar si hay algo
+        if (document.getElementById('reg_staff_telefono')) document.getElementById('reg_staff_telefono').value = p.telefono || '';
         if (document.getElementById('reg_staff_direccion')) document.getElementById('reg_staff_direccion').value = p.direccion || '';
         if (document.getElementById('reg_staff_emergencia')) document.getElementById('reg_staff_emergencia').value = p.emergencia || '';
         if (document.getElementById('reg_staff_ubicacion')) document.getElementById('reg_staff_ubicacion').value = p.ubicacion || '';
@@ -1387,12 +1389,13 @@ function verificarDatosFaltantesNinera(p) {
 }
 
 async function guardarDatosStaff() {
+    const tel = document.getElementById('reg_staff_telefono').value.trim();
     const dir = document.getElementById('reg_staff_direccion').value.trim();
     const eme = document.getElementById('reg_staff_emergencia').value.trim();
     const ubi = document.getElementById('reg_staff_ubicacion').value.trim();
     const msg = document.getElementById('msgRegistroStaff');
 
-    if (dir.length < 8 || eme.length < 8 || !ubi.startsWith('http')) {
+    if (tel.length < 8 || dir.length < 8 || eme.length < 8 || !ubi.startsWith('http')) {
         msg.innerHTML = '<span class="err">Por favor, completa todos los campos correctamente.</span>';
         return;
     }
@@ -1402,6 +1405,7 @@ async function guardarDatosStaff() {
     try {
         const res = await api('updatePerfilNinera', {
             email: SESION.email,
+            telefono: tel,
             direccion: dir,
             emergencia: eme,
             ubicacion: ubi
@@ -1418,7 +1422,7 @@ async function guardarDatosStaff() {
             throw new Error(res.error || 'Error al guardar');
         }
     } catch (err) {
-        msg.innerHTML = `<span class="err"> ${err.message}</span> `;
+        msg.innerHTML = `<span class="err">${err.message}</span>`;
     }
 }
 

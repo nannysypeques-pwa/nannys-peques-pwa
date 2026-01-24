@@ -4432,17 +4432,21 @@ function updatePerfilNinera(email, payload) {
 
     const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => _norm(h));
 
-    const setVal = (colName, val) => {
-        let idx = headers.indexOf(_norm(colName));
-        if (idx !== -1) {
-            sh.getRange(fila, idx + 1).setValue(val);
+    const setVal = (colNamesArray, val) => {
+        for (let colName of colNamesArray) {
+            let idx = headers.indexOf(_norm(colName));
+            if (idx !== -1) {
+                sh.getRange(fila, idx + 1).setValue(val);
+                return true;
+            }
         }
+        return false;
     };
 
-    if (payload.telefono) setVal('telefono', payload.telefono);
-    if (payload.direccion) setVal('direccion base', payload.direccion);
-    if (payload.ubicacion) setVal('ubicacion', payload.ubicacion);
-    if (payload.emergencia) setVal('no. emergencia', payload.emergencia);
+    if (payload.telefono) setVal(['teléfono', 'telefono'], payload.telefono);
+    if (payload.direccion) setVal(['dirección', 'direccion'], payload.direccion);
+    if (payload.ubicacion) setVal(['ubicación', 'ubicacion'], payload.ubicacion);
+    if (payload.emergencia) setVal(['no. de emergencia', 'no. emergencia', 'emergencia'], payload.emergencia);
 
     return { ok: true };
 }
