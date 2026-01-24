@@ -1361,6 +1361,8 @@ function irVista(nombre, skipLogic = false) {
         if (CACHE_CLIENTE.profile) {
             const faltanDatos = verificarDatosFaltantesCliente(CACHE_CLIENTE.profile);
             if (faltanDatos) {
+                // Limpiar todas las vistas activas primero
+                document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
                 // Forzar vista de cliente con onboarding
                 const vistaCliente = document.getElementById('vista-cliente');
                 if (vistaCliente) vistaCliente.classList.add('activa');
