@@ -2628,48 +2628,67 @@ function volverSeleccion() {
 window.volverSeleccion = volverSeleccion;
 
 async function cargarActividadesCliente() {
-    const lista = document.getElementById('lista-actividades-cliente');
-    if (!lista) return;
-    lista.innerHTML = 'Cargando actividades...';
-    try {
-        const svcs = await api('getServiciosCliente', { email: SESION.email });
-        if (!svcs || svcs.length === 0) {
-            lista.innerHTML = '<p class="muted">No hay actividades programadas para tus servicios actuales.</p>';
-            return;
-        }
+    const contActual = document.getElementById('lista-actividades-actual');
+    const contSiguiente = document.getElementById('lista-actividades-siguiente');
+    if (!contActual || !contSiguiente) return;
 
-        let html = '';
-        for (const s of svcs) {
-            //El backend devuelve objetos con headers exactos. En Servicios suele ser "Tipo de servicio"
-            const tipo = s['Tipo de servicio'] || s['tipo_de_servicio'] || '';
-            if (tipo.toLowerCase() === 'neuronanny') {
-                const plan = await api('obtenerPlaneacionNeuronanny', {
-                    fecha: _toISODate(s.Fecha || s.fecha),
-                    cliente: s.cliente || s.Nombre || s.Nombre_del_Cliente
-                });
-                if (plan && plan.area_desarrollo) {
-                    html += `
-            <div class="card" style = "margin-bottom:15px; border-left: 4px solid var(--pink-main); padding: 15px;">
-                            <div style="font-size:12px; color:var(--pink-main); font-weight:700; margin-bottom:5px;">${_toISODate(s.Fecha || s.fecha)}</div>
-                            <h4 style="margin:0 0 8px 0; color:var(--text-main);">${plan.area_desarrollo}</h4>
-                            <p style="font-size:14px; margin-bottom:10px; color:#4B5563;"><b>Objetivo:</b> ${plan.objetivo}</p>
-                            <details>
-                                <summary style="font-size:13px; color:var(--blue-main); cursor:pointer; font-weight:600;">Ver descripción y materiales</summary>
-                                <div style="font-size:14px; margin-top:10px; line-height:1.5; color:#374151;">
-                                    <p style="margin-bottom:8px;"><b>Descripción:</b><br>${plan.descripcion}</p>
-                                    <p style="margin-bottom:8px;"><b>Materiales:</b><br>${plan.materiales}</p>
-                                    ${plan.imagen ? `<img src="${plan.imagen}" style="max-width:100%; border-radius:8px; margin-top:10px; display:block;">` : ''}
-                                </div>
-                            </details>
-                        </div>
-            `;
-                }
+    contActual.innerHTML = '<p class="muted">Buscando actividades...</p>';
+    contSiguiente.innerHTML = '';
+
+    try {
+        const res = await api('getActividadesClientePlanificadas', { email: SESION.email });
+        if (!res) throw new Error('No se recibió respuesta del servidor');
+
+        const renderLista = (lista, container) => {
+            if (!lista || lista.length === 0) {
+                container.innerHTML = '<div class="card" style="text-align:center; padding:20px; border:1px dashed #cbd5e1;"><p class="muted">No hay planeaciones para esta semana.</p></div>';
+                return;
             }
-        }
-        lista.innerHTML = html || '<div class="card" style="text-align:center; padding: 20px;"><p class="muted">Aún no hay planeaciones registradas para tus servicios.</p></div>';
+
+            let html = '';
+            lista.forEach(p => {
+                const area = normalizarTexto(p['area de desarrollo'] || '');
+                let emoji = '✨';
+                if (area.includes('motriz')) emoji = '🏃';
+                else if (area.includes('cognitivo')) emoji = '🧠';
+                else if (area.includes('lenguaje')) emoji = '🗣️';
+                else if (area.includes('socio')) emoji = '🤝';
+                else if (area.includes('sensorial')) emoji = '👂';
+
+                const fechaStr = _toISODate(p.fecha);
+                const diaNombre = new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' });
+
+                html += `
+                    <div class="activity-card">
+                        <span class="activity-label-pink">${diaNombre.toUpperCase()}</span>
+                        <div class="activity-area-title">${emoji} ${p['area de desarrollo'] || 'Actividad'}</div>
+                        <div class="activity-detail-summary">
+                            <b>Objetivo:</b> ${p.objetivo || 'Por definir'}
+                        </div>
+                        
+                        <details>
+                            <summary class="activity-details-link">Ver descripción y materiales ▽</summary>
+                            <div class="activity-expanded-content">
+                                <p style="margin-bottom:10px;"><b>Descripción:</b><br>${p.descripcion || '—'}</p>
+                                <p style="margin-bottom:10px;"><b>Materiales:</b><br>${p.materiales || '—'}</p>
+                                ${p.imagen ? `<img src="${p.imagen}" class="activity-img" loading="lazy">` : ''}
+                                <div style="font-size:11px; color:#94a3b8; margin-top:15px; border-top:1px solid #f1f5f9; padding-top:8px;">
+                                    Niñera: ${p['nombre de niñera'] || '—'}
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        };
+
+        renderLista(res.actual, contActual);
+        renderLista(res.siguiente, contSiguiente);
+
     } catch (e) {
         console.error(e);
-        lista.innerHTML = '<p class="err">Error al cargar las actividades.</p>';
+        contActual.innerHTML = '<p class="err">Error al cargar las actividades. Por favor, intenta de nuevo.</p>';
     }
 }
 window.cargarActividadesCliente = cargarActividadesCliente;

@@ -134,6 +134,10 @@
                 result = guardarPushSubscription({ email, subscription: payload.subscription });
                 break;
 
+            case 'getActividadesClientePlanificadas':
+                result = getActividadesClientePlanificadas(email);
+                break;
+
             default:
                 throw new Error('Acció³n no soportada: ' + action);
         }
@@ -4457,3 +4461,58 @@ function updatePerfilNinera(email, payload) {
 
 
 
+
+function getActividadesClientePlanificadas(email) {
+    if (!_estaAutorizado(email)) throw new Error('No autorizado.');
+
+    const shPlaneaciones = _hoja('Planeaciones_Neuronanny');
+    const dataPlaneaciones = _leerComoObjetos(shPlaneaciones);
+
+    const hoy = new Date();
+    const l_actual = startMonday(hoy);
+    const l_siguiente = new Date(l_actual);
+    l_siguiente.setDate(l_siguiente.getDate() + 7);
+    const d_siguiente = new Date(l_siguiente);
+    d_siguiente.setDate(d_siguiente.getDate() + 6);
+
+    const iso = (d) => _toISODate(d);
+    const actual_inicio = iso(l_actual);
+    const actual_fin = iso(new Date(l_actual.getTime() + 6 * 24 * 60 * 60 * 1000));
+    const sig_inicio = iso(l_siguiente);
+    const sig_fin = iso(d_siguiente);
+
+    const misPlaneaciones = dataPlaneaciones.filter(p => 
+        _norm(p.cliente) === _norm(email) || 
+        _norm(p.cliente).includes(_norm(email))
+    );
+
+    // Simplificar: el frontend enviará el email y el backend buscará por coincidencia de nombre de cliente o email si el header es 'cliente'
+    // Pero en la hoja Planeaciones_Neuronanny, la columna 'cliente' suele tener el nombre. 
+    // Vamos a buscar servicios del cliente primero para obtener su nombre real.
+    const servicios = getServiciosCliente(email);
+    const nombresPosibles = [email.toLowerCase()];
+    servicios.forEach(s => {
+        const n = String(s.cliente || s.Nombre || '').trim().toLowerCase();
+        if (n && !nombresPosibles.includes(n)) nombresPosibles.push(n);
+    });
+
+    const filtradas = dataPlaneaciones.filter(p => {
+        const pCliente = String(p.cliente || '').trim().toLowerCase();
+        return nombresPosibles.some(name => pCliente.includes(name));
+    });
+
+    const semana_actual = filtradas.filter(p => {
+        const f = _toISODate(p.fecha);
+        return f >= actual_inicio && f <= actual_fin;
+    });
+
+    const proxima_semana = filtradas.filter(p => {
+        const f = _toISODate(p.fecha);
+        return f >= sig_inicio && f <= sig_fin;
+    });
+
+    return {
+        actual: semana_actual,
+        siguiente: proxima_semana
+    };
+}
