@@ -4295,6 +4295,7 @@ function updatePerfilCliente(email, payload) {
         'Estado de salud actual 3': payload.salud_3,
         'Preferencias o actividades favoritas 3': payload.preferencias_3,
 
+        'Fecha de edición información de peque': _nowHuman(),
         'actualizado': _ahoraISO()
     };
 
