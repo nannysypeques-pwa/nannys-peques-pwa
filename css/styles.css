@@ -943,18 +943,117 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-size: 13px;
     text-align: center;
 }
-.modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 9999; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-.modal-content { background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; position: relative; }
 
-.weekly-section-title { font-size: 16px; color: var(--pink-main); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 15px; font-weight: 800; border-left: 4px solid var(--pink-main); padding-left: 12px; }
-.activity-card { background: white; border-radius: 18px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; transition: transform 0.2s; }
-.activity-card:active { transform: scale(0.98); }
-.activity-label-pink { color: var(--pink-main); font-weight: 700; font-size: 12px; margin-bottom: 5px; display: block; }
-.activity-area-title { font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
-.activity-detail-summary { font-size: 14px; color: #4b5563; line-height: 1.5; margin-bottom: 12px; }
-.activity-details-link { color: var(--blue-main); font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
-.activity-expanded-content { margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; font-size: 14px; color: #374151; }
-.activity-expanded-content b { color: var(--text-main); }
-.activity-img { width: 100%; border-radius: 12px; margin-top: 15px; display: block; object-fit: cover; max-height: 250px; }
-.activity-img:hover { transform: scale(1.02); cursor: pointer; }
-.activity-gallery { display: flex; flex-direction: column; gap: 10px; }
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.weekly-section-title {
+    font-size: 16px;
+    color: var(--pink-main);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 15px;
+    font-weight: 800;
+    border-left: 4px solid var(--pink-main);
+    padding-left: 12px;
+}
+
+.activity-card {
+    background: white;
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f5f9;
+    transition: transform 0.2s;
+}
+
+.activity-card:active {
+    transform: scale(0.98);
+}
+
+.activity-label-pink {
+    color: var(--pink-main);
+    font-weight: 700;
+    font-size: 12px;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.activity-area-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.activity-detail-summary {
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 1.5;
+    margin-bottom: 12px;
+}
+
+.activity-details-link {
+    color: var(--blue-main);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.activity-expanded-content {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #f1f5f9;
+    font-size: 14px;
+    color: #374151;
+}
+
+.activity-expanded-content b {
+    color: var(--text-main);
+}
+
+.activity-img {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin-top: 15px;
+    display: block;
+}
+
+.activity-img:hover {
+    transform: scale(1.02);
+    cursor: pointer;
+}
+
+.activity-gallery {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
