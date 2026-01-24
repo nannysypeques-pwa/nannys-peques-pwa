@@ -4462,8 +4462,15 @@ function updatePerfilNinera(email, payload) {
 
 
 
+function startMonday(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const day = d.getDay(); const diff = (day === 0 ? -6 : 1 - day);
+    d.setDate(d.getDate() + diff); d.setHours(0, 0, 0, 0);
+    return d;
+}
+
 function getActividadesClientePlanificadas(email) {
-    if (!_estaAutorizado(email)) throw new Error('No autorizado.');
+    if (!email) throw new Error('Acceso denegado: falta email');
 
     const shPlaneaciones = _hoja('Planeaciones_Neuronanny');
     const dataPlaneaciones = _leerComoObjetos(shPlaneaciones);
@@ -4481,8 +4488,8 @@ function getActividadesClientePlanificadas(email) {
     const sig_inicio = iso(l_siguiente);
     const sig_fin = iso(d_siguiente);
 
-    const misPlaneaciones = dataPlaneaciones.filter(p => 
-        _norm(p.cliente) === _norm(email) || 
+    const misPlaneaciones = dataPlaneaciones.filter(p =>
+        _norm(p.cliente) === _norm(email) ||
         _norm(p.cliente).includes(_norm(email))
     );
 
