@@ -2170,56 +2170,90 @@ function volverLogin() {
 window.volverLogin = volverLogin;
 
 function mostrarRegistroCliente() {
-    //Redirigir a portal familia
-    mostrarPortalFamilia();
+    // Para el portal familia, usamos la vista de onboarding
+    irVista('cliente');
 }
 window.mostrarRegistroCliente = mostrarRegistroCliente;
 
+function verificarDatosFaltantesCliente(p) {
+    if (!p) return true; // Falta todo
+
+    const req = [
+        { key: 'direccion', label: 'Dirección' },
+        { key: 'ubicación', label: 'Ubicación' },
+        { key: 'teléfono', label: 'Teléfono' },
+        { key: 'no._de_emergencia', label: 'Contacto de emergencia' },
+        { key: 'no._de_mascotas', label: 'No. de mascotas' },
+        { key: 'nombre_del_peque', label: 'Nombre del peque' },
+        { key: 'fecha_de_nacimiento', label: 'Fecha de nacimiento' },
+        { key: 'alergias', label: 'Alergias' },
+        { key: 'condición_médica_o_especificaciones_adicionales', label: 'Condición médica' },
+        { key: 'estado_de_salud_actual', label: 'Estado de salud' },
+        { key: 'preferencias_o_actividades_favoritas', label: 'Preferencias' }
+    ];
+
+    const faltantes = [];
+    req.forEach(f => {
+        const val = String(p[f.key] || '').trim();
+        if (val.length < 2) faltantes.push(f.label);
+    });
+
+    return faltantes.length > 0;
+}
+
 
 async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) {
-    if (!forceFetch && CACHE_CLIENTE.profile) {
-        // Usar perfil cacheado para verificar onboarding
-        const perf = CACHE_CLIENTE.profile;
-        const d = document.getElementById('cliente-dashboard');
-        const o = document.getElementById('cliente-onboarding');
-        if (d) d.style.display = 'none';
-        if (o) o.style.display = 'none';
-
-        if (forceOnboarding || !perf.nombre || String(perf.nombre).trim().length < 3) {
-            if (o) o.style.display = 'block';
-        } else {
-            if (d) d.style.display = 'block';
-            cargarServiciosCliente(false); // Usar cache
-        }
-        return;
-    }
-
-    //No llamamos a ocultarTodo porque vista-cliente no usa las cards del staff
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
-    //Forzamos visibilidad de vista-cliente (irVista ya puso .activa)
 
+    // Ocultar ambos por defecto
     if (d) d.style.display = 'none';
     if (o) o.style.display = 'none';
 
-    if (forceOnboarding) {
-        if (o) o.style.display = 'block';
-        return;
+    let perf = CACHE_CLIENTE.profile;
+
+    if (forceFetch || !perf) {
+        try {
+            perf = await api('getProfile', { email: SESION.email });
+            CACHE_CLIENTE.profile = perf;
+        } catch (e) {
+            console.error("Error cargando perfil:", e);
+            if (o) o.style.display = 'block';
+            return;
+        }
     }
 
-    try {
-        const perf = await api('getProfile', { email: SESION.email });
-        CACHE_CLIENTE.profile = perf; // Guardar en caché
+    // Verificar si faltan datos
+    const faltanDatos = verificarDatosFaltantesCliente(perf);
 
-        if (!perf || !perf.nombre || String(perf.nombre).trim().length < 3) {
-            if (o) o.style.display = 'block';
-        } else {
-            if (d) d.style.display = 'block';
-            cargarServiciosCliente(forceFetch);
+    if (forceOnboarding || faltanDatos) {
+        if (o) {
+            o.style.display = 'block';
+            // Pre-llenar campos
+            if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || '';
+            if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
+            if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || '';
+            if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.teléfono || '';
+            if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf.no._de_emergencia || '';
+            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf.no._de_mascotas || '';
+            if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || '';
+
+            // Fecha de nacimiento (ajuste de formato si es necesario)
+            if (document.getElementById('reg_peque_nac') && perf.fecha_de_nacimiento) {
+                try {
+                    const f = new Date(perf.fecha_de_nacimiento);
+                    if (!isNaN(f)) document.getElementById('reg_peque_nac').value = toISO(f);
+                } catch (e) { }
+            }
+
+            if (document.getElementById('reg_alergias')) document.getElementById('reg_alergias').value = perf.alergias || '';
+            if (document.getElementById('reg_condicion')) document.getElementById('reg_condicion').value = perf.condición_médica_o_especificaciones_adicionales || '';
+            if (document.getElementById('reg_salud')) document.getElementById('reg_salud').value = perf.estado_de_salud_actual || '';
+            if (document.getElementById('reg_preferencias')) document.getElementById('reg_preferencias').value = perf.preferencias_o_actividades_favoritas || '';
         }
-    } catch (e) {
-        console.error("Error cargando perfil:", e);
-        if (o) o.style.display = 'block';
+    } else {
+        if (d) d.style.display = 'block';
+        cargarServiciosCliente(forceFetch);
     }
 }
 window.mostrarVistaCliente = mostrarVistaCliente;
@@ -2262,8 +2296,9 @@ async function guardarRegistroCompleto() {
 
     try {
         await api('updatePerfilCliente', payload);
+        CACHE_CLIENTE.profile = null; // Limpiar caché para forzar recarga y validación
         mostrarToast('Perfil completado con éxito');
-        mostrarVistaCliente();
+        mostrarVistaCliente(false, true);
     } catch (e) {
         mostrarToast('Error: ' + e.message);
     }
