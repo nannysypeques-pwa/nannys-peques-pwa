@@ -65,6 +65,38 @@ function normalizarTexto(v) {
         .replace(/[\u0300-\u036f]/g, '');
 }
 
+/**
+ * Valida que los links sean imágenes directas o links de Drive válidos.
+ * Soporta múltiples links separados por comas.
+ */
+function validarLinksImagenes(val) {
+    if (!val || !val.trim()) return { ok: true, links: [] };
+    const links = val.split(',').map(l => l.trim()).filter(l => l.length > 0);
+    const validos = [];
+    const invalidos = [];
+
+    // Regex para imágenes comunes
+    const regDirecto = /\.(jpg|jpeg|png|webp|gif|bmp)(\?.*)?$/i;
+    // Regex para Drive Directo
+    const regDrive = /drive\.google\.com\/uc\?.*id=/i;
+    // Regex para otros links directos conocidos
+    const regScribd = /scribdassets\.com\/img/i;
+    const regBlogger = /blogger\.googleusercontent\.com\/img/i;
+
+    links.forEach(l => {
+        if (regDirecto.test(l) || regDrive.test(l) || regScribd.test(l) || regBlogger.test(l)) {
+            validos.push(l);
+        } else {
+            invalidos.push(l);
+        }
+    });
+
+    if (invalidos.length > 0) {
+        return { ok: false, msg: `Link(s) no válidos: ${invalidos.join(', ')}. Recuerda usar links directos de imagen.` };
+    }
+    return { ok: true, links: validos };
+}
+
 /* =========================================
    AUTH
    ========================================= */
@@ -1594,6 +1626,13 @@ async function guardarPlaneacionNeuronanny() {
     feedbackBotonInmediato(btn, 'Guardando…');
     mostrarToast('💾 Guardando planeación…');
 
+    const valImg = validarLinksImagenes(document.getElementById('pl_imagen').value);
+    if (!valImg.ok) {
+        restaurarBoton(btn);
+        mostrarToast('❌ ' + valImg.msg);
+        return;
+    }
+
     const payload = {
         fecha: SERVICIO_PLANEACION.fecha,
         nombre_ninera: SERVICIO_PLANEACION.nombre_ninera,
@@ -1604,7 +1643,7 @@ async function guardarPlaneacionNeuronanny() {
         objetivo: document.getElementById('pl_objetivo').value,
         descripcion: document.getElementById('pl_descripcion').value,
         materiales: document.getElementById('pl_materiales').value,
-        imagen: document.getElementById('pl_imagen').value,
+        imagen: valImg.links.join(','), // Guardar como CSV limpio
         fila: PLANEACION_EXISTENTE?.fila
     };
     const fn = PLANEACION_EXISTENTE ? 'editarPlaneacionNeuronanny' : 'guardarPlaneacionNeuronanny';
@@ -2671,7 +2710,15 @@ async function cargarActividadesCliente() {
                             <div class="activity-expanded-content">
                                 <p style="margin-bottom:10px;"><b>Descripción:</b><br>${p.descripcion || '—'}</p>
                                 <p style="margin-bottom:10px;"><b>Materiales:</b><br>${p.materiales || '—'}</p>
-                                ${p.imagen ? `<img src="${p.imagen}" class="activity-img" loading="lazy">` : ''}
+                                
+                                <div class="activity-gallery">
+                                    ${(p.imagen || '').split(',').map(img => {
+                    const src = img.trim();
+                    if (!src) return '';
+                    return `<img src="${src}" class="activity-img" loading="lazy" onclick="window.open('${src}', '_blank')">`;
+                }).join('')}
+                                </div>
+
                                 <div style="font-size:11px; color:#94a3b8; margin-top:15px; border-top:1px solid #f1f5f9; padding-top:8px;">
                                     Niñera: ${p['nombre de ninera'] || '—'}
                                 </div>

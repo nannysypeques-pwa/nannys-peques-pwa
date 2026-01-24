@@ -956,3 +956,5 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 .activity-expanded-content { margin-top: 15px; padding-top: 15px; border-top: 1px solid #f1f5f9; font-size: 14px; color: #374151; }
 .activity-expanded-content b { color: var(--text-main); }
 .activity-img { width: 100%; border-radius: 12px; margin-top: 15px; display: block; object-fit: cover; max-height: 250px; }
+.activity-img:hover { transform: scale(1.02); cursor: pointer; }
+.activity-gallery { display: flex; flex-direction: column; gap: 10px; }
