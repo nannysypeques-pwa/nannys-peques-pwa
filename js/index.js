@@ -2655,7 +2655,7 @@ async function cargarActividadesCliente() {
                 else if (area.includes('socio')) emoji = '🤝';
                 else if (area.includes('sensorial')) emoji = '👂';
 
-                const fechaStr = _toISODate(p.fecha);
+                const fechaStr = toISO(new Date(p.fecha));
                 const diaNombre = new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' });
 
                 html += `
