@@ -1726,71 +1726,7 @@ async function cargarResumenPlaneacionesNinera() {
 //Logic for abrirPlaneacionesCliente needs PLANEACION_FUENTE and CACHE_PLANEACIONES
 //I must include that logic. It was around line 3774 in HTML.
 
-async function abrirPlaneacionesCliente(cliente, esSiguiente, tipoServicio) {
-    PLANEACION_CLIENTE = cliente;
-    PLANEACION_INDEX = 0;
 
-    //Determine dates from PLANEACION_FUENTE or fetch?
-    //In HTML, PLANEACION_FUENTE was populated by scanning CAL_SERVICIOS? No.
-    //HTML had a complex logic for PLANEACION_FUENTE (lines 3788-3825).
-    //I should replicate that logic.
-
-    //But since I lost the 'source' logic in extraction (it was inline in HTML), I need to reconstruct it.
-    //Ah, 'getResumenPlaneacionesNinera' returns list of planeaciones needed.
-    //'abrirPlaneacionesCliente' takes the clicked client and finds all dates for that client in the active week?
-    //Let's implement a simpler version that fetches planeacion data for the clicked item?
-    //But the modal has navigation (<>).
-    //For now, I'll fetch the specific one.
-
-    //Wait, the user wants "no loss of functionality".
-    //I need to properly implement the array of dates to navigate.
-
-    //Reconstructing:
-    //When we click a resume item, we know the CLIENT and if it's NEXT week.
-    //We should find all services for that client in that week to build the navigation list.
-
-    let serviciosFuente = esSiguiente ? CAL_SERVICIOS_SIG : CAL_SERVICIOS;
-    //Filter by client and type
-    PLANEACIONES_FECHAS = serviciosFuente
-        .filter(s => s.cliente === cliente && TIPOS_CON_PLANEACION.includes(normalizarTexto(s.tipo_servicio)))
-        .map(s => s.fecha)
-        .sort();
-
-    //Remove duplicates
-    PLANEACIONES_FECHAS = [...new Set(PLANEACIONES_FECHAS)];
-
-    if (PLANEACIONES_FECHAS.length === 0) {
-        //Fallback if not found in calendar (maybe hidden?)
-        //Try fetching directly?
-        //For now alert.
-        alert('No se encontraron fechas de servicio para este cliente en la semana seleccionada.');
-        return;
-    }
-
-    PLANEACION_INDEX = 0;
-    actualizarNavegacionPlaneacion();
-
-    const fecha = PLANEACIONES_FECHAS[0];
-    const key = `${cliente}| ${fecha} `;
-    const sessionAtRequest = ++PLANEACION_SESSION_ID;
-
-    //Cache or fetch
-    if (CACHE_PLANEACIONES[key]) {
-        abrirPlaneacionNeuronanny(buscarServicio(fecha, cliente, serviciosFuente), CACHE_PLANEACIONES[key]);
-    } else {
-        //Show loading?
-        try {
-            const p = await api('obtenerPlaneacionNeuronanny', { fecha, cliente, email: SESION.email });
-            if (sessionAtRequest !== PLANEACION_SESSION_ID) return;
-            CACHE_PLANEACIONES[key] = p;
-            abrirPlaneacionNeuronanny(buscarServicio(fecha, cliente, serviciosFuente), p);
-        } catch (err) {
-            console.error(err);
-            //Open empty
-            abrirPlaneacionNeuronanny(buscarServicio(fecha, cliente, serviciosFuente), null);
-        }
-    }
-}
 
 function buscarServicio(fecha, cliente, fuente) {
     return fuente.find(s => s.cliente === cliente && s.fecha === fecha) || { fecha, cliente, nombre_ninera: SESION.nombre };
@@ -1891,8 +1827,8 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
     MODO_SOLO_LECTURA = false;
     PLANEACION_CLIENTE = cliente;
 
-    //🔑 USAR FECHAS DEL RESUMEN
-    const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}| ${cliente}| ${normalizarTexto(SESION.nombre || '')} `;
+    //🔑 USAR FECHAS DEL RESUMEN (Sin espacios extra en el key)
+    const key = `${esSiguienteSemana ? 'ninera_siguiente' : 'ninera_actual'}|${cliente}|${normalizarTexto(SESION.nombre || '')}`;
     const fechas = RESUMEN_PLANEACIONES_SUP[key] || [];
 
     if (!fechas.length) {
@@ -1917,7 +1853,7 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
 
 function abrirPlaneacionPorIndice() {
     const fecha = PLANEACIONES_FECHAS[PLANEACION_INDEX];
-    const key = `${PLANEACION_CLIENTE}| ${fecha} `;
+    const key = `${PLANEACION_CLIENTE}|${fecha}`;
 
     const servicio = PLANEACION_FUENTE.find(
         s => s.cliente === PLANEACION_CLIENTE && s.fecha === fecha
@@ -2012,7 +1948,7 @@ function cerrarPlaneacionNeuronanny() {
 
 function precargarPlaneacionesCliente() {
     PLANEACIONES_FECHAS.forEach(fecha => {
-        const key = `${PLANEACION_CLIENTE}| ${fecha} `;
+        const key = `${PLANEACION_CLIENTE}|${fecha}`;
         if (key in CACHE_PLANEACIONES) return;
 
         api('obtenerPlaneacionNeuronanny', { fecha, cliente: PLANEACION_CLIENTE, email: SESION.email })
