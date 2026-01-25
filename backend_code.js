@@ -4264,20 +4264,22 @@ function updatePerfilCliente(email, payload) {
 
     // Mapear campos de payload a columnas
     const fields = {
-        'Nombre completo': payload.nombre_completo,
-        'Dirección': payload.direccion,
-        'Ubicación': payload.ubicacion,
-        'Teléfono': payload.telefono,
+        'nombre completo': payload.nombre_completo,
+        'direccion': payload.direccion,
+        'ubicación': payload.ubicacion,
+        'teléfono': payload.telefono,
         'No. de emergencia': payload.emergencia,
+        'no. de mascotas': payload.mascotas,
+        'Políticas de contratación': payload.politicas_aceptadas || '',
+        'Fecha de edición información de peque': _nowHuman(),
 
         // Peque 1
-        'Nombre del peque': payload.peque_nombre,
+        'nombre del peque': payload.peque_nombre,
         'Fecha de nacimiento': payload.peque_nacimiento,
         'Alergias': payload.alergias,
         'Condición médica o especificaciones adicionales': payload.condicion,
         'Estado de salud actual': payload.salud,
         'Preferencias o actividades favoritas': payload.preferencias,
-        'No. de mascotas': payload.mascotas,
 
         // Peque 2
         'Nombre del peque 2': payload.peque_nombre_2,
@@ -4295,8 +4297,6 @@ function updatePerfilCliente(email, payload) {
         'Estado de salud actual 3': payload.salud_3,
         'Preferencias o actividades favoritas 3': payload.preferencias_3,
 
-        'Políticas de contratación': payload.politicas_aceptadas || '',
-        'Fecha de edición información de peque': _nowHuman(),
         'actualizado': _ahoraISO()
     };
 
