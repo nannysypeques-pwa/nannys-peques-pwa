@@ -219,10 +219,7 @@ function logout() {
     if (email) email.value = '';
     if (pass) pass.value = '';
 
-    // Mostrar pantalla de selección en lugar de login directo
-    document.getElementById('paso-seleccion').style.display = 'block';
-    document.getElementById('paso-login').style.display = 'none';
-    document.getElementById('paso-registro-cliente').style.display = 'none';
+    document.getElementById('paso-login').style.display = 'block';
     document.getElementById('paso-olvide').style.display = 'none';
 }
 
@@ -746,7 +743,7 @@ function abrirModalServicio(s) {
             actions.appendChild(b);
         } else if (!finReal) {
             const b = document.createElement('button');
-            b.className = 'btn-primary';
+            b.className = 'btn-ghost';
             b.textContent = 'Finalizar servicio';
             b.onclick = () => accionFinalizar(s.sheet, s.row_base, s.fecha);
             actions.appendChild(b);
@@ -755,7 +752,7 @@ function abrirModalServicio(s) {
     else if (estado === 'en curso') {
         if (!finReal) {
             const b = document.createElement('button');
-            b.className = 'btn-primary';
+            b.className = 'btn-ghost';
             b.textContent = 'Finalizar servicio';
             b.onclick = () => accionFinalizar(s.sheet, s.row_base, s.fecha);
             actions.appendChild(b);
@@ -2225,11 +2222,11 @@ function verificarDatosFaltantesCliente(p) {
     if (!p) return true; // Falta todo
 
     const req = [
-        { key: 'dirección', label: 'Dirección' },
+        { key: 'direccion', label: 'Dirección' },
         { key: 'ubicación', label: 'Ubicación' },
         { key: 'teléfono', label: 'Teléfono' },
         { key: 'no._de_emergencia', label: 'Contacto de emergencia' },
-        { key: 'no._de_mascotas', label: 'No. de mascotas' },
+        { key: 'no. de mascotas', label: 'No. de mascotas' },
         { key: 'nombre_del_peque', label: 'Nombre del peque' },
         { key: 'fecha_de_nacimiento', label: 'Fecha de nacimiento' },
         { key: 'alergias', label: 'Alergias' },
@@ -2278,11 +2275,11 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
             o.style.display = 'block';
             // Pre-llenar campos con nombres normalizados del backend
             if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || perf.nombre_completo || '';
-            if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.dirección || perf.direccion || '';
+            if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
             if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || '';
             if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.teléfono || '';
-            if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf.no_de_emergencia || perf['no._de_emergencia'] || '';
-            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf.no_de_mascotas || perf['no._de_mascotas'] || '';
+            if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf.no_de_emergencia || perf['no._de_emergencia'] || perf['No. de emergencia'] || '';
+            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf.no_de_mascotas || perf['no. de mascotas'] || '';
             if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || '';
 
             // Fecha de nacimiento (ajuste de formato si es necesario)
@@ -2422,13 +2419,11 @@ async function cargarPerfil() {
             const esNanny = !!perf.isNanny;
             const seccionPeques = document.getElementById('perfil-peques-container');
             const itemMascotas = document.getElementById('perfil_mascotas_gral')?.closest('.profile-info-item');
-            const itemPoliticas = document.getElementById('perfil-politicas-container');
             const avatar = document.querySelector('.profile-avatar');
 
             if (esNanny) {
                 if (seccionPeques) seccionPeques.style.display = 'none';
                 if (itemMascotas) itemMascotas.style.display = 'none';
-                if (itemPoliticas) itemPoliticas.style.display = 'none';
                 if (avatar) avatar.textContent = '🍼';
 
                 const btnEditar = document.querySelector('.profile-actions .btn-primary');
@@ -2436,7 +2431,6 @@ async function cargarPerfil() {
             } else {
                 if (seccionPeques) seccionPeques.style.display = 'block';
                 if (itemMascotas) itemMascotas.style.display = 'block';
-                if (itemPoliticas) itemPoliticas.style.display = 'block';
                 if (avatar) avatar.textContent = '👨‍👩‍👧‍👦';
 
                 const btnEditar = document.querySelector('.profile-actions .btn-primary');
@@ -2474,7 +2468,7 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
             if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_sal_actual || perf.estado_de_salud_actual || '—';
             if (document.getElementById('perfil_preferencias')) document.getElementById('perfil_preferencias').textContent = perf.preferencias_o_actividades_favoritas || '—';
-            if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no._de_mascotas'] || '—';
+            if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no. de mascotas'] || perf['no._de_mascotas'] || '—';
 
             // Formatear fecha de políticas si existe
             const politicas = perf['políticas_de_contratación'] || '';
@@ -2924,6 +2918,8 @@ function renderActividadesCliente(res) {
     renderLista(res.siguiente, contSiguiente);
 }
 window.cargarActividadesCliente = cargarActividadesCliente;
+
+
 
 
 
