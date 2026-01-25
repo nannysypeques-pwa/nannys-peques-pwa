@@ -2467,6 +2467,7 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_alergias')) document.getElementById('perfil_alergias').textContent = perf.alergias || '—';
             if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
             if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_sal_actual || perf.estado_de_salud_actual || '—';
+            if (document.getElementById('perfil_preferencias')) document.getElementById('perfil_preferencias').textContent = perf.preferencias_o_actividades_favoritas || '—';
             if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no._de_mascotas'] || '—';
 
             // Formatear fecha de políticas si existe
@@ -2505,6 +2506,7 @@ async function cargarPerfil() {
                 if (document.getElementById('perfil_alergias_2')) document.getElementById('perfil_alergias_2').textContent = perf.alergias_2 || '—';
                 if (document.getElementById('perfil_condicion_2')) document.getElementById('perfil_condicion_2').textContent = perf['condición_médica_o_especificaciones_adicionales_2'] || '—';
                 if (document.getElementById('perfil_salud_2')) document.getElementById('perfil_salud_2').textContent = perf.estado_de_salud_actual_2 || '—';
+                if (document.getElementById('perfil_preferencias_2')) document.getElementById('perfil_preferencias_2').textContent = perf.preferencias_o_actividades_favoritas_2 || '—';
             } else {
                 card2.style.display = 'none';
             }
@@ -2519,6 +2521,7 @@ async function cargarPerfil() {
                 if (document.getElementById('perfil_alergias_3')) document.getElementById('perfil_alergias_3').textContent = perf.alergias_3 || '—';
                 if (document.getElementById('perfil_condicion_3')) document.getElementById('perfil_condicion_3').textContent = perf['condición_médica_o_especificaciones_adicionales_3'] || '—';
                 if (document.getElementById('perfil_salud_3')) document.getElementById('perfil_salud_3').textContent = perf.estado_de_salud_actual_3 || '—';
+                if (document.getElementById('perfil_preferencias_3')) document.getElementById('perfil_preferencias_3').textContent = perf.preferencias_o_actividades_favoritas_3 || '—';
             } else {
                 card3.style.display = 'none';
             }
