@@ -2190,6 +2190,22 @@ function mostrarRegistroCliente() {
 }
 window.mostrarRegistroCliente = mostrarRegistroCliente;
 
+function aceptarPoliticas() {
+    const btn = document.getElementById('btn_aceptar_politicas');
+    const hidden = document.getElementById('reg_politicas_aceptadas');
+
+    if (btn && hidden) {
+        const ahora = new Date().toISOString();
+        hidden.value = ahora;
+        btn.textContent = '✓ Aceptado';
+        btn.disabled = true;
+        btn.style.background = '#10b981';
+        btn.style.cursor = 'not-allowed';
+        mostrarToast('✓ Políticas aceptadas');
+    }
+}
+window.aceptarPoliticas = aceptarPoliticas;
+
 function verificarDatosFaltantesCliente(p) {
     if (!p) return true; // Falta todo
 
@@ -2204,7 +2220,8 @@ function verificarDatosFaltantesCliente(p) {
         { key: 'alergias', label: 'Alergias' },
         { key: 'condición_médica_o_especificaciones_adicionales', label: 'Condición médica' },
         { key: 'estado_de_salud_actual', label: 'Estado de salud' },
-        { key: 'preferencias_o_actividades_favoritas', label: 'Preferencias' }
+        { key: 'preferencias_o_actividades_favoritas', label: 'Preferencias' },
+        { key: 'políticas_de_contratación', label: 'Políticas de contratación' }
     ];
 
     const faltantes = [];
@@ -2289,6 +2306,7 @@ async function guardarRegistroCompleto() {
         salud: document.getElementById('reg_salud').value,
         preferencias: document.getElementById('reg_preferencias').value,
         mascotas: document.getElementById('reg_mascotas').value,
+        politicas_aceptadas: document.getElementById('reg_politicas_aceptadas').value,
 
         //Peque 2
         peque_nombre_2: document.getElementById('reg_peque_nombre_2').value,
