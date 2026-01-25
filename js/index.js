@@ -219,7 +219,10 @@ function logout() {
     if (email) email.value = '';
     if (pass) pass.value = '';
 
-    document.getElementById('paso-login').style.display = 'block';
+    // Mostrar pantalla de selección en lugar de login directo
+    document.getElementById('paso-seleccion').style.display = 'block';
+    document.getElementById('paso-login').style.display = 'none';
+    document.getElementById('paso-registro-cliente').style.display = 'none';
     document.getElementById('paso-olvide').style.display = 'none';
 }
 
