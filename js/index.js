@@ -2222,24 +2222,35 @@ function verificarDatosFaltantesCliente(p) {
     if (!p) return true; // Falta todo
 
     const req = [
-        { key: 'direccion', label: 'Dirección' },
-        { key: 'ubicación', label: 'Ubicación' },
-        { key: 'teléfono', label: 'Teléfono' },
-        { key: 'no._de_emergencia', label: 'Contacto de emergencia' },
-        { key: 'no. de mascotas', label: 'No. de mascotas' },
-        { key: 'nombre_del_peque', label: 'Nombre del peque' },
-        { key: 'fecha_de_nacimiento', label: 'Fecha de nacimiento' },
-        { key: 'alergias', label: 'Alergias' },
-        { key: 'condición_médica_o_especificaciones_adicionales', label: 'Condición médica' },
-        { key: 'estado_de_salud_actual', label: 'Estado de salud' },
-        { key: 'preferencias_o_actividades_favoritas', label: 'Preferencias' },
-        { key: 'políticas_de_contratación', label: 'Políticas de contratación' }
+        { keys: ['dirección', 'direccion'], label: 'Dirección' },
+        { keys: ['ubicación', 'ubicacion'], label: 'Ubicación' },
+        { keys: ['teléfono', 'telefono'], label: 'Teléfono' },
+        { keys: ['no._de_emergencia', 'No. de emergencia', 'no. de emergencia'], label: 'Contacto de emergencia' },
+        { keys: ['no._de_mascotas', 'no. de mascotas', 'mascotas'], label: 'No. de mascotas' },
+        { keys: ['nombre_del_peque', 'nombre del peque'], label: 'Nombre del peque' },
+        { keys: ['fecha_de_nacimiento', 'fecha de nacimiento'], label: 'Fecha de nacimiento' },
+        { keys: ['alergias'], label: 'Alergias' },
+        { keys: ['condición_médica_o_especificaciones_adicionales', 'condicion_medica', 'condicion'], label: 'Condición médica' },
+        { keys: ['estado_de_salud_actual', 'estado de salud', 'salud'], label: 'Estado de salud' },
+        { keys: ['preferencias_o_actividades_favoritas', 'preferencias'], label: 'Preferencias' },
+        { keys: ['políticas_de_contratación', 'politicas_de_contratacion', 'politicas'], label: 'Políticas de contratación' }
     ];
 
     const faltantes = [];
     req.forEach(f => {
-        const val = String(p[f.key] || '').trim();
-        if (val.length < 2) faltantes.push(f.label);
+        let val = '';
+        if (f.keys) {
+            for (const k of f.keys) {
+                if (p[k]) {
+                    val = String(p[k]).trim();
+                    break;
+                }
+            }
+        } else if (f.key) {
+            val = String(p[f.key] || '').trim();
+        }
+
+        if (val.length < 1) faltantes.push(f.label);
     });
 
     return faltantes.length > 0;
@@ -2279,7 +2290,7 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
             if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || '';
             if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.teléfono || '';
             if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf.no_de_emergencia || perf['no._de_emergencia'] || perf['No. de emergencia'] || '';
-            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf.no_de_mascotas || perf['no. de mascotas'] || '';
+            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf.no_de_mascotas || perf['no._de_mascotas'] || perf['no. de mascotas'] || '';
             if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || '';
 
             // Fecha de nacimiento (ajuste de formato si es necesario)
