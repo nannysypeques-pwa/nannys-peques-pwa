@@ -2419,11 +2419,13 @@ async function cargarPerfil() {
             const esNanny = !!perf.isNanny;
             const seccionPeques = document.getElementById('perfil-peques-container');
             const itemMascotas = document.getElementById('perfil_mascotas_gral')?.closest('.profile-info-item');
+            const itemPoliticas = document.getElementById('perfil_politicas')?.closest('.profile-info-item');
             const avatar = document.querySelector('.profile-avatar');
 
             if (esNanny) {
                 if (seccionPeques) seccionPeques.style.display = 'none';
                 if (itemMascotas) itemMascotas.style.display = 'none';
+                if (itemPoliticas) itemPoliticas.style.display = 'none';
                 if (avatar) avatar.textContent = '🍼';
 
                 const btnEditar = document.querySelector('.profile-actions .btn-primary');
@@ -2431,6 +2433,7 @@ async function cargarPerfil() {
             } else {
                 if (seccionPeques) seccionPeques.style.display = 'block';
                 if (itemMascotas) itemMascotas.style.display = 'block';
+                if (itemPoliticas) itemPoliticas.style.display = 'block';
                 if (avatar) avatar.textContent = '👨‍👩‍👧‍👦';
 
                 const btnEditar = document.querySelector('.profile-actions .btn-primary');
