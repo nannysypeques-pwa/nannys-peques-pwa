@@ -2195,8 +2195,10 @@ function aceptarPoliticas() {
     const hidden = document.getElementById('reg_politicas_aceptadas');
 
     if (btn && hidden) {
-        const ahora = new Date().toISOString();
-        hidden.value = ahora;
+        const ahora = new Date();
+        // Formato: 24/1/2026 18:06:16
+        const formatted = `${ahora.getDate()}/${ahora.getMonth() + 1}/${ahora.getFullYear()} ${ahora.getHours()}:${String(ahora.getMinutes()).padStart(2, '0')}:${String(ahora.getSeconds()).padStart(2, '0')}`;
+        hidden.value = formatted;
         btn.textContent = '✓ Aceptado';
         btn.disabled = true;
         btn.style.background = '#10b981';
@@ -2428,6 +2430,7 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
             if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_sal_actual || perf.estado_de_salud_actual || '—';
             if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no._de_mascotas'] || '—';
+            if (document.getElementById('perfil_politicas')) document.getElementById('perfil_politicas').textContent = perf['políticas_de_contratación'] || '—';
 
             //Peque 2
             const card2 = document.getElementById('perfil-peque-2');
