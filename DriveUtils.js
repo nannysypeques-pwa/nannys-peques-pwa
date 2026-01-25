@@ -46,9 +46,12 @@ function _guardarImagenDrive(base64, nombreArchivo) {
     var file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
-    // 5. Retornar URL directa
-    console.log("Imagen guardada con éxito en Drive: " + file.getUrl());
-    return file.getUrl();
+    // 5. Retornar URL directa para embeber en <img>
+    var fileId = file.getId();
+    var directUrl = "https://drive.google.com/uc?export=view&id=" + fileId;
+
+    console.log("Imagen guardada con éxito en Drive. URL Directa: " + directUrl);
+    return directUrl;
   } catch (e) {
     console.error("Fallo crítico en _guardarImagenDrive: " + e.toString());
     throw new Error("No se pudo guardar la imagen: " + e.message);
