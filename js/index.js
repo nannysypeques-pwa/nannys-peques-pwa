@@ -2530,7 +2530,14 @@ async function cargarPerfil() {
 window.cargarPerfil = cargarPerfil;
 
 async function editarPerfilCliente() {
-    // Mostrar directamente el formulario de onboarding sin validaciones
+    // Primero cambiar a vista-cliente para acceder a los elementos
+    const vistaCliente = document.getElementById('vista-cliente');
+    const vistaPerfil = document.getElementById('vista-perfil');
+
+    if (vistaPerfil) vistaPerfil.classList.remove('activa');
+    if (vistaCliente) vistaCliente.classList.add('activa');
+
+    // Luego mostrar el formulario de onboarding
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
     if (d) d.style.display = 'none';
