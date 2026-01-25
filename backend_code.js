@@ -4566,39 +4566,3 @@ function getActividadesClientePlanificadas(email) {
 
     return result;
 }
-
-/**
- * Guarda una imagen base64 en la carpeta especificada de Drive
- * y retorna el link de descarga directa para usar en <img>.
- */
-function _guardarImagenDrive(base64, nombreArchivo) {
-    // 1. Buscar carpeta
-    const folders = DriveApp.getFoldersByName("NannysPeques_Imagenes_Planeacion");
-    let folder;
-    if (folders.hasNext()) {
-        folder = folders.next();
-    } else {
-        // Fallback: crearla si no existe (aunque el usuario dijo que ya la creó)
-        folder = DriveApp.createFolder("NannysPeques_Imagenes_Planeacion");
-        folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    }
-
-    // 2. Decodificar Base64
-    // El frontend manda "data:image/jpeg;base64,....."
-    // Debemos quitar el encabezado
-    const partes = base64.split(",");
-    const data = partes.length > 1 ? partes[1] : partes[0];
-    const decoded = Utilities.base64Decode(data);
-    const blob = Utilities.newBlob(decoded, "image/jpeg", nombreArchivo);
-
-    // 3. Crear archivo
-    const file = folder.createFile(blob);
-
-    // 4. Asegurar permisos públicos (para que se vea en <img src>)
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-
-    // 5. Retornar URL directa
-    // Usamos el formato "uc" para export=view
-    return "https://drive.google.com/uc?export=view&id=" + file.getId();
-}
-
