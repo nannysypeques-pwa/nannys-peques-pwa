@@ -2427,14 +2427,17 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_email_header')) document.getElementById('perfil_email_header').textContent = perf.email || SESION.email;
 
             //Detectar rol REAL desde el backend para visibilidad
+            //Detectar rol REAL desde el backend para visibilidad
             const esNanny = !!perf.isNanny;
             const seccionPeques = document.getElementById('perfil-peques-container');
             const itemMascotas = document.getElementById('perfil_mascotas_gral')?.closest('.profile-info-item');
+            const itemPoliticas = document.getElementById('perfil-politicas-container');
             const avatar = document.querySelector('.profile-avatar');
 
             if (esNanny) {
                 if (seccionPeques) seccionPeques.style.display = 'none';
                 if (itemMascotas) itemMascotas.style.display = 'none';
+                if (itemPoliticas) itemPoliticas.style.display = 'none';
                 if (avatar) avatar.textContent = '🍼';
 
                 const btnEditar = document.querySelector('.profile-actions .btn-primary');
@@ -2442,6 +2445,8 @@ async function cargarPerfil() {
             } else {
                 if (seccionPeques) seccionPeques.style.display = 'block';
                 if (itemMascotas) itemMascotas.style.display = 'block';
+                // Para clientes, mostrar políticas
+                if (itemPoliticas) itemPoliticas.style.display = 'block';
                 if (avatar) avatar.textContent = '👨‍👩‍👧‍👦';
 
                 const btnEditar = document.querySelector('.profile-actions .btn-primary');
