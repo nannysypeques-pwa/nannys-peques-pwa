@@ -1,25 +1,35 @@
 /**
- * Versión mejorada de Guardar Imagen en Drive
- * - Pide permisos más amplios
- * - Crea la carpeta si no existe
- * - Establece permisos públicos automáticamente
+ * FORCE DRIVE SCOPE (No borrar esta línea):
+ * DriveApp.getFoldersByName(""); 
+ * 
+ * Versión mejorada de Guardar Imagen en Drive con TRACE de errores
  */
 function _guardarImagenDrive(base64, nombreArchivo) {
   try {
-    // 1. Buscar o crear carpeta
-    var folderName = "NannysPeques_Imagenes_Planeacion";
-    var folders = DriveApp.getFoldersByName(folderName);
-    var folder;
-    if (folders.hasNext()) {
-      folder = folders.next();
-    } else {
-      folder = DriveApp.createFolder(folderName);
+    // 1. Verificar si DriveApp está disponible
+    if (typeof DriveApp === 'undefined') {
+      throw new Error("El servicio de Drive (DriveApp) no está habilitado en este proyecto.");
     }
 
-    // Asegurar acceso público a la carpeta (para que se vean las fotos)
+    // 2. Buscar o crear carpeta
+    var folderName = "NannysPeques_Imagenes_Planeacion";
+    var folder;
+
+    try {
+      var folders = DriveApp.getFoldersByName(folderName);
+      if (folders.hasNext()) {
+        folder = folders.next();
+      } else {
+        folder = DriveApp.createFolder(folderName);
+      }
+    } catch (e) {
+      throw new Error("Error específico de permisos al acceder a carpetas: " + e.message);
+    }
+
+    // Asegurar acceso público
     folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
-    // 2. Procesar base64
+    // 3. Procesar base64
     var partes = base64.split(",");
     var contentType = "image/jpeg";
     var data = base64;
@@ -32,14 +42,16 @@ function _guardarImagenDrive(base64, nombreArchivo) {
     var decoded = Utilities.base64Decode(data);
     var blob = Utilities.newBlob(decoded, contentType, nombreArchivo);
 
-    // 3. Crear archivo y dar permisos
+    // 4. Crear archivo y dar permisos
     var file = folder.createFile(blob);
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
-    // 4. Retornar URL directa
+    // 5. Retornar URL directa
+    console.log("Imagen guardada con éxito en Drive: " + file.getUrl());
     return file.getUrl();
   } catch (e) {
-    throw new Error("Error en DriveApp: " + e.message);
+    console.error("Fallo crítico en _guardarImagenDrive: " + e.toString());
+    throw new Error("No se pudo guardar la imagen: " + e.message);
   }
 }
 
@@ -47,12 +59,12 @@ function _guardarImagenDrive(base64, nombreArchivo) {
  * EJECUTA ESTA FUNCIÓN PARA ACTIVAR TODOS LOS PERMISOS
  */
 function triggerAuth() {
-  // Pedir scopes de lectura, escritura y administración
   DriveApp.getRootFolder();
+  DriveApp.getFiles();
   DriveApp.getFoldersByName("test");
   var temp = DriveApp.createFile("PERMISO_TEMPORAL.txt", "Autorizando...");
   temp.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  temp.setTrashed(true); // Borrarlo de una vez
+  temp.setTrashed(true);
 
-  console.log("¡PERMISOS CONCEDIDOS TOTALMENTE! Ahora haz un NUEVO DEPLOY.");
+  console.log("¡PERMISOS CONCEDIDOS! Ahora ve a 'Deploy' -> 'Nueva implementación' y despliega de nuevo.");
 }
