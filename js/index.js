@@ -2208,6 +2208,15 @@ function aceptarPoliticas() {
 }
 window.aceptarPoliticas = aceptarPoliticas;
 
+function cancelarFormularioCliente() {
+    // Simplemente cerrar el formulario sin guardar
+    const d = document.getElementById('cliente-dashboard');
+    const o = document.getElementById('cliente-onboarding');
+    if (o) o.style.display = 'none';
+    if (d) d.style.display = 'block';
+}
+window.cancelarFormularioCliente = cancelarFormularioCliente;
+
 function verificarDatosFaltantesCliente(p) {
     if (!p) return true; // Falta todo
 
@@ -2430,7 +2439,32 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
             if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_sal_actual || perf.estado_de_salud_actual || '—';
             if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no._de_mascotas'] || '—';
-            if (document.getElementById('perfil_politicas')) document.getElementById('perfil_politicas').textContent = perf['políticas_de_contratación'] || '—';
+
+            // Formatear fecha de políticas si existe
+            const politicas = perf['políticas_de_contratación'] || '';
+            if (document.getElementById('perfil_politicas')) {
+                if (politicas && politicas !== '—') {
+                    // Si ya está en formato legible (contiene /), mostrarlo tal cual
+                    if (politicas.includes('/')) {
+                        document.getElementById('perfil_politicas').textContent = politicas;
+                    } else {
+                        // Si está en formato ISO, convertirlo
+                        try {
+                            const fecha = new Date(politicas);
+                            if (!isNaN(fecha)) {
+                                const formatted = `${fecha.getDate()}/${fecha.getMonth() + 1}/${fecha.getFullYear()} ${fecha.getHours()}:${String(fecha.getMinutes()).padStart(2, '0')}:${String(fecha.getSeconds()).padStart(2, '0')}`;
+                                document.getElementById('perfil_politicas').textContent = formatted;
+                            } else {
+                                document.getElementById('perfil_politicas').textContent = politicas;
+                            }
+                        } catch (e) {
+                            document.getElementById('perfil_politicas').textContent = politicas;
+                        }
+                    }
+                } else {
+                    document.getElementById('perfil_politicas').textContent = '—';
+                }
+            }
 
             //Peque 2
             const card2 = document.getElementById('perfil-peque-2');
