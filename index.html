@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html>
 
+
 <head>
   <!-- Tipografías Nannys y Peques -->
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Nunito+Sans:wght@400;600;700;800&family=Quicksand:wght@700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
+
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,
@@ -15,7 +17,9 @@
             user-scalable=no,
             viewport-fit=cover">
 
+
   <title>Disponibilidad – Nannys y Peques</title>
+
 
   <!-- =====================
      PWA iOS CONFIG
@@ -24,8 +28,10 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Nannys y Peques">
 
+
   <link rel="apple-touch-icon" sizes="180x180" href="/nannys-peques-pwa/icons/apple-touch-icon.png">
   <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/nannys-peques-pwa/icons/apple-touch-icon.png">
+
 
   <!-- OneSignal -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
@@ -39,15 +45,19 @@
     });
   </script>
 
+
 </head>
+
 
 <body>
   <h2>Disponibilidad – Nannys y Peques</h2>
   <div class="container">
 
+
     <!-- LOGIN -->
     <div id="auth" class="auth-wrapper">
       <div class="auth-card">
+
 
         <div id="paso-seleccion">
           <div class="brand-title">Nannys y Peques</div>
@@ -68,9 +78,11 @@
           </div>
         </div>
 
+
         <div id="paso-login" style="display:none;">
           <div class="brand-title">Ingreso</div>
           <p class="login-subtitle">Personal de Nannys y Peques</p>
+
 
           <div class="row"><label>Email</label><input id="email" type="email" placeholder="nombre@correo.com"></div>
           <div class="row"><label>Contraseña</label><input id="pass" type="password" placeholder="********"></div>
@@ -82,12 +94,14 @@
           <p id="msgLogin"></p>
         </div>
 
+
         <div id="paso-registro-cliente" style="display:none;">
           <div class="brand-title">Portal Familia</div>
           <p class="login-subtitle" style="font-size: 14px; line-height: 1.4; color: var(--text-main);">
             Gracias por confiar en Nannys y Peques, estamos listos para acompañarte a ti y a tu familia en los momentos
             más bonitos de la niñez. 💗
           </p>
+
 
           <div class="row">
             <label>Email</label>
@@ -98,6 +112,7 @@
             <input id="pass-reg" type="password" placeholder="Mínimo 6 caracteres">
           </div>
 
+
           <div class="row">
             <button class="btn-primary" onclick="login('cliente')" style="background: var(--blue-main);">Entrar</button>
             <button class="btn-ghost" onclick="registrarNuevoCliente()">Crear cuenta nueva</button>
@@ -105,6 +120,7 @@
           <button class="btn-ghost" onclick="volverSeleccion()" style="margin-top: 10px;">← Volver</button>
           <p id="msgRegistro"></p>
         </div>
+
 
         <div id="paso-olvide" style="display:none;">
           <p><b>Crear/Reestablecer contraseña</b></p>
@@ -126,6 +142,8 @@
     </div> <!-- Cerrar auth-wrapper -->
 
 
+
+
     <!-- APP -->
     <div id="app" style="display:none;">
       <!-- HEADER ADMIN / SUPERVISIÓN -->
@@ -136,6 +154,7 @@
         </div>
       </div>
 
+
       <div id="vista-perfil" class="vista">
         <div class="card profile-premium-card" id="perfilCard">
           <div class="profile-header">
@@ -143,6 +162,7 @@
             <h3 id="perfil_nombre_header">Mi perfil</h3>
             <p id="perfil_email_header" class="muted">—</p>
           </div>
+
 
           <div class="profile-section">
             <div class="section-title">Datos de Contacto</div>
@@ -167,17 +187,25 @@
                 <span class="label">Mascotas en casa:</span>
                 <span id="perfil_mascotas_gral" class="value">—</span>
               </div>
-              <div class="profile-info-item" style="position: relative; display: none;" id="perfil-politicas-container">
-                <span class="label">Políticas aceptadas:</span>
-                <span id="perfil_politicas" class="value">—</span>
-                <a href="assets/politicas-contratacion.pdf" download="Politicas_Contratacion_NannysyPeques.pdf"
-                  style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); padding: 8px 16px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; transition: background 0.2s; white-space: nowrap;"
-                  onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
-                  📄 Descargar políticas
-                </a>
+              <div class="profile-info-item full" id="perfil-politicas-container"
+                style="display: none; margin-top: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <div>
+                    <span class="label" style="display: block; margin-bottom: 4px;">Políticas aceptadas:</span>
+                    <span id="perfil_politicas" class="value" style="display: block;">—</span>
+                  </div>
+                  <div>
+                    <a href="assets/politicas-contratacion.pdf" download="Politicas_Contratacion_NannysyPeques.pdf"
+                      style="display: inline-block; padding: 6px 12px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-size: 12px; font-weight: 600; transition: background 0.2s;"
+                      onmouseover="this.style.background='#2563eb'" onmouseout="this.style.background='#3b82f6'">
+                      📄 Descargar políticas
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
 
           <div id="perfil-peques-container" class="profile-section">
             <div class="section-title">Información de los Peques</div>
@@ -200,6 +228,7 @@
                 </div>
               </div>
 
+
               <div id="perfil-peque-2" class="peque-profile-card" style="display:none; margin-top:15px;">
                 <div class="peque-header">
                   <span class="peque-icon">👧</span>
@@ -216,6 +245,7 @@
                   <p><b>Preferencias:</b> <span id="perfil_preferencias_2">—</span></p>
                 </div>
               </div>
+
 
               <div id="perfil-peque-3" class="peque-profile-card" style="display:none; margin-top:15px;">
                 <div class="peque-header">
@@ -236,6 +266,7 @@
             </div>
           </div>
 
+
           <div class="profile-actions" style="margin-top:20px;">
             <button class="btn-primary" onclick="editarPerfilCliente()" style="background: var(--blue-main);">
               📝 Editar perfil
@@ -247,6 +278,7 @@
         </div>
       </div>
 
+
       <div id="vista-servicios" class="vista">
         <!-- HEADER PANEL NIÑERA -->
         <div class="card panel-header">
@@ -255,6 +287,7 @@
             <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
           </div>
         </div>
+
 
         <!-- SERVICIOS PRÓXIMOS (niñera) -->
         <div class="card" id="svcCard">
@@ -266,6 +299,7 @@
           <div id="calMsg" class="muted" style="margin-top:8px;"></div>
         </div>
 
+
         <div class="card" id="planeacionesNineraCard">
           <div class="row" style="justify-content:space-between;align-items:center;">
             <h3>Planeaciones de actividades</h3>
@@ -274,11 +308,13 @@
           <div id="listaPlaneacionesNinera"></div>
         </div>
 
+
         <div class="card" id="planeacionesNineraCardSiguiente">
           <h3>Planeaciones de actividades – semana siguiente</h3>
           <div id="listaPlaneacionesNineraSiguiente"></div>
         </div>
       </div>
+
 
       <div id="vista-puntos" class="vista">
         <!-- MIS PUNTOS (solo niñeras) -->
@@ -293,6 +329,7 @@
           <p id="pt_msg" class="muted"></p>
         </div>
       </div>
+
 
       <div id="vista-cliente" class="vista">
         <!-- ONBOARDING: Completar perfil -->
@@ -326,6 +363,7 @@
                 <input id="reg_mascotas" type="text" placeholder="Ej. 1 perro">
               </div>
 
+
               <!-- POLÍTICAS DE CONTRATACIÓN -->
               <div class="form-group full">
                 <label>He leído y aceptado las políticas de contratación</label>
@@ -340,6 +378,7 @@
                   onclick="aceptarPoliticas()">Aceptar</button>
               </div>
               <input type="hidden" id="reg_politicas_aceptadas" value="">
+
 
               <!-- PEQUE 1 -->
               <div class="onboarding-section-title full">Información del Peque</div>
@@ -367,6 +406,7 @@
                 <label>Preferencias o actividades favoritas</label>
                 <textarea id="reg_preferencias" placeholder="¿Qué le gusta hacer? ¿A qué hora duerme?"></textarea>
               </div>
+
 
               <!-- PEQUE 2 -->
               <div id="section-peque-2" style="display:none;" class="full">
@@ -399,6 +439,7 @@
                 </div>
               </div>
 
+
               <!-- PEQUE 3 -->
               <div id="section-peque-3" style="display:none;" class="full">
                 <div class="onboarding-section-title">Información del Peque 3</div>
@@ -430,6 +471,7 @@
                 </div>
               </div>
 
+
               <div class="full" style="text-align:center; margin-top:10px;">
                 <button type="button" id="btn-agregar-peque" class="btn-ghost" onclick="toggleMultiPeque()"
                   style="border:1px dashed var(--blue-main); color:var(--blue-main); width:100%;">
@@ -446,6 +488,7 @@
           </div>
         </div>
 
+
         <!-- DASHBOARD CLIENTE: Próximos servicios -->
         <div id="cliente-dashboard" style="display:none;">
           <div class="card panel-header" style="background: var(--blue-main);">
@@ -455,6 +498,7 @@
                 sesión</button>
             </div>
           </div>
+
 
           <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -466,12 +510,14 @@
             </div>
             <p class="muted">Calendario de servicios para las próximas 2 semanas.</p>
 
+
             <div class="calendar-section" style="margin-top:20px;">
               <h4
                 style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
                 🗓️ Semana Actual</h4>
               <div id="cal-cliente-actual" class="calendar"></div>
             </div>
+
 
             <div class="calendar-section" style="margin-top:25px; padding-top:15px; border-top: 1px dashed #e2e8f0;">
               <h4
@@ -480,12 +526,15 @@
               <div id="cal-cliente-siguiente" class="calendar"></div>
             </div>
 
+
             <div id="msg-cal-cliente" class="muted" style="font-size: 12px; margin-top:10px;"></div>
+
 
             <div id="servicios-cliente-lista" style="display:none; margin-top:15px;"></div>
           </div>
         </div>
       </div>
+
 
       <div id="vista-actividades-cliente" class="vista">
         <div class="card" style="margin-bottom: 10px;">
@@ -498,10 +547,12 @@
             la próxima.</p>
         </div>
 
+
         <div id="container-semana-actual" style="margin-top: 15px;">
           <h4 class="weekly-section-title">Semana Actual</h4>
           <div id="lista-actividades-actual"></div>
         </div>
+
 
         <div id="container-semana-siguiente"
           style="margin-top: 25px; padding-top: 15px; border-top: 2px dashed rgba(232, 76, 154, 0.1);">
@@ -510,12 +561,14 @@
         </div>
       </div>
 
+
       <div id="vista-comunidad" class="vista">
         <div class="card">
           <h3>Comunidad</h3>
           <p>Próximamente: más sorpresas para Nannies y Familias.</p>
         </div>
       </div>
+
 
       <div id="vista-supervision" class="vista">
         <!-- CARD SEMANA ACTUAL -->
@@ -531,6 +584,7 @@
           <div id="resumenPlaneacionesActual"></div>
         </div>
 
+
         <!-- CARD SEMANA SIGUIENTE -->
         <div class="supervision-card">
           <div class="supervision-title">
@@ -540,11 +594,13 @@
         </div>
       </div>
 
+
       <div id="vista-disponibilidad" class="vista">
         <!-- PANEL (solo niñeras) -->
         <div class="card" id="panel">
           <div class="row" style="justify-content:space-between;align-items:center;">
           </div>
+
 
           <div class="row">
             <div><b>Semana base:</b></div>
@@ -557,6 +613,7 @@
           <p id="msgApp"></p>
         </div>
 
+
         <!-- SEMANA ACTUAL -->
         <div class="card" id="tablaActualCard">
           <div class="week-title">
@@ -568,6 +625,8 @@
           </div>
           <div id="tabla"></div>
         </div>
+
+
 
 
         <!-- SEMANA SIGUIENTE -->
@@ -583,6 +642,7 @@
           <div id="tabla2"></div>
         </div>
 
+
         <!-- RESÚMENES -->
         <div class="card" id="resumenCard">
           <details open>
@@ -597,6 +657,8 @@
           </details>
         </div>
       </div>
+
+
 
 
       <!-- ADMIN: Sugeridor -->
@@ -619,6 +681,7 @@
         <div id="admResultados" style="margin-top:12px; overflow:auto;"></div>
       </div>
 
+
       <!-- ADMIN: Agenda semanal (L–D) -->
       <div id="adminAgendaCard" class="card" style="display:none;">
         <div class="week-head">
@@ -632,6 +695,7 @@
         <div class="muted" id="admWeekLabel" style="margin-bottom:8px;"></div>
         <div id="adminAgenda"></div>
       </div>
+
 
       <!-- ADMIN: Puntaje de niñeras -->
       <div id="adminPuntosCard" class="card" style="display:none;">
@@ -668,6 +732,7 @@
         <div id="pt_admin_resultado" style="margin-top:8px;" class="muted"></div>
       </div>
 
+
       <!-- ADMIN: Resumen de disponibilidad semanal -->
       <div id="adminResumenDispCard" class="card" style="display:none;">
         <div class="row" style="justify-content:space-between;align-items:center;">
@@ -677,6 +742,7 @@
         <p class="muted">Verde: ya capturó horarios · Rojo: no ha capturado horarios.</p>
         <div id="adminResumenDisp"></div>
       </div>
+
 
       <nav class="bottom-nav">
         <button id="nav-perfil" onclick="irVista('perfil')">
@@ -695,6 +761,7 @@
     </div>
   </div>
 
+
   <!-- MODAL Detalle -->
   <div id="modalBackdrop" class="modal-backdrop" style="display:none;">
     <div class="modal-card service-premium-modal">
@@ -702,6 +769,7 @@
         <h3 id="mCliente">Detalle del servicio</h3>
         <span id="mFecha" class="modal-subtitle">—</span>
       </div>
+
 
       <div class="modal-body-scroll">
         <!-- Section: Time -->
@@ -712,6 +780,7 @@
             <div id="mHorario" class="value highlight">—</div>
           </div>
         </div>
+
 
         <!-- Section: Contact (Grid) -->
         <div class="info-section">
@@ -736,6 +805,7 @@
           </div>
         </div>
 
+
         <!-- Section: Child Info -->
         <div class="info-section">
           <span class="section-label">Información del Peque</span>
@@ -751,21 +821,26 @@
           </div>
         </div>
 
+
         <!-- Section: Financial -->
         <div class="financial-box">
           Cuota Nanny: <b id="mCuota">—</b>
         </div>
 
+
         <div id="mMsg" class="muted"></div>
       </div>
+
 
       <div class="actions modal-footer" style="margin-top:0;"></div>
     </div>
   </div>
 
+
   <!-- MODAL Planeación Neuronanny -->
   <div id="planeacionBackdrop" class="modal-backdrop" style="display:none;">
     <div class="modal-card modal-planeacion">
+
 
       <!-- HEADER: TÍTULO + CLIENTE + NIÑERA -->
       <div id="planeacionHeader" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
@@ -781,20 +856,24 @@
         </div>
       </div>
 
+
       <!-- NAVEGACIÓN ENTRE DÍAS -->
       <div class="row" style="display:grid;grid-template-columns: 1fr auto 1fr;align-items:center;margin-bottom:18px;">
         <div style="justify-self:start;">
           <button class="btn-ghost" onclick="planeacionAnterior()">⬅️ Día anterior</button>
         </div>
 
+
         <span id="pl_fecha_actual" class="muted" style="font-weight:600; justify-self:center;">
           Fecha del servicio
         </span>
+
 
         <div style="justify-self:end;">
           <button class="btn-ghost" onclick="planeacionSiguiente()">Día siguiente ➡️</button>
         </div>
       </div>
+
 
       <!-- FORMULARIO -->
       <div class="form-grid">
@@ -803,25 +882,30 @@
           <input id="pl_area" type="text" placeholder="Ej. Motricidad fina" />
         </div>
 
+
         <div class="form-group full">
           <label>Objetivo de la actividad</label>
           <textarea id="pl_objetivo" placeholder="¿Qué se busca estimular?"></textarea>
         </div>
+
 
         <div class="form-group full">
           <label>Descripción de la actividad</label>
           <textarea id="pl_descripcion" placeholder="Describe paso a paso la actividad"></textarea>
         </div>
 
+
         <div class="form-group full">
           <label>Materiales requeridos</label>
           <textarea id="pl_materiales" placeholder="Ej. hojas, colores, bloques"></textarea>
         </div>
 
+
         <div class="form-group full">
           <label>Imagen de referencia (link)</label>
           <input id="pl_imagen" type="text" placeholder="https://..." />
         </div>
+
 
         <!-- OBSERVACIONES DE SUPERVISIÓN -->
         <div id="obsSupervisionContainer" class="form-group full" style="display:none;">
@@ -834,6 +918,7 @@
             style="display:none; background:#f9fafb; color:#6b7280;"></textarea>
         </div>
       </div>
+
 
       <!-- ACCIONES DEL MODAL -->
       <div class="modal-actions">
@@ -857,10 +942,12 @@
     </div>
   </div>
 
+
   <!-- MODAL DETALLE DE SERVICIO PARA CLIENTE -->
   <div id="modalServicioCliente" class="modal-backdrop" style="display:none;">
     <div class="modal-card" style="max-width: 500px;">
       <h3 id="mClienteTitulo" style="margin-bottom: 20px; color: var(--blue-main);">Detalle del Servicio</h3>
+
 
       <div style="display: flex; flex-direction: column; gap: 15px;">
         <div>
@@ -869,17 +956,20 @@
           <div id="mClienteFecha" style="font-size: 16px; color: var(--text-main);">—</div>
         </div>
 
+
         <div>
           <label style="font-weight: 700; font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">🕐
             Horario</label>
           <div id="mClienteHorario" style="font-size: 16px; color: var(--text-main);">—</div>
         </div>
 
+
         <div>
           <label style="font-weight: 700; font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">📍
             Dirección</label>
           <div id="mClienteDireccion" style="font-size: 14px; color: var(--text-main);">—</div>
         </div>
+
 
         <div>
           <label style="font-weight: 700; font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">🗺️
@@ -889,6 +979,7 @@
           <div id="mClienteUbicacionVacio" style="font-size: 14px; color: #94a3b8; display: none;">No disponible</div>
         </div>
 
+
         <div>
           <label style="font-weight: 700; font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">👤
             Niñera</label>
@@ -896,11 +987,13 @@
         </div>
       </div>
 
+
       <div style="margin-top: 25px; display: flex; justify-content: flex-end;">
         <button class="btn-ghost" onclick="cerrarModalCliente()">Cerrar</button>
       </div>
     </div>
   </div>
+
 
   <!-- Modal Registro Obligatorio Staff/Niñera -->
   <div id="modalRegistroStaff" class="modal-backdrop"
@@ -913,6 +1006,7 @@
           información de contacto. <b>Estos datos se guardarán una sola vez.</b></p>
       </div>
 
+
       <div class="form-group" style="margin-bottom: 15px;">
         <label style="font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Dirección
           Completa</label>
@@ -920,17 +1014,20 @@
           style="min-height: 80px; padding: 12px;"></textarea>
       </div>
 
+
       <div class="form-group" style="margin-bottom: 15px;">
         <label style="font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Teléfono Personal
           (WhatsApp)</label>
         <input type="tel" id="reg_staff_telefono" class="input" placeholder="Tu número de celular">
       </div>
 
+
       <div class="form-group" style="margin-bottom: 15px;">
         <label style="font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Teléfono de
           Emergencia</label>
         <input type="tel" id="reg_staff_emergencia" class="input" placeholder="Número de un familiar o contacto">
       </div>
+
 
       <div class="form-group" style="margin-bottom: 25px;">
         <label style="font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Link de Ubicación
@@ -940,7 +1037,9 @@
           cobertura.</span>
       </div>
 
+
       <div id="msgRegistroStaff" style="margin-bottom: 15px; text-align: center; font-size: 13px;"></div>
+
 
       <button class="btn-primary" onclick="guardarDatosStaff()"
         style="width: 100%; height: 50px; font-weight: 700; letter-spacing: 0.5px;">
@@ -949,11 +1048,15 @@
     </div>
   </div>
 
+
   <div id="toast" class="toast"></div>
+
 
   <script src="js/app.js"></script>
   <script src="js/index.js" defer></script>
 
+
 </body>
+
 
 </html>
