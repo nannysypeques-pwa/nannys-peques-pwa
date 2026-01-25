@@ -2593,6 +2593,31 @@ async function editarPerfilCliente() {
                 if (document.getElementById('reg_salud_3')) document.getElementById('reg_salud_3').value = perf.estado_de_salud_actual_3 || '';
                 if (document.getElementById('reg_preferencias_3')) document.getElementById('reg_preferencias_3').value = perf.preferencias_o_actividades_favoritas_3 || '';
             }
+
+            // Verificar si las políticas ya fueron aceptadas
+            const politicasAceptadas = perf['políticas_de_contratación'] || '';
+            const btnPoliticas = document.getElementById('btn_aceptar_politicas');
+            const hiddenPoliticas = document.getElementById('reg_politicas_aceptadas');
+
+            if (politicasAceptadas && politicasAceptadas !== '—') {
+                // Ya están aceptadas, mostrar botón verde y deshabilitado
+                if (hiddenPoliticas) hiddenPoliticas.value = politicasAceptadas;
+                if (btnPoliticas) {
+                    btnPoliticas.textContent = '✓ Aceptado';
+                    btnPoliticas.disabled = true;
+                    btnPoliticas.style.background = '#10b981';
+                    btnPoliticas.style.cursor = 'not-allowed';
+                }
+            } else {
+                // No aceptadas, resetear botón
+                if (hiddenPoliticas) hiddenPoliticas.value = '';
+                if (btnPoliticas) {
+                    btnPoliticas.textContent = 'Aceptar';
+                    btnPoliticas.disabled = false;
+                    btnPoliticas.style.background = 'var(--pink-main)';
+                    btnPoliticas.style.cursor = 'pointer';
+                }
+            }
         }
     } catch (e) {
         console.error("Error al prellenar perfil:", e);
