@@ -2464,7 +2464,8 @@ async function cargarPerfil() {
         if (perf) {
             //Header
             if (document.getElementById('perfil_nombre_header')) document.getElementById('perfil_nombre_header').textContent = perf.nombre || 'Mi perfil';
-            if (document.getElementById('perfil_email_header')) document.getElementById('perfil_email_header').textContent = perf.email || SESION.email;
+
+
 
             //Detectar rol REAL desde el backend para visibilidad
             //Detectar rol REAL desde el backend para visibilidad
@@ -2498,7 +2499,12 @@ async function cargarPerfil() {
             if (document.getElementById('perfil_emergencia')) {
                 document.getElementById('perfil_emergencia').textContent = perf.emergencia || perf['no._de_emergencia'] || '—';
             }
-            if (document.getElementById('perfil_direccion')) document.getElementById('perfil_direccion').textContent = perf.direccion || '—';
+            if (document.getElementById('perfil_email')) {
+                document.getElementById('perfil_email').textContent = perf.email || SESION.email;
+            }
+            if (document.getElementById('perfil_direccion')) {
+                document.getElementById('perfil_direccion').textContent = perf.direccion || '—';
+            }
 
             const linkUbic = document.getElementById('perfil_ubicacion');
             if (linkUbic) {
