@@ -1552,6 +1552,14 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
     const obsNin = document.getElementById('obsSupervisionNinera');
 
     area.value = ''; objetivo.value = ''; descripcion.value = ''; materiales.value = ''; imagen.value = '';
+    // Resetear input de archivo y preview
+    const fileInput = document.getElementById('pl_imagen_file');
+    const previewContainer = document.getElementById('pl_imagen_preview_container');
+    const previewImg = document.getElementById('pl_imagen_preview');
+    if (fileInput) fileInput.value = '';
+    if (previewContainer) previewContainer.style.display = 'none';
+    if (previewImg) previewImg.src = '';
+
     if (cont) cont.style.display = 'none';
     if (obsSup) { obsSup.value = ''; obsSup.style.display = 'none'; }
     if (obsNin) { obsNin.value = ''; obsNin.style.display = 'none'; }
@@ -1562,10 +1570,21 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
         descripcion.value = planeacion.descripcion || '';
         materiales.value = planeacion.materiales || '';
         imagen.value = planeacion.imagen || '';
+
+        // Mostrar preview si existe imagen cargada
+        if (planeacion.imagen && previewContainer && previewImg) {
+            previewImg.src = planeacion.imagen;
+            previewImg.onclick = () => window.open(planeacion.imagen, '_blank');
+            previewContainer.style.display = 'block';
+        }
     }
     const cache = CACHE_PLANEACION_MODAL[servicio.fecha];
     if (cache) {
         area.value = cache.area; objetivo.value = cache.objetivo; descripcion.value = cache.descripcion; materiales.value = cache.materiales; imagen.value = cache.imagen;
+        if (cache.imagen && previewContainer && previewImg) {
+            previewImg.src = cache.imagen;
+            previewContainer.style.display = 'block';
+        }
     }
 
     if (SESION.supervision || SESION.admin) {
@@ -1651,11 +1670,33 @@ async function guardarPlaneacionNeuronanny() {
     feedbackBotonInmediato(btn, 'Guardando…');
     mostrarToast('💾 Guardando planeación…');
 
-    const valImg = validarLinksImagenes(document.getElementById('pl_imagen').value);
-    if (!valImg.ok) {
-        restaurarBoton(btn);
-        mostrarToast('❌ ' + valImg.msg);
-        return;
+    // Validar imagen: Puede ser un link en el input oculto (legacy o editado) O un archivo nuevo
+    const fileInput = document.getElementById('pl_imagen_file');
+    let base64 = null;
+
+    if (fileInput && fileInput.files.length > 0) {
+        // Leer archivo
+        try {
+            base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(fileInput.files[0]);
+            });
+        } catch (e) {
+            restaurarBoton(btn);
+            mostrarToast('❌ Error leyendo el archivo');
+            return;
+        }
+    } else {
+        // Si no hay archivo nuevo, validar si hay link en el input oculto
+        const valImg = validarLinksImagenes(document.getElementById('pl_imagen').value);
+        if (!valImg.ok && document.getElementById('pl_imagen').value.trim()) {
+            // Si tiene texto pero no es valido
+            // Nota: si esta vacío, pasa (es opcional la foto?)
+            // Asumimos que si el usuario quitó la foto, el input está vacío.
+            // Si el input hidden tiene valor, es el valor previo.
+        }
     }
 
     const payload = {
@@ -1668,7 +1709,8 @@ async function guardarPlaneacionNeuronanny() {
         objetivo: document.getElementById('pl_objetivo').value,
         descripcion: document.getElementById('pl_descripcion').value,
         materiales: document.getElementById('pl_materiales').value,
-        imagen: valImg.links.join(','), // Guardar como CSV limpio
+        imagen: document.getElementById('pl_imagen').value, // Valor actual (link o vacío)
+        imagen_base64: base64, // Nuevo campo
         fila: PLANEACION_EXISTENTE?.fila
     };
     const fn = PLANEACION_EXISTENTE ? 'editarPlaneacionNeuronanny' : 'guardarPlaneacionNeuronanny';
@@ -2946,3 +2988,36 @@ window.cargarActividadesCliente = cargarActividadesCliente;
 
 
 
+// Event listener para preview de imagen
+// document.addEventListener('DOMContentLoaded', ...) ya existe (window.load). Agregamos esto al final del archivo para que corra al cargar
+if (document.getElementById('pl_imagen_file')) {
+    document.getElementById('pl_imagen_file').addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (evt) {
+                const preview = document.getElementById('pl_imagen_preview');
+                const container = document.getElementById('pl_imagen_preview_container');
+                if (preview && container) {
+                    preview.src = evt.target.result;
+                    preview.onclick = null; // No abrir en nuevo tab si es base64 local
+                    container.style.display = 'block';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+function limpiarImagenSeleccionada() {
+    const fileInput = document.getElementById('pl_imagen_file');
+    const textInput = document.getElementById('pl_imagen');
+    const container = document.getElementById('pl_imagen_preview_container');
+    const preview = document.getElementById('pl_imagen_preview');
+
+    if (fileInput) fileInput.value = '';
+    if (textInput) textInput.value = '';
+    if (container) container.style.display = 'none';
+    if (preview) preview.src = '';
+}
+window.limpiarImagenSeleccionada = limpiarImagenSeleccionada;

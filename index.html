@@ -900,45 +900,56 @@
         </div>
 
 
-        <div class="form-group full">
-          <label>Imagen de referencia (link)</label>
-          <input id="pl_imagen" type="text" placeholder="https://..." />
+        <label>Imagen de referencia</label>
+        <!-- Contenedor de PREVIEW -->
+        <div id="pl_imagen_preview_container"
+          style="margin-bottom:10px; display:none; border:1px solid #ddd; padding:5px; border-radius:8px; text-align:center;">
+          <img id="pl_imagen_preview" src="" style="max-width:100%; max-height:200px; border-radius:4px;" />
+          <br>
+          <button class="btn-ghost" style="font-size:11px; padding:4px 8px; margin-top:5px;"
+            onclick="limpiarImagenSeleccionada()">❌ Quitar imagen</button>
         </div>
 
+        <!-- Input FILE (visible) -->
+        <input type="file" id="pl_imagen_file" accept="image/*" />
 
-        <!-- OBSERVACIONES DE SUPERVISIÓN -->
-        <div id="obsSupervisionContainer" class="form-group full" style="display:none;">
-          <label>Observaciones de supervisión</label>
-          <!-- Supervisión escribe -->
-          <textarea id="obsSupervision" placeholder="Escriba aquí las observaciones para la niñera" rows="4"
-            style="display:none;"></textarea>
-          <!-- Niñera solo lectura -->
-          <textarea id="obsSupervisionNinera" rows="4" readonly disabled
-            style="display:none; background:#f9fafb; color:#6b7280;"></textarea>
-        </div>
+        <!-- Input TEXT (oculto, para guardar la URL final o legacy) -->
+        <input id="pl_imagen" type="text" placeholder="https://..." style="display:none;" />
       </div>
 
 
-      <!-- ACCIONES DEL MODAL -->
-      <div class="modal-actions">
-        <button id="btnGuardarPlaneacion" class="btn-pink" onclick="guardarPlaneacionNeuronanny()">
-          Guardar planeación
-        </button>
-        <button id="btnEnviarCorreccion" class="btn-ghost" style="display:none;" onclick="enviarACorreccion()">
-          🟠 Enviar a corrección
-        </button>
-        <button id="btnMarcarRevisada" class="btn-pink" style="display:none;" onclick="marcarPlaneacionRevisada()">
-          🟢 Marcar como revisada
-        </button>
-        <button id="btnReenviarPlaneacion" class="btn-pink" style="display:none;"
-          onclick="reenviarPlaneacionCorregida()">
-          🔄 Reenviar planeación
-        </button>
-        <button class="btn-ghost" onclick="cerrarPlaneacionNeuronanny()">
-          Cancelar
-        </button>
+      <!-- OBSERVACIONES DE SUPERVISIÓN -->
+      <div id="obsSupervisionContainer" class="form-group full" style="display:none;">
+        <label>Observaciones de supervisión</label>
+        <!-- Supervisión escribe -->
+        <textarea id="obsSupervision" placeholder="Escriba aquí las observaciones para la niñera" rows="4"
+          style="display:none;"></textarea>
+        <!-- Niñera solo lectura -->
+        <textarea id="obsSupervisionNinera" rows="4" readonly disabled
+          style="display:none; background:#f9fafb; color:#6b7280;"></textarea>
       </div>
     </div>
+
+
+    <!-- ACCIONES DEL MODAL -->
+    <div class="modal-actions">
+      <button id="btnGuardarPlaneacion" class="btn-pink" onclick="guardarPlaneacionNeuronanny()">
+        Guardar planeación
+      </button>
+      <button id="btnEnviarCorreccion" class="btn-ghost" style="display:none;" onclick="enviarACorreccion()">
+        🟠 Enviar a corrección
+      </button>
+      <button id="btnMarcarRevisada" class="btn-pink" style="display:none;" onclick="marcarPlaneacionRevisada()">
+        🟢 Marcar como revisada
+      </button>
+      <button id="btnReenviarPlaneacion" class="btn-pink" style="display:none;" onclick="reenviarPlaneacionCorregida()">
+        🔄 Reenviar planeación
+      </button>
+      <button class="btn-ghost" onclick="cerrarPlaneacionNeuronanny()">
+        Cancelar
+      </button>
+    </div>
+  </div>
   </div>
 
 
