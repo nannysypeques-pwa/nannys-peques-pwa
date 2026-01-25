@@ -219,8 +219,7 @@ function logout() {
     if (email) email.value = '';
     if (pass) pass.value = '';
 
-    document.getElementById('paso-login').style.display = 'block';
-    document.getElementById('paso-olvide').style.display = 'none';
+    volverSeleccion();
 }
 
 /* =========================================
