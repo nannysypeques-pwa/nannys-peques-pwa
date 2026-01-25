@@ -2883,6 +2883,13 @@ function renderActividadesCliente(res) {
             return;
         }
 
+        // Ordenar cronológicamente
+        lista.sort((a, b) => {
+            const dateA = new Date(a.fecha);
+            const dateB = new Date(b.fecha);
+            return dateA - dateB;
+        });
+
         let html = '';
         lista.forEach(p => {
             const area = normalizarTexto(p['area de desarrollo'] || '');
