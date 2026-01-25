@@ -2061,7 +2061,6 @@ function marcarPlaneacionRevisada() {
         email: SESION.email
     }).then(() => {
         mostrarToast('✅ Planeación marcada como revisada');
-        actualizarPlaneacionesSupervision();
     }).catch(err => {
         mostrarToast('❌ Error al guardar revisión');
         console.error(err);
@@ -2078,7 +2077,6 @@ function enviarACorreccion() {
         email: SESION.email
     }).then(() => {
         mostrarToast('🟠 Observaciones enviadas a corrección');
-        actualizarPlaneacionesSupervision();
     }).catch(err => {
         mostrarToast('❌ Error al enviar a corrección');
         console.error(err);
