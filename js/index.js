@@ -1574,6 +1574,7 @@ function abrirPlaneacionNeuronanny(servicio, planeacion) {
         // Mostrar preview si existe imagen cargada
         if (planeacion.imagen && previewContainer && previewImg) {
             previewImg.src = planeacion.imagen;
+            previewImg.setAttribute('referrerpolicy', 'no-referrer');
             previewImg.onclick = () => window.open(planeacion.imagen, '_blank');
             previewContainer.style.display = 'block';
         }
@@ -2963,7 +2964,7 @@ function renderActividadesCliente(res) {
                                     ${(p.imagen || '').split(',').map(img => {
                 const src = img.trim();
                 if (!src) return '';
-                return `<img src="${src}" class="activity-img" loading="lazy" onclick="window.open('${src}', '_blank')">`;
+                return `<img src="${src}" class="activity-img" loading="lazy" referrerpolicy="no-referrer" onclick="window.open('${src}', '_blank')">`;
             }).join('')}
                                 </div>
 
@@ -3000,6 +3001,7 @@ if (document.getElementById('pl_imagen_file')) {
                 const container = document.getElementById('pl_imagen_preview_container');
                 if (preview && container) {
                     preview.src = evt.target.result;
+                    preview.removeAttribute('referrerpolicy'); // Local base64 doesn't need it
                     preview.onclick = null; // No abrir en nuevo tab si es base64 local
                     container.style.display = 'block';
                 }

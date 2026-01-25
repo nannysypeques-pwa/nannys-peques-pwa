@@ -48,7 +48,7 @@ function _guardarImagenDrive(base64, nombreArchivo) {
 
     // 5. Retornar URL directa para embeber en <img>
     var fileId = file.getId();
-    var directUrl = "https://drive.google.com/uc?export=view&id=" + fileId;
+    var directUrl = "https://lh3.googleusercontent.com/d/" + fileId;
 
     console.log("Imagen guardada con éxito en Drive. URL Directa: " + directUrl);
     return directUrl;
