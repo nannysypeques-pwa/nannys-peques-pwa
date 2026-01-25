@@ -3811,11 +3811,27 @@ function editarPlaneacionNeuronanny(payload, email) {
 
 
 
+    // ====================================================
+    // âœ… GESTIÃ“N DE IMAGEN (DRIVE)
+    // ====================================================
+    let imagenFinal = payload.imagen || '';
+
+    if (payload.imagen_base64) {
+        try {
+            const timestamp = Utilities.formatDate(new Date(), ZONA_HORARIA, 'yyyyMMdd_HHmmss');
+            const nombreArchivo = `PLAN_EDIT_${timestamp}_${fila}.jpg`;
+            imagenFinal = _guardarImagenDrive(payload.imagen_base64, nombreArchivo);
+        } catch (e) {
+            console.error('Error guardando imagen editada en Drive:', e);
+            throw new Error('No se pudo guardar la imagen: ' + e.message);
+        }
+    }
+
     sh.getRange(fila, 5).setValue(payload.area_desarrollo || '');
     sh.getRange(fila, 6).setValue(payload.objetivo || '');
     sh.getRange(fila, 7).setValue(payload.descripcion || '');
     sh.getRange(fila, 8).setValue(payload.materiales || '');
-    sh.getRange(fila, 9).setValue(payload.imagen || '');
+    sh.getRange(fila, 9).setValue(imagenFinal);
     sh.getRange(fila, 10).setValue(_nowHuman()); // fecha de actualizaciÃ³Â³n
 
 
@@ -4550,39 +4566,39 @@ function getActividadesClientePlanificadas(email) {
 
     return result;
 }
- 
- / * *  
-   *   G u a r d a   u n a   i m a g e n   b a s e 6 4   e n   l a   c a r p e t a   e s p e c i f i c a d a   d e   D r i v e  
-   *   y   r e t o r n a   e l   l i n k   d e   d e s c a r g a   d i r e c t a   p a r a   u s a r   e n   < i m g > .  
-   * /  
- f u n c t i o n   _ g u a r d a r I m a g e n D r i v e ( b a s e 6 4 ,   n o m b r e A r c h i v o )   {  
-         / /   1 .   B u s c a r   c a r p e t a  
-         c o n s t   f o l d e r s   =   D r i v e A p p . g e t F o l d e r s B y N a m e ( " N a n n y s P e q u e s _ I m a g e n e s _ P l a n e a c i o n " ) ;  
-         l e t   f o l d e r ;  
-         i f   ( f o l d e r s . h a s N e x t ( ) )   {  
-                 f o l d e r   =   f o l d e r s . n e x t ( ) ;  
-         }   e l s e   {  
-                 / /   F a l l b a c k :   c r e a r l a   s i   n o   e x i s t e   ( a u n q u e   e l   u s u a r i o   d i j o   q u e   y a   l a   c r e Ã ³ )  
-                 f o l d e r   =   D r i v e A p p . c r e a t e F o l d e r ( " N a n n y s P e q u e s _ I m a g e n e s _ P l a n e a c i o n " ) ;  
-                 f o l d e r . s e t S h a r i n g ( D r i v e A p p . A c c e s s . A N Y O N E _ W I T H _ L I N K ,   D r i v e A p p . P e r m i s s i o n . V I E W ) ;  
-         }  
-  
-         / /   2 .   D e c o d i f i c a r   B a s e 6 4  
-         / /   E l   f r o n t e n d   m a n d a   " d a t a : i m a g e / j p e g ; b a s e 6 4 , . . . . . "  
-         / /   D e b e m o s   q u i t a r   e l   e n c a b e z a d o  
-         c o n s t   p a r t e s   =   b a s e 6 4 . s p l i t ( " , " ) ;  
-         c o n s t   d a t a   =   p a r t e s . l e n g t h   >   1   ?   p a r t e s [ 1 ]   :   p a r t e s [ 0 ] ;  
-         c o n s t   d e c o d e d   =   U t i l i t i e s . b a s e 6 4 D e c o d e ( d a t a ) ;  
-         c o n s t   b l o b   =   U t i l i t i e s . n e w B l o b ( d e c o d e d ,   " i m a g e / j p e g " ,   n o m b r e A r c h i v o ) ;  
-  
-         / /   3 .   C r e a r   a r c h i v o  
-         c o n s t   f i l e   =   f o l d e r . c r e a t e F i l e ( b l o b ) ;  
-  
-         / /   4 .   A s e g u r a r   p e r m i s o s   p Ã º b l i c o s   ( p a r a   q u e   s e   v e a   e n   < i m g   s r c > )  
-         f i l e . s e t S h a r i n g ( D r i v e A p p . A c c e s s . A N Y O N E _ W I T H _ L I N K ,   D r i v e A p p . P e r m i s s i o n . V I E W ) ;  
-  
-         / /   5 .   R e t o r n a r   U R L   d i r e c t a  
-         / /   U s a m o s   e l   f o r m a t o   " u c "   p a r a   e x p o r t = v i e w  
-         r e t u r n   " h t t p s : / / d r i v e . g o o g l e . c o m / u c ? e x p o r t = v i e w & i d = "   +   f i l e . g e t I d ( ) ;  
- }  
- 
+
+/**
+ * Guarda una imagen base64 en la carpeta especificada de Drive
+ * y retorna el link de descarga directa para usar en <img>.
+ */
+function _guardarImagenDrive(base64, nombreArchivo) {
+    // 1. Buscar carpeta
+    const folders = DriveApp.getFoldersByName("NannysPeques_Imagenes_Planeacion");
+    let folder;
+    if (folders.hasNext()) {
+        folder = folders.next();
+    } else {
+        // Fallback: crearla si no existe (aunque el usuario dijo que ya la creÃ³)
+        folder = DriveApp.createFolder("NannysPeques_Imagenes_Planeacion");
+        folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    }
+
+    // 2. Decodificar Base64
+    // El frontend manda "data:image/jpeg;base64,....."
+    // Debemos quitar el encabezado
+    const partes = base64.split(",");
+    const data = partes.length > 1 ? partes[1] : partes[0];
+    const decoded = Utilities.base64Decode(data);
+    const blob = Utilities.newBlob(decoded, "image/jpeg", nombreArchivo);
+
+    // 3. Crear archivo
+    const file = folder.createFile(blob);
+
+    // 4. Asegurar permisos pÃºblicos (para que se vea en <img src>)
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    // 5. Retornar URL directa
+    // Usamos el formato "uc" para export=view
+    return "https://drive.google.com/uc?export=view&id=" + file.getId();
+}
+
