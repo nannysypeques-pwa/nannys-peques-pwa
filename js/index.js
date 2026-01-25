@@ -2530,8 +2530,12 @@ async function cargarPerfil() {
 window.cargarPerfil = cargarPerfil;
 
 async function editarPerfilCliente() {
-    // No cambiar de vista, mantener en perfil
-    await mostrarVistaCliente(true); //Forzamos onboarding (formulario)
+    // Mostrar directamente el formulario de onboarding sin validaciones
+    const d = document.getElementById('cliente-dashboard');
+    const o = document.getElementById('cliente-onboarding');
+    if (d) d.style.display = 'none';
+    if (o) o.style.display = 'block';
+
     try {
         const perf = await api('getProfile', { email: SESION.email });
         if (perf) {
