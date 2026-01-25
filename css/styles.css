@@ -1058,3 +1058,70 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     flex-direction: column;
     gap: 10px;
 }
+
+/* =========================================
+   CARDS DE BIENVENIDA PREMIUM (TURQUESA)
+   ========================================= */
+.welcome-family-card {
+    background: linear-gradient(135deg, #C6FAFF 0%, #E0F7FA 100%) !important;
+    border: none !important;
+    padding: 30px 25px !important;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 15px 35px rgba(59, 182, 196, 0.15) !important;
+}
+
+.welcome-header {
+    margin-bottom: 15px;
+}
+
+.welcome-emoji {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.welcome-title-premium {
+    font-family: 'DM Serif Display', serif !important;
+    font-size: 28px !important;
+    color: #1F2937 !important;
+    margin: 0 !important;
+}
+
+.welcome-text {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #374151;
+    margin-bottom: 12px;
+}
+
+.welcome-text b {
+    color: #E84C9A;
+    /* Toque de rosa en el nombre */
+}
+
+.welcome-footer {
+    font-size: 14px;
+    font-weight: 600;
+    color: #4b5563;
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+.logout-btn-premium {
+    background: rgba(255, 255, 255, 0.4) !important;
+    border: 1px solid rgba(31, 41, 55, 0.1) !important;
+    color: #4b5563 !important;
+    padding: 8px 20px !important;
+    font-size: 12px !important;
+    border-radius: 50px !important;
+    width: auto !important;
+    margin: 0 auto;
+    display: inline-block !important;
+}
+
+.logout-btn-premium:hover {
+    background: rgba(255, 255, 255, 0.6) !important;
+    color: #1F2937 !important;
+}
