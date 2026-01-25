@@ -2209,11 +2209,12 @@ function aceptarPoliticas() {
 window.aceptarPoliticas = aceptarPoliticas;
 
 function cancelarFormularioCliente() {
-    // Simplemente cerrar el formulario sin guardar
-    const d = document.getElementById('cliente-dashboard');
+    // Cerrar el formulario y regresar a la vista de perfil
     const o = document.getElementById('cliente-onboarding');
     if (o) o.style.display = 'none';
-    if (d) d.style.display = 'block';
+
+    // Regresar a vista de perfil
+    irVista('perfil');
 }
 window.cancelarFormularioCliente = cancelarFormularioCliente;
 
@@ -2367,7 +2368,10 @@ async function guardarRegistroCompleto() {
         await api('updatePerfilCliente', payload);
         CACHE_CLIENTE.profile = null; // Limpiar caché para forzar recarga y validación
         mostrarToast('Perfil completado con éxito');
-        mostrarVistaCliente(false, true);
+        // Cerrar formulario y regresar a perfil
+        const o = document.getElementById('cliente-onboarding');
+        if (o) o.style.display = 'none';
+        irVista('perfil');
     } catch (e) {
         mostrarToast('Error: ' + e.message);
     }
@@ -2526,7 +2530,7 @@ async function cargarPerfil() {
 window.cargarPerfil = cargarPerfil;
 
 async function editarPerfilCliente() {
-    irVista('servicios', true); //Skip logic para evitar race conditions
+    // No cambiar de vista, mantener en perfil
     await mostrarVistaCliente(true); //Forzamos onboarding (formulario)
     try {
         const perf = await api('getProfile', { email: SESION.email });
