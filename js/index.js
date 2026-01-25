@@ -743,7 +743,7 @@ function abrirModalServicio(s) {
             actions.appendChild(b);
         } else if (!finReal) {
             const b = document.createElement('button');
-            b.className = 'btn-ghost';
+            b.className = 'btn-primary';
             b.textContent = 'Finalizar servicio';
             b.onclick = () => accionFinalizar(s.sheet, s.row_base, s.fecha);
             actions.appendChild(b);
@@ -752,7 +752,7 @@ function abrirModalServicio(s) {
     else if (estado === 'en curso') {
         if (!finReal) {
             const b = document.createElement('button');
-            b.className = 'btn-ghost';
+            b.className = 'btn-primary';
             b.textContent = 'Finalizar servicio';
             b.onclick = () => accionFinalizar(s.sheet, s.row_base, s.fecha);
             actions.appendChild(b);
