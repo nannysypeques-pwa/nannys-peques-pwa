@@ -611,8 +611,8 @@ function establecerContrasena(email, otp, nuevaContrasena) {
         const otpGuard = String(shU.getRange(filaU, 4).getValue()).trim();
         const expStr = shU.getRange(filaU, 5).getValue();
         const expDate = new Date(expStr);
-        if (otp !== otpGuard) throw new Error('Có³digo incorrecto');
-        if (!(expDate instanceof Date) || isNaN(expDate.getTime()) || new Date() > expDate) throw new Error('Có³digo vencido');
+        if (otp !== otpGuard) throw new Error('Código incorrecto');
+        if (!(expDate instanceof Date) || isNaN(expDate.getTime()) || new Date() > expDate) throw new Error('Código vencido');
         const passHash = _sha256(nuevaContrasena);
         shU.getRange(filaU, 3).setValue(passHash);
         shU.getRange(filaU, 4).setValue('');
@@ -621,11 +621,11 @@ function establecerContrasena(email, otp, nuevaContrasena) {
         return { ok: true };
     }
 
-    // 2. Buscar en Clientes (Registro espontó¡neo)
+    // 2. Buscar en Clientes (Registro espontáneo)
     const shC = _hoja(NOMBRE_HOJA_CLIENTES);
     const filaC = _buscarFilaPorValor(shC, 'email', email);
     if (filaC === -1) {
-        // Permitimos el registro espontó¡neo de cualquier usuario como cliente
+        // Permitimos el registro espontáneo de cualquier usuario como cliente
         // Crear fila nueva
         const headers = shC.getRange(1, 1, 1, shC.getLastColumn()).getValues()[0];
         const newRow = new Array(headers.length).fill('');
@@ -642,13 +642,13 @@ function establecerContrasena(email, otp, nuevaContrasena) {
         shC.appendRow(newRow);
         return { ok: true };
     } else {
-        // Ya existe en Clientes, validar OTP si lo pidió³
+        // Ya existe en Clientes, validar OTP si lo pidió
         const idxOTP = _idxCol(shC, 'otp');
         const idxExp = _idxCol(shC, 'otp_expira');
         const otpGuard = String(shC.getRange(filaC, idxOTP).getValue()).trim();
         const expDate = new Date(shC.getRange(filaC, idxExp).getValue());
-        if (otp !== otpGuard) throw new Error('Có³digo incorrecto');
-        if (new Date() > expDate) throw new Error('Có³digo vencido');
+        if (otp !== otpGuard) throw new Error('Código incorrecto');
+        if (new Date() > expDate) throw new Error('Código vencido');
 
         const idxPass = _idxCol(shC, 'pass_hash');
         shC.getRange(filaC, idxPass).setValue(_sha256(nuevaContrasena));
