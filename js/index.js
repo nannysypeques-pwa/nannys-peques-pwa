@@ -2419,7 +2419,7 @@ async function cargarPerfil() {
             const esNanny = !!perf.isNanny;
             const seccionPeques = document.getElementById('perfil-peques-container');
             const itemMascotas = document.getElementById('perfil_mascotas_gral')?.closest('.profile-info-item');
-            const itemPoliticas = document.getElementById('perfil_politicas')?.closest('.profile-info-item');
+            const itemPoliticas = document.getElementById('perfil-politicas-container');
             const avatar = document.querySelector('.profile-avatar');
 
             if (esNanny) {
