@@ -1105,3 +1105,67 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.6) !important;
     color: #1F2937 !important;
 }
+
+/* =========================================
+   SELECCIÓN DE ROL (CLIENTE)
+   ========================================= */
+.role-selection-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.role-btn {
+    flex: 1;
+    background: #FFFFFF;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 12px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-weight: 700;
+    color: #6B7280;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.role-btn span {
+    font-size: 18px;
+}
+
+.role-btn:hover {
+    border-color: #3BB6C4;
+    background: #F0FDFA;
+    transform: translateY(-2px);
+}
+
+.role-btn.active {
+    background: #3BB6C4;
+    border-color: #3BB6C4;
+    color: white;
+    box-shadow: 0 4px 12px rgba(59, 182, 196, 0.3);
+}
+
+.role-btn.active:hover {
+    transform: translateY(-2px);
+    background: #34A8B5;
+}
+
+@media (max-width: 400px) {
+    .role-selection-group {
+        gap: 6px;
+    }
+
+    .role-btn {
+        font-size: 13px;
+        padding: 10px 4px;
+        gap: 4px;
+    }
+
+    .role-btn span {
+        font-size: 16px;
+    }
+}

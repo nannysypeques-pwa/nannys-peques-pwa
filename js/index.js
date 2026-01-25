@@ -2297,6 +2297,23 @@ function verificarDatosFaltantesCliente(p) {
 }
 
 
+function seleccionarRol(rol) {
+    const input = document.getElementById('reg_rol');
+    if (!input) return;
+    input.value = rol;
+
+    // Actualizar UI de botones
+    document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+
+    const idMap = { 'Mamá': 'role_mama', 'Papá': 'role_papa', 'Familiar': 'role_familiar' };
+    const targetId = idMap[rol];
+    if (targetId) {
+        const btn = document.getElementById(targetId);
+        if (btn) btn.classList.add('active');
+    }
+}
+window.seleccionarRol = seleccionarRol;
+
 async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) {
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
@@ -2370,6 +2387,9 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
                     btnPoliticas.style.cursor = 'pointer';
                 }
             }
+
+            // Pre-seleccionar Rol
+            if (perf.rol) seleccionarRol(perf.rol);
         }
     } else {
         if (d) d.style.display = 'block';
@@ -2381,6 +2401,7 @@ window.mostrarVistaCliente = mostrarVistaCliente;
 async function guardarRegistroCompleto() {
     const payload = {
         nombre_completo: document.getElementById('reg_nombre').value,
+        rol: document.getElementById('reg_rol').value,
         direccion: document.getElementById('reg_direccion').value,
         ubicacion: document.getElementById('reg_ubicacion').value,
         telefono: document.getElementById('reg_tel').value,
@@ -2683,6 +2704,9 @@ async function editarPerfilCliente() {
                     btnPoliticas.style.cursor = 'pointer';
                 }
             }
+
+            // Pre-seleccionar Rol en edición
+            if (perf.rol) seleccionarRol(perf.rol);
         }
     } catch (e) {
         console.error("Error al prellenar perfil:", e);

@@ -4299,6 +4299,7 @@ function updatePerfilCliente(email, payload) {
     // Mapear campos de payload a columnas
     const fields = {
         'nombre completo': payload.nombre_completo,
+        'Rol': payload.rol,
         'direccion': payload.direccion,
         'ubicación': payload.ubicacion,
         'teléfono': payload.telefono,
