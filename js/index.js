@@ -2225,7 +2225,7 @@ function verificarDatosFaltantesCliente(p) {
     if (!p) return true; // Falta todo
 
     const req = [
-        { key: 'direccion', label: 'Dirección' },
+        { key: 'dirección', label: 'Dirección' },
         { key: 'ubicación', label: 'Ubicación' },
         { key: 'teléfono', label: 'Teléfono' },
         { key: 'no._de_emergencia', label: 'Contacto de emergencia' },
@@ -2278,7 +2278,7 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
             o.style.display = 'block';
             // Pre-llenar campos con nombres normalizados del backend
             if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || perf.nombre_completo || '';
-            if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
+            if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.dirección || perf.direccion || '';
             if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || '';
             if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.teléfono || '';
             if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf.no_de_emergencia || perf['no._de_emergencia'] || '';
