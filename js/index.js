@@ -2311,21 +2311,26 @@ function seleccionarRol(rolDisplay) {
     const valorInterno = mapValores[rolDisplay] || rolDisplay;
     input.value = valorInterno;
 
-    // Actualizar UI de botones
-    document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-
-    const idMap = {
-        'mama': 'role_mama',
-        'papa': 'role_papa',
-        'Familiar': 'role_familiar',
-        'Mamá': 'role_mama',
-        'Papá': 'role_papa'
-    };
-    const targetId = idMap[valorInterno];
-    if (targetId) {
+    // Lógica robusta de iluminación (con reintento para móviles)
+    const iluminar = (reintentos = 3) => {
+        const idMap = {
+            'mama': 'role_mama',
+            'papa': 'role_papa',
+            'Familiar': 'role_familiar'
+        };
+        const targetId = idMap[valorInterno];
         const btn = document.getElementById(targetId);
-        if (btn) btn.classList.add('active');
-    }
+
+        if (btn) {
+            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        } else if (reintentos > 0) {
+            // Si el botón aún no está en el DOM (común en móviles al abrir vistas), reintentar brevemente
+            setTimeout(() => iluminar(reintentos - 1), 50);
+        }
+    };
+
+    iluminar();
 }
 window.seleccionarRol = seleccionarRol;
 
