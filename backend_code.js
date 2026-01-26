@@ -23,7 +23,7 @@
         // Email del ejecutor. YA NO SE CONFÍA EN payload.email para acciones protegidas.
         let email = '';
 
-        const accionesPublicas = ['login', 'solicitarOTP', 'establecerContrasena'];
+        const accionesPublicas = ['login', 'solicitarOTP', 'establecerContrasena', 'validarRegistroCliente'];
 
         if (accionesPublicas.includes(action)) {
             email = String(payload.email || '').trim().toLowerCase();
