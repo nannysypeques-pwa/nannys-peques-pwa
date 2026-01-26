@@ -2198,7 +2198,7 @@ function mostrarRegistroCliente() {
 }
 window.mostrarRegistroCliente = mostrarRegistroCliente;
 
-async function registrarNuevoCliente() {
+async function iniciarRegistroCliente() {
     const email = document.getElementById('email-reg').value.trim().toLowerCase();
     const pass = document.getElementById('pass-reg').value;
     const msg = document.getElementById('msgRegistro');
@@ -2212,22 +2212,74 @@ async function registrarNuevoCliente() {
         return;
     }
 
-    msg.textContent = 'Procesando registro...';
+    msg.textContent = 'Enviando código de verificación...';
 
     try {
-        await api('establecerContrasena', { email, otp: 'NUEVO_REGISTRO', nueva: pass });
+        await api('solicitarOTPRegistro', { email });
 
-        msg.innerHTML = '<span class="ok">¡Cuenta creada con éxito! Ahora puedes iniciar sesión.</span>';
-        setTimeout(() => {
-            volverLogin();
-            const inputEmail = document.getElementById('email');
-            if (inputEmail) inputEmail.value = email;
-        }, 2000);
+        // Cambiar UI a paso 2
+        document.getElementById('reg-paso-1').style.display = 'none';
+        document.getElementById('reg-paso-2').style.display = 'block';
+        msg.innerHTML = '<span class="ok">Revisa tu correo e ingresa el código.</span>';
 
     } catch (err) {
         msg.innerHTML = '<span class="err">' + err.message + '</span>';
     }
 }
+window.iniciarRegistroCliente = iniciarRegistroCliente;
+
+async function confirmarRegistroCliente() {
+    const email = document.getElementById('email-reg').value.trim().toLowerCase();
+    const pass = document.getElementById('pass-reg').value;
+    const otp = document.getElementById('otp-reg').value.trim();
+    const msg = document.getElementById('msgRegistro');
+
+    if (!otp) {
+        msg.innerHTML = '<span class="err">Ingresa el código de verificación.</span>';
+        return;
+    }
+
+    msg.textContent = 'Verificando y creando cuenta...';
+
+    try {
+        const res = await api('confirmarRegistroCliente', { email, otp, password: pass });
+
+        // Auto-Login exitoso
+        SESION.email = res.email;
+        SESION.token = res.token || null;
+        SESION.nombre = res.nombre || '';
+        SESION.admin = !!res.admin;
+        SESION.supervision = !!res.supervision;
+        SESION.cliente = !!res.cliente;
+
+        localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
+
+        msg.innerHTML = '<span class="ok">¡Cuenta creada con éxito!</span>';
+
+        // Inicializar app
+        setTimeout(() => {
+            document.getElementById('auth').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+            document.querySelector('.bottom-nav').style.display = 'flex';
+            irVista('servicios'); // Redirigirá a onboarding
+        }, 1500);
+
+    } catch (err) {
+        msg.innerHTML = '<span class="err">' + err.message + '</span>';
+    }
+}
+window.confirmarRegistroCliente = confirmarRegistroCliente;
+
+function cancelarRegistro() {
+    document.getElementById('reg-paso-1').style.display = 'block';
+    document.getElementById('reg-paso-2').style.display = 'none';
+    document.getElementById('msgRegistro').textContent = '';
+    document.getElementById('otp-reg').value = '';
+}
+window.cancelarRegistro = cancelarRegistro;
+
+// Deprecated wrapper kept just in case but overridden above
+function registrarNuevoCliente() { iniciarRegistroCliente(); }
 window.registrarNuevoCliente = registrarNuevoCliente;
 
 function volverLogin() {

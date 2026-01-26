@@ -115,20 +115,37 @@
           </p>
 
 
-          <div class="row">
-            <label>Email</label>
-            <input id="email-reg" type="email" placeholder="nombre@correo.com">
-          </div>
-          <div class="row">
-            <label>Contraseña</label>
-            <input id="pass-reg" type="password" placeholder="Mínimo 6 caracteres">
+          <!-- REGISTRO: PASO 1 (Datos) -->
+          <div id="reg-paso-1">
+            <div class="row">
+              <label>Email</label>
+              <input id="email-reg" type="email" placeholder="nombre@correo.com">
+            </div>
+            <div class="row">
+              <label>Contraseña</label>
+              <input id="pass-reg" type="password" placeholder="Mínimo 6 caracteres">
+            </div>
+            <div class="row">
+              <button class="btn-primary" onclick="login('cliente')"
+                style="background: var(--blue-main);">Entrar</button>
+              <button class="btn-ghost" onclick="iniciarRegistroCliente()">Crear cuenta nueva</button>
+            </div>
           </div>
 
-
-          <div class="row">
-            <button class="btn-primary" onclick="login('cliente')" style="background: var(--blue-main);">Entrar</button>
-            <button class="btn-ghost" onclick="registrarNuevoCliente()">Crear cuenta nueva</button>
+          <!-- REGISTRO: PASO 2 (OTP) -->
+          <div id="reg-paso-2" style="display:none; text-align:center;">
+            <p>Hemos enviado un código a tu correo.</p>
+            <div class="row">
+              <label>Código de verificación</label>
+              <input id="otp-reg" type="text" placeholder="6 dígitos"
+                style="letter-spacing:4px; font-size:18px; text-align:center;">
+            </div>
+            <div class="row">
+              <button class="btn-primary" onclick="confirmarRegistroCliente()">Confirmar y Crear Cuenta</button>
+              <button class="btn-ghost" onclick="cancelarRegistro()">Cancelar</button>
+            </div>
           </div>
+
           <button class="btn-ghost" onclick="volverSeleccion()" style="margin-top: 10px;">← Volver</button>
           <p id="msgRegistro"></p>
         </div>
