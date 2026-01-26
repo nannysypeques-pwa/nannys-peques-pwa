@@ -1121,19 +1121,23 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     background: #FFFFFF;
     border: 2px solid #E5E7EB;
     border-radius: 12px;
-    padding: 12px 8px;
+    padding: 14px 10px;
+    /* Mas alto para touch targets */
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     font-weight: 700;
+    font-size: 15px;
+    /* Un poco mas grande */
     color: #6B7280;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .role-btn span {
-    font-size: 18px;
+    font-size: 20px;
+    /* Emojis mas grandes */
 }
 
 .role-btn:hover {
@@ -1152,20 +1156,4 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 .role-btn.active:hover {
     transform: translateY(-2px);
     background: #34A8B5;
-}
-
-@media (max-width: 400px) {
-    .role-selection-group {
-        gap: 6px;
-    }
-
-    .role-btn {
-        font-size: 13px;
-        padding: 10px 4px;
-        gap: 4px;
-    }
-
-    .role-btn span {
-        font-size: 16px;
-    }
 }
