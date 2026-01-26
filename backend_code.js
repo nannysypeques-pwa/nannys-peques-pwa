@@ -19,9 +19,25 @@
 
         if (!action) throw new Error('Falta action');
 
-        // Email del ejecutor (generalmente viene en el payload desde la PWA)
-        // En funciones admin, esto valida permisos.
-        const email = String(payload.email || '').trim().toLowerCase();
+        // --- SEGURIDAD: TOKEN DE SESIÓN ---
+        // Email del ejecutor. YA NO SE CONFÍA EN payload.email para acciones protegidas.
+        let email = '';
+
+        const accionesPublicas = ['login', 'solicitarOTP', 'establecerContrasena'];
+
+        if (accionesPublicas.includes(action)) {
+            email = String(payload.email || '').trim().toLowerCase();
+        } else {
+            // Validar Token OBLIGATORIAMENTE
+            const token = String(payload.token || '').trim();
+            if (token) {
+                email = _validarToken(token); // Retorna email o null
+                if (!email) throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+            } else {
+                // Si no hay token, rechazamos la petición por seguridad
+                throw new Error('No autorizado. Falta token de sesión.');
+            }
+        }
 
         let result;
 
@@ -455,6 +471,24 @@ function _mapaColumnasPorFecha_(sh) {
 
 
 
+
+/** =========================
+ *  SEGURIDAD (TOKENS)
+ *  ========================= */
+function _generarToken(email) {
+    if (!email) return null;
+    const token = Utilities.getUuid();
+    // Guardar en caché por 6 horas (21600 seg)
+    CacheService.getScriptCache().put(token, String(email), 21600);
+    return token;
+}
+
+function _validarToken(token) {
+    if (!token) return null;
+    return CacheService.getScriptCache().get(token); // Retorna email o null
+}
+
+
 /** =========================
  *  AUTORIZACIó“N / ROLES / OTP / LOGIN
  *  ========================= */
@@ -681,8 +715,12 @@ function login(email, contrasena, rol) {
             const hashGuardado = String(shU.getRange(filaU, 3).getValue()).trim();
             if (!hashGuardado) throw new Error('Este usuario no tiene contraseó±a. Use "Olvidó© mi contraseó±a".');
             if (_sha256(contrasena) !== hashGuardado) throw new Error('Credenciales invó¡lidas');
+
+            const token = _generarToken(email);
+
             return {
                 ok: true,
+                token: token,
                 email,
                 nombre: shU.getRange(filaU, 2).getValue() || '',
                 admin: esAdmin(email),
@@ -701,8 +739,12 @@ function login(email, contrasena, rol) {
             const passH = String(shC.getRange(filaC, _idxCol(shC, 'pass_hash')).getValue()).trim();
             if (!passH) throw new Error('Este cliente no ha establecido contraseó±a.');
             if (_sha256(contrasena) !== passH) throw new Error('Credenciales invó¡lidas');
+
+            const token = _generarToken(email);
+
             return {
                 ok: true,
+                token: token,
                 email,
                 nombre: shC.getRange(filaC, _idxCol(shC, 'nombre completo')).getValue() || '',
                 admin: false,

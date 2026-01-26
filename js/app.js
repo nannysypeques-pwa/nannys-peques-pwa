@@ -7,6 +7,21 @@ const VAPID_PUBLIC_KEY = 'BFuZVf-LVmWBDS76oBlDcRPlgwuQMkUvEfh3I5EDl4XH7H3kYWzWMA
 async function api(action, payload = {}) {
   const params = new URLSearchParams();
   params.append('action', action);
+
+  // Inyectar Token si existe en la sesión global o localStorage
+  let token = null;
+  if (typeof SESION !== 'undefined' && SESION.token) token = SESION.token;
+  else {
+    const stored = localStorage.getItem('nyp_sesion');
+    if (stored) {
+      try { token = JSON.parse(stored).token; } catch (e) { }
+    }
+  }
+
+  if (token) {
+    payload.token = token;
+  }
+
   params.append('payload', JSON.stringify(payload));
 
   const res = await fetch(API_URL, {

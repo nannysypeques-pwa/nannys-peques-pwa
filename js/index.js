@@ -7,7 +7,8 @@ let SESION = {
     nombre: '',
     admin: false,
     supervision: false,
-    cliente: false
+    cliente: false,
+    token: null
 };
 
 //Inicializar sesión desde localStorage si existe
@@ -64,6 +65,16 @@ function normalizarTexto(v) {
         .trim()
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 /**
@@ -133,6 +144,7 @@ async function login(rol) {
         const res = await api('login', { email, contrasena: pass, rol: rol });
 
         SESION.email = email;
+        SESION.token = res.token || null;
         SESION.nombre = res.nombre || '';
         SESION.admin = !!res.admin;
         SESION.supervision = !!res.supervision;
@@ -208,7 +220,7 @@ async function guardarNueva() {
 
 function logout() {
     localStorage.removeItem('nyp_sesion');
-    SESION = { email: null, nombre: '', admin: false, supervision: false, cliente: false };
+    SESION = { email: null, nombre: '', admin: false, supervision: false, cliente: false, token: null };
 
     document.getElementById('app').style.display = 'none';
     document.getElementById('auth').style.display = 'flex';
@@ -546,8 +558,8 @@ function renderCalendario2Semanas() {
                 //Let's use innerHTML to style it a bit or just append text.
                 //The user request said "Show client name... below the time".
                 //I will use innerHTML to add a div/span.
-                btn.innerHTML = `<span style="display:block; font-size:13px; font-weight:700;">${label}</span>
-                                 <span style="display:block; font-size:12px; margin-top:2px; opacity:0.9;">${nombreCliente}</span>`;
+                btn.innerHTML = `<span style="display:block; font-size:13px; font-weight:700;">${escapeHtml(label)}</span>
+                                 <span style="display:block; font-size:12px; margin-top:2px; opacity:0.9;">${escapeHtml(nombreCliente)}</span>`;
                 //btn.textContent = label; <-- Removing this
                 btn.onclick = () => abrirModalServicio(s);
                 body.appendChild(btn);
@@ -655,10 +667,10 @@ function abrirModalServicio(s) {
                   <div style="display:flex; gap:10px; align-items:center;">
                     <span class="peque-icon" style="font-size:24px; background:white; border-radius:50%; padding:4px; box-shadow:0 1px 2px rgba(0,0,0,0.1); flex-shrink:0;">👶</span>
                     <div class="peque-meta" style="display:flex; align-items:center;">
-                      <div class="peque-name" style="font-weight:700; font-size:16px; color:#1f2937; margin:0; line-height:1; display:inline-block;">${nombreRow}</div>
+                      <div class="peque-name" style="font-weight:700; font-size:16px; color:#1f2937; margin:0; line-height:1; display:inline-block;">${escapeHtml(nombreRow)}</div>
                     </div>
                   </div>
-                  <span class="peque-age-badge" style="background:#fce7f3; color:#db2777; font-weight:700; font-size:12px; padding:4px 10px; border-radius:999px; white-space:nowrap; display:inline-flex; align-items:center; line-height:1; height:fit-content;">${edad}</span>
+                  <span class="peque-age-badge" style="background:#fce7f3; color:#db2777; font-weight:700; font-size:12px; padding:4px 10px; border-radius:999px; white-space:nowrap; display:inline-flex; align-items:center; line-height:1; height:fit-content;">${escapeHtml(edad)}</span>
                 </div>`;
 
                 let detailsHtml = `<div class="peque-details">`;
@@ -668,12 +680,12 @@ function abrirModalServicio(s) {
                         const label = partes[0].replace(/[•🐾]/g, '').trim();
                         const val = partes.slice(1).join(':').trim();
                         if (l.startsWith('🐾')) {
-                            detailsHtml += `<div style="margin-top:6px; font-weight:600; font-size:13px; color:#4b5563;">🐾 ${label}: <span style="font-weight:400;">${val}</span></div>`;
+                            detailsHtml += `<div style="margin-top:6px; font-weight:600; font-size:13px; color:#4b5563;">🐾 ${escapeHtml(label)}: <span style="font-weight:400;">${escapeHtml(val)}</span></div>`;
                         } else {
-                            detailsHtml += `<div style="font-size:13px; color:#374151; margin-bottom:3px;"><b style="color:#4b5563;">${label}:</b> ${val}</div>`;
+                            detailsHtml += `<div style="font-size:13px; color:#374151; margin-bottom:3px;"><b style="color:#4b5563;">${escapeHtml(label)}:</b> ${escapeHtml(val)}</div>`;
                         }
                     } else {
-                        detailsHtml += `<div style="font-size:13px; color:#6b7280; margin-top:2px;">${l}</div>`;
+                        detailsHtml += `<div style="font-size:13px; color:#6b7280; margin-top:2px;">${escapeHtml(l)}</div>`;
                     }
                 });
                 detailsHtml += `</div>`;
