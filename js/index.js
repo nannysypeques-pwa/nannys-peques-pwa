@@ -2499,7 +2499,25 @@ async function cargarPerfil() {
         const perf = await api('getProfile', { email: SESION.email });
         if (perf) {
             //Header
-            if (document.getElementById('perfil_nombre_header')) document.getElementById('perfil_nombre_header').textContent = perf.nombre || 'Mi perfil';
+            if (document.getElementById('perfil_nombre_header')) {
+                document.getElementById('perfil_nombre_header').textContent = perf.nombre || 'Mi perfil';
+            }
+
+            const rolHeader = document.getElementById('perfil_rol_header');
+            if (rolHeader) {
+                const mapLabels = {
+                    'mama': 'Mamá amorosa:',
+                    'papa': 'Papá amoroso:',
+                    'Familiar': 'Familiar amorosa:'
+                };
+                const label = mapLabels[perf.rol] || '';
+                if (label) {
+                    rolHeader.textContent = label;
+                    rolHeader.style.display = 'block';
+                } else {
+                    rolHeader.style.display = 'none';
+                }
+            }
 
 
 
