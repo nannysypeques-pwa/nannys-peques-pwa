@@ -4300,6 +4300,7 @@ function updatePerfilCliente(email, payload) {
     const fields = {
         'nombre completo': payload.nombre_completo,
         'Rol': payload.rol,
+        'rol': payload.rol,
         'direccion': payload.direccion,
         'ubicación': payload.ubicacion,
         'teléfono': payload.telefono,

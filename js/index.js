@@ -2297,16 +2297,31 @@ function verificarDatosFaltantesCliente(p) {
 }
 
 
-function seleccionarRol(rol) {
+function seleccionarRol(rolDisplay) {
     const input = document.getElementById('reg_rol');
     if (!input) return;
-    input.value = rol;
+
+    // Mapeo exacto solicitado
+    const mapValores = {
+        'Mamá': 'mama',
+        'Papá': 'papa',
+        'Familiar': 'Familiar'
+    };
+
+    const valorInterno = mapValores[rolDisplay] || rolDisplay;
+    input.value = valorInterno;
 
     // Actualizar UI de botones
     document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
 
-    const idMap = { 'Mamá': 'role_mama', 'Papá': 'role_papa', 'Familiar': 'role_familiar' };
-    const targetId = idMap[rol];
+    const idMap = {
+        'mama': 'role_mama',
+        'papa': 'role_papa',
+        'Familiar': 'role_familiar',
+        'Mamá': 'role_mama',
+        'Papá': 'role_papa'
+    };
+    const targetId = idMap[valorInterno];
     if (targetId) {
         const btn = document.getElementById(targetId);
         if (btn) btn.classList.add('active');
