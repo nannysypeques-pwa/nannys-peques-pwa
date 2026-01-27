@@ -4964,33 +4964,32 @@ function _getPlaneacionesSheet() {
 function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
     if (!fechaBase) return esSupervision(email) ? {} : [];
 
-    // 1. Definir rango de la semana
-    let d = new Date(fechaBase);
+    // 1. Definir rango de la semana de forma segura
+    const parts = fechaBase.split('-').map(Number);
+    // Crear fecha local (00:00:00)
+    let d = new Date(parts[0], parts[1] - 1, parts[2]);
+
+    // Ajustar al lunes de esa semana
     const day = d.getDay();
     const diff = d.getDate() - day + (day == 0 ? -6 : 1);
-    const lunes = new Date(d.setDate(diff));
-    const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+    const lunes = new Date(d);
+    lunes.setDate(diff);
 
-    // Ajustar zona horaria si es necesario, pero _toISODate maneja strings bien
-    // Lo mejor es usar objetos Date limpios
+    const domingo = new Date(lunes);
+    domingo.setDate(lunes.getDate() + 6);
+
     const desdeISO = Utilities.formatDate(lunes, ZONA_HORARIA, 'yyyy-MM-dd');
     const hastaISO = Utilities.formatDate(domingo, ZONA_HORARIA, 'yyyy-MM-dd');
 
     // 2. Obtener Servicios en ese rango
-    // Para simplificar y ser robustos, leemos la hoja Servicios directamente con filtro de fecha
     const shS = _hoja(NOMBRE_HOJA_SERVICIOS);
     const serviciosRaw = _leerComoObjetos(shS);
 
     const servicios = serviciosRaw.filter(s => {
         const f = _toISODate(s.Fecha || s.fecha);
         if (!f) return false;
-
-        // Validar rango fecha
         if (f < desdeISO || f > hastaISO) return false;
 
-        // Validar 'ver'
-        // Lógica de _esVerdadero: 'true', '1', 'si', etc.
-        // Si 'ver' es undefined, asumimos true
         let v = s.ver;
         if (v === undefined || v === '') return true;
         return _esVerdadero(v);
@@ -5000,16 +4999,16 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
     const shP = _getPlaneacionesSheet();
     const planeacionesRaw = _leerComoObjetos(shP);
 
-    // Filtrar por rango para optimizar mapa
-    // (Opcional, pero bueno si hay miles)
-
     const mapaPlaneaciones = {};
     planeacionesRaw.forEach((p, idx) => {
         const f = _toISODate(p.Fecha || p.fecha);
-        if (f < desdeISO || f > hastaISO) return; // Fuera de rango
+        if (f < desdeISO || f > hastaISO) return;
 
-        // Clave única: Fecha + Cliente + Niñera
-        const key = `${f}|${_norm(p.Cliente || p.cliente)}|${_norm(p['Nombre Ninera'] || p.nombre_ninera)}`;
+        // Robustez en nombres de columnas
+        const clienteNom = p.Cliente || p.cliente || '';
+        const nineraNom = p['Nombre Ninera'] || p.nombre_ninera || p['Nombre de la niñera'] || p.ninera || '';
+
+        const key = `${f}|${_norm(clienteNom)}|${_norm(nineraNom)}`;
         p.fila = idx + 2;
         mapaPlaneaciones[key] = p;
     });
@@ -5021,22 +5020,28 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
     const miNombre = esSuper ? '' : _nombrePorEmail(email);
 
     servicios.forEach(s => {
-        const tipoServicio = _norm(s['Tipo de servicio'] || s.tipo_servicio || '');
-        // Solo ciertos servicios llevan planeación
+        const tipoServicio = _norm(s['Tipo de servicio'] || s['Tipo Servicio'] || s.tipo_servicio || '');
         const requierePlan = ['neuronanny', 'nanny educativa', 'miss nanny'].some(t => tipoServicio.includes(t));
 
         if (!requierePlan) return;
 
-        const cliente = s.Cliente || s.cliente;
-        const ninera = s['Nombre de la niñera'] || s.nombre_ninera;
+        const cliente = s.Cliente || s.cliente || '';
+        const ninera = s['Nombre de la niñera'] || s.nombre_ninera || '';
         const fecha = _toISODate(s.Fecha || s.fecha);
         const ciudad = s.Ciudad || s.ciudad || 'Pendiente';
 
-        // Filtro si es niñera
         if (!esSuper && _norm(ninera) !== _norm(miNombre)) return;
 
         const key = `${fecha}|${_norm(cliente)}|${_norm(ninera)}`;
         const plan = mapaPlaneaciones[key];
+
+        const getVal = (obj, keys) => {
+            if (!obj) return '';
+            for (const k of keys) {
+                if (obj[k] !== undefined && obj[k] !== '') return obj[k];
+            }
+            return '';
+        };
 
         const item = {
             cliente: cliente,
@@ -5045,18 +5050,16 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
             tipo_servicio: tipoServicio,
             ciudad: ciudad,
             tienePlaneacion: !!plan,
-            // Normalizar keys del plan que vienen de hoja
-            estado_revision: plan ? (plan['Estado Revision'] || plan.estado_revision || 'pendiente') : 'pendiente',
-            observaciones_supervision: plan ? (plan['Observaciones Supervision'] || plan.observaciones_supervision || '') : '',
-            fecha_revision: plan ? (plan['Fecha Revision'] || plan.fecha_revision || '') : '',
-            fecha_correccion: plan ? (plan['Fecha Correccion'] || plan.fecha_correccion || '') : '',
+            estado_revision: getVal(plan, ['Estado Revision', 'estado_revision', 'estado']) || 'pendiente',
+            observaciones_supervision: getVal(plan, ['Observaciones Supervision', 'observaciones_supervision']),
+            fecha_revision: getVal(plan, ['Fecha Revision', 'fecha_revision']),
+            fecha_correccion: getVal(plan, ['Fecha Correccion', 'fecha_correccion']),
             fila: plan ? plan.fila : null,
-            // Datos del plan para prellenar si existe
-            area_desarrollo: plan ? (plan['Area Desarrollo'] || plan.area_desarrollo) : '',
-            objetivo: plan ? (plan['Objetivo'] || plan.objetivo) : '',
-            descripcion: plan ? (plan['Descripcion'] || plan.descripcion) : '',
-            materiales: plan ? (plan['Materiales'] || plan.materiales) : '',
-            imagen: plan ? (plan['Imagen'] || plan.imagen) : ''
+            area_desarrollo: getVal(plan, ['Area Desarrollo', 'area_desarrollo']),
+            objetivo: getVal(plan, ['Objetivo', 'objetivo']),
+            descripcion: getVal(plan, ['Descripcion', 'descripcion']),
+            materiales: getVal(plan, ['Materiales', 'materiales']),
+            imagen: getVal(plan, ['Imagen', 'imagen'])
         };
 
         if (esSuper) {
@@ -5068,7 +5071,6 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
     });
 
     if (esSuper) {
-        // Agrupar items idénticos en un solo objeto con array de fechas
         const result = {};
         Object.keys(grouped).forEach(ciudad => {
             const items = grouped[ciudad];
@@ -5077,7 +5079,6 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
                 const k = `${it.cliente}|${it.ninera}`;
                 if (!mapUnique[k]) {
                     mapUnique[k] = { ...it, fechas: [], dias: [] };
-                    // Resetear flags que dependen de acumulado
                     mapUnique[k].tienePlaneacion = false;
                     mapUnique[k].estado_revision = 'pendiente';
                 }
@@ -5085,13 +5086,9 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
                 mapUnique[k].fechas.push(it.fecha);
                 mapUnique[k].dias.push(it.fecha);
 
-                // Lógica de estado acumulado:
-                // Si ALGUNA fecha tiene planeacion, mostramos "tiene".
-                // Pero el estado de revisión es mas complejo. 
-                // Simplificación: Guardamos el estado del servicio más reciente o priority.
                 if (it.tienePlaneacion) {
                     mapUnique[k].tienePlaneacion = true;
-                    mapUnique[k].estado_revision = it.estado_revision; // Sobrescribir con el que tenga datos
+                    mapUnique[k].estado_revision = it.estado_revision;
                 }
             });
             result[ciudad] = Object.values(mapUnique);
