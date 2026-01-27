@@ -1577,22 +1577,26 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante, fechaInicio) {
     ]);
 
 
-    let hoy;
-    if (fechaInicio) {
-        // Si nos pasan fechaInicio (ej. '2024-01-20'), la usamos como base.
-        // Asumimos que viene en formato YYYY-MM-DD
-        const [y, m, d] = String(fechaInicio).split('-').map(Number);
-        // Crear fecha local sin hora
-        hoy = new Date(y, m - 1, d);
+    let hoyISO;
+    let hoyDate; // Necesario para calcular limite
+
+    if (fechaInicio && /^\d{4}-\d{2}-\d{2}$/.test(String(fechaInicio))) {
+        // Si viene fecha válida (ej "2024-01-27"), USARLA DIRECTAMENTE como string base
+        // Esto evita cualquier desplazamiento de zona horaria al convertir string->date->string
+        hoyISO = String(fechaInicio);
+
+        // Para calcular el límite (hoy + 14 días), parseamos. 
+        // Usamos T12:00:00 para evitar bordes de día, aunque el límite es aproximado.
+        const [y, m, d] = hoyISO.split('-').map(Number);
+        hoyDate = new Date(y, m - 1, d, 12, 0, 0);
     } else {
-        hoy = new Date();
+        // Default a hoy
+        hoyDate = new Date();
+        hoyISO = Utilities.formatDate(hoyDate, ZONA_HORARIA, 'yyyy-MM-dd');
     }
 
-    const limite = new Date(hoy);
-    limite.setDate(hoy.getDate() + Number(diasAdelante || 14));
-
-
-    const hoyISO = Utilities.formatDate(hoy, ZONA_HORARIA, 'yyyy-MM-dd');
+    const limite = new Date(hoyDate);
+    limite.setDate(hoyDate.getDate() + Number(diasAdelante || 14));
     const limISO = Utilities.formatDate(limite, ZONA_HORARIA, 'yyyy-MM-dd');
 
 
