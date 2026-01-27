@@ -91,7 +91,7 @@
             // --- SERVICIOS NIÑERA ---
             case 'getServiciosNinera':
                 _enforceRole(email, 'ninera');
-                result = obtenerServiciosProximosPorNombre(email, payload.dias || 14);
+                result = obtenerServiciosProximosPorNombre(email, payload.dias || 14, payload.fecha_inicio);
                 break;
             case 'confirmarServicioPorFila':
                 _enforceRole(email, 'ninera');
@@ -107,7 +107,7 @@
                 break;
             case 'getServiciosCliente':
                 _enforceRole(email, 'cliente');
-                result = getServiciosCliente(email);
+                result = getServiciosCliente(email, payload.fecha_inicio);
                 break;
 
             // --- DISPONIBILIDAD ---
@@ -1562,25 +1562,13 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-function obtenerServiciosProximosPorNombre(email, diasAdelante) {
+function obtenerServiciosProximosPorNombre(email, diasAdelante, fechaInicio) {
     email = String(email || '').trim().toLowerCase();
     if (!_estaAutorizado(email)) throw new Error('No autorizado.');
 
 
-
-
-
-
-
-
     const nombreNanny = _nombrePorEmail(email);
     if (!nombreNanny) return [];
-
-
-
-
-
-
 
 
     const todos = _leerServiciosDesdeHojas_([
@@ -1589,13 +1577,19 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante) {
     ]);
 
 
+    let hoy;
+    if (fechaInicio) {
+        // Si nos pasan fechaInicio (ej. '2024-01-20'), la usamos como base.
+        // Asumimos que viene en formato YYYY-MM-DD
+        const [y, m, d] = String(fechaInicio).split('-').map(Number);
+        // Crear fecha local sin hora
+        hoy = new Date(y, m - 1, d);
+    } else {
+        hoy = new Date();
+    }
 
-
-    const hoy = new Date();
-    const limite = new Date();
+    const limite = new Date(hoy);
     limite.setDate(hoy.getDate() + Number(diasAdelante || 14));
-
-
 
 
     const hoyISO = Utilities.formatDate(hoy, ZONA_HORARIA, 'yyyy-MM-dd');
@@ -4550,7 +4544,7 @@ function getPerfilCliente(email) {
     return obj;
 }
 
-function getServiciosCliente(email) {
+function getServiciosCliente(email, fechaInicio) {
     email = String(email || '').trim().toLowerCase();
 
     // Leer ambas hojas para cubrir servicios actuales y de la pró³xima semana
@@ -4559,7 +4553,17 @@ function getServiciosCliente(email) {
         'Servicios_Siguiente_semana'
     ]);
 
-    const hoyISO = _toISODate(new Date());
+    let hoyISO;
+    if (fechaInicio) {
+        // Validar formato YYYY-MM-DD simple
+        if (/^\d{4}-\d{2}-\d{2}$/.test(String(fechaInicio))) {
+            hoyISO = String(fechaInicio);
+        } else {
+            hoyISO = _toISODate(new Date());
+        }
+    } else {
+        hoyISO = _toISODate(new Date());
+    }
 
     // Obtener datos del cliente para fallback completo
     const shClientes = _hoja(NOMBRE_HOJA_CLIENTES);
