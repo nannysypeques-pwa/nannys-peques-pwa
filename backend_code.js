@@ -1598,11 +1598,13 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante, fechaInicio) {
 
 
 
-    const out = todos.filter(s =>
-        _norm(s.nombre_ninera) === _norm(nombreNanny) &&
-        s.fecha >= hoyISO &&
-        s.fecha <= limISO
-    );
+    const out = todos.filter(s => {
+        // Asegurar comparación estricta de strings YYYY-MM-DD para evitar problemas de timezone
+        const fechaServicioISO = _toISODate(s.fecha);
+        return _norm(s.nombre_ninera) === _norm(nombreNanny) &&
+            fechaServicioISO >= hoyISO &&
+            fechaServicioISO <= limISO;
+    });
 
     // Obtener datos de clientes para fallback completo
     const shClientes = _hoja(NOMBRE_HOJA_CLIENTES);
