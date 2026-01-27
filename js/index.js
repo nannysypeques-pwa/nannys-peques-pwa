@@ -595,7 +595,14 @@ function abrirModalServicio(s) {
     const u = document.getElementById('mUbicacion');
     u.textContent = '—';
     if (s.ubicacion_link) {
-        u.innerHTML = `<a href="${s.ubicacion_link}" target="_blank" rel="noopener">Abrir mapa</a>`;
+        let safeLink = String(s.ubicacion_link).trim();
+        // Solo permitir http o https
+        if (/^https?:\/\//i.test(safeLink)) {
+            u.innerHTML = `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener">Abrir mapa</a>`;
+        } else {
+            // Si no es un link válido, mostrar texto simple escapado
+            u.textContent = s.ubicacion_link;
+        }
     }
 
     document.getElementById('mEdad').textContent = s.edad_nino || '—';
