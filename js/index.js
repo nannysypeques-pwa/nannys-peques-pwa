@@ -511,9 +511,18 @@ async function cargarServicios(force = false) {
     msg.textContent = 'Cargando servicios...';
 
     try {
+        // Calcular fecha de inicio: Lunes de la semana actual
+        const hoy = new Date();
+        const diaSemana = hoy.getDay(); // 0=Domingo, 1=Lunes...
+        const diasDesdeLunes = (diaSemana + 6) % 7;
+        const lunes = new Date(hoy);
+        lunes.setDate(hoy.getDate() - diasDesdeLunes);
+        const fechaInicioISO = toISO(lunes);
+
         const lista = await api('getServiciosNinera', {
             email: SESION.email,
-            dias: 14
+            dias: 21,
+            fecha_inicio: fechaInicioISO
         });
 
         CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
