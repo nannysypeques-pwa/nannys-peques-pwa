@@ -1,12 +1,14 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbyaXxP9NjCLwv-zqwkpQVmVxQBX_iM15Hpghg4nKNO6B9Z7hfJKFUNh4xK5doLFUEc/exec';
 const VAPID_PUBLIC_KEY = 'BFuZVf-LVmWBDS76oBlDcRPlgwuQMkUvEfh3I5EDl4XH7H3kYWzWMAvk4-8-xYZt61IjaxDgiCMmzq23qUycCg4';
 
+
 /**
  * Función genérica para interactuar con el backend GAS
  */
 async function api(action, payload = {}) {
   const params = new URLSearchParams();
   params.append('action', action);
+
 
   // Inyectar Token si existe en la sesión global o localStorage
   let token = null;
@@ -18,24 +20,31 @@ async function api(action, payload = {}) {
     }
   }
 
+
   if (token) {
     payload.token = token;
   }
 
+
   // --- INTEGRIDAD DE API ---
   payload.integrity_key = 'NYP_PWA_SIGN_2025_#PqZ2';
+
 
   // --- HUELLA DE DISPOSITIVO (Fingerprint) ---
   payload.fingerprint = _getFingerprint();
 
+
   params.append('payload', JSON.stringify(payload));
+
 
   const res = await fetch(API_URL, {
     method: 'POST',
     body: params
   });
 
+
   const text = await res.text();
+
 
   let json;
   try {
@@ -44,9 +53,11 @@ async function api(action, payload = {}) {
     throw new Error('Respuesta no válida del servidor: ' + text.substring(0, 50));
   }
 
+
   if (!json.ok) throw new Error(json.error || 'Error desconocido');
   return json.data;
 }
+
 
 /**
  * Genera una huella digital básica del dispositivo para vincular la sesión.
@@ -63,6 +74,7 @@ function _getFingerprint() {
   ];
   const str = components.join('###');
 
+
   // Hash simple (no criptográfico pero único por dispositivo)
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -73,6 +85,7 @@ function _getFingerprint() {
   return 'F_' + Math.abs(hash).toString(16);
 }
 
+
 // --- REGISTER SERVICE WORKER (PWA) ---
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -80,12 +93,13 @@ if ('serviceWorker' in navigator) {
       .then(registration => {
         console.log('SW registrado con éxito:', registration.scope);
 
+
         // Detectar nueva actualización
         registration.addEventListener('updatefound', () => {
           const newWorker = registration.installing;
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // Nuevo SW instalado y esperando. 
+              // Nuevo SW instalado y esperando.
               console.log('Nueva versión disponible. Recargando...');
             }
           });
@@ -96,6 +110,7 @@ if ('serviceWorker' in navigator) {
       });
   });
 
+
   // Recargar cuando el nuevo SW tome el control (skipWaiting + clients.claim)
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -105,3 +120,6 @@ if ('serviceWorker' in navigator) {
     }
   });
 }
+
+
+
