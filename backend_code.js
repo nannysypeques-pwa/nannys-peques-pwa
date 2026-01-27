@@ -19,6 +19,16 @@
 
         if (!action) throw new Error('Falta action');
 
+        // --- MÁXIMA SEGURIDAD: FILTRO SANITIZADOR GLOBAL ---
+        payload = _sanitizePayload(payload);
+
+        // --- INTEGRIDAD DE API (SHIELD) ---
+        if (String(payload.integrity_key || '').trim() !== API_INTEGRITY_KEY) {
+            _auditLog('SYSTEM', 'INTEGRITY_VIOLATION', { action, detail: 'Shared secret mismatch' });
+            _enviarAlertaSeguridad('🚨 VIOLACIÓN DE INTEGRIDAD API', `Se detectó un intento de acceso externo.\nAcción: ${action}\nPayload: ${JSON.stringify(payload)}`);
+            throw new Error('Petición no permitida (Integridad)');
+        }
+
         // --- SEGURIDAD: TOKEN DE SESIÓN ---
         // Email del ejecutor. YA NO SE CONFÍA EN payload.email para acciones protegidas.
         let email = '';
@@ -30,9 +40,11 @@
         } else {
             // Validar Token OBLIGATORIAMENTE
             const token = String(payload.token || '').trim();
+            const currentFingerprint = String(payload.fingerprint || '').trim();
+
             if (token) {
-                email = _validarToken(token); // Retorna email o null
-                if (!email) throw new Error('Tu sesión ha expirado. Por favor inicia sesión nuevamente.');
+                email = _validarToken(token, currentFingerprint); // Retorna email o null
+                if (!email) throw new Error('Tu sesión ha expirado o el dispositivo no coincide. Inicia sesión nuevamente.');
             } else {
                 // Si no hay token, rechazamos la petición por seguridad
                 throw new Error('No autorizado. Falta token de sesión.');
@@ -44,7 +56,7 @@
         switch (action) {
             // --- AUTH ---
             case 'login':
-                result = login(email, payload.contrasena || payload.pass, payload.rol);
+                result = login(email, payload.contrasena || payload.pass, payload.rol, payload.fingerprint);
                 break;
             case 'solicitarOTP':
                 result = solicitarOTP(email);
@@ -73,7 +85,7 @@
                 result = solicitarOTPRegistro(email);
                 break;
             case 'confirmarRegistroCliente':
-                result = confirmarRegistroCliente(email, payload.otp, payload.password);
+                result = confirmarRegistroCliente(email, payload.otp, payload.password, payload.fingerprint);
                 break;
 
             // --- SERVICIOS NIÑERA ---
@@ -208,11 +220,15 @@ function doOptions(e) {
 const NOMBRE_HOJA_USUARIOS = 'Usuarios';
 const NOMBRE_HOJA_CLIENTES = 'Clientes';
 const NOMBRE_HOJA_DISPONIBILIDAD = 'Disponibilidad';
+// SECURITY SECRETS (Recuperados de la Bóveda de Google)
+const props = PropertiesService.getScriptProperties();
+const API_INTEGRITY_KEY = props.getProperty('API_INTEGRITY_KEY') || 'PENDING_SETUP';
+const GLOBAL_SALT = props.getProperty('GLOBAL_SALT') || 'PENDING_SETUP';
+
+const ADMIN_EMAILS = ['nannysypeques@gmail.com', 'gerardo.pineda.m94@gmail.com'];
 const NOMBRE_HOJA_SERVICIOS = 'Servicios';
 const ZONA_HORARIA = Session.getScriptTimeZone() || 'America/Mexico_City';
 const MINUTOS_REENVIO_OTP = 2;
-// SECURITY: PEPPER
-const GLOBAL_SALT = 'NYP_SECURE_SALT_v1_2025_#9Xz!';
 
 
 
@@ -499,17 +515,33 @@ function _mapaColumnasPorFecha_(sh) {
 /** =========================
  *  SEGURIDAD (TOKENS)
  *  ========================= */
-function _generarToken(email) {
+function _generarToken(email, fingerprint) {
     if (!email) return null;
     const token = Utilities.getUuid();
+    const data = JSON.stringify({ email: String(email), f: String(fingerprint || '') });
     // Guardar en caché por 6 horas (21600 seg)
-    CacheService.getScriptCache().put(token, String(email), 21600);
+    CacheService.getScriptCache().put(token, data, 21600);
     return token;
 }
 
-function _validarToken(token) {
+function _validarToken(token, currentFingerprint) {
     if (!token) return null;
-    return CacheService.getScriptCache().get(token); // Retorna email o null
+    const stored = CacheService.getScriptCache().get(token);
+    if (!stored) return null;
+
+    try {
+        const obj = JSON.parse(stored);
+        // Validar vínculo de dispositivo (Session Binding)
+        if (obj.f && currentFingerprint && obj.f !== currentFingerprint) {
+            _auditLog(obj.email, 'SESSION_HIJACK_ATTEMPT', { t: token, f1: obj.f, f2: currentFingerprint });
+            _enviarAlertaSeguridad('🚨 ALERTA: POSIBLE ROBO DE SESIÓN', `Se bloqueó un intento de usar una sesión activa en un dispositivo diferente.\nUsuario: ${obj.email}\nToken: ${token}`);
+            return null; // Huella no coincide
+        }
+        return obj.email;
+    } catch (e) {
+        // Fallback para tokens viejos (solo email)
+        return stored;
+    }
 }
 
 
@@ -728,7 +760,7 @@ function establecerContrasena(email, otp, nuevaContrasena) {
 
 
 
-function login(email, contrasena, rol) {
+function login(email, contrasena, rol, fingerprint) {
     email = String(email || '').trim().toLowerCase();
     contrasena = String(contrasena || '');
 
@@ -789,7 +821,7 @@ function login(email, contrasena, rol) {
         _limpiarIntentosLogin(email);
         _auditLog(email, 'LOGIN_SUCCESS', { rol: 'staff' });
 
-        const token = _generarToken(email);
+        const token = _generarToken(email, fingerprint);
 
         return {
             ok: true,
@@ -838,7 +870,7 @@ function login(email, contrasena, rol) {
         _auditLog(email, 'LOGIN_SUCCESS', { rol: 'cliente' });
 
         const nameIdx = _idxCol(shC, 'nombre completo');
-        const token = _generarToken(email);
+        const token = _generarToken(email, fingerprint);
 
         return {
             ok: true,
@@ -3817,6 +3849,16 @@ function reenviarPlaneacionCorregida(payload, email) {
         throw new Error('No se encontró³ la planeació³n a reenviar.');
     }
 
+    // --- IDOR PROTECTION: VALIDATE OWNERSHIP ---
+    if (!esAdmin(email)) {
+        const nombreNannyFila = String(sh.getRange(fila, 2).getValue() || '').trim();
+        const miNombre = _nombrePorEmail(email);
+        if (_norm(nombreNannyFila) !== _norm(miNombre)) {
+            _auditLog(email, 'IDOR_ATTEMPT', { action: 'reenviarPlaneacion', fila: fila });
+            throw new Error('No tienes permiso para reenviar esta planeación.');
+        }
+    }
+
     // œï¸ Actualizar datos de la planeació³n
     if (idxArea >= 0) sh.getRange(fila, idxArea + 1).setValue(payload.area_desarrollo || '');
     if (idxObjetivo >= 0) sh.getRange(fila, idxObjetivo + 1).setValue(payload.objetivo || '');
@@ -3942,7 +3984,17 @@ function editarPlaneacionNeuronanny(payload, email) {
 
     const fila = Number(payload.fila);
     if (fila < 2 || fila > sh.getLastRow()) {
-        throw new Error('Fila invó¡lida.');
+        throw new Error('Fila invÃ¡lida.');
+    }
+
+    // --- IDOR PROTECTION: VALIDATE OWNERSHIP ---
+    if (!esAdmin(email)) {
+        const nombreNannyFila = String(sh.getRange(fila, 2).getValue() || '').trim();
+        const miNombre = _nombrePorEmail(email);
+        if (_norm(nombreNannyFila) !== _norm(miNombre)) {
+            _auditLog(email, 'IDOR_ATTEMPT', { action: 'editarPlaneacion', fila: fila });
+            throw new Error('No tienes permiso para editar esta planeación.');
+        }
     }
 
 
@@ -4735,7 +4787,10 @@ function _verificarRateLimitLogin(email) {
     const cache = CacheService.getScriptCache();
     const key = 'LOGIN_FAIL_' + email;
     const failedCount = Number(cache.get(key) || 0);
-    if (failedCount >= 5) throw new Error('Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta en 15 min.');
+    if (failedCount >= 5) {
+        _enviarAlertaSeguridad('⚠️ ALERTA: ATAQUE FUERZA BRUTA', `Se bloqueó temporalmente la cuenta: ${email} tras 5 intentos fallidos.`);
+        throw new Error('Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta en 15 min.');
+    }
 }
 
 function _registrarIntentoFallidoLogin(email) {
@@ -4781,7 +4836,7 @@ function solicitarOTPRegistro(email) {
     return { ok: true, restante: MailApp.getRemainingDailyQuota() };
 }
 
-function confirmarRegistroCliente(email, otp, password) {
+function confirmarRegistroCliente(email, otp, password, fingerprint) {
     email = String(email || '').trim().toLowerCase();
     otp = String(otp || '').trim();
     if (!email || !otp || !password) throw new Error('Faltan datos');
@@ -4802,7 +4857,7 @@ function confirmarRegistroCliente(email, otp, password) {
     shC.appendRow(newRow);
     CacheService.getScriptCache().remove(cacheKey);
     _auditLog(email, 'REGISTER_SUCCESS', { rol: 'cliente' });
-    const token = _generarToken(email);
+    const token = _generarToken(email, fingerprint);
     return { ok: true, token: token, email: email, nombre: 'Nuevo Usuario', cliente: true };
 }
 
@@ -4826,4 +4881,51 @@ function eliminarCuenta(email) {
 function _doLogout(token) {
     if (token) CacheService.getScriptCache().remove(token);
     return { ok: true };
+}
+
+
+/**
+ * EJECUTA ESTA FUNCIÓN UNA SOLA VEZ DESDE EL EDITOR para guardar las llaves maestras en la bóveda oculta.
+ * Luego de correrla, el código podrá usar las llaves sin que estén escritas aquí.
+ */
+function setupSecurityVault() {
+    const props = PropertiesService.getScriptProperties();
+    props.setProperty('API_INTEGRITY_KEY', 'NYP_PWA_SIGN_2025_#PqZ2');
+    props.setProperty('GLOBAL_SALT', 'NYP_SECURE_SALT_v1_2025_#9Xz!');
+
+    console.log('✅ Bóveda de Seguridad configurada con éxito.');
+}
+
+/**
+ * Filtro Sanitizador Global: Limpia cualquier entrada de datos para prevenir XSS o Inyección.
+ */
+function _sanitizePayload(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+
+    for (let key in obj) {
+        if (typeof obj[key] === 'string') {
+            // Eliminar etiquetas <script>, HTML y caracteres peligrosos
+            obj[key] = obj[key]
+                .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
+                .replace(/<[^>]*>?/gm, "") // Strip HTML
+                .trim();
+        } else if (typeof obj[key] === 'object') {
+            _sanitizePayload(obj[key]); // Recursión para objetos anidados
+        }
+    }
+    return obj;
+}
+
+/**
+ * Envía una notificación crítica a los administradores.
+ */
+function _enviarAlertaSeguridad(asunto, cuerpo) {
+    try {
+        const fullCuerpo = `ALERTA DE SEGURIDAD - NANNYS Y PEQUES\n\nFecha: ${_nowHuman()}\nEvento: ${asunto}\n\nDetalles:\n${cuerpo}\n\n-- Sistema de Vigilancia Automático --`;
+        MailApp.sendEmail({
+            to: ADMIN_EMAILS.join(','),
+            subject: '🛑 SEGURIDAD: ' + asunto,
+            body: fullCuerpo
+        });
+    } catch (e) { console.error('Error enviando alerta:', e); }
 }

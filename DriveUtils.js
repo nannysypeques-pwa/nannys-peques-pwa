@@ -11,7 +11,7 @@ function _guardarImagenDrive(base64, nombreArchivo) {
       throw new Error("El servicio de Drive (DriveApp) no está habilitado en este proyecto.");
     }
 
-    // 2. Buscar o crear carpeta
+    // 2. Buscar o crear carpeta (Mantenemos la carpeta PRIVADA para mayor seguridad)
     var folderName = "NannysPeques_Imagenes_Planeacion";
     var folder;
 
@@ -26,8 +26,8 @@ function _guardarImagenDrive(base64, nombreArchivo) {
       throw new Error("Error específico de permisos al acceder a carpetas: " + e.message);
     }
 
-    // Asegurar acceso público
-    folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    // Eliminamos folder.setSharing para que la carpeta sea RESTRINGIDA por defecto.
+    // Solo permitiremos el acceso individual a cada archivo creado abajo.
 
     // 3. Procesar base64
     var partes = base64.split(",");

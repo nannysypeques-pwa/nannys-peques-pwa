@@ -11,6 +11,27 @@ let SESION = {
     token: null
 };
 
+// --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
+let logoutTimer;
+function reiniciarTemporizadorInactividad() {
+    clearTimeout(logoutTimer);
+    // 30 minutos (1,800,000 ms)
+    logoutTimer = setTimeout(() => {
+        if (SESION && SESION.token) {
+            console.warn('Cierre de sesión automático por inactividad.');
+            cerrarSesion();
+            alert('Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.');
+        }
+    }, 1800000);
+}
+
+// Inyectar listeners globales para detectar actividad
+window.onload = reiniciarTemporizadorInactividad;
+document.onmousemove = reiniciarTemporizadorInactividad;
+document.onkeypress = reiniciarTemporizadorInactividad;
+document.onclick = reiniciarTemporizadorInactividad;
+
+
 //Inicializar sesión desde localStorage si existe
 try {
     const s = localStorage.getItem('nyp_sesion');

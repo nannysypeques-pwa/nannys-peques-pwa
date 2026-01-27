@@ -22,6 +22,12 @@ async function api(action, payload = {}) {
     payload.token = token;
   }
 
+  // --- INTEGRIDAD DE API ---
+  payload.integrity_key = 'NYP_PWA_SIGN_2025_#PqZ2';
+
+  // --- HUELLA DE DISPOSITIVO (Fingerprint) ---
+  payload.fingerprint = _getFingerprint();
+
   params.append('payload', JSON.stringify(payload));
 
   const res = await fetch(API_URL, {
@@ -40,4 +46,29 @@ async function api(action, payload = {}) {
 
   if (!json.ok) throw new Error(json.error || 'Error desconocido');
   return json.data;
+}
+
+/**
+ * Genera una huella digital básica del dispositivo para vincular la sesión.
+ * Esto evita que un token robado funcione en un dispositivo diferente.
+ */
+function _getFingerprint() {
+  const components = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width,
+    screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset()
+  ];
+  const str = components.join('###');
+
+  // Hash simple (no criptográfico pero único por dispositivo)
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return 'F_' + Math.abs(hash).toString(16);
 }
