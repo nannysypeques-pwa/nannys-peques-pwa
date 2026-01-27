@@ -429,9 +429,18 @@ async function refreshServicios() {
     CACHE_NINERA.planeaciones = null;
 
     try {
+        // Calcular fecha de inicio: Lunes de la semana actual
+        const hoy = new Date();
+        const diaSemana = hoy.getDay(); // 0=Domingo, 1=Lunes...
+        const diasDesdeLunes = (diaSemana + 6) % 7;
+        const lunes = new Date(hoy);
+        lunes.setDate(hoy.getDate() - diasDesdeLunes);
+        const fechaInicioISO = toISO(lunes);
+
         const lista = await api('getServiciosNinera', {
             email: SESION.email,
-            dias: 14
+            dias: 21,
+            fecha_inicio: fechaInicioISO
         });
 
         CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
@@ -2928,7 +2937,18 @@ async function cargarServiciosCliente(force = false) {
     msg.textContent = 'Cargando servicios...';
 
     try {
-        const res = await api('getServiciosCliente', { email: SESION.email });
+        // Calcular fecha de inicio: Lunes de la semana actual
+        const hoy = new Date();
+        const diaSemana = hoy.getDay();
+        const diasDesdeLunes = (diaSemana + 6) % 7;
+        const lunes = new Date(hoy);
+        lunes.setDate(hoy.getDate() - diasDesdeLunes);
+        const fechaInicioISO = toISO(lunes);
+
+        const res = await api('getServiciosCliente', {
+            email: SESION.email,
+            fecha_inicio: fechaInicioISO
+        });
         CACHE_CLIENTE.servicios = Array.isArray(res) ? res : [];
         renderServiciosCliente(CACHE_CLIENTE.servicios);
         if (msg) msg.textContent = '';
