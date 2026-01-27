@@ -52,8 +52,10 @@
             case 'establecerContrasena':
                 result = establecerContrasena(email, payload.otp, payload.nueva);
                 break;
+            case 'logout':
+                result = _doLogout(payload.token);
+                break;
             case 'getProfile':
-                // Accessible by anyone logged in
                 result = obtenerPerfilCompleto(email);
                 break;
             case 'updatePerfilCliente':
@@ -76,7 +78,7 @@
 
             // --- SERVICIOS NIÑERA ---
             case 'getServiciosNinera':
-                _enforceRole(email, 'ninera'); // Ensure non-clients don't access staff tables
+                _enforceRole(email, 'ninera');
                 result = obtenerServiciosProximosPorNombre(email, payload.dias || 14);
                 break;
             case 'confirmarServicioPorFila':
@@ -92,13 +94,12 @@
                 result = registrarFinServicio(payload.sheet, payload.row_base, payload.fecha, email);
                 break;
             case 'getServiciosCliente':
-                _enforceRole(email, 'cliente'); // Logic naturally filters by email, but good to label
+                _enforceRole(email, 'cliente');
                 result = getServiciosCliente(email);
                 break;
 
             // --- DISPONIBILIDAD ---
             case 'obtenerDisponibilidad':
-                // Both clients and nannies have schedules? Assuming only nannies for now based on context
                 _enforceRole(email, 'ninera');
                 result = obtenerDisponibilidad(email, payload.fechaISO);
                 break;
@@ -113,14 +114,6 @@
 
             // --- PLANEACIONES (NEURONANNY) ---
             case 'getResumenPlaneacionesSemana':
-                // This seems to be for supervision dashboard?
-                // Logic inside function checks specific sheets.
-                // Assuming supervision role required if accessing ALL data.
-                // But nannies see their own too?
-                // For safety, let the function handle internal logic, but maybe enforce non-client?
-                // Let's assume 'ninera' or 'supervision'
-                // _enforceRole(email, 'staff'); // Custom role logic needed
-                // For now, leaving as is, logic inside is complex.
                 result = obtenerResumenPlaneacionesSemana(payload.fechaBase, email, payload.tipo);
                 break;
             case 'obtenerPlaneacionNeuronanny':
@@ -151,7 +144,7 @@
                 result = obtenerResumenDisponibilidadSemanaActual();
                 break;
             case 'apiSugerirNinerasServicio':
-                _enforceRole(email, 'admin'); // Assuming admin tool
+                _enforceRole(email, 'admin');
                 result = apiSugerirNinerasServicio(payload, email);
                 break;
             case 'obtenerServiciosAdminRango':
@@ -165,17 +158,17 @@
 
             // --- PUNTOS ---
             case 'obtenerPuntajePorNombre':
-                _enforceRole(email, 'ninera'); // Or admin
-                result = obtenerPuntajePorNombre(payload.nombre || SESION.nombre);
+                _enforceRole(email, 'ninera');
+                result = obtenerPuntajePorNombre(payload.nombre || email);
                 break;
             case 'registrarPuntosManual':
                 _enforceRole(email, 'admin');
                 result = registrarPuntosManual(payload.nombre, payload.tipo);
                 break;
 
-            // --- PUSH ---
-            case 'guardarPushSubscription':
-                result = guardarPushSubscription({ email, subscription: payload.subscription });
+            // --- PRIVACIDAD ---
+            case 'eliminarCuenta':
+                result = eliminarCuenta(email);
                 break;
 
             case 'getActividadesClientePlanificadas':
@@ -218,6 +211,8 @@ const NOMBRE_HOJA_DISPONIBILIDAD = 'Disponibilidad';
 const NOMBRE_HOJA_SERVICIOS = 'Servicios';
 const ZONA_HORARIA = Session.getScriptTimeZone() || 'America/Mexico_City';
 const MINUTOS_REENVIO_OTP = 2;
+// SECURITY: PEPPER
+const GLOBAL_SALT = 'NYP_SECURE_SALT_v1_2025_#9Xz!';
 
 
 
@@ -732,72 +727,131 @@ function establecerContrasena(email, otp, nuevaContrasena) {
 
 
 
+
 function login(email, contrasena, rol) {
     email = String(email || '').trim().toLowerCase();
-    if (!email || !contrasena) throw new Error('Datos incompletos');
+    contrasena = String(contrasena || '');
+
+    if (!email || !contrasena) throw new Error('Faltan credenciales');
+
+    const shU = _hoja(NOMBRE_HOJA_USUARIOS);
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+
+    let filaU = -1;
+    let filaC = -1;
 
     // 1. Usuarios (Staff)
-    if (rol === 'staff') {
-        const shU = _hoja(NOMBRE_HOJA_USUARIOS);
-        const filaU = _buscarFilaPorValor(shU, 'email', email);
-        if (filaU !== -1) {
-            const hashGuardado = String(shU.getRange(filaU, 3).getValue()).trim();
-            if (!hashGuardado) throw new Error('Este usuario no tiene contraseó±a. Use "Olvidó© mi contraseó±a".');
-
-            // SECURITY: Rate Limit Check
-            _verificarRateLimitLogin(email);
-
-            if (_sha256(contrasena) !== hashGuardado) {
-                _registrarIntentoFallidoLogin(email);
-                _auditLog(email, 'LOGIN_FAILED', { reason: 'Wrong password', rol: 'nanny/admin' });
-                throw new Error('Credenciales invó¡lidas');
-            }
-
-            // Success: Clear failures
-            _limpiarIntentosLogin(email);
-            _auditLog(email, 'LOGIN_SUCCESS', { rol: 'nanny/admin' });
-
-            const token = _generarToken(email);
-
-            return {
-                ok: true,
-                token: token,
-                email,
-                nombre: shU.getRange(filaU, 2).getValue() || '',
-                admin: esAdmin(email),
-                supervision: esSupervision(email),
-                cliente: false
-            };
-        }
-        throw new Error('Personal no encontrado en la base de datos.');
+    if (rol === 'staff' || !rol) {
+        filaU = _buscarFilaPorValor(shU, 'email', email);
     }
 
     // 2. Familia (Clientes)
-    if (rol === 'cliente') {
-        const shC = _hoja(NOMBRE_HOJA_CLIENTES);
-        const filaC = _buscarFilaPorValor(shC, 'email', email);
-        if (filaC !== -1) {
-            const passH = String(shC.getRange(filaC, _idxCol(shC, 'pass_hash')).getValue()).trim();
-            if (!passH) throw new Error('Este cliente no ha establecido contraseó±a.');
-            if (_sha256(contrasena) !== passH) throw new Error('Credenciales invó¡lidas');
-
-            const token = _generarToken(email);
-
-            return {
-                ok: true,
-                token: token,
-                email,
-                nombre: shC.getRange(filaC, _idxCol(shC, 'nombre completo')).getValue() || '',
-                admin: false,
-                supervision: false,
-                cliente: true
-            };
-        }
-        throw new Error('Familia no encontrada. Por favor, crea una cuenta.');
+    if (filaU === -1 && (rol === 'cliente' || !rol)) {
+        filaC = _buscarFilaPorValor(shC, 'email', email);
     }
 
-    throw new Error('Rol de acceso no reconocido.');
+    if (filaU === -1 && filaC === -1) {
+        throw new Error('Credenciales inválidas');
+    }
+
+    // ----------------------------------------------------
+    // LOGIN STAFF / ADMIN
+    // ----------------------------------------------------
+    if (filaU !== -1) {
+        const hashGuardado = String(shU.getRange(filaU, 3).getValue()).trim();
+        if (!hashGuardado) throw new Error('Usuario sin contraseña. Contacte soporte.');
+
+        _verificarRateLimitLogin(email);
+
+        const saltedTry = _sha256Salted(contrasena);
+        let passwordOk = (saltedTry === hashGuardado);
+        let migrationNeeded = false;
+
+        if (!passwordOk) {
+            const legacyTry = _sha256(contrasena);
+            if (legacyTry === hashGuardado) {
+                passwordOk = true;
+                migrationNeeded = true;
+            }
+        }
+
+        if (!passwordOk) {
+            _registrarIntentoFallidoLogin(email);
+            _auditLog(email, 'LOGIN_FAILED', { reason: 'Password mismatch', rol: 'staff' });
+            throw new Error('Credenciales inválidas');
+        }
+
+        if (migrationNeeded) {
+            shU.getRange(filaU, 3).setValue(saltedTry);
+            _auditLog(email, 'SECURITY_UPGRADE', { type: 'Hash Upgrade', rol: 'staff' });
+        }
+
+        _limpiarIntentosLogin(email);
+        _auditLog(email, 'LOGIN_SUCCESS', { rol: 'staff' });
+
+        const token = _generarToken(email);
+
+        return {
+            ok: true,
+            token: token,
+            email: email,
+            nombre: shU.getRange(filaU, 2).getValue() || '',
+            admin: esAdmin(email),
+            supervision: esSupervision(email),
+            cliente: false
+        };
+    }
+
+    // ----------------------------------------------------
+    // LOGIN CLIENTE
+    // ----------------------------------------------------
+    if (filaC !== -1) {
+        const passIdx = _idxCol(shC, 'pass_hash');
+        const hashGuardado = String(shC.getRange(filaC, passIdx).getValue()).trim();
+
+        _verificarRateLimitLogin(email);
+
+        const saltedTry = _sha256Salted(contrasena);
+        let passwordOk = (saltedTry === hashGuardado);
+        let migrationNeeded = false;
+
+        if (!passwordOk) {
+            const legacyTry = _sha256(contrasena);
+            if (legacyTry === hashGuardado) {
+                passwordOk = true;
+                migrationNeeded = true;
+            }
+        }
+
+        if (!passwordOk) {
+            _registrarIntentoFallidoLogin(email);
+            _auditLog(email, 'LOGIN_FAILED', { reason: 'Password mismatch', rol: 'cliente' });
+            throw new Error('Credenciales inválidas');
+        }
+
+        if (migrationNeeded) {
+            shC.getRange(filaC, passIdx).setValue(saltedTry);
+            _auditLog(email, 'SECURITY_UPGRADE', { type: 'Hash Upgrade', rol: 'cliente' });
+        }
+
+        _limpiarIntentosLogin(email);
+        _auditLog(email, 'LOGIN_SUCCESS', { rol: 'cliente' });
+
+        const nameIdx = _idxCol(shC, 'nombre completo');
+        const token = _generarToken(email);
+
+        return {
+            ok: true,
+            token: token,
+            email: email,
+            nombre: shC.getRange(filaC, nameIdx).getValue() || '',
+            admin: false,
+            supervision: false,
+            cliente: true
+        };
+    }
 }
+
 
 
 
@@ -4653,103 +4707,15 @@ function getActividadesClientePlanificadas(email) {
 }
 
 /** =========================
- *  REGISTRO CON OTP (SEGURIDAD)
+ *  SECURITY SUITE: OTP, AUDIT, COMPLIANCE
  *  ========================= */
 
-function solicitarOTPRegistro(email) {
-    email = String(email || '').trim().toLowerCase();
-    if (!email) throw new Error('Email requerido');
-
-    // 1. Verificar si ya existe
-    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
-    const filaC = _buscarFilaPorValor(shC, 'email', email);
-    if (filaC !== -1) throw new Error('Este correo ya está registrado. Por favor inicia sesión o recupera tu contraseña.');
-
-    // 2. Generar OTP
-    const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
-
-    // 3. Guardar en Caché (15 min)
-    // Usamos prefijo REG_ para distinguir de recuperación
-    const cacheKey = 'OTP_REG_' + email;
-    CacheService.getScriptCache().put(cacheKey, otp, 900); // 900 seg = 15 min
-
-    // 4. Rate Limiting simple para envío
-    if (_enVentanaDeBloqueo(email)) throw new Error('Ya enviamos un código recientemente. Espera unos minutos.');
-    _marcarEnvioOTP(email);
-
-    // 5. Enviar Email
-    _verificarCuotaOTP();
-    MailApp.sendEmail({
-        to: email,
-        subject: 'Código de registro – Nannys y Peques',
-        htmlBody: `
-            <div style="font-family: sans-serif; color: #333;">
-                <h2>Bienvenida a Nannys y Peques</h2>
-                <p>Para completar tu registro, usa el siguiente código de verificación:</p>
-                <h1 style="color: #e84c9a; letter-spacing: 5px;">${otp}</h1>
-                <p>Este código expira en 15 minutos.</p>
-            </div>
-        `
-    });
-
-    return { ok: true, restante: MailApp.getRemainingDailyQuota() };
+function _sha256Salted(text) {
+    if (!text) return '';
+    const saltedInput = GLOBAL_SALT + text;
+    const raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, saltedInput, Utilities.Charset.UTF_8);
+    return raw.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join('');
 }
-
-function confirmarRegistroCliente(email, otp, password) {
-    email = String(email || '').trim().toLowerCase();
-    otp = String(otp || '').trim();
-    if (!email || !otp || !password) throw new Error('Faltan datos');
-
-    // 1. Validar OTP
-    const cacheKey = 'OTP_REG_' + email;
-    const otpGuardado = CacheService.getScriptCache().get(cacheKey);
-
-    if (!otpGuardado) throw new Error('El código ha expirado o no existe. Solicita uno nuevo.');
-    if (otp !== otpGuardado) throw new Error('Código incorrecto.');
-
-    // 2. Crear Cliente
-    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
-
-    // Doble check por si acaso (race condition)
-    if (_buscarFilaPorValor(shC, 'email', email) !== -1) throw new Error('El usuario ya existe.');
-
-    const headers = shC.getRange(1, 1, 1, shC.getLastColumn()).getValues()[0];
-    const newRow = new Array(headers.length).fill('');
-
-    const idxEmail = _idxCol(shC, 'email');
-    const idxPass = _idxCol(shC, 'pass_hash');
-    const idxCreado = _idxCol(shC, 'creado');
-    const idxActivo = _idxCol(shC, 'activo');
-    const idxNombre = _idxCol(shC, 'nombre completo');
-
-    if (idxEmail > 0) newRow[idxEmail - 1] = email;
-    if (idxPass > 0) newRow[idxPass - 1] = _sha256(password);
-    if (idxCreado > 0) newRow[idxCreado - 1] = _ahoraISO();
-    if (idxActivo > 0) newRow[idxActivo - 1] = true;
-    if (idxNombre > 0) newRow[idxNombre - 1] = 'Nuevo Usuario'; // Placeholder
-
-    shC.appendRow(newRow);
-
-    // 3. Limpiar OTP usado
-    CacheService.getScriptCache().remove(cacheKey);
-
-    // 4. Auto-Login (Generar Token)
-    const token = _generarToken(email);
-
-    return {
-        ok: true,
-        token: token,
-        email: email,
-        nombre: 'Nuevo Usuario',
-        admin: false,
-        supervision: false,
-        cliente: true
-    };
-}
-
-/** =========================
- *  HARDENING: AUDIT, RATE LIMIT, RBAC
- *  ========================= */
 
 function _auditLog(email, accion, detalles) {
     try {
@@ -4758,12 +4724,10 @@ function _auditLog(email, accion, detalles) {
         if (!sh) {
             sh = ss.insertSheet('Logs_Seguridad');
             sh.appendRow(['FechaISO', 'Email', 'Accion', 'Detalles']);
-            sh.hideSheet(); // Ocultar para que no moleste
+            sh.hideSheet();
         }
         sh.appendRow([_ahoraISO(), email, accion, JSON.stringify(detalles || {})]);
-    } catch (e) {
-        console.error('Error AuditLog:', e);
-    }
+    } catch (e) { console.error('Error AuditLog:', e); }
 }
 
 function _verificarRateLimitLogin(email) {
@@ -4771,10 +4735,7 @@ function _verificarRateLimitLogin(email) {
     const cache = CacheService.getScriptCache();
     const key = 'LOGIN_FAIL_' + email;
     const failedCount = Number(cache.get(key) || 0);
-
-    if (failedCount >= 5) {
-        throw new Error('Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta en 15 minutos.');
-    }
+    if (failedCount >= 5) throw new Error('Cuenta bloqueada temporalmente por múltiples intentos fallidos. Intenta en 15 min.');
 }
 
 function _registrarIntentoFallidoLogin(email) {
@@ -4782,7 +4743,7 @@ function _registrarIntentoFallidoLogin(email) {
     const cache = CacheService.getScriptCache();
     const key = 'LOGIN_FAIL_' + email;
     const failedCount = Number(cache.get(key) || 0) + 1;
-    cache.put(key, String(failedCount), 900); // 15 min
+    cache.put(key, String(failedCount), 900);
 }
 
 function _limpiarIntentosLogin(email) {
@@ -4790,29 +4751,79 @@ function _limpiarIntentosLogin(email) {
 }
 
 function _enforceRole(email, requiredRole) {
-    // Roles: 'admin', 'supervision', 'ninera', 'cliente'
-    if (!requiredRole) return; // Si no pide nada, pasa
-
+    if (!requiredRole) return;
     const isAdmin = esAdmin(email);
     if (requiredRole === 'admin' && !isAdmin) throw new Error('Acceso denegado: Se requiere administrador.');
-
-    // Si es super user, pasa todo excepto cosas muy especificas si las hubiera
     if (isAdmin) return;
+    if (requiredRole === 'supervision') throw new Error('Acceso denegado: Rol supervisión requerido.');
+}
 
-    if (requiredRole === 'supervision') {
-        const p = obtenerPerfilCompleto(email);
-        // Si no es admin y se requiere supervision, validar...
-        // Por ahora, asumimos que solo admin tiene permisos de supervisión puros en este backend.
-        // O agregar lógica específica si existe un flag 'esSupervisor'.
-        throw new Error('Acceso denegado: Rol supervisión requerido.');
-    }
+function solicitarOTPRegistro(email) {
+    email = String(email || '').trim().toLowerCase();
+    if (!email) throw new Error('Email requerido');
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+    if (_buscarFilaPorValor(shC, 'email', email) !== -1) throw new Error('Este correo ya está registrado.');
+    const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
+    const cacheKey = 'OTP_REG_' + email;
+    CacheService.getScriptCache().put(cacheKey, otp, 900);
+    if (_enVentanaDeBloqueo(email)) throw new Error('Ya enviamos un código recientemente.');
+    _marcarEnvioOTP(email);
+    _verificarCuotaOTP();
+    MailApp.sendEmail({
+        to: email,
+        subject: 'Código de registro – Nannys y Peques',
+        htmlBody: `
+            <div style="font-family: sans-serif; color: #333;">
+                <h2>Bienvenida a Nannys y Peques</h2>
+                <p>Tu código es:</p><h1 style="color: #e84c9a;">${otp}</h1>
+            </div>`
+    });
+    return { ok: true, restante: MailApp.getRemainingDailyQuota() };
+}
 
-    if (requiredRole === 'ninera' && !esAdmin(email)) {
-        // Validar que NO sea cliente (porque cliente no debe ver info de nineras)
-        // O validar que sea staff.
-        // obtenerPerfilCompleto retorna { isNanny: true/false ... } 
-        // Esto sería costoso hacerlo siempre. Simplificación:
-        // Si es admin, pasa. Si no, debería ser nanny.
-        // Falta check 'esNanny', pero el token ya valida auth general.
+function confirmarRegistroCliente(email, otp, password) {
+    email = String(email || '').trim().toLowerCase();
+    otp = String(otp || '').trim();
+    if (!email || !otp || !password) throw new Error('Faltan datos');
+    const cacheKey = 'OTP_REG_' + email;
+    const otpGuardado = CacheService.getScriptCache().get(cacheKey);
+    if (!otpGuardado || otp !== otpGuardado) throw new Error('Código inválido o expirado.');
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+    const headers = shC.getRange(1, 1, 1, shC.getLastColumn()).getValues()[0];
+    const newRow = new Array(headers.length).fill('');
+    const idxEmail = _idxCol(shC, 'email');
+    const idxPass = _idxCol(shC, 'pass_hash');
+    const idxCreado = _idxCol(shC, 'creado');
+    const idxActivo = _idxCol(shC, 'activo');
+    if (idxEmail > 0) newRow[idxEmail - 1] = email;
+    if (idxPass > 0) newRow[idxPass - 1] = _sha256Salted(password);
+    if (idxCreado > 0) newRow[idxCreado - 1] = _ahoraISO();
+    if (idxActivo > 0) newRow[idxActivo - 1] = true;
+    shC.appendRow(newRow);
+    CacheService.getScriptCache().remove(cacheKey);
+    _auditLog(email, 'REGISTER_SUCCESS', { rol: 'cliente' });
+    const token = _generarToken(email);
+    return { ok: true, token: token, email: email, nombre: 'Nuevo Usuario', cliente: true };
+}
+
+function eliminarCuenta(email) {
+    email = String(email || '').trim().toLowerCase();
+    if (!email) throw new Error('Email requerido');
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+    const filaC = _buscarFilaPorValor(shC, 'email', email);
+    if (filaC !== -1) {
+        const h = shC.getRange(1, 1, 1, shC.getLastColumn()).getValues()[0].map(x => _norm(x));
+        const idxEmail = h.indexOf('email');
+        const idxPass = h.indexOf('pass_hash');
+        if (idxEmail >= 0) shC.getRange(filaC, idxEmail + 1).setValue(`DELETED_${Math.floor(Math.random() * 99999)}`);
+        if (idxPass >= 0) shC.getRange(filaC, idxPass + 1).setValue('DELETED');
+        _auditLog(email, 'ACCOUNT_DELETED', {});
+        return { ok: true };
     }
+    throw new Error('Cuenta no encontrada.');
+}
+
+function _doLogout(token) {
+    if (token) CacheService.getScriptCache().remove(token);
+    return { ok: true };
 }
