@@ -4939,3 +4939,292 @@ function _enviarAlertaSeguridad(asunto, cuerpo) {
         });
     } catch (e) { console.error('Error enviando alerta:', e); }
 }
+
+/* =========================================
+ *  LÓGICA RESTAURADA DE PLANEACIONES (SUPERVISIÓN)
+ *  ========================= */
+
+const NOMBRE_HOJA_PLANEACIONES = 'Planeaciones';
+
+function _getPlaneacionesSheet() {
+    let sh = _ss().getSheetByName(NOMBRE_HOJA_PLANEACIONES);
+    if (!sh) {
+        // Si no existe, crearla con headers por defecto
+        sh = _ss().insertSheet(NOMBRE_HOJA_PLANEACIONES);
+        sh.appendRow([
+            'Fecha', 'Cliente', 'Nombre Ninera', 'Edad Nino', 'Ciudad',
+            'Area Desarrollo', 'Objetivo', 'Descripcion', 'Materiales', 'Imagen',
+            'Observaciones Supervision', 'Estado Revision', 'Fecha Revision', 'Fecha Correccion',
+            'Creado', 'Actualizado', 'Tipo Servicio', 'Fila'
+        ]);
+    }
+    return sh;
+}
+
+function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
+    if (!fechaBase) return esSupervision(email) ? {} : [];
+
+    // 1. Definir rango de la semana
+    let d = new Date(fechaBase);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day == 0 ? -6 : 1);
+    const lunes = new Date(d.setDate(diff));
+    const domingo = new Date(lunes); domingo.setDate(lunes.getDate() + 6);
+
+    // Ajustar zona horaria si es necesario, pero _toISODate maneja strings bien
+    // Lo mejor es usar objetos Date limpios
+    const desdeISO = Utilities.formatDate(lunes, ZONA_HORARIA, 'yyyy-MM-dd');
+    const hastaISO = Utilities.formatDate(domingo, ZONA_HORARIA, 'yyyy-MM-dd');
+
+    // 2. Obtener Servicios en ese rango
+    // Para simplificar y ser robustos, leemos la hoja Servicios directamente con filtro de fecha
+    const shS = _hoja(NOMBRE_HOJA_SERVICIOS);
+    const serviciosRaw = _leerComoObjetos(shS);
+
+    const servicios = serviciosRaw.filter(s => {
+        const f = _toISODate(s.Fecha || s.fecha);
+        if (!f) return false;
+
+        // Validar rango fecha
+        if (f < desdeISO || f > hastaISO) return false;
+
+        // Validar 'ver'
+        // Lógica de _esVerdadero: 'true', '1', 'si', etc.
+        // Si 'ver' es undefined, asumimos true
+        let v = s.ver;
+        if (v === undefined || v === '') return true;
+        return _esVerdadero(v);
+    });
+
+    // 3. Obtener Planeaciones existentes
+    const shP = _getPlaneacionesSheet();
+    const planeacionesRaw = _leerComoObjetos(shP);
+
+    // Filtrar por rango para optimizar mapa
+    // (Opcional, pero bueno si hay miles)
+
+    const mapaPlaneaciones = {};
+    planeacionesRaw.forEach((p, idx) => {
+        const f = _toISODate(p.Fecha || p.fecha);
+        if (f < desdeISO || f > hastaISO) return; // Fuera de rango
+
+        // Clave única: Fecha + Cliente + Niñera
+        const key = `${f}|${_norm(p.Cliente || p.cliente)}|${_norm(p['Nombre Ninera'] || p.nombre_ninera)}`;
+        p.fila = idx + 2;
+        mapaPlaneaciones[key] = p;
+    });
+
+    // 4. Cruzar datos
+    const esSuper = esSupervision(email) || esAdmin(email);
+    const grouped = {};
+    const listaFinal = [];
+    const miNombre = esSuper ? '' : _nombrePorEmail(email);
+
+    servicios.forEach(s => {
+        const tipoServicio = _norm(s['Tipo de servicio'] || s.tipo_servicio || '');
+        // Solo ciertos servicios llevan planeación
+        const requierePlan = ['neuronanny', 'nanny educativa', 'miss nanny'].some(t => tipoServicio.includes(t));
+
+        if (!requierePlan) return;
+
+        const cliente = s.Cliente || s.cliente;
+        const ninera = s['Nombre de la niñera'] || s.nombre_ninera;
+        const fecha = _toISODate(s.Fecha || s.fecha);
+        const ciudad = s.Ciudad || s.ciudad || 'Pendiente';
+
+        // Filtro si es niñera
+        if (!esSuper && _norm(ninera) !== _norm(miNombre)) return;
+
+        const key = `${fecha}|${_norm(cliente)}|${_norm(ninera)}`;
+        const plan = mapaPlaneaciones[key];
+
+        const item = {
+            cliente: cliente,
+            ninera: ninera,
+            fecha: fecha,
+            tipo_servicio: tipoServicio,
+            ciudad: ciudad,
+            tienePlaneacion: !!plan,
+            // Normalizar keys del plan que vienen de hoja
+            estado_revision: plan ? (plan['Estado Revision'] || plan.estado_revision || 'pendiente') : 'pendiente',
+            observaciones_supervision: plan ? (plan['Observaciones Supervision'] || plan.observaciones_supervision || '') : '',
+            fecha_revision: plan ? (plan['Fecha Revision'] || plan.fecha_revision || '') : '',
+            fecha_correccion: plan ? (plan['Fecha Correccion'] || plan.fecha_correccion || '') : '',
+            fila: plan ? plan.fila : null,
+            // Datos del plan para prellenar si existe
+            area_desarrollo: plan ? (plan['Area Desarrollo'] || plan.area_desarrollo) : '',
+            objetivo: plan ? (plan['Objetivo'] || plan.objetivo) : '',
+            descripcion: plan ? (plan['Descripcion'] || plan.descripcion) : '',
+            materiales: plan ? (plan['Materiales'] || plan.materiales) : '',
+            imagen: plan ? (plan['Imagen'] || plan.imagen) : ''
+        };
+
+        if (esSuper) {
+            if (!grouped[ciudad]) grouped[ciudad] = [];
+            grouped[ciudad].push(item);
+        } else {
+            listaFinal.push(item);
+        }
+    });
+
+    if (esSuper) {
+        // Agrupar items idénticos en un solo objeto con array de fechas
+        const result = {};
+        Object.keys(grouped).forEach(ciudad => {
+            const items = grouped[ciudad];
+            const mapUnique = {};
+            items.forEach(it => {
+                const k = `${it.cliente}|${it.ninera}`;
+                if (!mapUnique[k]) {
+                    mapUnique[k] = { ...it, fechas: [], dias: [] };
+                    // Resetear flags que dependen de acumulado
+                    mapUnique[k].tienePlaneacion = false;
+                    mapUnique[k].estado_revision = 'pendiente';
+                }
+
+                mapUnique[k].fechas.push(it.fecha);
+                mapUnique[k].dias.push(it.fecha);
+
+                // Lógica de estado acumulado:
+                // Si ALGUNA fecha tiene planeacion, mostramos "tiene".
+                // Pero el estado de revisión es mas complejo. 
+                // Simplificación: Guardamos el estado del servicio más reciente o priority.
+                if (it.tienePlaneacion) {
+                    mapUnique[k].tienePlaneacion = true;
+                    mapUnique[k].estado_revision = it.estado_revision; // Sobrescribir con el que tenga datos
+                }
+            });
+            result[ciudad] = Object.values(mapUnique);
+        });
+        return result;
+    }
+
+    return listaFinal;
+}
+
+function obtenerPlaneacionNeuronanny(payload, email) {
+    if (payload.fila) {
+        const sh = _getPlaneacionesSheet();
+        const data = _leerComoObjetos(sh);
+        const p = data[payload.fila - 2];
+        if (p) { p.fila = payload.fila; return p; }
+    }
+
+    // Por claves
+    const sh = _getPlaneacionesSheet();
+    const objs = _leerComoObjetos(sh);
+    const targetFecha = _toISODate(payload.fecha);
+
+    const found = objs.find(o =>
+        _norm(o.Cliente || o.cliente) === _norm(payload.cliente) &&
+        _norm(o['Nombre Ninera'] || o.nombre_ninera) === _norm(payload.nombre_ninera || payload.ninera) &&
+        _toISODate(o.Fecha || o.fecha) === targetFecha
+    );
+
+    if (found) {
+        const row = objs.indexOf(found) + 2;
+        found.fila = row;
+        // Normalizar para frontend
+        found.area_desarrollo = found['Area Desarrollo'];
+        found.objetivo = found['Objetivo'];
+        found.descripcion = found['Descripcion'];
+        found.materiales = found['Materiales'];
+        found.imagen = found['Imagen'];
+        found.observaciones_supervision = found['Observaciones Supervision'];
+        found.estado_revision = found['Estado Revision'];
+        found.fecha_revision = found['Fecha Revision'];
+        found.fecha_correccion = found['Fecha Correccion'];
+        return found;
+    }
+    return null;
+}
+
+function guardarPlaneacionNeuronanny(p, email) {
+    const sh = _getPlaneacionesSheet();
+
+    const nuevo = {
+        'Fecha': _toISODate(p.fecha),
+        'Cliente': p.cliente,
+        'Nombre Ninera': p.nombre_ninera,
+        'Edad Nino': p.edad_nino || '',
+        'Ciudad': p.ciudad || '',
+        'Area Desarrollo': p.area_desarrollo,
+        'Objetivo': p.objetivo,
+        'Descripcion': p.descripcion,
+        'Materiales': p.materiales,
+        'Imagen': p.imagen,
+        'Estado Revision': 'pendiente',
+        'Creado': _ahoraISO(),
+        'Actualizado': _ahoraISO()
+    };
+
+    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h).trim());
+    // Mapeo seguro
+    const row = headers.map(h => nuevo[h] || '');
+
+    sh.appendRow(row);
+    return { ok: true };
+}
+
+function editarPlaneacionNeuronanny(p, email) {
+    if (!p.fila) throw new Error('Falta ID de fila (editar)');
+    const sh = _getPlaneacionesSheet();
+
+    const updates = {
+        'Area Desarrollo': p.area_desarrollo,
+        'Objetivo': p.objetivo,
+        'Descripcion': p.descripcion,
+        'Materiales': p.materiales,
+        'Imagen': p.imagen,
+        'Estado Revision': 'pendiente',
+        'Actualizado': _ahoraISO(),
+        'Fecha Correccion': ''
+    };
+
+    _escribirObjeto(sh, p.fila, updates);
+    return { ok: true };
+}
+
+function reenviarPlaneacionCorregida(p, email) {
+    // Si la niñera reenvía, es basicamente editar pero marcando que ya atendió la corrección
+    if (!p.fila) {
+        // Fallback: si no mandan fila, intentar guardar como nuevo o buscar
+        return guardarPlaneacionNeuronanny(p, email);
+    }
+    const sh = _getPlaneacionesSheet();
+
+    const updates = {
+        'Area Desarrollo': p.area_desarrollo || '',
+        'Objetivo': p.objetivo || '',
+        'Descripcion': p.descripcion || '',
+        'Materiales': p.materiales || '',
+        'Imagen': p.imagen || '',
+        'Estado Revision': 'pendiente',
+        'Actualizado': _ahoraISO()
+    };
+
+    _escribirObjeto(sh, p.fila, updates);
+    return { ok: true };
+}
+
+function guardarObservacionesSupervision(p, email) {
+    if (!p.fila) throw new Error('Falta fila para guardar revisión');
+    const sh = _getPlaneacionesSheet();
+
+    const updates = {
+        'Observaciones Supervision': p.observaciones,
+        'Actualizado': _ahoraISO()
+    };
+
+    if (p.tipo === 'revisada') {
+        updates['Estado Revision'] = 'revisada';
+        updates['Fecha Revision'] = _ahoraISO();
+        // Limpiar fecha correccion para evitar confusion visual? No necesariamente.
+    } else if (p.tipo === 'correccion') {
+        updates['Estado Revision'] = 'correccion';
+        updates['Fecha Correccion'] = _ahoraISO();
+    }
+
+    _escribirObjeto(sh, p.fila, updates);
+    return { ok: true };
+}
