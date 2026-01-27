@@ -565,7 +565,17 @@ function stateClass(estado) {
 function renderCalendario2Semanas() {
     const cont = document.getElementById('cal'); cont.innerHTML = '';
     const hoy = new Date();
-    const start = startMonday(SEMANA_CALENDARIO_BASE || hoy);
+    // Cambio: empezar desde el LUNES de la semana actual
+    // Esto evita que los servicios desaparezcan conforme avanza la semana
+    const diaSemana = hoy.getDay(); // 0=Domingo, 1=Lunes...
+    // Si hoy es domingo (0), el lunes pasado fue hace 6 días.
+    // Si hoy es lunes (1), el lunes es hoy (0 días atrás).
+    // Fórmula para obtener días desde el lunes: (diaSemana + 6) % 7
+    const diasDesdeLunes = (diaSemana + 6) % 7;
+
+    const start = new Date(hoy);
+    start.setDate(hoy.getDate() - diasDesdeLunes);
+    start.setHours(0, 0, 0, 0);
 
     const map = {}; CAL_SERVICIOS.forEach(s => { if (!map[s.fecha]) map[s.fecha] = []; map[s.fecha].push(s); });
 
@@ -2962,8 +2972,13 @@ function renderCalendarioCliente(svcs) {
     contSiguiente.innerHTML = '';
 
     const hoy = new Date();
-    //Siempre empezamos desde el lunes de la semana actual
-    const start = startMonday(hoy);
+    // Cambio: empezar desde el LUNES de la semana actual
+    const diaSemana = hoy.getDay();
+    const diasDesdeLunes = (diaSemana + 6) % 7;
+
+    const start = new Date(hoy);
+    start.setDate(hoy.getDate() - diasDesdeLunes);
+    start.setHours(0, 0, 0, 0);
 
     //Mapear servicios por fecha para fácil acceso
     const map = {};
@@ -2973,7 +2988,7 @@ function renderCalendarioCliente(svcs) {
         map[f].push(s);
     });
 
-    //Renderizar 14 días (2 semanas)
+    //Renderizar 14 días (desde hoy)
     console.log("Renderizando calendario cliente para", svcs.length, "servicios");
     for (let i = 0; i < 14; i++) {
         try {
