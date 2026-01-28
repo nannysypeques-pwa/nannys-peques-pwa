@@ -1,7 +1,11 @@
 
 /* =========================================
    VARIABLES GLOBALES
+   Almacenan el estado de la sesión, datos del calendario
+   y caché para optimizar la carga.
    ========================================= */
+
+/* VARIABLES GLOBALES: Estado de la sesión del usuario */
 let SESION = {
     email: null,
     nombre: '',
@@ -12,6 +16,9 @@ let SESION = {
 };
 
 // --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
+// Cierra la sesión automáticamente si el usuario no interactúa por 30 minutos
+
+// Control de auto-logout por inactividad
 let logoutTimer;
 function reiniciarTemporizadorInactividad() {
     clearTimeout(logoutTimer);
@@ -38,20 +45,20 @@ try {
     if (s) SESION = JSON.parse(s);
 } catch (e) { console.error(e); }
 
-let SEM1 = { dias: [], baseISO: null };
-let SEM2 = { dias: [], baseISO: null, cargada: false };
-let CAL_SERVICIOS = [];
-let CAL_SERVICIOS_SIG = [];
+let SEM1 = { dias: [], baseISO: null }; // Datos de disponibilidad semana actual
+let SEM2 = { dias: [], baseISO: null, cargada: false }; // Datos de disponibilidad semana siguiente
+let CAL_SERVICIOS = []; // Servicios de la niñera (2-3 semanas)
+let CAL_SERVICIOS_SIG = []; // Servicios semana siguiente (para validaciones extra)
 let PLANEACIONES_FECHAS = [];
 let PLANEACION_INDEX = 0;
 let PLANEACION_CLIENTE = null;
 let PLANEACION_FUENTE = [];
-let CACHE_PLANEACIONES = {};
+let CACHE_PLANEACIONES = {}; // Caché local de planeaciones para no recargar constantemente
 let SEMANA_CALENDARIO_BASE = null;
 let CACHE_PLANEACION_MODAL = {};
 let MODO_SOLO_LECTURA = false;
 let PLANEACION_SESSION_ID = 0;
-const RESUMEN_PLANEACIONES_SUP = {};
+const RESUMEN_PLANEACIONES_SUP = {}; // Para supervisión: resumen de planeaciones
 let CACHE_CLIENTE = { profile: null, servicios: null, actividades: null }; // Caché para mejorar UX del cliente
 let CACHE_NINERA = { servicios: null, planeaciones: null, disponibilidad: null }; // Caché para mejorar UX del panel de niñera
 let ADMIN_WEEK_START_ISO = null;
@@ -62,8 +69,10 @@ const TIPOS_CON_PLANEACION = [
     'miss nanny'
 ];
 
+
 /* =========================================
    HELPERS FECHA
+   Funciones de utilidad para manejo de fechas y formato.
    ========================================= */
 function addDaysISO(iso, n) {
     const base = iso ? new Date(iso + 'T00:00:00') : new Date();
@@ -131,9 +140,14 @@ function validarLinksImagenes(val) {
     return { ok: true, links: validos };
 }
 
+
 /* =========================================
    AUTH
+   Maneja el inicio de sesión, recuperación de contraseña
+   y control de vistas según el rol (Admin, Nanny, Familia).
    ========================================= */
+
+/* FUNCIONES DE AUTENTICACIÓN: Login, logout y recuperación de cuenta */
 function mostrarOlvide() {
     document.getElementById('paso-login').style.display = 'none';
     document.getElementById('paso-olvide').style.display = 'block';
@@ -256,8 +270,11 @@ function logout() {
     volverSeleccion();
 }
 
+
 /* =========================================
    TABLAS DE TURNOS (DISPONIBILIDAD)
+   Renderiza las tablas para que las niñeras marquen
+   sus días y turnos disponibles.
    ========================================= */
 function renderTablaTurnos(targetId, data) {
     const cont = document.getElementById(targetId);
@@ -413,10 +430,15 @@ async function renderResumen(targetId, baseISO) {
     }
 }
 
+
 /* =========================================
    SERVICIOS PRÓXIMOS
+   Lógica para cargar y mostrar los servicios asignados
+   a la niñera o a la familia.
    ========================================= */
 
+
+/* GESTIÓN DE SERVICIOS: Carga y renderizado de la agenda del usuario */
 async function refreshServicios() {
     const btn = document.getElementById('btnRefreshSvc');
     const msg = document.getElementById('calMsg');
@@ -658,9 +680,14 @@ function renderCalendario2Semanas() {
     }
 }
 
+
 /* =========================================
    MODAL DE SERVICIO
+   Muestra el detalle completo de un servicio al hacer click.
+   Incluye info del cliente, niños, ubicación y botones de acción.
    ========================================= */
+
+/* MODALES: Detalle de servicios y acciones rápidas */
 function abrirModalServicio(s) {
     document.getElementById('mCliente').textContent = s.cliente || 'Detalle del servicio';
 
@@ -941,9 +968,14 @@ async function accionFinalizar(sheetName, row, fechaISO) {
     }
 }
 
+
 /* =========================================
    SUGERIDOR ADMIN
+   Herramienta para que admins busquen niñeras disponibles
+   basado en fecha, hora y ubicación.
    ========================================= */
+
+/* ADMIN: Sugeridor de nannies disponibles */
 async function sugerir() {
     const msg = document.getElementById('admMsg');
     const out = document.getElementById('admResultados');
@@ -990,8 +1022,11 @@ function renderResultados(lista) {
     html += '</tbody></table>'; out.innerHTML = html;
 }
 
+
 /* =========================================
    AGENDA ADMIN SEMANAL
+   Vista global de todos los servicios de la semana (Lunes a Domingo).
+   Permite detectar empalmes y ver el estado general.
    ========================================= */
 function setWeekLabel(lunesISO) {
     const d0 = new Date(lunesISO + 'T00:00:00');
@@ -1132,8 +1167,11 @@ function semanaAnterior() { if (!ADMIN_WEEK_START_ISO) { ADMIN_WEEK_START_ISO = 
 function semanaSiguiente() { if (!ADMIN_WEEK_START_ISO) { ADMIN_WEEK_START_ISO = toISO(startMonday(new Date())); } cargarAgendaAdminSemana(addDaysISO(ADMIN_WEEK_START_ISO, 7)); }
 function semanaActual() { cargarAgendaAdminSemana(toISO(startMonday(new Date()))); }
 
+
 /* =========================================
    RESUMEN DISPONIBILIDAD (ADMIN)
+   Muestra qué niñeras ya capturaron su disponibilidad
+   para la semana actual.
    ========================================= */
 async function cargarResumenDisponibilidadAdmin() {
     const cont = document.getElementById('adminResumenDisp');
@@ -1292,8 +1330,10 @@ function toggleCiudad(id) {
     }
 }
 
+
 /* =========================================
    PUNTAJE: VISTA NIÑERA
+   Calcula y muestra los puntos y nivel de la niñera.
    ========================================= */
 async function cargarPuntajeNinera() {
     const msg = document.getElementById('pt_msg');
@@ -1328,8 +1368,10 @@ async function cargarPuntajeNinera() {
     }
 }
 
+
 /* =========================================
    PUNTAJE: VISTA ADMIN
+   Permite al admin ver y modificar los puntos de una niñera.
    ========================================= */
 async function adminVerPuntaje() {
     const nombre = document.getElementById('pt_admin_nombre').value.trim();
@@ -1395,8 +1437,11 @@ async function cargarListaNinerasAdmin() {
     }
 }
 
+
 /* =========================================
-   RUTEO /VISTAS
+   RUTEO / VISTAS
+   Controla la navegación entre las diferentes secciones (SPA)
+   y actualiza el menú inferior.
    ========================================= */
 function ocultarTodo() {
     const ids = ['svcCard', 'puntosNineraCard', 'panel', 'tablaActualCard', 'tablaSiguienteCard', 'resumenCard', 'resumenCard2', 'adminCard', 'adminAgendaCard', 'adminPuntosCard', 'adminResumenDispCard'];
@@ -1584,8 +1629,13 @@ async function guardarDatosStaff() {
 window.guardarDatosStaff = guardarDatosStaff;
 
 
+
 /* =========================================
    PLANEACIONES (NEURONANNY)
+   Manejo completo del módulo de planeaciones pedagógicas:
+   - Crear, editar, guardar
+   - Revisión y corrección
+   - Carga de imágenes
    ========================================= */
 let SERVICIO_PLANEACION = null;
 let PLANEACION_EXISTENTE = null;
@@ -1602,6 +1652,8 @@ function formatearFechaPlaneacion(fechaStr) {
     return `${diaNombre} ${diaNum} - ${horas}:${minutos} hrs`;
 }
 
+
+/* PLANEACIONES: Lógica de creación y edición de actividades pedagógicas */
 function abrirPlaneacionNeuronanny(servicio, planeacion) {
     SERVICIO_PLANEACION = servicio;
     PLANEACION_EXISTENTE = planeacion || null;

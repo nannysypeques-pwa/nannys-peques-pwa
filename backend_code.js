@@ -1,4 +1,15 @@
-﻿function doPost(e) {
+﻿
+/**
+ * PUNTO DE ENTRADA PRINCIPAL (API)
+ * Recibe todas las peticiones POST desde el frontend.
+ * Maneja:
+ * 1. Parseo del body
+ * 2. Sanitización de datos
+ * 3. Verificación de integridad (API Key)
+ * 4. Validación de sesión (Token)
+ * 5. Router de acciones (switch)
+ */
+function doPost(e) {
     try {
         let action = '';
         let payload = {};
@@ -214,9 +225,16 @@ function doOptions(e) {
 
 
 
+
 /** =========================
- *  CONFIG
+ *  CONFIGURACIÓN Y CONSTANTES GLOBALRES
+ *  Nombres de hojas, correos de admin y claves de seguridad.
  *  ========================= */
+
+/** 
+ * NOMBRES DE LAS HOJAS (DATABASE)
+ * Definición de los nombres de las pestañas en Google Sheets.
+ */
 const NOMBRE_HOJA_USUARIOS = 'Usuarios';
 const NOMBRE_HOJA_CLIENTES = 'Clientes';
 const NOMBRE_HOJA_DISPONIBILIDAD = 'Disponibilidad';
@@ -245,8 +263,11 @@ const MINUTOS_REENVIO_OTP = 2;
 
 
 
+
 /** =========================
  *  UTILIDADES
+ *  Funciones helper para interactuar con hojas de cálculo,
+ *  formatear fechas, hashear contraseñas, etc.
  *  ========================= */
 function _ss() { return SpreadsheetApp.getActive(); }
 function _hoja(nombre) { const sh = _ss().getSheetByName(nombre); if (!sh) throw new Error('No se encontró³ la hoja: ' + nombre); return sh; }
@@ -512,8 +533,11 @@ function _mapaColumnasPorFecha_(sh) {
 
 
 
+
 /** =========================
  *  SEGURIDAD (TOKENS)
+ *  Generación y validación de tokens de sesión con
+ *  protección contra robo de sesión (fingerprinting).
  *  ========================= */
 function _generarToken(email, fingerprint) {
     if (!email) return null;
@@ -545,8 +569,11 @@ function _validarToken(token, currentFingerprint) {
 }
 
 
+
 /** =========================
- *  AUTORIZACIó“N / ROLES / OTP / LOGIN
+ *  AUTORIZACIÓN / ROLES / OTP / LOGIN
+ *  Funciones para verificar permisos, registro, login
+ *  y recuperación de contraseñas.
  *  ========================= */
 function _estaAutorizado(email) {
     email = String(email || '').trim().toLowerCase();
@@ -760,6 +787,11 @@ function establecerContrasena(email, otp, nuevaContrasena) {
 
 
 
+
+/**
+ * AUTENTICACIÓN: Valida credenciales de Staff o Clientes.
+ * Compara contraseñas usando el hash guardado y genera tokens de sesión.
+ */
 function login(email, contrasena, rol, fingerprint) {
     email = String(email || '').trim().toLowerCase();
     contrasena = String(contrasena || '');
@@ -896,8 +928,11 @@ function login(email, contrasena, rol, fingerprint) {
 
 
 
+
 /** =========================
  *  DISPONIBILIDAD POR TURNOS (Matutino/Vespertino)
+ *  Lógica core para manejar los horarios de las niñeras.
+ *  Permite definir turnos y asegurar la estructura de la hoja.
  *  ========================= */
 const TURNOS = [
     { key: 'Matutino', ini: '07:00', fin: '15:00' },
@@ -1238,8 +1273,12 @@ function obtenerDisponiblesSemana(email, fechaISO) {
 
 
 
+
 /** =========================
- *  SERVICIOS por NOMBRE + CONFIRMACIó“N (con timestamp)
+ *  SERVICIOS por NOMBRE + CONFIRMACIÓN
+ *  Lógica complejas para leer y transformar los servicios
+ *  desde la estructura vertical/horizontal de las hojas de cálculo
+ *  a un formato JSON consumible por la app.
  *  ========================= */
 function _ensureColumnsServicios(sh) {
     const hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0];
@@ -1395,6 +1434,12 @@ function _mapaCiudadPorNinera() {
 
 
 
+
+/**
+ * Expande los servicios de una hoja semana
+ * Convierte el formato de grilla (Fechas en columnas)
+ * a una lista plana de objetos servicio.
+ */
 function _expandirServiciosSemanales_(sh) {
     const data = sh.getDataRange().getValues();
     if (data.length < 3) return [];
@@ -1562,6 +1607,11 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
+
+/**
+ * Busca servicios próximos para una niñera específica
+ * Filtrando por su nombre y rango de fechas.
+ */
 function obtenerServiciosProximosPorNombre(email, diasAdelante, fechaInicio) {
     email = String(email || '').trim().toLowerCase();
     if (!_estaAutorizado(email)) throw new Error('No autorizado.');
@@ -4819,8 +4869,17 @@ function _enforceRole(email, requiredRole) {
     if (!requiredRole) return;
     const isAdmin = esAdmin(email);
     if (requiredRole === 'admin' && !isAdmin) throw new Error('Acceso denegado: Se requiere administrador.');
-    if (isAdmin) return;
-    if (requiredRole === 'supervision') throw new Error('Acceso denegado: Rol supervisión requerido.');
+    if (isAdmin) return; // Si es admin, tiene acceso a todo
+
+    if (requiredRole === 'supervision' && !esSupervision(email)) {
+        throw new Error('Acceso denegado: Rol supervisión requerido.');
+    }
+    if (requiredRole === 'ninera' && !_estaAutorizado(email)) {
+        throw new Error('Acceso denegado: No autorizado.');
+    }
+    if (requiredRole === 'cliente' && !esCliente(email)) {
+        throw new Error('Acceso denegado: Rol cliente requerido.');
+    }
 }
 
 function solicitarOTPRegistro(email) {
