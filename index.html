@@ -258,9 +258,11 @@
 
 
 
-
-      <!-- VISTA: PERFIL
-           Muestra y permite editar información del usuario. -->
+      <!-- ==========================================
+           VISTA: PERFIL
+           Muestra datos del usuario, contacto, dirección
+           y peques (si es familia).
+      ========================================== -->
       <div id="vista-perfil" class="vista">
         <div class="card profile-premium-card" id="perfilCard">
           <div class="profile-header">
@@ -423,7 +425,7 @@
         <!-- SERVICIOS PRÓXIMOS (niñera) -->
         <div class="card" id="svcCard">
           <div class="row" style="justify-content:space-between;">
-            <h3>Servicios próximos (2 semanasx)</h3>
+            <h3>Servicios próximos (2 semanasy)</h3>
             <button id="btnRefreshSvc" class="btn-ghost" onclick="refreshServicios()">🔄 Actualizar</button>
           </div>
           <div id="cal" class="calendar"></div>
@@ -732,9 +734,11 @@
 
 
 
-
-      <!-- VISTA: ACTIVIDADES CLIENTE
-           Muestra a la familia el plan de actividades para sus hijos. -->
+      <!-- ==========================================
+           VISTA: ACTIVIDADES CLIENTE
+           Muestra a la familia las actividades planeadas
+           para sus peques.
+      ========================================== -->
       <div id="vista-actividades-cliente" class="vista">
         <div class="card" style="margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -781,9 +785,10 @@
 
 
 
-
-      <!-- VISTA: SUPERVISIÓN
-           Panel para revisar planeaciones de nannies. -->
+      <!-- ==========================================
+           VISTA: SUPERVISIÓN
+           Panel para revisar planeaciones de las niñeras.
+      ========================================== -->
       <div id="vista-supervision" class="vista">
         <!-- CARD SEMANA ACTUAL -->
         <div class="supervision-card">
@@ -814,9 +819,11 @@
 
 
 
-
-      <!-- VISTA: DISPONIBILIDAD
-           Calendario para que las nannies marquen sus turnos libres. -->
+      <!-- ==========================================
+           VISTA: DISPONIBILIDAD
+           Permite a las niñeras marcar sus horarios libres
+           (Matutino/Vespertino) semana a semana.
+      ========================================== -->
       <div id="vista-disponibilidad" class="vista">
         <!-- PANEL (solo niñeras) -->
         <div class="card" id="panel">
@@ -898,9 +905,11 @@
 
 
 
-
-      <!-- SECCIÓN ADMIN (Sugeridor, Agenda, Puntos)
-           Visible solo para administradores. -->
+      <!-- ==========================================
+           SECCIÓN DE ADMIN
+           Tarjetas visibles solo para el rol de Admin.
+           Incluye sugeridor, agenda global, gestión de puntos.
+      ========================================== -->
       <!-- ADMIN: Sugeridor -->
       <div id="adminCard" class="card" style="display:none;">
         <h3>Administrador – Sugerir niñeras</h3>
