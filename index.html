@@ -25,7 +25,7 @@
   <!-- SECURITY: CSP -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' https://cdn.onesignal.com https://onesignal.com 'unsafe-inline';
+    script-src 'self' https://cdn.onesignal.com https://onesignal.com https://static.cloudflareinsights.com https://api.onesignal.com 'unsafe-inline';
     style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: https://drive.google.com https://lh3.googleusercontent.com https://blogger.googleusercontent.com https://*.googleusercontent.com;
@@ -830,7 +830,7 @@
           <div><label>Fin</label><br><input id="sv_hf" type="time" step="1800" value="12:00"></div>
           <div><label>Edad (años)</label><br><input id="sv_edad" type="number" step="0.1" value="1"></div>
         </div>
-        <div class="row" style="margin-top:8px%;">
+        <div class="row" style="margin-top:8px;">
           <label style="width:100%;">Ubicación (dirección)</label>
           <input id="sv_ubic" type="text" placeholder="Ej. Parque México, CDMX" style="max-width:580px; width:100%;">
         </div>
