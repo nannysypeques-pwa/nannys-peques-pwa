@@ -249,7 +249,7 @@ const GLOBAL_SALT = props.getProperty('GLOBAL_SALT') || 'PENDING_SETUP';
 
 const ADMIN_EMAILS = ['nannysypeques@gmail.com', 'gerardo.pineda.m94@gmail.com'];
 const NOMBRE_HOJA_SERVICIOS = 'Servicios';
-const ZONA_HORARIA = Session.getScriptTimeZone() || 'America/Mexico_City';
+const ZONA_HORARIA = SpreadsheetApp.getActive().getSpreadsheetTimeZone();
 const MINUTOS_REENVIO_OTP = 2;
 
 
@@ -1458,12 +1458,27 @@ function _expandirServiciosSemanales_(sh) {
 
 
     // columnas fijas (cliente, direcció³n, etc.) en fila 1 (no-fechas)
-    const colIdx = {};
-    fechas.forEach((h, i) => {
-        if (h instanceof Date) return;
-        const k = _norm(h);
-        if (k) colIdx[k] = i;
-    });
+    const hdrsRaw = fechas.map(h => _norm(h));
+    const findCol = (aliases) => {
+        for (let a of aliases) {
+            let idx = hdrsRaw.indexOf(_norm(a));
+            if (idx !== -1) return idx;
+        }
+        return undefined;
+    };
+
+    colIdx['cliente'] = findCol(['cliente', 'nombre del cliente']);
+    colIdx['nombre de ninera'] = findCol(['nombre de ninera', 'niñera', 'nombre de la niñera', 'nanny']);
+    colIdx['tipo de servicio'] = findCol(['tipo de servicio', 'tipo', 'servicio']);
+    colIdx['numero de contacto'] = findCol(['numero de contacto', 'teléfono', 'contacto', 'telefono']);
+    colIdx['direccion'] = findCol(['direccion', 'dirección']);
+    colIdx['ubicacion (link)'] = findCol(['ubicacion (link)', 'ubicación', 'ubicacion', 'link']);
+    colIdx['ver'] = findCol(['ver', 'visible']);
+    colIdx['email'] = findCol(['email', 'correo', 'e-mail']);
+    colIdx['numero de emergencia'] = findCol(['numero de emergencia', 'emergencia']);
+    colIdx['cuota nanny'] = findCol(['cuota nanny', 'cuota', 'cuota niñera']);
+    colIdx['edad del nino'] = findCol(['edad del nino', 'edad del peque', 'edad']);
+    colIdx['notas'] = findCol(['notas', 'observaciones', 'comentarios']);
 
 
 
@@ -1472,10 +1487,9 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-    // œ… ya no tronar: si falta algo, mejor no devolver servicios
-    const required = ['cliente', 'numero de contacto', 'direccion', 'ubicacion (link)', 'nombre de ninera'];
-    for (const k of required) {
-        if (colIdx[k] === undefined) return [];
+    if (colIdx['cliente'] === undefined || colIdx['nombre de ninera'] === undefined) {
+        console.warn('Faltan columnas críticas en la hoja: ' + sh.getName());
+        return [];
     }
 
 
@@ -1505,8 +1519,8 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-        const nombreNinera = String(row[colIdx['nombre de ninera']] || '').trim();
-        if (!nombreNinera) continue;
+        const nombreNinera = colIdx['nombre de ninera'] != null ? String(row[colIdx['nombre de ninera']] || '').trim() : '';
+        // NO omitir aunque no tenga niñera, para supervisión
 
 
 
@@ -3687,7 +3701,7 @@ function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
 
         const cliente = String(s.cliente || '').trim();
         const ninera = String(s.nombre_ninera || '').trim();
-        if (!cliente || !ninera) return;
+        if (!cliente) return;
 
         const tipoServicio = s.tipo_servicio || '';
 
@@ -4211,7 +4225,7 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
         const tNorm = _norm(r[idxTipo]);
         if (
             ['neuronanny', 'nanny educativa', 'miss nanny'].includes(tNorm) &&
-            _norm(r[idxNinera]) === _norm(nombreNinera)
+            (_norm(r[idxNinera]).includes(_norm(nombreNinera)) || _norm(nombreNinera).includes(_norm(r[idxNinera])))
         ) {
             const cliente = r[idxCliente];
             const fecha = _toISODate(r[idxFecha]);
@@ -4233,11 +4247,13 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
         let completas = true;
 
         fechas.forEach(f => {
-            const existe = dataPlan.some(p =>
-                String(p[idxPCliente] || '').trim() === String(cliente || '').trim() &&
-                _toISODate(p[idxPFecha]) === _toISODate(f) &&
-                String(p[idxPNinera] || '').trim() === String(nombreNinera || '').trim()
-            );
+            const existe = dataPlan.some(p => {
+                const pNanny = _norm(p[idxPNinera]);
+                const sNanny = _norm(nombreNinera);
+                return String(p[idxPCliente] || '').trim() === String(cliente || '').trim() &&
+                    _toISODate(p[idxPFecha]) === _toISODate(f) &&
+                    (pNanny.includes(sNanny) || sNanny.includes(pNanny));
+            });
             if (!existe) completas = false;
         });
 

@@ -1222,7 +1222,8 @@ function renderResumenPlaneaciones(data, cont, prefijo) {
         Object.values(data).flat().forEach(p => {
             const nombreSesion = normalizarTexto(SESION.nombre || '');
             const nombrePlaneacion = normalizarTexto(p.ninera || '');
-            if (!nombrePlaneacion || (nombreSesion && nombrePlaneacion !== nombreSesion)) return;
+            const coincidencia = !nombreSesion || nombrePlaneacion.includes(nombreSesion) || nombreSesion.includes(nombrePlaneacion);
+            if (!nombrePlaneacion || !coincidencia) return;
 
             const colorPlaneacion = p.tienePlaneacion ? '#16a34a' : '#dc2626';
             const textoPlaneacion = p.tienePlaneacion ? 'planeación completa' : 'planeación pendiente';
