@@ -3,17 +3,21 @@
      ðŸŽ¨ PALETA MODERN GLASS
      ========================= */
 
+
     /* PRIMARIOS */
     --pink-main: #E84C9A;
     --pink-light: #FCE7F3;
     --pink-hover: #D63384;
 
+
     --blue-main: #3BB6C4;
     --blue-light: #E0F7FA;
+
 
     --text-main: #1F2937;
     /* Gris muy oscuro, suave */
     --text-muted: #6B7280;
+
 
     /* ESTADOS */
     --success-bg: #D1FAE5;
@@ -23,12 +27,14 @@
     --error-bg: #FEE2E2;
     --error-text: #B91C1C;
 
+
     /* GLASS EFFECTS */
     --glass-bg: rgba(255, 255, 255, 0.75);
     --glass-border: 1px solid rgba(255, 255, 255, 0.6);
     --glass-shadow: 0 8px 32px 0 rgba(232, 76, 154, 0.1);
     /* Sombra rosada sutil */
     --glass-blur: blur(12px);
+
 
     /* UTILS */
     --radius-xl: 24px;
@@ -38,9 +44,11 @@
     --radius-full: 9999px;
     /* Botones */
 
+
     --vh: 1vh;
     /* Mobile browser safeguard */
 }
+
 
 /* =========================
    RESET & BASE
@@ -50,12 +58,14 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+
 html {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     height: 100%;
     /* overflow: hidden; removed to allow scroll */
 }
+
 
 body {
     font-family: 'Nunito Sans', system-ui, -apple-system, sans-serif;
@@ -67,6 +77,7 @@ body {
     min-height: 100%;
 }
 
+
 /* App Container Scrollable */
 #app {
     min-height: 100vh;
@@ -74,6 +85,7 @@ body {
     padding-bottom: 120px;
     /* Mas espacio para evitar que el nav tape contenido */
 }
+
 
 h1,
 h2,
@@ -85,14 +97,17 @@ h4 {
     color: var(--pink-main);
 }
 
+
 a {
     text-decoration: none;
     color: inherit;
 }
 
+
 /* =========================
    ðŸ”® GLASS COMPONENTS
    ========================= */
+
 
 /* Glass Card */
 .card,
@@ -109,11 +124,14 @@ a {
     margin-bottom: 20px;
 }
 
+
 #paso-seleccion .card:hover {
     transform: translateY(-5px);
     border-color: var(--pink-main);
     box-shadow: 0 12px 40px rgba(232, 76, 154, 0.2);
 }
+
+
 
 
 /* Buttons */
@@ -124,9 +142,11 @@ button {
     transition: transform 0.1s ease, box-shadow 0.2s;
 }
 
+
 button:active {
     transform: scale(0.97);
 }
+
 
 /* Aliases for compatibility */
 .btn-primary,
@@ -143,16 +163,19 @@ button:active {
     letter-spacing: 0.5px;
 }
 
+
 .btn-primary:hover,
 .btn-pink:hover {
     box-shadow: 0 6px 20px rgba(59, 182, 196, 0.4);
 }
+
 
 .btn-ghost {
     background: transparent;
     color: var(--pink-main);
     font-weight: 600;
 }
+
 
 /* Inputs */
 input,
@@ -170,6 +193,7 @@ select {
     transition: all 0.2s;
 }
 
+
 input:focus,
 textarea:focus {
     outline: none;
@@ -177,6 +201,7 @@ textarea:focus {
     border-color: var(--pink-main);
     box-shadow: 0 0 0 3px var(--pink-light);
 }
+
 
 /* =========================
    LOGIN & AUTH
@@ -190,11 +215,13 @@ textarea:focus {
     padding: 20px;
 }
 
+
 .auth-card {
     width: 100%;
     max-width: 400px;
     text-align: center;
 }
+
 
 .brand-title {
     font-family: 'Quicksand', sans-serif;
@@ -207,6 +234,7 @@ textarea:focus {
     line-height: 1;
 }
 
+
 /* Ajustes segun PWA vs Navegador */
 @media (display-mode: standalone) {
     #app {
@@ -214,11 +242,13 @@ textarea:focus {
     }
 }
 
+
 @media (max-width: 480px) {
     .container {
         padding: 16px;
     }
 }
+
 
 .login-subtitle {
     color: var(--text-muted);
@@ -227,10 +257,13 @@ textarea:focus {
     margin-bottom: 32px;
 }
 
+
 /* Esconder el tÃ­tulo default del body si existe */
 body>h2:first-of-type {
     display: none;
 }
+
+
 
 
 /* =========================
@@ -247,15 +280,18 @@ body>h2:first-of-type {
     margin: 0 auto;
     /* Centrado en desktop */
 
+
     height: 70px;
     background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
 
+
     border-radius: 24px;
     /* Isla redonda */
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.5);
+
 
     display: flex;
     justify-content: space-around;
@@ -263,6 +299,7 @@ body>h2:first-of-type {
     z-index: 1000;
     padding: 0 10px;
 }
+
 
 .bottom-nav button {
     background: transparent;
@@ -278,6 +315,7 @@ body>h2:first-of-type {
     gap: 2px;
 }
 
+
 .bottom-nav button span {
     font-size: 11px;
     /* Text Size */
@@ -287,11 +325,14 @@ body>h2:first-of-type {
     /* Default label color */
 }
 
+
 /* Active State */
 .bottom-nav button.activo span {
     color: var(--pink-main);
     font-weight: 800;
 }
+
+
 
 
 /* =========================
@@ -305,6 +346,7 @@ body>h2:first-of-type {
     margin: 0 auto;
 }
 
+
 @media (min-width: 1024px) {
     .container {
         padding: 40px 20px;
@@ -312,14 +354,17 @@ body>h2:first-of-type {
     }
 }
 
+
 .vista {
     display: none;
     animation: fadeIn 0.3s ease-out;
 }
 
+
 .vista.activa {
     display: block;
 }
+
 
 @keyframes fadeIn {
     from {
@@ -327,11 +372,14 @@ body>h2:first-of-type {
         transform: translateY(10px);
     }
 
+
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
+
+
 
 
 /* =========================
@@ -344,6 +392,7 @@ body>h2:first-of-type {
     margin-bottom: 20px;
 }
 
+
 .day {
     background: rgba(255, 255, 255, 0.5);
     border-radius: 12px;
@@ -352,12 +401,14 @@ body>h2:first-of-type {
     border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
+
 .day.today {
     background: #FFFBEB;
     /* Amarillo muy suave */
     border-color: #FCD34D;
     box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
 }
+
 
 /* Pills de Servicio */
 .svc-pill {
@@ -372,9 +423,11 @@ body>h2:first-of-type {
     border-left: 4px solid transparent;
 }
 
+
 .svc-pill:active {
     transform: scale(0.98);
 }
+
 
 /* Variantes de Pills */
 .svc-pill.pending {
@@ -386,6 +439,7 @@ body>h2:first-of-type {
     /* Yellow 500 */
 }
 
+
 .svc-pill.confirmed {
     background: #DCFCE7;
     /* Green 100 */
@@ -394,6 +448,7 @@ body>h2:first-of-type {
     border-left-color: #22C55E;
     /* Green 500 */
 }
+
 
 .svc-pill.inprogress {
     background: #DBEAFE;
@@ -404,6 +459,7 @@ body>h2:first-of-type {
     /* Blue 500 */
 }
 
+
 .svc-pill.completed {
     background: #F3F4F6;
     /* Gray 100 */
@@ -413,12 +469,14 @@ body>h2:first-of-type {
     /* Gray 400 */
 }
 
+
 .svc-pill.conflict {
     background: #FEF2F2 !important;
     color: #B91C1C !important;
     border: 2px solid #EF4444 !important;
     animation: pulse 2s infinite;
 }
+
 
 /* Pills de Servicio para Cliente - MÃ¡s grandes y legibles */
 .svc-pill-cliente {
@@ -433,24 +491,29 @@ body>h2:first-of-type {
     border-radius: 10px;
 }
 
+
 .svc-pill-cliente:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
+
 
 @keyframes pulse {
     0% {
         box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
     }
 
+
     70% {
         box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
     }
+
 
     100% {
         box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
     }
 }
+
 
 /* =========================
    MODALES (Glass Overlay)
@@ -470,6 +533,7 @@ body>h2:first-of-type {
     animation: fadeIn 0.2s;
 }
 
+
 .modal-card {
     background: #ffffff;
     /* Modal solido para legibilidad */
@@ -482,11 +546,13 @@ body>h2:first-of-type {
     overflow-y: auto;
 }
 
+
 .modal-title {
     font-size: 22px;
     margin-bottom: 20px;
     text-align: center;
 }
+
 
 .modal-actions {
     display: flex;
@@ -494,14 +560,18 @@ body>h2:first-of-type {
     margin-top: 24px;
 }
 
+
 .modal-actions button {
     flex: 1;
 }
+
 
 #mNotas,
 #mDireccion {
     white-space: pre-wrap;
 }
+
+
 
 
 /* =========================
@@ -513,6 +583,7 @@ body>h2:first-of-type {
     padding: 40px;
     font-style: italic;
 }
+
 
 .toast {
     position: fixed;
@@ -531,10 +602,12 @@ body>h2:first-of-type {
     backdrop-filter: blur(4px);
 }
 
+
 .toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(-10px);
 }
+
 
 /* SupervisiÃ³n Specifics */
 .pl-item {
@@ -549,12 +622,15 @@ body>h2:first-of-type {
     align-items: center;
 }
 
+
 .pl-ciudad-header {
     font-size: 20px;
     color: var(--pink-main);
     margin-top: 24px;
     margin-bottom: 12px;
 }
+
+
 
 
 /* =========================
@@ -566,21 +642,25 @@ body>h2:first-of-type {
         /* Lista en mÃ³vil */
     }
 
+
     .day {
         min-height: auto;
         margin-bottom: 10px;
     }
 }
 
+
 /* Scrollbar Tweaks Nanny */
 body.ninera .modal-planeacion::-webkit-scrollbar {
     width: 6px;
 }
 
+
 body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     background: #E5E7EB;
     border-radius: 10px;
 }
+
 
 /* MEJORAS FORMULARIO FAMILIA */
 .welcome-title {
@@ -592,6 +672,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-weight: 700;
 }
 
+
 .form-group label {
     font-weight: 700;
     color: #374151;
@@ -599,6 +680,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     margin-bottom: 5px;
     display: block;
 }
+
 
 .form-group input,
 .form-group textarea {
@@ -612,6 +694,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     width: 100%;
 }
 
+
 .form-group input:focus,
 .form-group textarea:focus {
     border-color: var(--blue-main);
@@ -619,10 +702,12 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
+
 .form-group input::placeholder,
 .form-group textarea::placeholder {
     color: #9CA3AF;
 }
+
 
 /* =========================================
    ESTILOS PREMIUM PERFIL Y ONBOARDING
@@ -636,6 +721,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     margin: 20px 0 10px 0;
 }
 
+
 .profile-premium-card {
     padding: 0 !important;
     overflow: hidden;
@@ -643,12 +729,14 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
+
 .profile-header {
     background: linear-gradient(135deg, var(--pink-main), var(--blue-main));
     padding: 30px 20px;
     text-align: center;
     color: white;
 }
+
 
 .profile-avatar {
     font-size: 50px;
@@ -661,6 +749,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
+
 .profile-header h3 {
     margin: 0;
     color: white;
@@ -668,14 +757,17 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-size: 24px;
 }
 
+
 .profile-header .muted {
     color: rgba(255, 255, 255, 0.8);
     margin-top: 5px;
 }
 
+
 .profile-section {
     padding: 20px;
 }
+
 
 .section-title {
     font-weight: 800;
@@ -689,20 +781,24 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     padding-bottom: 8px;
 }
 
+
 .profile-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 15px;
 }
 
+
 .profile-info-item {
     display: flex;
     flex-direction: column;
 }
 
+
 .profile-info-item.full {
     grid-column: span 2;
 }
+
 
 .profile-info-item .label {
     font-size: 11px;
@@ -711,6 +807,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     margin-bottom: 2px;
 }
 
+
 .profile-info-item .value {
     font-size: 14px;
     color: var(--text-main);
@@ -718,11 +815,13 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     word-break: break-word;
 }
 
+
 .profile-info-item .value.link {
     color: var(--blue-main);
     text-decoration: none;
     font-weight: 600;
 }
+
 
 /* Peque Profile Card */
 .peque-profile-card {
@@ -732,20 +831,24 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     border-left: 5px solid var(--pink-main);
 }
 
+
 .peque-header {
     display: flex;
     align-items: center;
     margin-bottom: 12px;
 }
 
+
 .peque-icon {
     font-size: 24px;
     margin-right: 12px;
 }
 
+
 .peque-meta {
     flex-grow: 1;
 }
+
 
 .peque-name {
     font-weight: 800;
@@ -753,10 +856,12 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-size: 16px;
 }
 
+
 .peque-date {
     font-size: 12px;
     color: #64748b;
 }
+
 
 .peque-age-badge {
     background: var(--pink-light);
@@ -767,16 +872,19 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-weight: 700;
 }
 
+
 .peque-details p {
     font-size: 13px;
     margin: 5px 0;
     color: #334155;
 }
 
+
 .profile-actions {
     padding: 20px;
     background: #f1f5f9;
 }
+
 
 /* =========================
    MODAL PREMIUM DESIGN
@@ -794,6 +902,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     /* Allow it to be tall but not overflow viewport */
 }
 
+
 .modal-header-gradient {
     background: #fff;
     padding: 20px 24px 10px 24px;
@@ -803,6 +912,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     /* Header stays fixed */
 }
 
+
 .modal-header-gradient h3 {
     color: var(--blue-main);
     margin: 0;
@@ -811,6 +921,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-weight: 700;
 }
 
+
 .modal-subtitle {
     display: block;
     margin-top: 4px;
@@ -818,6 +929,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-size: 14px;
     font-weight: 600;
 }
+
 
 .modal-body-scroll {
     padding: 20px;
@@ -828,10 +940,12 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     /* Important for flex scrolling */
 }
 
+
 /* Sections */
 .info-section {
     margin-bottom: 20px;
 }
+
 
 .section-label {
     text-transform: uppercase;
@@ -843,12 +957,14 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     display: block;
 }
 
+
 /* Grid for Contact */
 .modal-grid-2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
 }
+
 
 .info-box {
     background: #f9fafb;
@@ -857,9 +973,11 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     border: 1px solid #f3f4f6;
 }
 
+
 .info-box.full {
     grid-column: span 2;
 }
+
 
 .info-box label {
     display: block;
@@ -869,6 +987,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     margin-bottom: 4px;
 }
 
+
 .info-box .value {
     font-size: 14px;
     color: #1f2937;
@@ -876,23 +995,29 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     word-break: break-word;
 }
 
+
 .info-box .value.highlight {
     font-size: 15px;
     font-weight: 700;
     color: var(--pink-main);
 }
 
+
 .info-box .value.emergency {
     color: var(--error-text);
     font-weight: 600;
 }
+
 
 .info-box .value a {
     color: var(--blue-main);
     text-decoration: underline;
 }
 
+
 /* Child Card */
+
+
 
 
 .child-info-row {
@@ -903,11 +1028,13 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     font-size: 14px;
 }
 
+
 .child-notes {
     font-size: 13px;
     color: #4b5563;
     line-height: 1.5;
 }
+
 
 /* Financial */
 .financial-box {
@@ -919,10 +1046,12 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     color: var(--text-muted);
 }
 
+
 .financial-box b {
     color: #059669;
     font-size: 16px;
 }
+
 
 /* Footer Actions */
 .modal-footer {
@@ -933,12 +1062,14 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     /* Always visible */
 }
 
+
 /* Overrides for specific existing elements being moved */
 #mMsg {
     margin-top: 10px;
     font-size: 13px;
     text-align: center;
 }
+
 
 .modal-backdrop {
     position: fixed;
@@ -955,6 +1086,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     -webkit-backdrop-filter: blur(8px);
 }
 
+
 .modal-content {
     background: white;
     border-radius: 20px;
@@ -965,6 +1097,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     overflow-y: auto;
     position: relative;
 }
+
 
 .weekly-section-title {
     font-size: 16px;
@@ -977,6 +1110,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     padding-left: 12px;
 }
 
+
 .activity-card {
     background: white;
     border-radius: 18px;
@@ -987,9 +1121,11 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     transition: transform 0.2s;
 }
 
+
 .activity-card:active {
     transform: scale(0.98);
 }
+
 
 .activity-label-pink {
     color: var(--pink-main);
@@ -999,6 +1135,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     display: block;
 }
 
+
 .activity-area-title {
     font-size: 18px;
     font-weight: 800;
@@ -1006,12 +1143,14 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     margin-bottom: 8px;
 }
 
+
 .activity-detail-summary {
     font-size: 14px;
     color: #4b5563;
     line-height: 1.5;
     margin-bottom: 12px;
 }
+
 
 .activity-details-link {
     color: var(--blue-main);
@@ -1023,6 +1162,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     gap: 5px;
 }
 
+
 .activity-expanded-content {
     margin-top: 15px;
     padding-top: 15px;
@@ -1031,9 +1171,11 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     color: #374151;
 }
 
+
 .activity-expanded-content b {
     color: var(--text-main);
 }
+
 
 .activity-img {
     max-width: 280px;
@@ -1044,16 +1186,19 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     display: block;
 }
 
+
 .activity-img:hover {
     transform: scale(1.02);
     cursor: pointer;
 }
+
 
 .activity-gallery {
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
+
 
 /* =========================================
 /* =========================================
@@ -1072,6 +1217,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     border-radius: 20px !important;
 }
 
+
 .welcome-title-bold {
     font-family: 'DM Serif Display', serif !important;
     font-size: 20px !important;
@@ -1080,12 +1226,14 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     margin: 0 0 4px 0 !important;
 }
 
+
 .welcome-subtitle-light {
     font-size: 14px !important;
     color: #6B7280 !important;
     /* Gris menos negro (text-muted) */
     margin: 0 0 10px 0 !important;
 }
+
 
 .logout-btn-premium {
     background: rgba(255, 255, 255, 0.4) !important;
@@ -1101,10 +1249,12 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     letter-spacing: 0.5px;
 }
 
+
 .logout-btn-premium:hover {
     background: rgba(255, 255, 255, 0.6) !important;
     color: #1F2937 !important;
 }
+
 
 /* =========================================
    SELECCIÓN DE ROL (CLIENTE)
@@ -1115,6 +1265,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     margin-bottom: 15px;
     width: 100%;
 }
+
 
 .role-btn {
     flex: 1;
@@ -1135,10 +1286,12 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
+
 .role-btn span {
     font-size: 20px;
     /* Emojis mas grandes */
 }
+
 
 .role-btn:hover {
     border-color: #3BB6C4;
@@ -1146,12 +1299,14 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     transform: translateY(-2px);
 }
 
+
 .role-btn.active {
     background: #3BB6C4;
     border-color: #3BB6C4;
     color: white;
     box-shadow: 0 4px 12px rgba(59, 182, 196, 0.3);
 }
+
 
 .role-btn.active:hover {
     transform: translateY(-2px);
