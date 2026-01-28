@@ -86,40 +86,4 @@ function _getFingerprint() {
 }
 
 
-// --- REGISTER SERVICE WORKER (PWA) ---
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js')
-      .then(registration => {
-        console.log('SW registrado con éxito:', registration.scope);
-
-
-        // Detectar nueva actualización
-        registration.addEventListener('updatefound', () => {
-          const newWorker = registration.installing;
-          newWorker.addEventListener('statechange', () => {
-            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              // Nuevo SW instalado y esperando.
-              console.log('Nueva versión disponible. Recargando...');
-            }
-          });
-        });
-      })
-      .catch(err => {
-        console.log('SW fallo al registrar:', err);
-      });
-  });
-
-
-  // Recargar cuando el nuevo SW tome el control (skipWaiting + clients.claim)
-  let refreshing = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
-    }
-  });
-}
-
-
 

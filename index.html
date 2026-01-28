@@ -5,17 +5,11 @@
 
 
 <head>
-
-  <!-- ==========================================
-       INICIO: HEAD
-       Contiene metadatos, fuentes y estilos globales.
-       ========================================== -->
   <!-- Tipografías Nannys y Peques -->
   <link
     href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Nunito+Sans:wght@400;600;700;800&family=Quicksand:wght@700&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
-  <!-- FIN: HEAD -->
 
 
 
@@ -64,11 +58,6 @@
 
 
 
-
-  <!-- =====================
-       ONE SIGNAL CONFIG
-       Notificaciones push para web y móvil
-  ===================== -->
   <!-- OneSignal -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
@@ -96,16 +85,6 @@
 
 
 
-
-
-    <!-- ==========================================
-         SECCIÓN DE AUTENTICACIÓN (LOGIN/REGISTRO)
-         Contiene las pantallas de:
-         1. Selección de rol (Nanny / Familia)
-         2. Login de Staff
-         3. Registro y Login de Familia
-         4. Recuperación de contraseña
-         ========================================== -->
     <!-- LOGIN -->
     <div id="auth" class="auth-wrapper">
       <div class="auth-card">
@@ -131,7 +110,6 @@
             </div>
           </div>
         </div>
-        <!-- /FIN PASO-SELECCION -->
 
 
 
@@ -152,7 +130,6 @@
           <button class="btn-ghost" onclick="volverSeleccion()" style="margin-top: 10px;">← Volver</button>
           <p id="msgLogin"></p>
         </div>
-        <!-- /FIN PASO-LOGIN (STAFF) -->
 
 
 
@@ -203,7 +180,6 @@
           <button class="btn-ghost" onclick="volverSeleccion()" style="margin-top: 10px;">← Volver</button>
           <p id="msgRegistro"></p>
         </div>
-        <!-- /FIN PASO-REGISTRO-CLIENTE -->
 
 
 
@@ -224,7 +200,6 @@
           </div>
           <p id="msgOlvide"></p>
         </div>
-        <!-- /FIN PASO-RECUPERACIÓN -->
       </div>
     </div> <!-- Cerrar auth-wrapper -->
 
@@ -235,18 +210,9 @@
 
 
 
-
-
-    <!-- ==========================================
-         APLICACIÓN PRINCIPAL (SPA)
-         Contiene todas las vistas que se muestran
-         según el rol y la navegación.
-         ========================================== -->
-    <!-- APP ROOT -->
+    <!-- APP -->
     <div id="app" style="display:none;">
-      <!-- HEADER ADMIN / SUPERVISIÓN
-           Barra superior visible solo para administradores y supervisores
-      -->
+      <!-- HEADER ADMIN / SUPERVISIÓN -->
       <div id="header-admin" class="card panel-header" style="display:none;">
         <div class="panel-header-row">
           <div id="saludo-admin" class="panel-saludo">¡Hola!</div>
@@ -257,12 +223,6 @@
 
 
 
-
-      <!-- ==========================================
-           VISTA: PERFIL
-           Muestra datos del usuario, contacto, dirección
-           y peques (si es familia).
-      ========================================== -->
       <div id="vista-perfil" class="vista">
         <div class="card profile-premium-card" id="perfilCard">
           <div class="profile-header">
@@ -402,14 +362,6 @@
 
 
 
-
-
-      <!-- ==========================================
-           VISTA: SERVICIOS (HOME NIÑERA)
-           Pantalla principal para la niñera. Muestra:
-           - Calendario de próximos servicios
-           - Lista de planeaciones pendientes
-           ========================================== -->
       <div id="vista-servicios" class="vista">
         <!-- HEADER PANEL NIÑERA -->
         <div class="card panel-header">
@@ -425,7 +377,7 @@
         <!-- SERVICIOS PRÓXIMOS (niñera) -->
         <div class="card" id="svcCard">
           <div class="row" style="justify-content:space-between;">
-            <h3>Servicios próximos (2 semanas2)</h3>
+            <h3>Servicios próximos (2 semanas)</h3>
             <button id="btnRefreshSvc" class="btn-ghost" onclick="refreshServicios()">🔄 Actualizar</button>
           </div>
           <div id="cal" class="calendar"></div>
@@ -455,13 +407,6 @@
 
 
 
-
-
-      <!-- ==========================================
-           VISTA: PUNTOS (GAMIFICACIÓN)
-           Muestra el nivel de la niñera (Pink, Yellow, etc.)
-           y su historial de puntos.
-           ========================================== -->
       <div id="vista-puntos" class="vista">
         <!-- MIS PUNTOS (solo niñeras) -->
         <div class="card" id="puntosNineraCard">
@@ -479,14 +424,6 @@
 
 
 
-
-
-      <!-- ==========================================
-           VISTA: CLIENTE (FAMILIA)
-           Pantalla principal para familias. Incluye:
-           - Onboarding (llenado de datos primera vez)
-           - Dashboard con próximos servicios
-           ========================================== -->
       <div id="vista-cliente" class="vista">
         <!-- ONBOARDING: Completar perfil -->
         <div id="cliente-onboarding" style="display:none;">
@@ -733,12 +670,6 @@
 
 
 
-
-      <!-- ==========================================
-           VISTA: ACTIVIDADES CLIENTE
-           Muestra a la familia las actividades planeadas
-           para sus peques.
-      ========================================== -->
       <div id="vista-actividades-cliente" class="vista">
         <div class="card" style="margin-bottom: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -771,9 +702,6 @@
 
 
 
-
-
-      <!-- VISTA: COMUNIDAD (PRÓXIMAMENTE) -->
       <div id="vista-comunidad" class="vista">
         <div class="card">
           <h3>Comunidad</h3>
@@ -784,11 +712,6 @@
 
 
 
-
-      <!-- ==========================================
-           VISTA: SUPERVISIÓN
-           Panel para revisar planeaciones de las niñeras.
-      ========================================== -->
       <div id="vista-supervision" class="vista">
         <!-- CARD SEMANA ACTUAL -->
         <div class="supervision-card">
@@ -818,12 +741,6 @@
 
 
 
-
-      <!-- ==========================================
-           VISTA: DISPONIBILIDAD
-           Permite a las niñeras marcar sus horarios libres
-           (Matutino/Vespertino) semana a semana.
-      ========================================== -->
       <div id="vista-disponibilidad" class="vista">
         <!-- PANEL (solo niñeras) -->
         <div class="card" id="panel">
@@ -904,12 +821,6 @@
 
 
 
-
-      <!-- ==========================================
-           SECCIÓN DE ADMIN
-           Tarjetas visibles solo para el rol de Admin.
-           Incluye sugeridor, agenda global, gestión de puntos.
-      ========================================== -->
       <!-- ADMIN: Sugeridor -->
       <div id="adminCard" class="card" style="display:none;">
         <h3>Administrador – Sugerir niñeras</h3>
@@ -1001,12 +912,6 @@
 
 
 
-
-
-      <!-- ==========================================
-           BARRA DE NAVEGACIÓN INFERIOR
-           Menú principal para navegar entre vistas.
-      ========================================== -->
       <nav class="bottom-nav">
         <button id="nav-perfil" onclick="irVista('perfil')">
           👤<span>Perfil</span>
@@ -1027,12 +932,6 @@
 
 
 
-
-
-  <!-- ==========================================
-       MODALES
-       Ventanas emergentes para detalles y formularios.
-       ========================================== -->
   <!-- MODAL Detalle -->
   <div id="modalBackdrop" class="modal-backdrop" style="display:none;">
     <div class="modal-card service-premium-modal">
@@ -1122,10 +1021,6 @@
 
 
 
-
-  <!-- MODAL Planeación Neuronanny
-       Formulario para crear/editar planeaciones pedagógicas.
-  -->
   <!-- MODAL Planeación Neuronanny -->
   <div id="planeacionBackdrop" class="modal-backdrop" style="display:none;">
     <div class="modal-card modal-planeacion">
