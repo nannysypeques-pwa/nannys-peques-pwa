@@ -154,6 +154,10 @@ function doPost(e) {
                 _enforceRole(email, 'ninera');
                 result = reenviarPlaneacionCorregida(payload, email);
                 break;
+            case 'obtenerResumenPlaneacionesNinera':
+                _enforceRole(email, 'ninera');
+                result = obtenerResumenPlaneacionesNinera(email);
+                break;
 
             // --- SUPERVISIÓN ---
             case 'guardarObservacionesSupervision':
@@ -1523,7 +1527,7 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-        const verServicio = colIdx['ver'] != null ? _esVerdadero(row[colIdx['ver']]) : false;
+        const verServicio = colIdx['ver'] != null ? _esVerdadero(row[colIdx['ver']]) : true;
 
 
 
@@ -4178,19 +4182,26 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
     const dataServ = shServicios.getDataRange().getValues();
     const headersS = dataServ.shift();
 
-    const idxCliente = headersS.indexOf('cliente');
-    const idxNinera = headersS.indexOf('nombre de niñera');
-    const idxTipo = headersS.indexOf('Tipo de servicio');
-    const idxFecha = headersS.indexOf('fecha');
+    const headersSNorm = headersS.map(h => _norm(h));
+    const idxCliente = headersSNorm.indexOf(_norm('cliente'));
+    const idxNinera = headersSNorm.indexOf(_norm('nombre de niñera'));
+    const idxTipo = headersSNorm.indexOf(_norm('Tipo de servicio'));
+    const idxFecha = headersSNorm.indexOf(_norm('fecha'));
 
     // 3. Leer planeaciones
     const shPlan = _hoja('Planeaciones_Neuronanny');
     const dataPlan = shPlan.getDataRange().getValues();
     const headersP = dataPlan.shift();
 
-    const idxPCliente = headersP.indexOf('cliente');
-    const idxPFecha = headersP.indexOf('fecha');
-    const idxPNinera = headersP.indexOf('nombre_ninera');
+    const headersPNorm = headersP.map(h => _norm(h));
+    const idxPCliente = headersPNorm.indexOf(_norm('cliente'));
+    const idxPFecha = headersPNorm.indexOf(_norm('fecha'));
+    const idxPNinera = headersPNorm.indexOf(_norm('nombre_ninera'));
+    if (idxPNinera === -1) {
+        // Fallback por si la columna se llama diferente
+        const idxAlt = headersPNorm.indexOf(_norm('nombre de ninera'));
+        if (idxAlt !== -1) idxPNinera = idxAlt;
+    }
 
     // 4. Agrupar servicios por cliente
     const clientes = {};
