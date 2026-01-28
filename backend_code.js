@@ -486,7 +486,7 @@ function _mapaColumnasPorFecha_(sh) {
 
         // Si la celda tiene fecha, la guardamos como fecha activa
         if (val instanceof Date) {
-            fechaActualISO = Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+            fechaActualISO = _toISODate(val);
             if (!mapa[fechaActualISO]) mapa[fechaActualISO] = {};
         }
 
@@ -1527,7 +1527,8 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-        const verServicio = colIdx['ver'] != null ? _esVerdadero(row[colIdx['ver']]) : true;
+        const cellVer = colIdx['ver'] != null ? String(row[colIdx['ver']] || '').trim() : '';
+        const verServicio = (colIdx['ver'] == null || cellVer === '') ? true : _esVerdadero(cellVer);
 
 
 
@@ -4196,7 +4197,7 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
     const headersPNorm = headersP.map(h => _norm(h));
     const idxPCliente = headersPNorm.indexOf(_norm('cliente'));
     const idxPFecha = headersPNorm.indexOf(_norm('fecha'));
-    const idxPNinera = headersPNorm.indexOf(_norm('nombre_ninera'));
+    let idxPNinera = headersPNorm.indexOf(_norm('nombre_ninera'));
     if (idxPNinera === -1) {
         // Fallback por si la columna se llama diferente
         const idxAlt = headersPNorm.indexOf(_norm('nombre de ninera'));
@@ -4207,15 +4208,18 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
     const clientes = {};
 
     dataServ.forEach(r => {
+        const tNorm = _norm(r[idxTipo]);
         if (
-            r[idxTipo] === 'neuronanny' &&
-            String(r[idxNinera]).trim() === String(nombreNinera).trim()
+            ['neuronanny', 'nanny educativa', 'miss nanny'].includes(tNorm) &&
+            _norm(r[idxNinera]) === _norm(nombreNinera)
         ) {
             const cliente = r[idxCliente];
-            const fecha = r[idxFecha];
+            const fecha = _toISODate(r[idxFecha]);
 
-            if (!clientes[cliente]) clientes[cliente] = [];
-            clientes[cliente].push(fecha);
+            if (!clientes[cliente]) {
+                clientes[cliente] = { fechas: [], tipo: r[idxTipo] };
+            }
+            clientes[cliente].fechas.push(fecha);
         }
     });
 
@@ -4223,22 +4227,26 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
     const resultado = [];
 
     Object.keys(clientes).forEach(cliente => {
-        const fechas = clientes[cliente];
+        const info = clientes[cliente];
+        const fechas = info.fechas;
 
         let completas = true;
 
         fechas.forEach(f => {
             const existe = dataPlan.some(p =>
-                p[idxPCliente] === cliente &&
-                p[idxPFecha] === f &&
-                p[idxPNinera] === nombreNinera
+                String(p[idxPCliente] || '').trim() === String(cliente || '').trim() &&
+                _toISODate(p[idxPFecha]) === _toISODate(f) &&
+                String(p[idxPNinera] || '').trim() === String(nombreNinera || '').trim()
             );
             if (!existe) completas = false;
         });
 
         resultado.push({
             cliente,
-            tienePlaneacionesCompletas: completas
+            ninera: nombreNinera,
+            tipo_servicio: info.tipo,
+            tienePlaneacionesCompletas: completas,
+            tienePlaneacion: completas // Frontend usa ambos indistintamente
         });
     });
 
@@ -5206,92 +5214,4 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     return null;
 }
 
-function guardarPlaneacionNeuronanny(p, email) {
-    const sh = _getPlaneacionesSheet();
 
-    const nuevo = {
-        'Fecha': _toISODate(p.fecha),
-        'Cliente': p.cliente,
-        'Nombre Ninera': p.nombre_ninera,
-        'Edad Nino': p.edad_nino || '',
-        'Ciudad': p.ciudad || '',
-        'Area Desarrollo': p.area_desarrollo,
-        'Objetivo': p.objetivo,
-        'Descripcion': p.descripcion,
-        'Materiales': p.materiales,
-        'Imagen': p.imagen,
-        'Estado Revision': 'pendiente',
-        'Creado': _ahoraISO(),
-        'Actualizado': _ahoraISO()
-    };
-
-    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => String(h).trim());
-    // Mapeo seguro
-    const row = headers.map(h => nuevo[h] || '');
-
-    sh.appendRow(row);
-    return { ok: true };
-}
-
-function editarPlaneacionNeuronanny(p, email) {
-    if (!p.fila) throw new Error('Falta ID de fila (editar)');
-    const sh = _getPlaneacionesSheet();
-
-    const updates = {
-        'Area Desarrollo': p.area_desarrollo,
-        'Objetivo': p.objetivo,
-        'Descripcion': p.descripcion,
-        'Materiales': p.materiales,
-        'Imagen': p.imagen,
-        'Estado Revision': 'pendiente',
-        'Actualizado': _ahoraISO(),
-        'Fecha Correccion': ''
-    };
-
-    _escribirObjeto(sh, p.fila, updates);
-    return { ok: true };
-}
-
-function reenviarPlaneacionCorregida(p, email) {
-    // Si la niñera reenvía, es basicamente editar pero marcando que ya atendió la corrección
-    if (!p.fila) {
-        // Fallback: si no mandan fila, intentar guardar como nuevo o buscar
-        return guardarPlaneacionNeuronanny(p, email);
-    }
-    const sh = _getPlaneacionesSheet();
-
-    const updates = {
-        'Area Desarrollo': p.area_desarrollo || '',
-        'Objetivo': p.objetivo || '',
-        'Descripcion': p.descripcion || '',
-        'Materiales': p.materiales || '',
-        'Imagen': p.imagen || '',
-        'Estado Revision': 'pendiente',
-        'Actualizado': _ahoraISO()
-    };
-
-    _escribirObjeto(sh, p.fila, updates);
-    return { ok: true };
-}
-
-function guardarObservacionesSupervision(p, email) {
-    if (!p.fila) throw new Error('Falta fila para guardar revisión');
-    const sh = _getPlaneacionesSheet();
-
-    const updates = {
-        'Observaciones Supervision': p.observaciones,
-        'Actualizado': _ahoraISO()
-    };
-
-    if (p.tipo === 'revisada') {
-        updates['Estado Revision'] = 'revisada';
-        updates['Fecha Revision'] = _ahoraISO();
-        // Limpiar fecha correccion para evitar confusion visual? No necesariamente.
-    } else if (p.tipo === 'correccion') {
-        updates['Estado Revision'] = 'correccion';
-        updates['Fecha Correccion'] = _ahoraISO();
-    }
-
-    _escribirObjeto(sh, p.fila, updates);
-    return { ok: true };
-}
