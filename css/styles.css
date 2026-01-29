@@ -1312,3 +1312,33 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     transform: translateY(-2px);
     background: #34A8B5;
 }
+
+
+/* =========================
+   ANIMACIONES DE ENTRADA CLIENTE
+   ========================= */
+.slide-up-fade {
+    opacity: 0;
+    /* Empieza invisible */
+    animation: slideUpFade 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.slide-up-fade.delay-1 {
+    animation-delay: 0.2s;
+}
+
+.slide-up-fade.delay-2 {
+    animation-delay: 0.4s;
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
