@@ -116,90 +116,58 @@
     /* Encima de todo */
 }
 
-/* Contenedor del logo para aplicar la máscara */
+/* Contenedor del logo */
 .preloader-logo-container {
-    width: 280px;
-    /* Más grande para la vista previa */
-    height: 280px;
-    position: relative;
-    /* La animación de MÁSCARA controla la aparición/desaparición */
-    mask-image: linear-gradient(45deg, transparent 40%, black 60%);
-    mask-size: 300% 300%;
-    animation: diagonalReveal 4s ease-in-out infinite;
-    /* Una sola vez por login, la controlo con JS remove class si quiero loop */
-    -webkit-mask-image: linear-gradient(45deg, transparent 40%, black 60%);
-    -webkit-mask-size: 300% 300%;
-    -webkit-animation: diagonalReveal 4s ease-in-out infinite;
+    width: 250px;
+    height: 250px;
     display: flex;
     justify-content: center;
     align-items: center;
+    position: relative;
+    /* Sin máscara, animación directa al logo */
 }
 
 .preloader-logo {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    /* Sin fondo blanco */
-    filter: drop-shadow(0 15px 30px rgba(232, 76, 154, 0.25));
+    /* Sombra base suave */
+    filter: drop-shadow(0 0 15px rgba(232, 76, 154, 0.3));
+    animation: breathingGlow 3s ease-in-out infinite;
 }
 
 .loader-spinner {
     position: absolute;
-    bottom: 10%;
-    width: 50px;
-    height: 50px;
-    border: 4px solid rgba(232, 76, 154, 0.15);
-    border-top: 4px solid var(--pink-main);
+    bottom: 12%;
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(232, 76, 154, 0.1);
+    border-top: 3px solid var(--pink-main);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     opacity: 0.8;
 }
 
 /* 
-   ANIMACIÓN DIAGONAL:
-   0%: Mask Position Bottom-Left (Visible) -> No, user wants disappear from BL to TR
-   
-   Wait, "mask-position" moves the gradient.
-   Gradient: transparent(0-40) -> black(60-100).
-   
-   Let's simulate the user request:
-   1. "Logo grande fijo en el centro" (Done via container)
-   2. "Empieza a desaparecer difuminadamente de la parte inferior izquierda ... hasta desaparecer ... parte superior izquierda"
-      --> This means the transparency "eats" the logo from BL to TR.
-      
-   3. "Pasar a la siguiente animación ... empieza a aparecer ... desde la parte inferior izquierda"
-   
-   Refining 'diagonalReveal' keyframes below:
+   ANIMACIÓN BREATHING GLOW (Respiración Luminosa)
+   Efecto de latido suave con resplandor
 */
-
-@keyframes diagonalReveal {
+@keyframes breathingGlow {
     0% {
-        /* Totalmente visible */
-        mask-position: 100% 100%;
-        -webkit-mask-position: 100% 100%;
-    }
-
-    45% {
-        /* Desaparece hacia arriba derecha (moviendo la máscara transparente hacia adentro) */
-        mask-position: 0% 0%;
-        -webkit-mask-position: 0% 0%;
+        transform: scale(1);
+        filter: drop-shadow(0 0 15px rgba(232, 76, 154, 0.3));
     }
 
     50% {
-        /* Mantener invisible un instante o reiniciar para aparecer */
-        mask-position: 0% 0%;
-        -webkit-mask-position: 0% 0%;
-    }
-
-    95% {
-        /* Aparece de nuevo desde abajo izq (moviendo la máscara negra hacia adentro) */
-        mask-position: 100% 100%;
-        -webkit-mask-position: 100% 100%;
+        transform: scale(1.08);
+        /* Crece un 8% */
+        filter: drop-shadow(0 0 30px rgba(232, 76, 154, 0.6));
+        /* Resplandor intenso */
     }
 
     100% {
-        mask-position: 100% 100%;
-        -webkit-mask-position: 100% 100%;
+        transform: scale(1);
+        filter: drop-shadow(0 0 15px rgba(232, 76, 154, 0.3));
     }
 }
 
