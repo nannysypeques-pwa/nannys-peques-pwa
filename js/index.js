@@ -180,24 +180,25 @@ async function login(rol) {
 
         localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
 
-        document.getElementById('auth').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
+        // -- LOGICA PRELOADER (Solo Clientes o General si se desea) --
+        if (rol === 'cliente') {
+            document.getElementById('auth').style.display = 'none';
+            const preloader = document.getElementById('login-preloader');
 
-        const headerAdmin = document.getElementById('header-admin');
-        if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
+            // 1. Mostrar App y cargar datos en background inmediatamente
+            mostrarAppPostLogin();
 
-        if (SESION.admin) {
-            document.querySelector('.bottom-nav').style.display = 'none';
-            mostrarVistaAdmin();
-        } else if (SESION.supervision) {
-            document.querySelector('.bottom-nav').style.display = 'none';
-            irVista('supervision'); //Usar irVista para consistencia
-        } else if (SESION.cliente) {
-            document.querySelector('.bottom-nav').style.display = 'flex';
-            irVista('servicios'); //Redirigirá a vista-cliente por la lógica de irVista
+            if (preloader) {
+                preloader.style.display = 'flex';
+                // 2. Ocultar preloader después de la animación
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                }, 3100);
+            }
         } else {
-            document.querySelector('.bottom-nav').style.display = 'flex';
-            mostrarVistaNinera();
+            // Staff entra directo
+            document.getElementById('auth').style.display = 'none';
+            mostrarAppPostLogin();
         }
 
         msg.textContent = '';
@@ -205,6 +206,33 @@ async function login(rol) {
     } catch (err) {
         msg.innerHTML = `<span class="err">${err.message}</span>`;
     }
+}
+
+function mostrarAppPostLogin() {
+    document.getElementById('app').style.display = 'block';
+
+    const headerAdmin = document.getElementById('header-admin');
+    if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
+
+    if (SESION.admin) {
+        document.querySelector('.bottom-nav').style.display = 'none';
+        mostrarVistaAdmin();
+    } else if (SESION.supervision) {
+        document.querySelector('.bottom-nav').style.display = 'none';
+        irVista('supervision'); //Usar irVista para consistencia
+    } else if (SESION.cliente) {
+        document.querySelector('.bottom-nav').style.display = 'flex';
+        irVista('servicios');
+    } else {
+        document.querySelector('.bottom-nav').style.display = 'flex';
+        mostrarVistaNinera();
+    }
+
+    msg.textContent = '';
+
+} catch (err) {
+    msg.innerHTML = `<span class="err">${err.message}</span>`;
+}
 }
 window.login = login;
 
