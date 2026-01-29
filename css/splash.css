@@ -29,7 +29,7 @@
     padding: 15px;
     box-shadow: 0 10px 30px rgba(232, 76, 154, 0.2);
     margin-bottom: 20px;
-    animation: pulseLogo 4s infinite ease-in-out;
+    animation: pulseLogo 5s infinite ease-in-out;
 }
 
 .splash-title {
