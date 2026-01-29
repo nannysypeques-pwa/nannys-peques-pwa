@@ -215,7 +215,9 @@ async function login(rol) {
                 setTimeout(() => { preloader.style.display = 'none'; preloader.style.opacity = '1'; }, 500);
             }
 
-            document.getElementById('app').style.display = 'block';
+            const appDiv = document.getElementById('app');
+            appDiv.style.display = 'block';
+            appDiv.style.animation = 'fadeIn 0.6s ease-out';
 
             const headerAdmin = document.getElementById('header-admin');
             if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
