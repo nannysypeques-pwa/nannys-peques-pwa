@@ -11,27 +11,6 @@ let SESION = {
     token: null
 };
 
-// --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
-let logoutTimer;
-function reiniciarTemporizadorInactividad() {
-    clearTimeout(logoutTimer);
-    // 30 minutos (1,800,000 ms)
-    logoutTimer = setTimeout(() => {
-        if (SESION && SESION.token) {
-            console.warn('Cierre de sesión automático por inactividad.');
-            cerrarSesion();
-            alert('Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.');
-        }
-    }, 1800000);
-}
-
-// Inyectar listeners globales para detectar actividad
-window.onload = reiniciarTemporizadorInactividad;
-document.onmousemove = reiniciarTemporizadorInactividad;
-document.onkeypress = reiniciarTemporizadorInactividad;
-document.onclick = reiniciarTemporizadorInactividad;
-
-
 //Inicializar sesión desde localStorage si existe
 try {
     const s = localStorage.getItem('nyp_sesion');
@@ -616,14 +595,7 @@ function abrirModalServicio(s) {
     const u = document.getElementById('mUbicacion');
     u.textContent = '—';
     if (s.ubicacion_link) {
-        let safeLink = String(s.ubicacion_link).trim();
-        // Solo permitir http o https
-        if (/^https?:\/\//i.test(safeLink)) {
-            u.innerHTML = `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener">Abrir mapa</a>`;
-        } else {
-            // Si no es un link válido, mostrar texto simple escapado
-            u.textContent = s.ubicacion_link;
-        }
+        u.innerHTML = `<a href="${s.ubicacion_link}" target="_blank" rel="noopener">Abrir mapa</a>`;
     }
 
     document.getElementById('mEdad').textContent = s.edad_nino || '—';

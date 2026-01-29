@@ -12,7 +12,7 @@ function _guardarImagenDrive(base64, nombreArchivo) {
     }
 
 
-    // 2. Buscar o crear carpeta (Mantenemos la carpeta PRIVADA para mayor seguridad)
+    // 2. Buscar o crear carpeta
     var folderName = "NannysPeques_Imagenes_Planeacion";
     var folder;
 
@@ -29,8 +29,8 @@ function _guardarImagenDrive(base64, nombreArchivo) {
     }
 
 
-    // Eliminamos folder.setSharing para que la carpeta sea RESTRINGIDA por defecto.
-    // Solo permitiremos el acceso individual a cada archivo creado abajo.
+    // Asegurar acceso público
+    folder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
 
     // 3. Procesar base64
