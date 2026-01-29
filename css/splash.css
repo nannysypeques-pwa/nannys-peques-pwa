@@ -6,7 +6,10 @@
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    /* Para móviles modernos */
     background: linear-gradient(135deg, #FFF0F5 0%, #E0F7FA 100%);
     display: flex;
     flex-direction: column;

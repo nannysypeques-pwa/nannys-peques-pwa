@@ -86,17 +86,29 @@
     </div>
   </div>
   <script>
-    window.addEventListener('load', () => {
+    // Función segura para quitar el Splash
+    function removeSplash() {
       setTimeout(() => {
         const splash = document.getElementById('splash-screen');
-        if (splash) {
+        if (splash && !splash.classList.contains('splash-hidden')) {
           splash.classList.add('splash-hidden');
           setTimeout(() => {
             splash.style.display = 'none';
           }, 800);
         }
       }, 2500);
-    });
+    }
+
+    // Ejecutar cuando esté cargado o si ya cargó
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      removeSplash();
+    } else {
+      window.addEventListener('load', removeSplash);
+      window.addEventListener('DOMContentLoaded', removeSplash);
+    }
+
+    // Fallback de seguridad por si todo falla (4s)
+    setTimeout(removeSplash, 4000);
   </script>
 
   <!-- LOGIN PRELOADER (Oculto por defecto) -->
