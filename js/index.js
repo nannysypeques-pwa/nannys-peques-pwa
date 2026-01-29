@@ -2564,8 +2564,9 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
 
-    // Ocultar ambos por defecto
-    if (d) d.style.display = 'none';
+    // MOSTRAR inmediato para evitar el hueco de 2 segundos
+    // El usuario verá el saludo "Hola familia" al instante
+    if (d && !forceOnboarding) d.style.display = 'block';
     if (o) o.style.display = 'none';
 
     let perf = CACHE_CLIENTE.profile;
