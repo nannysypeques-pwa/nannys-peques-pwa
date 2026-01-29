@@ -22,14 +22,14 @@
 }
 
 .splash-logo {
-    width: 120px;
-    height: 120px;
+    width: 180px;
+    height: 180px;
     background: white;
     border-radius: 30px;
     padding: 15px;
     box-shadow: 0 10px 30px rgba(232, 76, 154, 0.2);
     margin-bottom: 20px;
-    animation: pulseLogo 2s infinite ease-in-out;
+    animation: pulseLogo 4s infinite ease-in-out;
 }
 
 .splash-title {
