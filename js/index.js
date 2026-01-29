@@ -197,15 +197,15 @@ async function login(rol) {
                     actualizarPlaneacionesSupervision();
                 } else if (SESION.cliente) {
                     await cargarServiciosCliente(true); // Forzar carga fresca
-                    await cargarActividadesCliente(true);
-                    await cargarPerfil(); // Pre-cargar perfil
+                    cargarActividadesCliente(true);
+                    cargarPerfil(); // Pre-cargar perfil
                 } else {
                     // Niñera
                     await cargar(true); // Disponibilidad
-                    await cargarServicios(true); // Servicios
-                    await cargarResumenPlaneacionesNinera(true);
-                    await cargarPuntajeNinera(); // Puntos
-                    await cargarPerfil(); // Pre-cargar perfil
+                    cargarServicios(true); // Servicios
+                    cargarResumenPlaneacionesNinera(true);
+                    cargarPuntajeNinera(); // Puntos
+                    cargarPerfil(); // Pre-cargar perfil
                 }
             } catch (e) { console.error('Error pre-carga background', e); }
             resolve();
