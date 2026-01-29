@@ -580,7 +580,8 @@ function _validarToken(token, currentFingerprint) {
  *  y recuperación de contraseñas.
  *  ========================= */
 function _estaAutorizado(email) {
-    email = String(email || '').trim().toLowerCase();
+    if (!email) return false;
+    email = String(email).trim().toLowerCase();
 
     // 1. Revisar si Está en hoja Usuarios y activo
     const shU = _hoja(NOMBRE_HOJA_USUARIOS);
@@ -651,7 +652,8 @@ function esSupervision(email) {
 
 
 
-    return rol === 'supervision';
+    // Aceptar variaciones comunes: supervision, supervisora, supervisor
+    return ['supervisión', 'supervision', 'supervisor'].includes(rol);
 }
 
 
@@ -1473,6 +1475,7 @@ function _expandirServiciosSemanales_(sh) {
     colIdx['cuota nanny'] = findCol(['cuota nanny', 'cuota', 'cuota niñera']);
     colIdx['edad del nino'] = findCol(['edad del nino', 'edad del peque', 'edad']);
     colIdx['notas'] = findCol(['notas', 'observaciones', 'comentarios']);
+    colIdx['ciudad'] = findCol(['ciudad', 'sede', 'zona']);
 
 
 
@@ -1598,7 +1601,8 @@ function _expandirServiciosSemanales_(sh) {
                 inicio_real: inicioReal,
                 fin_real: finReal,
                 ver: verServicio,
-                tipo_servicio: tipoServicio
+                tipo_servicio: tipoServicio,
+                ciudad: colIdx['ciudad'] != null ? String(row[colIdx['ciudad']] || '').trim() : 'Pendiente'
             });
         });
     }
@@ -4901,13 +4905,29 @@ function _enforceRole(email, requiredRole) {
     if (isAdmin) return; // Si es admin, tiene acceso a todo
 
     if (requiredRole === 'supervision' && !esSupervision(email)) {
-        throw new Error('Acceso denegado: Rol supervisión requerido.');
+        const currentRol = _getCurrentRole(email);
+        throw new Error(`Acceso denegado: Rol supervisión requerido. (Usuario: ${email}, Rol encontrado: ${currentRol})`);
     }
     if (requiredRole === 'ninera' && !_estaAutorizado(email)) {
         throw new Error('Acceso denegado: No autorizado.');
     }
     if (requiredRole === 'cliente' && !esCliente(email)) {
         throw new Error('Acceso denegado: Rol cliente requerido.');
+    }
+}
+
+/**
+ * Obtiene el rol actual del usuario para depuración en errores de acceso.
+ */
+function _getCurrentRole(email) {
+    try {
+        const sh = _hoja(NOMBRE_HOJA_USUARIOS);
+        const fila = _buscarFilaPorValor(sh, 'email', email);
+        if (fila === -1) return 'No encontrado en Usuarios';
+        const idxRol = _idxCol(sh, 'rol');
+        return String(sh.getRange(fila, idxRol).getValue() || 'Vacío');
+    } catch (e) {
+        return 'Error leyendo rol';
     }
 }
 
@@ -5032,22 +5052,7 @@ function _enviarAlertaSeguridad(asunto, cuerpo) {
  *  LÓGICA RESTAURADA DE PLANEACIONES (SUPERVISIÓN)
  *  ========================= */
 
-const NOMBRE_HOJA_PLANEACIONES = 'Planeaciones';
-
-function _getPlaneacionesSheet() {
-    let sh = _ss().getSheetByName(NOMBRE_HOJA_PLANEACIONES);
-    if (!sh) {
-        // Si no existe, crearla con headers por defecto
-        sh = _ss().insertSheet(NOMBRE_HOJA_PLANEACIONES);
-        sh.appendRow([
-            'Fecha', 'Cliente', 'Nombre Ninera', 'Edad Nino', 'Ciudad',
-            'Area Desarrollo', 'Objetivo', 'Descripcion', 'Materiales', 'Imagen',
-            'Observaciones Supervision', 'Estado Revision', 'Fecha Revision', 'Fecha Correccion',
-            'Creado', 'Actualizado', 'Tipo Servicio', 'Fila'
-        ]);
-    }
-    return sh;
-}
+const NOMBRE_HOJA_PLANEACIONES = 'Planeaciones_Neuronanny';
 
 function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
     if (!fechaBase) return esSupervision(email) ? {} : [];
@@ -5069,22 +5074,21 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
     const desdeISO = Utilities.formatDate(lunes, ZONA_HORARIA, 'yyyy-MM-dd');
     const hastaISO = Utilities.formatDate(domingo, ZONA_HORARIA, 'yyyy-MM-dd');
 
-    // 2. Obtener Servicios en ese rango
-    const shS = _hoja(NOMBRE_HOJA_SERVICIOS);
-    const serviciosRaw = _leerComoObjetos(shS);
+    // 2. Obtener Servicios en ese rango (de AMBAS hojas)
+    const serviciosRaw = _leerServiciosDesdeHojas_(['Servicios', 'Servicios_Siguiente_semana']);
 
     const servicios = serviciosRaw.filter(s => {
-        const f = _toISODate(s.Fecha || s.fecha);
+        const f = s.fecha; // Ya viene en ISO y lowercase desde _leerServiciosDesdeHojas_
         if (!f) return false;
         if (f < desdeISO || f > hastaISO) return false;
 
-        let v = s.ver;
+        const v = s.ver;
         if (v === undefined || v === '') return true;
         return _esVerdadero(v);
     });
 
     // 3. Obtener Planeaciones existentes
-    const shP = _getPlaneacionesSheet();
+    const shP = _hoja(NOMBRE_HOJA_PLANEACIONES);
     const planeacionesRaw = _leerComoObjetos(shP);
 
     const mapaPlaneaciones = {};
@@ -5118,7 +5122,11 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
         const fecha = _toISODate(s.Fecha || s.fecha);
         const ciudad = s.Ciudad || s.ciudad || 'Pendiente';
 
-        if (!esSuper && _norm(ninera) !== _norm(miNombre)) return;
+        if (!esSuper) {
+            const n1 = _norm(ninera);
+            const n2 = _norm(miNombre);
+            if (!n1.includes(n2) && !n2.includes(n1)) return;
+        }
 
         const key = `${fecha}|${_norm(cliente)}|${_norm(ninera)}`;
         const plan = mapaPlaneaciones[key];
@@ -5189,14 +5197,14 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
 
 function obtenerPlaneacionNeuronanny(payload, email) {
     if (payload.fila) {
-        const sh = _getPlaneacionesSheet();
+        const sh = _hoja(NOMBRE_HOJA_PLANEACIONES);
         const data = _leerComoObjetos(sh);
         const p = data[payload.fila - 2];
         if (p) { p.fila = payload.fila; return p; }
     }
 
     // Por claves
-    const sh = _getPlaneacionesSheet();
+    const sh = _hoja(NOMBRE_HOJA_PLANEACIONES);
     const objs = _leerComoObjetos(sh);
     const targetFecha = _toISODate(payload.fecha);
 
