@@ -114,6 +114,7 @@
     align-items: center;
     z-index: 10001;
     /* Encima de todo */
+    transition: opacity 1s ease-out;
 }
 
 /* Contenedor del logo */

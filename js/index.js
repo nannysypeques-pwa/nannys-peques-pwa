@@ -208,16 +208,25 @@ async function login(rol) {
             resolve();
         });
 
-        // Esperar 6 segundos exactos de animación
+        // Esperar 6 segundos exactos de animación preloader
         setTimeout(async () => {
             if (preloader) {
+                // 1. Iniciar desvanecimiento del preloader (dura 1s según CSS)
                 preloader.style.opacity = '0';
-                setTimeout(() => { preloader.style.display = 'none'; preloader.style.opacity = '1'; }, 500);
+
+                // 2. Esperar a que se desvanezca casi por completo antes de quitarlo del DOM
+                setTimeout(() => {
+                    preloader.style.display = 'none';
+                    preloader.style.opacity = '1'; // Reset para futuro
+                }, 1000);
             }
 
+            // 3. Mostrar la APP con animación suave simultánea
+            // Hacemos que la app entre suavemente MIENTRAS el preloader se va
             const appDiv = document.getElementById('app');
             appDiv.style.display = 'block';
-            appDiv.style.animation = 'fadeIn 0.6s ease-out';
+            // Animación más lenta y suave (1.2s)
+            appDiv.style.animation = 'fadeIn 1.2s ease-out';
 
             const headerAdmin = document.getElementById('header-admin');
             if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
