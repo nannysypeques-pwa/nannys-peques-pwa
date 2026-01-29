@@ -1320,7 +1320,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 .slide-up-fade {
     opacity: 0;
     /* Empieza invisible */
-    animation: slideUpFade 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .slide-up-fade.delay-1 {

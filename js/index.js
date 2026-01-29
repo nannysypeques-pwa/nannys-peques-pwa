@@ -225,8 +225,7 @@ async function login(rol) {
             // Hacemos que la app entre suavemente MIENTRAS el preloader se va
             const appDiv = document.getElementById('app');
             appDiv.style.display = 'block';
-            // Animación más lenta y suave (1.2s)
-            appDiv.style.animation = 'fadeIn 1.2s ease-out';
+            appDiv.style.opacity = '1'; /* Asegurar visibilidad inmediata detrás del preloader */
 
             const headerAdmin = document.getElementById('header-admin');
             if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
