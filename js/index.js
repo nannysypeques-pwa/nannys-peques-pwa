@@ -180,59 +180,67 @@ async function login(rol) {
 
         localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
 
-        // -- LOGICA PRELOADER (Solo Clientes o General si se desea) --
-        if (rol === 'cliente') {
-            document.getElementById('auth').style.display = 'none';
-            const preloader = document.getElementById('login-preloader');
+        // --- INICIO CAMBIO PRELOADER ---
+        // En vez de mostrar app directo, mostramos preloader
+        document.getElementById('auth').style.display = 'none';
+        const preloader = document.getElementById('login-preloader');
+        if (preloader) preloader.style.display = 'flex';
 
-            // 1. Mostrar App y cargar datos en background inmediatamente
-            mostrarAppPostLogin();
+        msg.textContent = '';
 
+        // Carga de datos en segundo plano según rol
+        const promesaCarga = new Promise(async (resolve) => {
+            try {
+                if (SESION.admin) {
+                    // Admin no tiene carga pesada inicial automática por ahora, pero preparamos
+                } else if (SESION.supervision) {
+                    actualizarPlaneacionesSupervision();
+                } else if (SESION.cliente) {
+                    await cargarServiciosCliente(true); // Forzar carga fresca
+                    cargarActividadesCliente(true);
+                } else {
+                    // Niñera
+                    await cargar(true); // Disponibilidad
+                    cargarServicios(true); // Servicios
+                    cargarResumenPlaneacionesNinera(true);
+                }
+            } catch (e) { console.error('Error pre-carga background', e); }
+            resolve();
+        });
+
+        // Esperar 4 segundos exactos de animación
+        setTimeout(async () => {
             if (preloader) {
-                preloader.style.display = 'flex';
-                // 2. Ocultar preloader después de la animación
-                setTimeout(() => {
-                    preloader.style.display = 'none';
-                }, 3100);
+                preloader.style.opacity = '0';
+                setTimeout(() => { preloader.style.display = 'none'; preloader.style.opacity = '1'; }, 500);
             }
-        } else {
-            // Staff entra directo
-            document.getElementById('auth').style.display = 'none';
-            mostrarAppPostLogin();
-        }
+
+            document.getElementById('app').style.display = 'block';
+
+            const headerAdmin = document.getElementById('header-admin');
+            if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
+
+            if (SESION.admin) {
+                document.querySelector('.bottom-nav').style.display = 'none';
+                mostrarVistaAdmin();
+            } else if (SESION.supervision) {
+                document.querySelector('.bottom-nav').style.display = 'none';
+                irVista('supervision');
+            } else if (SESION.cliente) {
+                document.querySelector('.bottom-nav').style.display = 'flex';
+                irVista('servicios');
+            } else {
+                document.querySelector('.bottom-nav').style.display = 'flex';
+                mostrarVistaNinera();
+            }
+        }, 4000);
+        // --- FIN CAMBIO PRELOADER ---
 
         msg.textContent = '';
 
     } catch (err) {
         msg.innerHTML = `<span class="err">${err.message}</span>`;
     }
-}
-
-function mostrarAppPostLogin() {
-    document.getElementById('app').style.display = 'block';
-
-    const headerAdmin = document.getElementById('header-admin');
-    if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
-
-    if (SESION.admin) {
-        document.querySelector('.bottom-nav').style.display = 'none';
-        mostrarVistaAdmin();
-    } else if (SESION.supervision) {
-        document.querySelector('.bottom-nav').style.display = 'none';
-        irVista('supervision'); //Usar irVista para consistencia
-    } else if (SESION.cliente) {
-        document.querySelector('.bottom-nav').style.display = 'flex';
-        irVista('servicios');
-    } else {
-        document.querySelector('.bottom-nav').style.display = 'flex';
-        mostrarVistaNinera();
-    }
-
-    msg.textContent = '';
-
-} catch (err) {
-    msg.innerHTML = `<span class="err">${err.message}</span>`;
-}
 }
 window.login = login;
 
