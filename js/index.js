@@ -2729,6 +2729,7 @@ async function cargarPerfil() {
     try {
         const perf = await api('getProfile', { email: SESION.email });
         if (perf) {
+            CACHE_CLIENTE.profile = perf; // Guardar en caché para evitar re-carga en el dashboard
             //Header
             if (document.getElementById('perfil_nombre_header')) {
                 document.getElementById('perfil_nombre_header').textContent = perf.nombre || 'Mi perfil';
