@@ -642,10 +642,15 @@ function esSupervision(email) {
     const idxRol = _idxCol(sh, 'rol');
     if (idxRol <= 0) return false;
 
-    const rol = _norm(sh.getRange(fila, idxRol).getValue() || '');
+    const rol = String(sh.getRange(fila, idxRol).getValue() || '')
+        .normalize('NFD')                 // elimina acentos
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
 
-    // El usuario indicó que el rol exacto es "supervisión"
-    // La función _norm ya limpia acentos y espacios
+
+
+
     return rol === 'supervision';
 }
 
