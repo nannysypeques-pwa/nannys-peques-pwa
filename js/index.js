@@ -194,18 +194,19 @@ async function login(rol) {
                 if (SESION.admin) {
                     // Admin no tiene carga pesada inicial automática por ahora, pero preparamos
                 } else if (SESION.supervision) {
+                    cargarPerfil();
                     actualizarPlaneacionesSupervision();
                 } else if (SESION.cliente) {
-                    await cargarServiciosCliente(true); // Forzar carga fresca
+                    cargarPerfil();
+                    cargarServiciosCliente(true);
                     cargarActividadesCliente(true);
-                    cargarPerfil(); // Pre-cargar perfil
                 } else {
                     // Niñera
-                    await cargar(true); // Disponibilidad
+                    cargarPerfil();
+                    cargar(true); // Disponibilidad
                     cargarServicios(true); // Servicios
                     cargarResumenPlaneacionesNinera(true);
                     cargarPuntajeNinera(); // Puntos
-                    cargarPerfil(); // Pre-cargar perfil
                 }
             } catch (e) { console.error('Error pre-carga background', e); }
             resolve();
