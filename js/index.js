@@ -53,6 +53,7 @@ let MODO_SOLO_LECTURA = false;
 let PLANEACION_SESSION_ID = 0;
 const RESUMEN_PLANEACIONES_SUP = {};
 let CACHE_CLIENTE = { profile: null, servicios: null, actividades: null }; // Caché para mejorar UX del cliente
+let CACHE_NINERA = { servicios: null, planeaciones: null, disponibilidad: null }; // Caché para mejorar UX del panel de niñera
 let ADMIN_WEEK_START_ISO = null;
 
 const TIPOS_CON_PLANEACION = [
@@ -288,16 +289,33 @@ function marcarSemana(targetId, val) {
 
 /* --- DATA FETCHING (Refactored) --- */
 
-async function cargar() {
+async function cargar(force = false) {
     const msg = document.getElementById('msgApp');
-    msg.textContent = 'Cargando semana...';
     const fechaISO = document.getElementById('fecha').value || null;
+
+    // Si no se fuerza recarga y hay caché disponible para esta fecha, usarlo
+    if (!force && CACHE_NINERA.disponibilidad && CACHE_NINERA.disponibilidad.fechaISO === fechaISO) {
+        SEM1.baseISO = fechaISO;
+        SEM1.dias = CACHE_NINERA.disponibilidad.dias;
+        renderTablaTurnos('tabla', SEM1);
+        renderResumen('resumen', SEM1.baseISO);
+        return;
+    }
+
+    msg.textContent = 'Cargando semana...';
     SEM1.baseISO = fechaISO;
 
     try {
         const res = await api('obtenerDisponibilidad', { email: SESION.email, fechaISO });
         msg.textContent = '';
         SEM1.dias = res.dias;
+
+        // Guardar en caché
+        CACHE_NINERA.disponibilidad = {
+            fechaISO: fechaISO,
+            dias: res.dias
+        };
+
         renderTablaTurnos('tabla', SEM1);
         renderResumen('resumen', SEM1.baseISO);
     } catch (err) {
@@ -357,6 +375,9 @@ async function guardar() {
             renderResumen('resumen2', SEM2.baseISO);
         }
 
+        // Limpiar caché de disponibilidad para forzar recarga la próxima vez
+        CACHE_NINERA.disponibilidad = null;
+
         msg.innerHTML = `<span class="ok">${msgText}</span>`;
         renderResumen('resumen', SEM1.baseISO);
 
@@ -403,20 +424,36 @@ async function refreshServicios() {
     btn.textContent = 'Actualizando...';
     msg.textContent = '';
 
+    // Limpiar caché para forzar recarga
+    CACHE_NINERA.servicios = null;
+    CACHE_NINERA.planeaciones = null;
+
     try {
+        // Calcular fecha de inicio: Lunes de la semana actual
+        const hoy = new Date();
+        const diaSemana = hoy.getDay(); // 0=Domingo, 1=Lunes...
+        const diasDesdeLunes = (diaSemana + 6) % 7;
+        const lunes = new Date(hoy);
+        lunes.setDate(hoy.getDate() - diasDesdeLunes);
+        const fechaInicioISO = toISO(lunes);
+
         const lista = await api('getServiciosNinera', {
             email: SESION.email,
-            dias: 14
+            dias: 21,
+            fecha_inicio: fechaInicioISO
         });
 
         CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
+
+        // Guardar en caché
+        CACHE_NINERA.servicios = CAL_SERVICIOS;
 
         if (!SEMANA_CALENDARIO_BASE) {
             SEMANA_CALENDARIO_BASE = new Date();
         }
 
         renderCalendario2Semanas();
-        cargarResumenPlaneacionesNinera();
+        cargarResumenPlaneacionesNinera(true); // Forzar recarga de planeaciones
 
         btn.textContent = '🔄 Actualizar';
         msg.textContent = 'Actualizado';
@@ -436,13 +473,14 @@ function actualizarPlaneaciones() {
     //🧹 limpiar cache y sesiones
     CACHE_PLANEACIONES = {};
     PLANEACION_SESSION_ID++;
+    CACHE_NINERA.planeaciones = null; // Limpiar caché de planeaciones de niñera
 
     const c1 = document.getElementById('listaPlaneacionesNinera');
     const c2 = document.getElementById('listaPlaneacionesNineraSiguiente');
     if (c1) c1.innerHTML = 'Actualizando planeaciones...';
     if (c2) c2.innerHTML = 'Actualizando planeaciones...';
 
-    cargarResumenPlaneacionesNinera();
+    cargarResumenPlaneacionesNinera(true); // Forzar recarga
 }
 
 function actualizarPlaneacionesSupervision() {
@@ -457,17 +495,34 @@ function actualizarPlaneacionesSupervision() {
     cargarResumenPlaneaciones();
 }
 
-async function cargarServicios() {
+async function cargarServicios(force = false) {
     const cont = document.getElementById('cal');
     const msg = document.getElementById('calMsg');
+
+    // Si no se fuerza recarga y hay caché disponible, usarlo
+    if (!force && CACHE_NINERA.servicios) {
+        CAL_SERVICIOS = CACHE_NINERA.servicios;
+        renderCalendario2Semanas();
+        cargarResumenPlaneacionesNinera(false); // También usar caché para planeaciones
+        return;
+    }
 
     cont.innerHTML = '';
     msg.textContent = 'Cargando servicios...';
 
     try {
+        // Calcular fecha de inicio: Lunes de la semana actual
+        const hoy = new Date();
+        const diaSemana = hoy.getDay(); // 0=Domingo, 1=Lunes...
+        const diasDesdeLunes = (diaSemana + 6) % 7;
+        const lunes = new Date(hoy);
+        lunes.setDate(hoy.getDate() - diasDesdeLunes);
+        const fechaInicioISO = toISO(lunes);
+
         const lista = await api('getServiciosNinera', {
             email: SESION.email,
-            dias: 14
+            dias: 21,
+            fecha_inicio: fechaInicioISO
         });
 
         CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
@@ -483,12 +538,15 @@ async function cargarServicios() {
             return { ...s, ver: ver === true };
         });
 
+        // Guardar en caché
+        CACHE_NINERA.servicios = CAL_SERVICIOS;
+
         if (!SEMANA_CALENDARIO_BASE) {
             SEMANA_CALENDARIO_BASE = new Date();
         }
 
         renderCalendario2Semanas();
-        cargarResumenPlaneacionesNinera();
+        cargarResumenPlaneacionesNinera(false); // Usar caché si está disponible
         setTimeout(() => { if (msg.textContent.startsWith('Servicios recibidos')) msg.textContent = ''; }, 1500);
 
     } catch (err) {
@@ -525,7 +583,17 @@ function stateClass(estado) {
 function renderCalendario2Semanas() {
     const cont = document.getElementById('cal'); cont.innerHTML = '';
     const hoy = new Date();
-    const start = startMonday(SEMANA_CALENDARIO_BASE || hoy);
+    // Cambio: empezar desde el LUNES de la semana actual
+    // Esto evita que los servicios desaparezcan conforme avanza la semana
+    const diaSemana = hoy.getDay(); // 0=Domingo, 1=Lunes...
+    // Si hoy es domingo (0), el lunes pasado fue hace 6 días.
+    // Si hoy es lunes (1), el lunes es hoy (0 días atrás).
+    // Fórmula para obtener días desde el lunes: (diaSemana + 6) % 7
+    const diasDesdeLunes = (diaSemana + 6) % 7;
+
+    const start = new Date(hoy);
+    start.setDate(hoy.getDate() - diasDesdeLunes);
+    start.setHours(0, 0, 0, 0);
 
     const map = {}; CAL_SERVICIOS.forEach(s => { if (!map[s.fecha]) map[s.fecha] = []; map[s.fecha].push(s); });
 
@@ -1430,13 +1498,13 @@ function irVista(nombre, skipLogic = false) {
         document.getElementById('panel').style.display = 'block';
         document.getElementById('tablaActualCard').style.display = 'block';
         document.getElementById('resumenCard').style.display = 'block';
-        cargar();
+        cargar(false); // Usar caché si está disponible
     }
     if (nombre === 'servicios') {
         ocultarTodo();
         document.getElementById('svcCard').style.display = 'block';
         document.getElementById('planeacionesNineraCard').style.display = 'block';
-        cargarServicios();
+        cargarServicios(false); // Usar caché si está disponible
     }
     if (nombre === 'supervision') {
         ocultarTodo();
@@ -1760,6 +1828,10 @@ async function guardarPlaneacionNeuronanny() {
         await api(fn, { ...payload, email: SESION.email });
         btn.textContent = 'Guardado ✓';
         setTimeout(() => restaurarBoton(btn), 800);
+
+        // Limpiar caché de planeaciones para reflejar cambios
+        CACHE_NINERA.planeaciones = null;
+
         //Wait, should we close modal or refresh list? Original code: just feedback.
     } catch (err) {
         restaurarBoton(btn);
@@ -1791,12 +1863,9 @@ function mostrarToast(msg) {
     setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-async function cargarResumenPlaneacionesNinera() {
+async function cargarResumenPlaneacionesNinera(force = false) {
     const contActual = document.getElementById('listaPlaneacionesNinera');
     const contSig = document.getElementById('listaPlaneacionesNineraSiguiente');
-
-    if (contActual) contActual.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
-    if (contSig) contSig.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
 
     const hoy = new Date();
     const lunesActual = startMonday(hoy);
@@ -1805,6 +1874,16 @@ async function cargarResumenPlaneacionesNinera() {
 
     const isoActual = toISO(lunesActual);
     const isoSig = toISO(lunesSig);
+
+    // Si no se fuerza recarga y hay caché disponible, usarlo
+    if (!force && CACHE_NINERA.planeaciones) {
+        renderResumenPlaneaciones(CACHE_NINERA.planeaciones.actual, contActual, 'ninera_actual');
+        renderResumenPlaneaciones(CACHE_NINERA.planeaciones.siguiente, contSig, 'ninera_siguiente');
+        return;
+    }
+
+    if (contActual) contActual.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+    if (contSig) contSig.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
 
     try {
         //Semana Actual
@@ -1823,6 +1902,12 @@ async function cargarResumenPlaneacionesNinera() {
             tipo: 'siguiente'
         });
         renderResumenPlaneaciones(dataSig, contSig, 'ninera_siguiente');
+
+        // Guardar en caché
+        CACHE_NINERA.planeaciones = {
+            actual: dataActual,
+            siguiente: dataSig
+        };
 
     } catch (err) {
         if (contActual) contActual.innerHTML = `<span class="err"> ${err.message}</span> `;
@@ -2861,7 +2946,18 @@ async function cargarServiciosCliente(force = false) {
     msg.textContent = 'Cargando servicios...';
 
     try {
-        const res = await api('getServiciosCliente', { email: SESION.email });
+        // Calcular fecha de inicio: Lunes de la semana actual
+        const hoy = new Date();
+        const diaSemana = hoy.getDay();
+        const diasDesdeLunes = (diaSemana + 6) % 7;
+        const lunes = new Date(hoy);
+        lunes.setDate(hoy.getDate() - diasDesdeLunes);
+        const fechaInicioISO = toISO(lunes);
+
+        const res = await api('getServiciosCliente', {
+            email: SESION.email,
+            fecha_inicio: fechaInicioISO
+        });
         CACHE_CLIENTE.servicios = Array.isArray(res) ? res : [];
         renderServiciosCliente(CACHE_CLIENTE.servicios);
         if (msg) msg.textContent = '';
@@ -2905,8 +3001,13 @@ function renderCalendarioCliente(svcs) {
     contSiguiente.innerHTML = '';
 
     const hoy = new Date();
-    //Siempre empezamos desde el lunes de la semana actual
-    const start = startMonday(hoy);
+    // Cambio: empezar desde el LUNES de la semana actual
+    const diaSemana = hoy.getDay();
+    const diasDesdeLunes = (diaSemana + 6) % 7;
+
+    const start = new Date(hoy);
+    start.setDate(hoy.getDate() - diasDesdeLunes);
+    start.setHours(0, 0, 0, 0);
 
     //Mapear servicios por fecha para fácil acceso
     const map = {};
@@ -2916,7 +3017,7 @@ function renderCalendarioCliente(svcs) {
         map[f].push(s);
     });
 
-    //Renderizar 14 días (2 semanas)
+    //Renderizar 14 días (desde hoy)
     console.log("Renderizando calendario cliente para", svcs.length, "servicios");
     for (let i = 0; i < 14; i++) {
         try {

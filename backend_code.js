@@ -1410,10 +1410,10 @@ function _mapaCiudadPorNinera() {
 
     const mapa = {};
     data.forEach(row => {
-        const nombre = String(row[idxNombre] || '').trim();
-        const ciudad = String(row[idxCiudad] || '').trim();
-        if (nombre) {
-            mapa[nombre.toLowerCase()] = ciudad || 'Sin ciudad';
+        const nomRaw = String(row[idxNombre] || '').trim();
+        const ciuRaw = String(row[idxCiudad] || '').trim();
+        if (nomRaw) {
+            mapa[_norm(nomRaw)] = ciuRaw || 'Sin Ciudad';
         }
     });
 
@@ -1453,7 +1453,7 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-    // columnas fijas (cliente, direcció³n, etc.) en fila 1 (no-fechas)
+    // columnas fijas (cliente, dirección, etc.) en fila 1 (no-fechas)
     const hdrsRaw = fechas.map(h => _norm(h));
     const findCol = (aliases) => {
         for (let a of aliases) {
@@ -1462,7 +1462,7 @@ function _expandirServiciosSemanales_(sh) {
         }
         return undefined;
     };
-
+    const colIdx = {};
     colIdx['cliente'] = findCol(['cliente', 'nombre del cliente']);
     colIdx['nombre de ninera'] = findCol(['nombre de ninera', 'niñera', 'nombre de la niñera', 'nanny']);
     colIdx['tipo de servicio'] = findCol(['tipo de servicio', 'tipo', 'servicio']);
@@ -5109,7 +5109,8 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
     const esSuper = esSupervision(email) || esAdmin(email);
     const grouped = {};
     const listaFinal = [];
-    const miNombre = esSuper ? '' : _nombrePorEmail(email);
+    const miNombre = _norm(esSuper ? '' : _nombrePorEmail(email));
+    const mapaCiudades = _mapaCiudadPorNinera();
 
     servicios.forEach(s => {
         const tipoServicio = _norm(s['Tipo de servicio'] || s['Tipo Servicio'] || s.tipo_servicio || '');
@@ -5120,13 +5121,9 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
         const cliente = s.Cliente || s.cliente || '';
         const ninera = s['Nombre de la niñera'] || s.nombre_ninera || '';
         const fecha = _toISODate(s.Fecha || s.fecha);
-        const ciudad = s.Ciudad || s.ciudad || 'Pendiente';
+        const ciudadOficial = mapaCiudades[_norm(ninera)] || s.Ciudad || s.ciudad || 'Sin ciudad';
 
-        if (!esSuper) {
-            const n1 = _norm(ninera);
-            const n2 = _norm(miNombre);
-            if (!n1.includes(n2) && !n2.includes(n1)) return;
-        }
+        if (!esSuper && _norm(ninera) !== miNombre) return;
 
         const key = `${fecha}|${_norm(cliente)}|${_norm(ninera)}`;
         const plan = mapaPlaneaciones[key];
@@ -5144,7 +5141,7 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
             ninera: ninera,
             fecha: fecha,
             tipo_servicio: tipoServicio,
-            ciudad: ciudad,
+            ciudad: ciudadOficial,
             tienePlaneacion: !!plan,
             estado_revision: getVal(plan, ['Estado Revision', 'estado_revision', 'estado']) || 'pendiente',
             observaciones_supervision: getVal(plan, ['Observaciones Supervision', 'observaciones_supervision']),
@@ -5159,8 +5156,9 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
         };
 
         if (esSuper) {
-            if (!grouped[ciudad]) grouped[ciudad] = [];
-            grouped[ciudad].push(item);
+            const cKey = _norm(ciudadOficial);
+            if (!grouped[cKey]) grouped[cKey] = { label: ciudadOficial, items: [] };
+            grouped[cKey].items.push(item);
         } else {
             listaFinal.push(item);
         }
@@ -5168,26 +5166,27 @@ function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
 
     if (esSuper) {
         const result = {};
-        Object.keys(grouped).forEach(ciudad => {
-            const items = grouped[ciudad];
+        Object.keys(grouped).forEach(k => {
+            const group = grouped[k];
+            const items = group.items;
             const mapUnique = {};
             items.forEach(it => {
-                const k = `${it.cliente}|${it.ninera}`;
-                if (!mapUnique[k]) {
-                    mapUnique[k] = { ...it, fechas: [], dias: [] };
-                    mapUnique[k].tienePlaneacion = false;
-                    mapUnique[k].estado_revision = 'pendiente';
+                const ky = `${it.cliente}|${it.ninera}`;
+                if (!mapUnique[ky]) {
+                    mapUnique[ky] = { ...it, fechas: [], dias: [] };
+                    mapUnique[ky].tienePlaneacion = false;
+                    mapUnique[ky].estado_revision = 'pendiente';
                 }
 
-                mapUnique[k].fechas.push(it.fecha);
-                mapUnique[k].dias.push(it.fecha);
+                mapUnique[ky].fechas.push(it.fecha);
+                mapUnique[ky].dias.push(it.fecha);
 
                 if (it.tienePlaneacion) {
-                    mapUnique[k].tienePlaneacion = true;
-                    mapUnique[k].estado_revision = it.estado_revision;
+                    mapUnique[ky].tienePlaneacion = true;
+                    mapUnique[ky].estado_revision = it.estado_revision;
                 }
             });
-            result[ciudad] = Object.values(mapUnique);
+            result[group.label] = Object.values(mapUnique);
         });
         return result;
     }
