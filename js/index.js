@@ -208,7 +208,7 @@ async function login(rol) {
             resolve();
         });
 
-        // Esperar 4 segundos exactos de animación
+        // Esperar 6 segundos exactos de animación
         setTimeout(async () => {
             if (preloader) {
                 preloader.style.opacity = '0';
@@ -233,7 +233,7 @@ async function login(rol) {
                 document.querySelector('.bottom-nav').style.display = 'flex';
                 mostrarVistaNinera();
             }
-        }, 4000);
+        }, 6000);
         // --- FIN CAMBIO PRELOADER ---
 
         msg.textContent = '';
