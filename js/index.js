@@ -1572,7 +1572,7 @@ function irVista(nombre, skipLogic = false) {
  * Si faltan, abre el modal obligatorio y bloquea el uso de la app.
  */
 function verificarDatosFaltantesNinera(p) {
-    if (!p || SESION.cliente) return;
+    if (!p || SESION.cliente || SESION.admin || SESION.supervision) return;
 
     const faltantes = [];
     if (!p.telefono || p.telefono.trim().length < 8) faltantes.push('Teléfono personal');
@@ -2805,7 +2805,7 @@ async function cargarPerfil() {
                 }
             }
 
-            if (esNanny) {
+            if (esNanny && !SESION.admin && !SESION.supervision) {
                 verificarDatosFaltantesNinera(perf);
                 return;
             }
