@@ -198,11 +198,14 @@ async function login(rol) {
                 } else if (SESION.cliente) {
                     await cargarServiciosCliente(true); // Forzar carga fresca
                     cargarActividadesCliente(true);
+                    cargarPerfil(); // Pre-cargar perfil
                 } else {
                     // Niñera
                     await cargar(true); // Disponibilidad
                     cargarServicios(true); // Servicios
                     cargarResumenPlaneacionesNinera(true);
+                    cargarPuntajeNinera(); // Puntos
+                    cargarPerfil(); // Pre-cargar perfil
                 }
             } catch (e) { console.error('Error pre-carga background', e); }
             resolve();
