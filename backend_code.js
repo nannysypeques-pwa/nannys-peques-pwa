@@ -1,15 +1,4 @@
-﻿
-/**
- * PUNTO DE ENTRADA PRINCIPAL (API)
- * Recibe todas las peticiones POST desde el frontend.
- * Maneja:
- * 1. Parseo del body
- * 2. Sanitización de datos
- * 3. Verificación de integridad (API Key)
- * 4. Validación de sesión (Token)
- * 5. Router de acciones (switch)
- */
-function doPost(e) {
+﻿function doPost(e) {
     try {
         let action = '';
         let payload = {};
@@ -154,10 +143,6 @@ function doPost(e) {
                 _enforceRole(email, 'ninera');
                 result = reenviarPlaneacionCorregida(payload, email);
                 break;
-            case 'obtenerResumenPlaneacionesNinera':
-                _enforceRole(email, 'ninera');
-                result = obtenerResumenPlaneacionesNinera(email);
-                break;
 
             // --- SUPERVISIÓN ---
             case 'guardarObservacionesSupervision':
@@ -229,16 +214,9 @@ function doOptions(e) {
 
 
 
-
 /** =========================
- *  CONFIGURACIÓN Y CONSTANTES GLOBALRES
- *  Nombres de hojas, correos de admin y claves de seguridad.
+ *  CONFIG
  *  ========================= */
-
-/** 
- * NOMBRES DE LAS HOJAS (DATABASE)
- * Definición de los nombres de las pestañas en Google Sheets.
- */
 const NOMBRE_HOJA_USUARIOS = 'Usuarios';
 const NOMBRE_HOJA_CLIENTES = 'Clientes';
 const NOMBRE_HOJA_DISPONIBILIDAD = 'Disponibilidad';
@@ -249,9 +227,8 @@ const GLOBAL_SALT = props.getProperty('GLOBAL_SALT') || 'PENDING_SETUP';
 
 const ADMIN_EMAILS = ['nannysypeques@gmail.com', 'gerardo.pineda.m94@gmail.com'];
 const NOMBRE_HOJA_SERVICIOS = 'Servicios';
-const ZONA_HORARIA = SpreadsheetApp.getActive().getSpreadsheetTimeZone();
+const ZONA_HORARIA = Session.getScriptTimeZone() || 'America/Mexico_City';
 const MINUTOS_REENVIO_OTP = 2;
-
 
 
 
@@ -270,8 +247,6 @@ const MINUTOS_REENVIO_OTP = 2;
 
 /** =========================
  *  UTILIDADES
- *  Funciones helper para interactuar con hojas de cálculo,
- *  formatear fechas, hashear contraseñas, etc.
  *  ========================= */
 function _ss() { return SpreadsheetApp.getActive(); }
 function _hoja(nombre) { const sh = _ss().getSheetByName(nombre); if (!sh) throw new Error('No se encontró³ la hoja: ' + nombre); return sh; }
@@ -486,7 +461,7 @@ function _mapaColumnasPorFecha_(sh) {
 
         // Si la celda tiene fecha, la guardamos como fecha activa
         if (val instanceof Date) {
-            fechaActualISO = _toISODate(val);
+            fechaActualISO = Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
             if (!mapa[fechaActualISO]) mapa[fechaActualISO] = {};
         }
 
@@ -537,11 +512,8 @@ function _mapaColumnasPorFecha_(sh) {
 
 
 
-
 /** =========================
  *  SEGURIDAD (TOKENS)
- *  Generación y validación de tokens de sesión con
- *  protección contra robo de sesión (fingerprinting).
  *  ========================= */
 function _generarToken(email, fingerprint) {
     if (!email) return null;
@@ -573,15 +545,11 @@ function _validarToken(token, currentFingerprint) {
 }
 
 
-
 /** =========================
- *  AUTORIZACIÓN / ROLES / OTP / LOGIN
- *  Funciones para verificar permisos, registro, login
- *  y recuperación de contraseñas.
+ *  AUTORIZACIó“N / ROLES / OTP / LOGIN
  *  ========================= */
 function _estaAutorizado(email) {
-    if (!email) return false;
-    email = String(email).trim().toLowerCase();
+    email = String(email || '').trim().toLowerCase();
 
     // 1. Revisar si Está en hoja Usuarios y activo
     const shU = _hoja(NOMBRE_HOJA_USUARIOS);
@@ -640,8 +608,14 @@ function esSupervision(email) {
     const fila = _buscarFilaPorValor(sh, 'email', email);
     if (fila === -1) return false;
 
+
+
+
     const idxRol = _idxCol(sh, 'rol');
     if (idxRol <= 0) return false;
+
+
+
 
     const rol = String(sh.getRange(fila, idxRol).getValue() || '')
         .normalize('NFD')                 // elimina acentos
@@ -652,8 +626,7 @@ function esSupervision(email) {
 
 
 
-    // Aceptar variaciones comunes: supervision, supervisora, supervisor
-    return ['supervisión', 'supervision', 'supervisor'].includes(rol);
+    return rol === 'supervision';
 }
 
 
@@ -688,21 +661,74 @@ function _verificarCuotaOTP() { const r = MailApp.getRemainingDailyQuota(); if (
 function solicitarOTP(email) {
     email = String(email || '').trim().toLowerCase();
     if (!email) throw new Error('Email requerido');
-    if (!_estaAutorizado(email)) throw new Error('Su correo no Está autorizado. Contacte a la administració³n.');
-    const lock = LockService.getScriptLock(); if (!lock.tryLock(5000)) throw new Error('Sistema ocupado. Intente de nuevo en unos segundos.');
+
+    // Validar autorización general primero (Usuarios o Clientes)
+    if (!_estaAutorizado(email)) throw new Error('Su correo no está registrado.');
+
+    const lock = LockService.getScriptLock();
+    if (!lock.tryLock(5000)) throw new Error('Sistema ocupado. Intente de nuevo en unos segundos.');
+
     try {
-        if (_enVentanaDeBloqueo(email)) throw new Error('Ya se envió³ un có³digo hace poco. Espere unos minutos para solicitar otro.');
+        if (_enVentanaDeBloqueo(email)) throw new Error('Ya se envió un código hace poco. Espere unos minutos para solicitar otro.');
         _verificarCuotaOTP();
-        const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) throw new Error('Su correo no Está autorizado. Contacte a la administració³n.');
+
         const otp = (Math.floor(100000 + Math.random() * 900000)).toString();
         const expira = new Date(Date.now() + 15 * 60 * 1000);
         const expiraStr = Utilities.formatDate(expira, ZONA_HORARIA, "yyyy-MM-dd HH:mm:ss");
-        const obj = { email: sh.getRange(fila, 1).getValue(), nombre: sh.getRange(fila, 2).getValue(), pass_hash: sh.getRange(fila, 3).getValue(), otp, otp_expira: expiraStr, creado: sh.getRange(fila, 6).getValue() || _ahoraISO(), actualizado: _ahoraISO(), activo: sh.getRange(fila, 8).getValue() };
-        _escribirObjeto(sh, fila, obj);
+
+        // 1. Buscar en Usuarios (Staff)
+        const shU = _hoja(NOMBRE_HOJA_USUARIOS);
+        const filaU = _buscarFilaPorValor(shU, 'email', email);
+
+        if (filaU !== -1) {
+            // Lógica original para Staff
+            const obj = {
+                email: shU.getRange(filaU, 1).getValue(),
+                nombre: shU.getRange(filaU, 2).getValue(),
+                pass_hash: shU.getRange(filaU, 3).getValue(),
+                otp,
+                otp_expira: expiraStr,
+                creado: shU.getRange(filaU, 6).getValue() || _ahoraISO(),
+                actualizado: _ahoraISO(),
+                activo: shU.getRange(filaU, 8).getValue()
+            };
+            _escribirObjeto(shU, filaU, obj);
+        } else {
+            // 2. Buscar en Clientes
+            const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+            const filaC = _buscarFilaPorValor(shC, 'email', email);
+
+            if (filaC === -1) throw new Error('Su correo no está registrado.');
+
+            // Lógica específica para Clientes (solo actualizar campos OTP)
+            const idxOTP = _idxCol(shC, 'otp');
+            const idxExp = _idxCol(shC, 'otp_expira');
+            const idxAct = _idxCol(shC, 'actualizado');
+
+            if (idxOTP > 0) shC.getRange(filaC, idxOTP).setValue(otp);
+            if (idxExp > 0) shC.getRange(filaC, idxExp).setValue(expiraStr);
+            if (idxAct > 0) shC.getRange(filaC, idxAct).setValue(_ahoraISO());
+        }
+
         _marcarEnvioOTP(email);
-        MailApp.sendEmail({ to: email, subject: 'Có³digo de verificació³n (Nannys y Peques)', htmlBody: '<p>Su có³digo de verificació³n es: <b>' + otp + '</b><br>Vence en 15 minutos.</p>' });
+
+        MailApp.sendEmail({
+            to: email,
+            subject: 'Código de verificación (Nannys y Peques)',
+            htmlBody: '<div style="font-family:sans-serif; text-align:center; padding:20px;">' +
+                '<h2 style="color:#e84c9a;">Recuperación de Contraseña</h2>' +
+                '<p>Tu código de verificación es:</p>' +
+                '<h1 style="font-size:32px; letter-spacing:5px;">' + otp + '</h1>' +
+                '<p>Vence en 15 minutos.</p>' +
+                '<p style="color:#888; font-size:12px;">Si no solicitaste esto, ignora este mensaje.</p>' +
+                '</div>'
+        });
+
         return { ok: true, restante: MailApp.getRemainingDailyQuota() };
-    } finally { lock.releaseLock(); }
+
+    } finally {
+        lock.releaseLock();
+    }
 }
 
 
@@ -787,11 +813,6 @@ function establecerContrasena(email, otp, nuevaContrasena) {
 
 
 
-
-/**
- * AUTENTICACIÓN: Valida credenciales de Staff o Clientes.
- * Compara contraseñas usando el hash guardado y genera tokens de sesión.
- */
 function login(email, contrasena, rol, fingerprint) {
     email = String(email || '').trim().toLowerCase();
     contrasena = String(contrasena || '');
@@ -928,11 +949,8 @@ function login(email, contrasena, rol, fingerprint) {
 
 
 
-
 /** =========================
  *  DISPONIBILIDAD POR TURNOS (Matutino/Vespertino)
- *  Lógica core para manejar los horarios de las niñeras.
- *  Permite definir turnos y asegurar la estructura de la hoja.
  *  ========================= */
 const TURNOS = [
     { key: 'Matutino', ini: '07:00', fin: '15:00' },
@@ -1273,12 +1291,8 @@ function obtenerDisponiblesSemana(email, fechaISO) {
 
 
 
-
 /** =========================
- *  SERVICIOS por NOMBRE + CONFIRMACIÓN
- *  Lógica complejas para leer y transformar los servicios
- *  desde la estructura vertical/horizontal de las hojas de cálculo
- *  a un formato JSON consumible por la app.
+ *  SERVICIOS por NOMBRE + CONFIRMACIó“N (con timestamp)
  *  ========================= */
 function _ensureColumnsServicios(sh) {
     const hdrs = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0];
@@ -1410,10 +1424,10 @@ function _mapaCiudadPorNinera() {
 
     const mapa = {};
     data.forEach(row => {
-        const nomRaw = String(row[idxNombre] || '').trim();
-        const ciuRaw = String(row[idxCiudad] || '').trim();
-        if (nomRaw) {
-            mapa[_norm(nomRaw)] = ciuRaw || 'Sin Ciudad';
+        const nombre = String(row[idxNombre] || '').trim();
+        const ciudad = String(row[idxCiudad] || '').trim();
+        if (nombre) {
+            mapa[nombre.toLowerCase()] = ciudad || 'Sin ciudad';
         }
     });
 
@@ -1434,12 +1448,6 @@ function _mapaCiudadPorNinera() {
 
 
 
-
-/**
- * Expande los servicios de una hoja semana
- * Convierte el formato de grilla (Fechas en columnas)
- * a una lista plana de objetos servicio.
- */
 function _expandirServiciosSemanales_(sh) {
     const data = sh.getDataRange().getValues();
     if (data.length < 3) return [];
@@ -1453,29 +1461,13 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-    // columnas fijas (cliente, dirección, etc.) en fila 1 (no-fechas)
-    const hdrsRaw = fechas.map(h => _norm(h));
-    const findCol = (aliases) => {
-        for (let a of aliases) {
-            let idx = hdrsRaw.indexOf(_norm(a));
-            if (idx !== -1) return idx;
-        }
-        return undefined;
-    };
+    // columnas fijas (cliente, direcció³n, etc.) en fila 1 (no-fechas)
     const colIdx = {};
-    colIdx['cliente'] = findCol(['cliente', 'nombre del cliente']);
-    colIdx['nombre de ninera'] = findCol(['nombre de ninera', 'niñera', 'nombre de la niñera', 'nanny']);
-    colIdx['tipo de servicio'] = findCol(['tipo de servicio', 'tipo', 'servicio']);
-    colIdx['numero de contacto'] = findCol(['numero de contacto', 'teléfono', 'contacto', 'telefono']);
-    colIdx['direccion'] = findCol(['direccion', 'dirección']);
-    colIdx['ubicacion (link)'] = findCol(['ubicacion (link)', 'ubicación', 'ubicacion', 'link']);
-    colIdx['ver'] = findCol(['ver', 'visible']);
-    colIdx['email'] = findCol(['email', 'correo', 'e-mail']);
-    colIdx['numero de emergencia'] = findCol(['numero de emergencia', 'emergencia']);
-    colIdx['cuota nanny'] = findCol(['cuota nanny', 'cuota', 'cuota niñera']);
-    colIdx['edad del nino'] = findCol(['edad del nino', 'edad del peque', 'edad']);
-    colIdx['notas'] = findCol(['notas', 'observaciones', 'comentarios']);
-    colIdx['ciudad'] = findCol(['ciudad', 'sede', 'zona']);
+    fechas.forEach((h, i) => {
+        if (h instanceof Date) return;
+        const k = _norm(h);
+        if (k) colIdx[k] = i;
+    });
 
 
 
@@ -1484,9 +1476,10 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-    if (colIdx['cliente'] === undefined || colIdx['nombre de ninera'] === undefined) {
-        console.warn('Faltan columnas críticas en la hoja: ' + sh.getName());
-        return [];
+    // œ… ya no tronar: si falta algo, mejor no devolver servicios
+    const required = ['cliente', 'numero de contacto', 'direccion', 'ubicacion (link)', 'nombre de ninera'];
+    for (const k of required) {
+        if (colIdx[k] === undefined) return [];
     }
 
 
@@ -1516,8 +1509,8 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-        const nombreNinera = colIdx['nombre de ninera'] != null ? String(row[colIdx['nombre de ninera']] || '').trim() : '';
-        // NO omitir aunque no tenga niñera, para supervisión
+        const nombreNinera = String(row[colIdx['nombre de ninera']] || '').trim();
+        if (!nombreNinera) continue;
 
 
 
@@ -1538,8 +1531,7 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-        const cellVer = colIdx['ver'] != null ? String(row[colIdx['ver']] || '').trim() : '';
-        const verServicio = (colIdx['ver'] == null || cellVer === '') ? true : _esVerdadero(cellVer);
+        const verServicio = colIdx['ver'] != null ? _esVerdadero(row[colIdx['ver']]) : false;
 
 
 
@@ -1601,8 +1593,7 @@ function _expandirServiciosSemanales_(sh) {
                 inicio_real: inicioReal,
                 fin_real: finReal,
                 ver: verServicio,
-                tipo_servicio: tipoServicio,
-                ciudad: colIdx['ciudad'] != null ? String(row[colIdx['ciudad']] || '').trim() : 'Pendiente'
+                tipo_servicio: tipoServicio
             });
         });
     }
@@ -1624,11 +1615,6 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-
-/**
- * Busca servicios próximos para una niñera específica
- * Filtrando por su nombre y rango de fechas.
- */
 function obtenerServiciosProximosPorNombre(email, diasAdelante, fechaInicio) {
     email = String(email || '').trim().toLowerCase();
     if (!_estaAutorizado(email)) throw new Error('No autorizado.');
@@ -3699,7 +3685,7 @@ function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
 
         const cliente = String(s.cliente || '').trim();
         const ninera = String(s.nombre_ninera || '').trim();
-        if (!cliente) return;
+        if (!cliente || !ninera) return;
 
         const tipoServicio = s.tipo_servicio || '';
 
@@ -4195,43 +4181,33 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
     const dataServ = shServicios.getDataRange().getValues();
     const headersS = dataServ.shift();
 
-    const headersSNorm = headersS.map(h => _norm(h));
-    const idxCliente = headersSNorm.indexOf(_norm('cliente'));
-    const idxNinera = headersSNorm.indexOf(_norm('nombre de niñera'));
-    const idxTipo = headersSNorm.indexOf(_norm('Tipo de servicio'));
-    const idxFecha = headersSNorm.indexOf(_norm('fecha'));
+    const idxCliente = headersS.indexOf('cliente');
+    const idxNinera = headersS.indexOf('nombre de niñera');
+    const idxTipo = headersS.indexOf('Tipo de servicio');
+    const idxFecha = headersS.indexOf('fecha');
 
     // 3. Leer planeaciones
     const shPlan = _hoja('Planeaciones_Neuronanny');
     const dataPlan = shPlan.getDataRange().getValues();
     const headersP = dataPlan.shift();
 
-    const headersPNorm = headersP.map(h => _norm(h));
-    const idxPCliente = headersPNorm.indexOf(_norm('cliente'));
-    const idxPFecha = headersPNorm.indexOf(_norm('fecha'));
-    let idxPNinera = headersPNorm.indexOf(_norm('nombre_ninera'));
-    if (idxPNinera === -1) {
-        // Fallback por si la columna se llama diferente
-        const idxAlt = headersPNorm.indexOf(_norm('nombre de ninera'));
-        if (idxAlt !== -1) idxPNinera = idxAlt;
-    }
+    const idxPCliente = headersP.indexOf('cliente');
+    const idxPFecha = headersP.indexOf('fecha');
+    const idxPNinera = headersP.indexOf('nombre_ninera');
 
     // 4. Agrupar servicios por cliente
     const clientes = {};
 
     dataServ.forEach(r => {
-        const tNorm = _norm(r[idxTipo]);
         if (
-            ['neuronanny', 'nanny educativa', 'miss nanny'].includes(tNorm) &&
-            (_norm(r[idxNinera]).includes(_norm(nombreNinera)) || _norm(nombreNinera).includes(_norm(r[idxNinera])))
+            r[idxTipo] === 'neuronanny' &&
+            String(r[idxNinera]).trim() === String(nombreNinera).trim()
         ) {
             const cliente = r[idxCliente];
-            const fecha = _toISODate(r[idxFecha]);
+            const fecha = r[idxFecha];
 
-            if (!clientes[cliente]) {
-                clientes[cliente] = { fechas: [], tipo: r[idxTipo] };
-            }
-            clientes[cliente].fechas.push(fecha);
+            if (!clientes[cliente]) clientes[cliente] = [];
+            clientes[cliente].push(fecha);
         }
     });
 
@@ -4239,28 +4215,22 @@ function obtenerResumenPlaneacionesNinera(emailNinera) {
     const resultado = [];
 
     Object.keys(clientes).forEach(cliente => {
-        const info = clientes[cliente];
-        const fechas = info.fechas;
+        const fechas = clientes[cliente];
 
         let completas = true;
 
         fechas.forEach(f => {
-            const existe = dataPlan.some(p => {
-                const pNanny = _norm(p[idxPNinera]);
-                const sNanny = _norm(nombreNinera);
-                return String(p[idxPCliente] || '').trim() === String(cliente || '').trim() &&
-                    _toISODate(p[idxPFecha]) === _toISODate(f) &&
-                    (pNanny.includes(sNanny) || sNanny.includes(pNanny));
-            });
+            const existe = dataPlan.some(p =>
+                p[idxPCliente] === cliente &&
+                p[idxPFecha] === f &&
+                p[idxPNinera] === nombreNinera
+            );
             if (!existe) completas = false;
         });
 
         resultado.push({
             cliente,
-            ninera: nombreNinera,
-            tipo_servicio: info.tipo,
-            tienePlaneacionesCompletas: completas,
-            tienePlaneacion: completas // Frontend usa ambos indistintamente
+            tienePlaneacionesCompletas: completas
         });
     });
 
@@ -4902,33 +4872,8 @@ function _enforceRole(email, requiredRole) {
     if (!requiredRole) return;
     const isAdmin = esAdmin(email);
     if (requiredRole === 'admin' && !isAdmin) throw new Error('Acceso denegado: Se requiere administrador.');
-    if (isAdmin) return; // Si es admin, tiene acceso a todo
-
-    if (requiredRole === 'supervision' && !esSupervision(email)) {
-        const currentRol = _getCurrentRole(email);
-        throw new Error(`Acceso denegado: Rol supervisión requerido. (Usuario: ${email}, Rol encontrado: ${currentRol})`);
-    }
-    if (requiredRole === 'ninera' && !_estaAutorizado(email)) {
-        throw new Error('Acceso denegado: No autorizado.');
-    }
-    if (requiredRole === 'cliente' && !esCliente(email)) {
-        throw new Error('Acceso denegado: Rol cliente requerido.');
-    }
-}
-
-/**
- * Obtiene el rol actual del usuario para depuración en errores de acceso.
- */
-function _getCurrentRole(email) {
-    try {
-        const sh = _hoja(NOMBRE_HOJA_USUARIOS);
-        const fila = _buscarFilaPorValor(sh, 'email', email);
-        if (fila === -1) return 'No encontrado en Usuarios';
-        const idxRol = _idxCol(sh, 'rol');
-        return String(sh.getRange(fila, idxRol).getValue() || 'Vacío');
-    } catch (e) {
-        return 'Error leyendo rol';
-    }
+    if (isAdmin) return;
+    if (requiredRole === 'supervision' && !esSupervision(email)) throw new Error('Acceso denegado: Rol supervisión requerido.');
 }
 
 function solicitarOTPRegistro(email) {
@@ -5046,189 +4991,6 @@ function _enviarAlertaSeguridad(asunto, cuerpo) {
             body: fullCuerpo
         });
     } catch (e) { console.error('Error enviando alerta:', e); }
-}
-
-/* =========================================
- *  LÓGICA RESTAURADA DE PLANEACIONES (SUPERVISIÓN)
- *  ========================= */
-
-const NOMBRE_HOJA_PLANEACIONES = 'Planeaciones_Neuronanny';
-
-function obtenerResumenPlaneacionesSemana(fechaBase, email, tipo) {
-    if (!fechaBase) return esSupervision(email) ? {} : [];
-
-    // 1. Definir rango de la semana de forma segura
-    const parts = fechaBase.split('-').map(Number);
-    // Crear fecha local (00:00:00)
-    let d = new Date(parts[0], parts[1] - 1, parts[2]);
-
-    // Ajustar al lunes de esa semana
-    const day = d.getDay();
-    const diff = d.getDate() - day + (day == 0 ? -6 : 1);
-    const lunes = new Date(d);
-    lunes.setDate(diff);
-
-    const domingo = new Date(lunes);
-    domingo.setDate(lunes.getDate() + 6);
-
-    const desdeISO = Utilities.formatDate(lunes, ZONA_HORARIA, 'yyyy-MM-dd');
-    const hastaISO = Utilities.formatDate(domingo, ZONA_HORARIA, 'yyyy-MM-dd');
-
-    // 2. Obtener Servicios en ese rango (de AMBAS hojas)
-    const serviciosRaw = _leerServiciosDesdeHojas_(['Servicios', 'Servicios_Siguiente_semana']);
-
-    const servicios = serviciosRaw.filter(s => {
-        const f = s.fecha; // Ya viene en ISO y lowercase desde _leerServiciosDesdeHojas_
-        if (!f) return false;
-        if (f < desdeISO || f > hastaISO) return false;
-
-        const v = s.ver;
-        if (v === undefined || v === '') return true;
-        return _esVerdadero(v);
-    });
-
-    // 3. Obtener Planeaciones existentes
-    const shP = _hoja(NOMBRE_HOJA_PLANEACIONES);
-    const planeacionesRaw = _leerComoObjetos(shP);
-
-    const mapaPlaneaciones = {};
-    planeacionesRaw.forEach((p, idx) => {
-        const f = _toISODate(p.Fecha || p.fecha);
-        if (f < desdeISO || f > hastaISO) return;
-
-        // Robustez en nombres de columnas
-        const clienteNom = p.Cliente || p.cliente || '';
-        const nineraNom = p['Nombre Ninera'] || p.nombre_ninera || p['Nombre de la niñera'] || p.ninera || '';
-
-        const key = `${f}|${_norm(clienteNom)}|${_norm(nineraNom)}`;
-        p.fila = idx + 2;
-        mapaPlaneaciones[key] = p;
-    });
-
-    // 4. Cruzar datos
-    const esSuper = esSupervision(email) || esAdmin(email);
-    const grouped = {};
-    const listaFinal = [];
-    const miNombre = _norm(esSuper ? '' : _nombrePorEmail(email));
-    const mapaCiudades = _mapaCiudadPorNinera();
-
-    servicios.forEach(s => {
-        const tipoServicio = _norm(s['Tipo de servicio'] || s['Tipo Servicio'] || s.tipo_servicio || '');
-        const requierePlan = ['neuronanny', 'nanny educativa', 'miss nanny'].some(t => tipoServicio.includes(t));
-
-        if (!requierePlan) return;
-
-        const cliente = s.Cliente || s.cliente || '';
-        const ninera = s['Nombre de la niñera'] || s.nombre_ninera || '';
-        const fecha = _toISODate(s.Fecha || s.fecha);
-        const ciudadOficial = mapaCiudades[_norm(ninera)] || s.Ciudad || s.ciudad || 'Sin ciudad';
-
-        if (!esSuper && _norm(ninera) !== miNombre) return;
-
-        const key = `${fecha}|${_norm(cliente)}|${_norm(ninera)}`;
-        const plan = mapaPlaneaciones[key];
-
-        const getVal = (obj, keys) => {
-            if (!obj) return '';
-            for (const k of keys) {
-                if (obj[k] !== undefined && obj[k] !== '') return obj[k];
-            }
-            return '';
-        };
-
-        const item = {
-            cliente: cliente,
-            ninera: ninera,
-            fecha: fecha,
-            tipo_servicio: tipoServicio,
-            ciudad: ciudadOficial,
-            tienePlaneacion: !!plan,
-            estado_revision: getVal(plan, ['Estado Revision', 'estado_revision', 'estado']) || 'pendiente',
-            observaciones_supervision: getVal(plan, ['Observaciones Supervision', 'observaciones_supervision']),
-            fecha_revision: getVal(plan, ['Fecha Revision', 'fecha_revision']),
-            fecha_correccion: getVal(plan, ['Fecha Correccion', 'fecha_correccion']),
-            fila: plan ? plan.fila : null,
-            area_desarrollo: getVal(plan, ['Area Desarrollo', 'area_desarrollo']),
-            objetivo: getVal(plan, ['Objetivo', 'objetivo']),
-            descripcion: getVal(plan, ['Descripcion', 'descripcion']),
-            materiales: getVal(plan, ['Materiales', 'materiales']),
-            imagen: getVal(plan, ['Imagen', 'imagen'])
-        };
-
-        if (esSuper) {
-            const cKey = _norm(ciudadOficial);
-            if (!grouped[cKey]) grouped[cKey] = { label: ciudadOficial, items: [] };
-            grouped[cKey].items.push(item);
-        } else {
-            listaFinal.push(item);
-        }
-    });
-
-    if (esSuper) {
-        const result = {};
-        Object.keys(grouped).forEach(k => {
-            const group = grouped[k];
-            const items = group.items;
-            const mapUnique = {};
-            items.forEach(it => {
-                const ky = `${it.cliente}|${it.ninera}`;
-                if (!mapUnique[ky]) {
-                    mapUnique[ky] = { ...it, fechas: [], dias: [] };
-                    mapUnique[ky].tienePlaneacion = false;
-                    mapUnique[ky].estado_revision = 'pendiente';
-                }
-
-                mapUnique[ky].fechas.push(it.fecha);
-                mapUnique[ky].dias.push(it.fecha);
-
-                if (it.tienePlaneacion) {
-                    mapUnique[ky].tienePlaneacion = true;
-                    mapUnique[ky].estado_revision = it.estado_revision;
-                }
-            });
-            result[group.label] = Object.values(mapUnique);
-        });
-        return result;
-    }
-
-    return listaFinal;
-}
-
-function obtenerPlaneacionNeuronanny(payload, email) {
-    if (payload.fila) {
-        const sh = _hoja(NOMBRE_HOJA_PLANEACIONES);
-        const data = _leerComoObjetos(sh);
-        const p = data[payload.fila - 2];
-        if (p) { p.fila = payload.fila; return p; }
-    }
-
-    // Por claves
-    const sh = _hoja(NOMBRE_HOJA_PLANEACIONES);
-    const objs = _leerComoObjetos(sh);
-    const targetFecha = _toISODate(payload.fecha);
-
-    const found = objs.find(o =>
-        _norm(o.Cliente || o.cliente) === _norm(payload.cliente) &&
-        _norm(o['Nombre Ninera'] || o.nombre_ninera) === _norm(payload.nombre_ninera || payload.ninera) &&
-        _toISODate(o.Fecha || o.fecha) === targetFecha
-    );
-
-    if (found) {
-        const row = objs.indexOf(found) + 2;
-        found.fila = row;
-        // Normalizar para frontend
-        found.area_desarrollo = found['Area Desarrollo'];
-        found.objetivo = found['Objetivo'];
-        found.descripcion = found['Descripcion'];
-        found.materiales = found['Materiales'];
-        found.imagen = found['Imagen'];
-        found.observaciones_supervision = found['Observaciones Supervision'];
-        found.estado_revision = found['Estado Revision'];
-        found.fecha_revision = found['Fecha Revision'];
-        found.fecha_correccion = found['Fecha Correccion'];
-        return found;
-    }
-    return null;
 }
 
 
