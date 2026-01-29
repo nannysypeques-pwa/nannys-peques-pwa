@@ -1273,11 +1273,16 @@ function renderResumenPlaneaciones(data, cont, prefijo) {
 
     Object.keys(data).forEach((ciudad, indexCiudad) => {
         const ciudadId = `${prefijo}_ciudad_${indexCiudad}`;
+        // REGLA DE MEMORIA: Verificar si ya estaba abierta
+        const estabaAbierta = window.CIUDADES_ABIERTAS && window.CIUDADES_ABIERTAS.has(ciudadId);
+        const display = estabaAbierta ? 'block' : 'none';
+        const icono = estabaAbierta ? '➖' : '➕';
+
         html += `<div style="margin:10px 0;">
         <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleCiudad('${ciudadId}')">
-          <span id="${ciudadId}_icon" style="font-size:18px;user-select:none;">➕</span><h4 style="margin:0;">${ciudad}</h4>
+          <span id="${ciudadId}_icon" style="font-size:18px;user-select:none;">${icono}</span><h4 style="margin:0;">${ciudad}</h4>
         </div>
-        <div id="${ciudadId}" style="display:none; margin-left:28px; margin-top:6px;">
+        <div id="${ciudadId}" style="display:${display}; margin-left:28px; margin-top:6px;">
           <ul style="list-style:none;margin:4px 0 12px;padding-left:0;">`;
 
         data[ciudad].forEach(p => {
@@ -1337,15 +1342,20 @@ function renderResumenDisponibilidadAdmin(lista) {
     cont.innerHTML = html;
 }
 
+// Memoria global para ciudades abiertas
+window.CIUDADES_ABIERTAS = new Set();
+
 function toggleCiudad(id) {
     const box = document.getElementById(id);
     const icon = document.getElementById(id + "_icon");
     if (box.style.display === "none") {
         box.style.display = "block";
         icon.textContent = "➖";
+        window.CIUDADES_ABIERTAS.add(id);
     } else {
         box.style.display = "none";
         icon.textContent = "➕";
+        window.CIUDADES_ABIERTAS.delete(id);
     }
 }
 
