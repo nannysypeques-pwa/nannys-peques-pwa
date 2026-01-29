@@ -1198,25 +1198,32 @@ async function cargarResumenDisponibilidadAdmin() {
 }
 
 function cargarResumenPlaneaciones() {
-    document.getElementById('resumenPlaneacionesActual').innerHTML = '<p class="muted">Verificando planeaciones...</p>';
-    document.getElementById('resumenPlaneacionesSiguiente').innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+    const c1 = document.getElementById('resumenPlaneacionesActual');
+    const c2 = document.getElementById('resumenPlaneacionesSiguiente');
 
-    const hoy = new Date();
-    const lunesActual = startMonday(hoy);
-    const lunesSiguiente = new Date(lunesActual);
-    lunesSiguiente.setDate(lunesSiguiente.getDate() + 7);
+    // MÁXIMA VELOCIDAD: Usar caché del localStorage si existe para mostrar de inmediato
+    const cached = localStorage.getItem('CACHE_PLANEACIONES_SUP_' + SESION.email);
+    if (cached) {
+        try {
+            const parsed = JSON.parse(cached);
+            if (c1) renderResumenPlaneaciones(parsed.actual, c1);
+            if (c2) renderResumenPlaneaciones(parsed.siguiente, c2, 'siguiente');
+        } catch (e) { console.error("Error al leer caché planeaciones", e); }
+    } else {
+        if (c1) c1.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+        if (c2) c2.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+    }
 
-    const isoActual = toISO(lunesActual);
-    const isoSiguiente = toISO(lunesSiguiente);
-
-    //Semana actual
-    api('getResumenPlaneacionesSemana', { fechaBase: isoActual, email: SESION.email, tipo: 'actual' })
-        .then(data => renderResumenPlaneaciones(data, document.getElementById('resumenPlaneacionesActual')))
-        .catch(console.error);
-
-    //Semana siguiente
-    api('getResumenPlaneacionesSemana', { fechaBase: isoSiguiente, email: SESION.email, tipo: 'siguiente' })
-        .then(data => renderResumenPlaneaciones(data, document.getElementById('resumenPlaneacionesSiguiente'), 'siguiente'))
+    // Llamada consolidada (Una sola petición para las 2 semanas)
+    api('getResumenPlaneacionesDosSemanas', { email: SESION.email })
+        .then(res => {
+            if (res) {
+                if (c1) renderResumenPlaneaciones(res.actual, c1);
+                if (c2) renderResumenPlaneaciones(res.siguiente, c2, 'siguiente');
+                // Guardar para la próxima vez
+                localStorage.setItem('CACHE_PLANEACIONES_SUP_' + SESION.email, JSON.stringify(res));
+            }
+        })
         .catch(console.error);
 }
 

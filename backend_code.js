@@ -128,6 +128,9 @@
             case 'getResumenPlaneacionesSemana':
                 result = obtenerResumenPlaneacionesSemana(payload.fechaBase, email, payload.tipo);
                 break;
+            case 'getResumenPlaneacionesDosSemanas':
+                result = obtenerResumenPlaneacionesDosSemanas(email);
+                break;
             case 'obtenerPlaneacionNeuronanny':
                 result = obtenerPlaneacionNeuronanny(payload, email);
                 break;
@@ -3644,7 +3647,25 @@ function obtenerResumenDisponibilidadSemanaActual() {
     return salida;
 }
 
+function obtenerResumenPlaneacionesDosSemanas(email) {
+    const hoy = new Date();
+    // Lunes actual
+    let day = hoy.getDay();
+    const diff = (day === 0 ? -6 : 1 - day);
+    const lunesActual = new Date(hoy);
+    lunesActual.setDate(hoy.getDate() + diff);
+    const isoActual = Utilities.formatDate(lunesActual, ZONA_HORARIA, 'yyyy-MM-dd');
 
+    // Lunes siguiente
+    const lunesSiguiente = new Date(lunesActual);
+    lunesSiguiente.setDate(lunesSiguiente.getDate() + 7);
+    const isoSiguiente = Utilities.formatDate(lunesSiguiente, ZONA_HORARIA, 'yyyy-MM-dd');
+
+    return {
+        actual: obtenerResumenPlaneacionesSemana(isoActual, email, 'actual'),
+        siguiente: obtenerResumenPlaneacionesSemana(isoSiguiente, email, 'siguiente')
+    };
+}
 
 
 function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
@@ -3669,6 +3690,20 @@ function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
 
     const idxFechaP = hdrP.indexOf('fecha');
     const idxClienteP = hdrP.indexOf('cliente');
+
+    // ⚡ OPTIMIZACIÓN: Indexar planeaciones para evitar bucles anidados pesados
+    const mapaPlaneacionesIndex = {};
+    for (let i = 1; i < dataP.length; i++) {
+        const fP = _toISODate(dataP[i][idxFechaP]);
+        const cP = String(dataP[i][idxClienteP] || '').trim();
+        if (!fP || !cP) continue;
+        const keyP = fP + '|' + cP;
+
+        const idxEstadoR_Internal = hdrP.findIndex(h => h.includes('estado') && h.includes('revision'));
+        let est = 'pendiente';
+        if (idxEstadoR_Internal >= 0) est = _norm(dataP[i][idxEstadoR_Internal] || 'pendiente');
+        mapaPlaneacionesIndex[keyP] = est;
+    }
 
     // ðŸ”‘ columna estado revisió³n (robusta)
     const idxEstadoR = hdrP.findIndex(h =>
@@ -3715,22 +3750,10 @@ function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
         const estados = [];
 
         diasServicio.forEach(fechaServicio => {
-            for (let i = 1; i < dataP.length; i++) {
-
-                const fechaP = _toISODate(dataP[i][idxFechaP]);
-                const clienteP = String(dataP[i][idxClienteP] || '').trim();
-
-                if (fechaP === fechaServicio && clienteP === cliente) {
-                    planeacionesEncontradas++;
-
-                    let estado = 'pendiente';
-                    if (idxEstadoR >= 0) {
-                        estado = _norm(dataP[i][idxEstadoR] || 'pendiente');
-                    }
-
-                    estados.push(estado);
-                    break;
-                }
+            const pk = fechaServicio + '|' + cliente;
+            if (mapaPlaneacionesIndex[pk]) {
+                planeacionesEncontradas++;
+                estados.push(mapaPlaneacionesIndex[pk]);
             }
         });
 
