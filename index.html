@@ -59,12 +59,28 @@
       min-height: 180px !important;
       height: auto !important;
       max-height: 250px !important;
-      margin: 15px 0 !important;
+      margin: 10px 0 !important;
+      /* Reduced from 15px */
       position: relative !important;
       overflow: hidden !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
+    }
+
+    .credential-body {
+      padding: 10px 15px !important;
+      /* Reduced from 15px 20px */
+    }
+
+    .credential-footer {
+      padding-top: 5px !important;
+    }
+
+    .credential-footer-text {
+      margin-bottom: 8px !important;
+      /* Reduced from 15px */
+      font-size: 11px !important;
     }
 
     .credential-logo-watermark {
@@ -1470,7 +1486,7 @@
         </div>
 
         <div class="credential-footer">
-          <p class="credential-footer-text" style="margin-bottom: 15px;">
+          <p class="credential-footer-text">
             Esta credencial es personal e intransferible.
           </p>
           <button class="btn-primary" onclick="cerrarCredencial()" style="margin: 0; width: 100%;">Entendido</button>
