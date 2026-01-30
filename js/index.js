@@ -38,6 +38,50 @@ try {
     if (s) SESION = JSON.parse(s);
 } catch (e) { console.error(e); }
 
+// --- DETECTAR VERIFICACIÓN PÚBLICA DESDE QR ---
+(async function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    const verifyId = urlParams.get('id');
+    const isVerification = window.location.pathname.includes('/verify');
+
+    if (verifyId && isVerification) {
+        // Esperamos a que el DOM esté listo por si acaso
+        window.addEventListener('DOMContentLoaded', async () => {
+            const vView = document.getElementById('verify-view');
+            const vLoading = document.getElementById('verify-loading');
+            const vResult = document.getElementById('verify-result');
+            const vError = document.getElementById('verify-error');
+            const vName = document.getElementById('verify-nanny-name');
+            const vErrorMsg = document.getElementById('verify-error-msg');
+
+            if (!vView) return;
+
+            // Mostrar el modal público inmediatamente
+            vView.style.display = 'flex';
+            if (document.getElementById('auth')) document.getElementById('auth').style.display = 'none';
+            if (document.getElementById('app')) document.getElementById('app').style.display = 'none';
+
+            try {
+                // La función api() ya incluye la integrity_key necesaria
+                const res = await api('verificarNannyPublico', { email: verifyId });
+                vLoading.style.display = 'none';
+
+                if (res && res.activa) {
+                    vResult.style.display = 'block';
+                    vName.textContent = res.nombre || 'Nanny Certificada';
+                } else {
+                    vError.style.display = 'block';
+                    vErrorMsg.textContent = 'La credencial escaneada no es válida o la nanny no está activa en nuestro sistema actualmente.';
+                }
+            } catch (err) {
+                if (vLoading) vLoading.style.display = 'none';
+                vError.style.display = 'block';
+                vErrorMsg.textContent = 'No se pudo conectar con el servidor de verificación. Intenta de nuevo más tarde.';
+            }
+        });
+    }
+})();
+
 let SEM1 = { dias: [], baseISO: null };
 let SEM2 = { dias: [], baseISO: null, cargada: false };
 let CAL_SERVICIOS = [];

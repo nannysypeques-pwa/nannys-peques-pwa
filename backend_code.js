@@ -33,7 +33,7 @@
         // Email del ejecutor. YA NO SE CONFÍA EN payload.email para acciones protegidas.
         let email = '';
 
-        const accionesPublicas = ['login', 'solicitarOTP', 'establecerContrasena', 'validarRegistroCliente', 'solicitarOTPRegistro', 'confirmarRegistroCliente'];
+        const accionesPublicas = ['login', 'solicitarOTP', 'establecerContrasena', 'validarRegistroCliente', 'solicitarOTPRegistro', 'confirmarRegistroCliente', 'verificarNannyPublico'];
 
         if (accionesPublicas.includes(action)) {
             email = String(payload.email || '').trim().toLowerCase();
@@ -184,6 +184,9 @@
             // --- PRIVACIDAD ---
             case 'eliminarCuenta':
                 result = eliminarCuenta(email);
+                break;
+            case 'verificarNannyPublico':
+                result = verificarNannyPublico(payload.email);
                 break;
 
             case 'getActividadesClientePlanificadas':
@@ -5017,3 +5020,30 @@ function _enviarAlertaSeguridad(asunto, cuerpo) {
 }
 
 
+
+/**
+ * Verifica públicamente si una nanny está activa.
+ * No requiere token, pero sí integrity_key.
+ */
+function verificarNannyPublico(email) {
+    email = String(email || '').trim().toLowerCase();
+    if (!email) return { activa: false };
+
+    const shU = _hoja(NOMBRE_HOJA_USUARIOS);
+    const filaU = _buscarFilaPorValor(shU, 'email', email);
+
+    if (filaU !== -1) {
+        const headersU = shU.getRange(1, 1, 1, shU.getLastColumn()).getValues()[0].map(h => _norm(h));
+        const valuesU = shU.getRange(filaU, 1, 1, shU.getLastColumn()).getValues()[0];
+
+        const idxNombre = headersU.indexOf(_norm('nombre'));
+        const nombre = idxNombre >= 0 ? valuesU[idxNombre] : 'Nanny Certificada';
+
+        return {
+            activa: true,
+            nombre: nombre
+        };
+    }
+
+    return { activa: false };
+}
