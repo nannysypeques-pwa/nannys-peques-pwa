@@ -288,15 +288,15 @@
                 <span class="label">Emergencia:</span>
                 <span id="perfil_emergencia" class="value">—</span>
               </div>
-              <div class="profile-info-item full">
+              <div class="profile-info-item" id="perfil-email-container">
                 <span class="label">Email:</span>
                 <span id="perfil_email" class="value">—</span>
               </div>
-              <div class="profile-info-item full" id="container-credencial-nanny"
-                style="display:none; margin-top: -10px; margin-bottom: 10px;">
-                <button id="btn-credencial-virtual" class="btn-primary" onclick="mostrarCredencialVirtual()"
-                  style="padding: 8px 15px; font-size: 13px; background: linear-gradient(135deg, #e84c9a 0%, #ff85b3 100%); width: auto; border-radius: 10px;">
-                  🪪 Credencial virtual
+              <!-- Botón Credencial Nanny (Oculto por defecto para familias) -->
+              <div id="perfil-nanny-credential-container" class="profile-info-item" style="display: none;">
+                <span class="label">Identificación:</span>
+                <button class="btn-smart-credential" onclick="abrirCredencialNanny()">
+                  <span>🪪</span> Mi Credencial
                 </button>
               </div>
               <div class="profile-info-item full">
@@ -399,8 +399,7 @@
 
 
           <div class="profile-actions" style="margin-top:20px;">
-            <button id="btn-editar-perfil" class="btn-primary" onclick="editarPerfilCliente()"
-              style="background: var(--blue-main);">
+            <button class="btn-primary" onclick="editarPerfilCliente()" style="background: var(--blue-main);">
               📝 Editar perfil
             </button>
             <button class="btn-ghost" onclick="logout()" style="margin-top:10px; width:100%; color: #ef4444;">
@@ -1353,60 +1352,53 @@
 
 
 
-  <!-- MODAL CREDENCIAL VIRTUAL -->
-  <div id="modalCredencial" class="modal-premium-overlay" style="display:none;">
-    <div class="modal-premium-content credential-card-container">
-      <button class="modal-premium-close" onclick="cerrarModales()">✕</button>
-
-      <div class="credential-card" id="credential-card-body">
-        <div class="credential-glow"></div>
-        <div class="credential-header">
-          <img src="icons/icon-192.png" class="credential-logo">
-          <div class="credential-brand">Nannys y Peques</div>
-        </div>
-
-        <div class="credential-body">
-          <div class="credential-photo-container">
-            <div class="credential-avatar">🍼</div>
-            <div class="credential-badge-active">ACTIVA</div>
-          </div>
-
-          <h2 id="cred_nombre" class="credential-name">Nombre de la Nanny</h2>
-          <p class="credential-role">Nanny Certificada</p>
-
-          <div class="credential-qr-section">
-            <img id="cred_qr" src="" alt="Código de Verificación" class="credential-qr">
-            <p class="credential-verify-text">Escanear para verificar vigencia</p>
-          </div>
-        </div>
-
-        <div class="credential-footer">
-          <div class="credential-meta">
-            <span>Emitida: <b id="cred_fecha">—</b></span>
-            <span id="cred_timer" class="credential-live-timer">00:00:00</span>
-          </div>
-          <div class="credential-security-line"></div>
-          <p class="credential-disclaimer">Identificación oficial digital de Nannys y Peques</p>
-        </div>
-      </div>
-
-      <div style="margin-top: 20px; width: 100%;">
-        <button class="btn-primary" style="width:100%;" onclick="descargarCredencial(event)">Descargar como
-          Imagen</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/app.js"></script>
   <script src="js/index.js" defer></script>
 
 
 
 
+
+  <!-- MODAL Credencial Nanny -->
+  <div id="credentialBackdrop" class="modal-backdrop" style="display:none;">
+    <div class="modal-card credential-modal-card">
+      <div class="credential-header-strip"></div>
+      <div class="credential-body">
+        <img src="logo-sin-fondo.png" class="credential-logo-watermark">
+
+        <div class="credential-avatar-container">
+          <div id="cred_avatar" class="credential-avatar">🍼</div>
+          <div class="credential-hologram-effect"></div>
+        </div>
+
+        <h2 id="cred_nombre" class="credential-name">Nombre Nanny</h2>
+        <div class="credential-role">Nanny Certificada</div>
+
+        <div class="credential-qr-container">
+          <img id="cred_qr" src="" alt="QR de Verificación">
+          <div class="credential-verification-seal">✅</div>
+        </div>
+
+        <div class="credential-dynamic-info">
+          <div class="credential-status-dot"></div>
+          <span id="cred_tiempo_real">--:--:--</span>
+          <span style="color: #94a3b8; margin: 0 4px;">|</span>
+          <span>ESTADO: ACTIVA</span>
+        </div>
+
+        <div class="credential-footer">
+          <p class="credential-footer-text">
+            Escanea el código QR para verificar la autenticidad <br>
+            de esta credencial en tiempo real.
+          </p>
+        </div>
+      </div>
+      <div class="modal-actions" style="padding: 15px; background: #f8fafc;">
+        <button class="btn-primary" onclick="cerrarCredencial()" style="margin: 0; width: 100%;">Entendido</button>
+      </div>
+    </div>
+  </div>
+
 </body>
-
-
-
 
 </html>

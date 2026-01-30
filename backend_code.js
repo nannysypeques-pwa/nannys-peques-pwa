@@ -2670,11 +2670,7 @@ function obtenerServiciosAdminRango(desdeISO, hastaISO) {
 /** =========================
  *  UI (WebApp)
  *  ========================= */
-function doGet(e) {
-    // MODO VERIFICACIÓN PÚBLICA
-    if (e && e.parameter && e.parameter.v) {
-        return _renderPublicVerification(e.parameter.v);
-    }
+function doGet() {
     const t = HtmlService.createTemplateFromFile('Index'); t.ZONA_HORARIA = ZONA_HORARIA;
     return t.evaluate().setTitle('Nannys y Peques')
         .setFaviconUrl('https://ssl.gstatic.com/docs/doclist/images/mediatype/icon_1_spreadsheet_x16.png')
@@ -5018,92 +5014,6 @@ function _enviarAlertaSeguridad(asunto, cuerpo) {
             body: fullCuerpo
         });
     } catch (e) { console.error('Error enviando alerta:', e); }
-}
-
-/**
- * Renderiza una página pública y bonita para verificar si una niñera está activa.
- * No requiere token, solo el email ofuscado.
- */
-function _renderPublicVerification(v) {
-    let email = "";
-    try {
-        // Des-ofuscar (Standard Base64)
-        const bytes = Utilities.base64Decode(v);
-        email = Utilities.newBlob(bytes).getDataAsString().trim().toLowerCase();
-    } catch (e) {
-        return HtmlService.createHtmlOutput("<h1 style='text-align:center; margin-top:50px;'>Error de Verificación</h1><p style='text-align:center;'>El código no es legible o ha sido alterado.</p>");
-    }
-
-    const sh = _hoja(NOMBRE_HOJA_USUARIOS);
-    const data = sh.getDataRange().getValues();
-    const headers = data[0].map(h => _norm(h));
-    const idxEmail = headers.indexOf('email');
-    const idxActivo = headers.indexOf('activo');
-    const idxNombre = headers.indexOf('nombre');
-
-    let nanny = null;
-    if (idxEmail !== -1) {
-        for (let i = 1; i < data.length; i++) {
-            if (String(data[i][idxEmail]).toLowerCase() === email) {
-                nanny = {
-                    nombre: data[i][idxNombre] || email,
-                    activo: _esVerdadero(data[i][idxActivo])
-                };
-                break;
-            }
-        }
-    }
-
-    let statusHtml = "";
-    if (nanny && nanny.activo) {
-        statusHtml = `
-            <div style="max-width: 450px; width: 90%; background: #ffffff; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); padding: 40px 20px; text-align: center; border: 1px solid #e2e8f0; position: relative; overflow: hidden; animation: slideUp 0.6s ease-out;">
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 10px; background: linear-gradient(90deg, #e84c9a, #3b82f6);"></div>
-                <div style="font-size: 80px; margin-bottom: 20px; animation: check-pulse 1s infinite alternate;">✅</div>
-                <h1 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1e293b; margin: 0 0 10px 0; font-size: 28px;">Nanny Verificada</h1>
-                <p style="font-family: 'Segoe UI', sans-serif; font-size: 18px; color: #475569; line-height: 1.6; margin: 0;">
-                    Confirmamos que <br><b style="color: #e84c9a; font-size: 22px;">${nanny.nombre}</b><br>es una niñera <b style="color: #22c55e;">ACTIVA</b> y autorizada.
-                </p>
-                <div style="margin-top: 30px; padding: 15px; background: #f8fafc; border-radius: 15px; font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                    Verificación Oficial de Nannys y Peques
-                </div>
-            </div>
-        `;
-    } else {
-        statusHtml = `
-            <div style="max-width: 450px; width: 90%; background: #ffffff; border-radius: 30px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); padding: 40px 20px; text-align: center; border: 1px solid #fee2e2; position: relative; overflow: hidden; animation: slideUp 0.6s ease-out;">
-                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 10px; background: #ef4444;"></div>
-                <div style="font-size: 80px; margin-bottom: 20px;">⚠️</div>
-                <h1 style="font-family: 'Segoe UI', sans-serif; color: #991b1b; margin: 0 0 10px 0;">No Verificada</h1>
-                <p style="font-family: 'Segoe UI', sans-serif; font-size: 16px; color: #7f1d1d; line-height: 1.6;">
-                    Lo sentimos, esta identificación no es válida o la persona no se encuentra activa en nuestro staff.
-                </p>
-            </div>
-        `;
-    }
-
-    const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Verificación Nannys y Peques</title>
-            <style>
-                body { margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; background: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-                @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-                @keyframes check-pulse { from { transform: scale(0.9); } to { transform: scale(1.1); } }
-            </style>
-        </head>
-        <body>
-            ${statusHtml}
-        </body>
-        </html>
-    `;
-
-    return HtmlService.createHtmlOutput(html)
-        .setTitle("Verificación | Nannys y Peques")
-        .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 

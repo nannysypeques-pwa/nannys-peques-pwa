@@ -799,6 +799,210 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     grid-column: span 2;
 }
 
+/* =========================================
+   ESTILOS CREDENCIAL INTELIGENTE (SMART CREDENTIAL)
+   ========================================= */
+
+/* Botón en el Grid */
+.btn-smart-credential {
+    background: linear-gradient(135deg, #FF69B4, #3BB6C4);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 10px rgba(232, 76, 154, 0.2);
+    transition: all 0.3s ease;
+    width: fit-content;
+    margin-top: 5px;
+}
+
+.btn-smart-credential:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 15px rgba(232, 76, 154, 0.4);
+}
+
+/* Modal y Tarjeta de Credencial */
+.credential-modal-card {
+    background: #f8fafc;
+    padding: 0 !important;
+    max-width: 350px !important;
+    overflow: hidden !important;
+    border: none !important;
+    position: relative;
+}
+
+.credential-header-strip {
+    height: 8px;
+    background: linear-gradient(to right, var(--pink-main), var(--blue-main));
+    width: 100%;
+}
+
+.credential-body {
+    padding: 25px 20px;
+    text-align: center;
+    position: relative;
+}
+
+.credential-logo-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.03;
+    width: 80%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.credential-avatar-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+    z-index: 2;
+}
+
+.credential-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 4px solid white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    object-fit: cover;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+}
+
+.credential-hologram-effect {
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0) 100%);
+    background-size: 200% 200%;
+    animation: hologramMove 3s infinite linear;
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0.5;
+}
+
+@keyframes hologramMove {
+    0% {
+        background-position: -200% -200%;
+    }
+
+    100% {
+        background-position: 200% 200%;
+    }
+}
+
+.credential-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--text-main);
+    margin-bottom: 5px;
+}
+
+.credential-role {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pink-main);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+}
+
+.credential-qr-container {
+    background: white;
+    padding: 15px;
+    border-radius: 20px;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.credential-qr-container img {
+    width: 100%;
+    height: 100%;
+}
+
+.credential-verification-seal {
+    position: absolute;
+    bottom: -10px;
+    right: -10px;
+    background: #22C55E;
+    color: white;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    border: 3px solid white;
+    box-shadow: 0 4px 10px rgba(34, 197, 94, 0.3);
+}
+
+.credential-dynamic-info {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    background: rgba(0, 0, 0, 0.03);
+    padding: 8px 15px;
+    border-radius: 50px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.credential-status-dot {
+    width: 8px;
+    height: 8px;
+    background: #22C55E;
+    border-radius: 50%;
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+}
+
+.credential-footer {
+    padding: 15px;
+    background: white;
+    border-top: 1px solid #f1f5f9;
+}
+
+.credential-footer-text {
+    font-size: 10px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+
 
 .profile-info-item .label {
     font-size: 11px;

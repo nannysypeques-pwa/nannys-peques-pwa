@@ -2786,8 +2786,14 @@ async function cargarPerfil() {
                 if (itemPoliticas) itemPoliticas.style.display = 'none';
                 if (avatar) avatar.textContent = '🍼';
 
-                const btnCredencialCont = document.getElementById('container-credencial-nanny');
-                if (btnCredencialCont) btnCredencialCont.style.display = 'block';
+                const btnEditar = document.querySelector('.profile-actions .btn-primary');
+                if (btnEditar) btnEditar.style.display = 'none';
+
+                // Mostrar botón de credencial
+                const containerCredencial = document.getElementById('perfil-nanny-credential-container');
+                if (containerCredencial) containerCredencial.style.display = 'flex';
+                const emailContainer = document.getElementById('perfil-email-container');
+                if (emailContainer) emailContainer.classList.remove('full');
             } else {
                 if (seccionPeques) seccionPeques.style.display = 'block';
                 if (itemMascotas) itemMascotas.style.display = 'block';
@@ -2795,13 +2801,15 @@ async function cargarPerfil() {
                 if (itemPoliticas) itemPoliticas.style.display = 'block';
                 if (avatar) avatar.textContent = '👨‍👩‍👧‍👦';
 
-                const btnCredencialCont = document.getElementById('container-credencial-nanny');
-                if (btnCredencialCont) btnCredencialCont.style.display = 'none';
-            }
+                const btnEditar = document.querySelector('.profile-actions .btn-primary');
+                if (btnEditar) btnEditar.style.display = 'block';
 
-            // El botón editar perfil siempre se muestra (los nannies ahora editan su perfil también)
-            const btnEditar = document.getElementById('btn-editar-perfil');
-            if (btnEditar) btnEditar.style.display = 'block';
+                // Ocultar botón de credencial
+                const containerCredencial = document.getElementById('perfil-nanny-credential-container');
+                if (containerCredencial) containerCredencial.style.display = 'none';
+                const emailContainer = document.getElementById('perfil-email-container');
+                if (emailContainer) emailContainer.classList.add('full');
+            }
 
             //Contacto
             if (document.getElementById('perfil_tel')) document.getElementById('perfil_tel').textContent = perf.telefono || perf.teléfono || '—';
@@ -3358,103 +3366,45 @@ window.limpiarImagenSeleccionada = limpiarImagenSeleccionada;
 
 
 
-/* =========================================
-   CREDENCIAL VIRTUAL (NANNIES)
-   ========================================= */
-let credentialTimerInterval = null;
+let timerCredencial;
 
-function mostrarCredencialVirtual() {
-    const modal = document.getElementById('modalCredencial');
-    if (!modal) return;
+function abrirCredencialNanny() {
+    const perf = CACHE_CLIENTE.profile;
+    if (!perf) return;
 
-    // Llenar datos desde SESION y CACHE
-    const nombre = SESION.nombre || 'Mi Perfil';
-    const email = SESION.email || '';
-
-    document.getElementById('cred_nombre').textContent = nombre;
-
-    const hoy = new Date();
-    document.getElementById('cred_fecha').textContent = hoy.toLocaleDateString();
+    document.getElementById('cred_nombre').textContent = perf.nombre || 'Nombre no disponible';
 
     // Generar QR de Verificación
-    // El QR apunta al WebApp con el parámetro de verificación
-    // Obscurecemos el email en base64 para el link público
-    const emailB64 = btoa(email);
-    const verifyUrl = `${API_URL}?v=${emailB64}`;
-    const qrUrl = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(verifyUrl)}&choe=UTF-8`;
+    const verificationUrl = `https://nannysypeques.com/verify?id=${encodeURIComponent(perf.email)}`;
+    document.getElementById('cred_qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(verificationUrl)}`;
 
-    document.getElementById('cred_qr').src = qrUrl;
-
-    // Mostrar modal
-    modal.style.display = 'flex';
-
-    // Iniciar Reloj de Seguridad
-    if (credentialTimerInterval) clearInterval(credentialTimerInterval);
-    actualizarRelojCredencial();
-    credentialTimerInterval = setInterval(actualizarRelojCredencial, 1000);
-}
-
-function actualizarRelojCredencial() {
-    const timerElem = document.getElementById('cred_timer');
-    if (!timerElem) return;
-    const now = new Date();
-    timerElem.textContent = now.toLocaleTimeString();
-}
-
-// Función para cerrar modales y limpiar intervalos
-const originalCerrarModales = window.cerrarModales;
-window.cerrarModales = function () {
-    if (credentialTimerInterval) {
-        clearInterval(credentialTimerInterval);
-        credentialTimerInterval = null;
+    // Manejar avatar si hay imagen
+    const credAvatar = document.getElementById('cred_avatar');
+    if (perf.imagen && perf.imagen.startsWith('http')) {
+        credAvatar.innerHTML = `<img src="${perf.imagen}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+    } else {
+        credAvatar.textContent = '🍼';
     }
-    const modalCred = document.getElementById('modalCredencial');
-    if (modalCred) modalCred.style.display = 'none';
 
-    if (typeof originalCerrarModales === 'function') {
-        originalCerrarModales();
-    }
-};
+    // Iniciar reloj en tiempo real (Seguridad Dinámica)
+    const updateTime = () => {
+        const ahora = new Date();
+        const timeStr = ahora.toLocaleTimeString('es-MX', { hour12: false });
+        const el = document.getElementById('cred_tiempo_real');
+        if (el) el.textContent = timeStr;
+    };
+    updateTime();
+    clearInterval(timerCredencial);
+    timerCredencial = setInterval(updateTime, 1000);
 
-async function descargarCredencial(e) {
-    if (e) e.preventDefault();
-    const card = document.getElementById('credential-card-body');
-    if (!card) return;
-
-    // Efecto visual en el botón
-    const btn = e.currentTarget || e.target;
-    const oldText = btn.innerHTML;
-    btn.innerHTML = "Generando imagen... ⏳";
-    btn.disabled = true;
-
-    try {
-        // Asegurarse de que el QR esté cargado antes de capturar
-        const qrImg = document.getElementById('cred_qr');
-        if (qrImg && !qrImg.complete) {
-            await new Promise(r => qrImg.onload = r);
-        }
-
-        const canvas = await html2canvas(card, {
-            scale: 2,
-            backgroundColor: "#ffffff",
-            logging: false,
-            useCORS: true,
-            allowTaint: true
-        });
-
-        const link = document.createElement('a');
-        link.download = `Credencial_Nanny_${SESION.nombre.replace(/\s+/g, '_')}.png`;
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-
-        alert("¡Credencial descargada con éxito! Guárdala en tu galería.");
-    } catch (e) {
-        console.error("Error html2canvas:", e);
-        alert("Lo sentimos, no se pudo generar la imagen automática en este dispositivo. Por favor, toma una captura de pantalla (Screenshot) de tu credencial.");
-    } finally {
-        btn.innerHTML = oldText;
-        btn.disabled = false;
-    }
+    document.getElementById('credentialBackdrop').style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // Evitar scroll de fondo
 }
-window.mostrarCredencialVirtual = mostrarCredencialVirtual;
-window.descargarCredencial = descargarCredencial;
+window.abrirCredencialNanny = abrirCredencialNanny;
+
+function cerrarCredencial() {
+    document.getElementById('credentialBackdrop').style.display = 'none';
+    document.body.style.overflow = '';
+    clearInterval(timerCredencial);
+}
+window.cerrarCredencial = cerrarCredencial;
