@@ -37,6 +37,15 @@ function mostrarLoading(show, msg) {
 }
 window.mostrarLoading = mostrarLoading;
 
+function mostrarToast(msg) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+window.mostrarToast = mostrarToast;
+
 function reiniciarTemporizadorInactividad() {
     clearTimeout(logoutTimer);
     // 30 minutos (1,800,000 ms)
@@ -3493,7 +3502,7 @@ document.addEventListener('change', async (e) => {
                         }
                         // Refrescar vista de la credencial
                         abrirCredencialNanny();
-                        alert("¡Foto actualizada con éxito!");
+                        mostrarToast("✅ ¡Foto actualizada con éxito!");
                     } else {
                         throw new Error("No se recibió la URL de la imagen correctamente.");
                     }
