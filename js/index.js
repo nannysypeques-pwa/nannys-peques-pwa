@@ -2786,8 +2786,11 @@ async function cargarPerfil() {
                 if (itemPoliticas) itemPoliticas.style.display = 'none';
                 if (avatar) avatar.textContent = '🍼';
 
-                const btnEditar = document.querySelector('.profile-actions .btn-primary');
+                const btnEditar = document.querySelector('.profile-actions #btn-editar-perfil');
                 if (btnEditar) btnEditar.style.display = 'none';
+
+                const btnCredencial = document.getElementById('btn-credencial-virtual');
+                if (btnCredencial) btnCredencial.style.display = 'block';
             } else {
                 if (seccionPeques) seccionPeques.style.display = 'block';
                 if (itemMascotas) itemMascotas.style.display = 'block';
@@ -2795,8 +2798,11 @@ async function cargarPerfil() {
                 if (itemPoliticas) itemPoliticas.style.display = 'block';
                 if (avatar) avatar.textContent = '👨‍👩‍👧‍👦';
 
-                const btnEditar = document.querySelector('.profile-actions .btn-primary');
+                const btnEditar = document.querySelector('.profile-actions #btn-editar-perfil');
                 if (btnEditar) btnEditar.style.display = 'block';
+
+                const btnCredencial = document.getElementById('btn-credencial-virtual');
+                if (btnCredencial) btnCredencial.style.display = 'none';
             }
 
             //Contacto
@@ -3353,3 +3359,102 @@ function limpiarImagenSeleccionada() {
 window.limpiarImagenSeleccionada = limpiarImagenSeleccionada;
 
 
+
+/* =========================================
+   CREDENCIAL VIRTUAL (NANNIES)
+   ========================================= */
+let credentialTimerInterval = null;
+
+function mostrarCredencialVirtual() {
+    const modal = document.getElementById('modalCredencial');
+    if (!modal) return;
+
+    // Llenar datos desde SESION y CACHE
+    const nombre = SESION.nombre || 'Mi Perfil';
+    const email = SESION.email || '';
+
+    document.getElementById('cred_nombre').textContent = nombre;
+
+    const hoy = new Date();
+    document.getElementById('cred_fecha').textContent = hoy.toLocaleDateString();
+
+    // Generar QR de Verificación
+    // El QR apunta al WebApp con el parámetro de verificación
+    // Obscurecemos el email en base64 para el link público
+    const emailB64 = btoa(email);
+    const verifyUrl = `${API_URL}?v=${emailB64}`;
+    const qrUrl = `https://chart.googleapis.com/chart?chs=200x200&cht=qr&chl=${encodeURIComponent(verifyUrl)}&choe=UTF-8`;
+
+    document.getElementById('cred_qr').src = qrUrl;
+
+    // Mostrar modal
+    modal.style.display = 'flex';
+
+    // Iniciar Reloj de Seguridad
+    if (credentialTimerInterval) clearInterval(credentialTimerInterval);
+    actualizarRelojCredencial();
+    credentialTimerInterval = setInterval(actualizarRelojCredencial, 1000);
+}
+
+function actualizarRelojCredencial() {
+    const timerElem = document.getElementById('cred_timer');
+    if (!timerElem) return;
+    const now = new Date();
+    timerElem.textContent = now.toLocaleTimeString();
+}
+
+// Función para cerrar modales y limpiar intervalos
+const originalCerrarModales = window.cerrarModales;
+window.cerrarModales = function () {
+    if (credentialTimerInterval) {
+        clearInterval(credentialTimerInterval);
+        credentialTimerInterval = null;
+    }
+    const modalCred = document.getElementById('modalCredencial');
+    if (modalCred) modalCred.style.display = 'none';
+
+    if (typeof originalCerrarModales === 'function') {
+        originalCerrarModales();
+    }
+};
+
+async function descargarCredencial(e) {
+    if (e) e.preventDefault();
+    const card = document.getElementById('credential-card-body');
+    if (!card) return;
+
+    // Efecto visual en el botón
+    const btn = e.currentTarget || e.target;
+    const oldText = btn.innerHTML;
+    btn.innerHTML = "Generando imagen... ⏳";
+    btn.disabled = true;
+
+    try {
+        // Asegurarse de que el QR esté cargado antes de capturar
+        const qrImg = document.getElementById('cred_qr');
+        if (qrImg && !qrImg.complete) {
+            await new Promise(r => qrImg.onload = r);
+        }
+
+        const canvas = await html2canvas(card, {
+            scale: 2,
+            backgroundColor: "#ffffff",
+            logging: false,
+            useCORS: true,
+            allowTaint: true
+        });
+
+        const link = document.createElement('a');
+        link.download = `Credencial_Nanny_${SESION.nombre.replace(/\s+/g, '_')}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+
+        alert("¡Credencial descargada con éxito! Guárdala en tu galería.");
+    } catch (e) {
+        console.error("Error html2canvas:", e);
+        alert("Lo sentimos, no se pudo generar la imagen automática en este dispositivo. Por favor, toma una captura de pantalla (Screenshot) de tu credencial.");
+    } finally {
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+    }
+}
