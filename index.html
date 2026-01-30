@@ -292,6 +292,13 @@
                 <span class="label">Email:</span>
                 <span id="perfil_email" class="value">—</span>
               </div>
+              <div class="profile-info-item full" id="container-credencial-nanny"
+                style="display:none; margin-top: -10px; margin-bottom: 10px;">
+                <button id="btn-credencial-virtual" class="btn-primary" onclick="mostrarCredencialVirtual()"
+                  style="padding: 8px 15px; font-size: 13px; background: linear-gradient(135deg, #e84c9a 0%, #ff85b3 100%); width: auto; border-radius: 10px;">
+                  🪪 Credencial virtual
+                </button>
+              </div>
               <div class="profile-info-item full">
                 <span class="label">Dirección:</span>
                 <span id="perfil_direccion" class="value">—</span>
@@ -395,10 +402,6 @@
             <button id="btn-editar-perfil" class="btn-primary" onclick="editarPerfilCliente()"
               style="background: var(--blue-main);">
               📝 Editar perfil
-            </button>
-            <button id="btn-credencial-virtual" class="btn-primary" onclick="mostrarCredencialVirtual()"
-              style="display:none; background: linear-gradient(135deg, #e84c9a 0%, #ff85b3 100%); margin-bottom: 15px;">
-              🪪 Credencial virtual
             </button>
             <button class="btn-ghost" onclick="logout()" style="margin-top:10px; width:100%; color: #ef4444;">
               Cerrar sesión

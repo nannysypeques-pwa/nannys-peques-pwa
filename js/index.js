@@ -2786,11 +2786,8 @@ async function cargarPerfil() {
                 if (itemPoliticas) itemPoliticas.style.display = 'none';
                 if (avatar) avatar.textContent = '🍼';
 
-                const btnEditar = document.querySelector('.profile-actions #btn-editar-perfil');
-                if (btnEditar) btnEditar.style.display = 'none';
-
-                const btnCredencial = document.getElementById('btn-credencial-virtual');
-                if (btnCredencial) btnCredencial.style.display = 'block';
+                const btnCredencialCont = document.getElementById('container-credencial-nanny');
+                if (btnCredencialCont) btnCredencialCont.style.display = 'block';
             } else {
                 if (seccionPeques) seccionPeques.style.display = 'block';
                 if (itemMascotas) itemMascotas.style.display = 'block';
@@ -2798,12 +2795,13 @@ async function cargarPerfil() {
                 if (itemPoliticas) itemPoliticas.style.display = 'block';
                 if (avatar) avatar.textContent = '👨‍👩‍👧‍👦';
 
-                const btnEditar = document.querySelector('.profile-actions #btn-editar-perfil');
-                if (btnEditar) btnEditar.style.display = 'block';
-
-                const btnCredencial = document.getElementById('btn-credencial-virtual');
-                if (btnCredencial) btnCredencial.style.display = 'none';
+                const btnCredencialCont = document.getElementById('container-credencial-nanny');
+                if (btnCredencialCont) btnCredencialCont.style.display = 'none';
             }
+
+            // El botón editar perfil siempre se muestra (los nannies ahora editan su perfil también)
+            const btnEditar = document.getElementById('btn-editar-perfil');
+            if (btnEditar) btnEditar.style.display = 'block';
 
             //Contacto
             if (document.getElementById('perfil_tel')) document.getElementById('perfil_tel').textContent = perf.telefono || perf.teléfono || '—';
@@ -3458,3 +3456,5 @@ async function descargarCredencial(e) {
         btn.disabled = false;
     }
 }
+window.mostrarCredencialVirtual = mostrarCredencialVirtual;
+window.descargarCredencial = descargarCredencial;
