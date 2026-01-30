@@ -10,7 +10,6 @@ let SESION = {
     cliente: false,
     token: null
 };
-window.NYP_VERIFY_MODE = false;
 
 // --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
 let logoutTimer;
@@ -38,59 +37,6 @@ try {
     const s = localStorage.getItem('nyp_sesion');
     if (s) SESION = JSON.parse(s);
 } catch (e) { console.error(e); }
-
-// --- DETECTAR VERIFICACIÓN PÚBLICA DESDE QR ---
-(async function () {
-    const urlParams = new URLSearchParams(window.location.search);
-    // Soportar tanto ?id=... con path /verify como ?verify_nanny=... en root
-    const verifyId = urlParams.get('verify_nanny') || urlParams.get('id');
-
-    if (verifyId) {
-        window.NYP_VERIFY_MODE = true;
-        const iniciarVerificacion = async () => {
-            const vView = document.getElementById('verify-view');
-            const vLoading = document.getElementById('verify-loading');
-            const vResult = document.getElementById('verify-result');
-            const vError = document.getElementById('verify-error');
-            const vName = document.getElementById('verify-nanny-name');
-            const vErrorMsg = document.getElementById('verify-error-msg');
-
-            if (!vView) return;
-
-            // Mostrar el modal público inmediatamente y ocultar el resto
-            vView.style.display = 'flex';
-            const auth = document.getElementById('auth');
-            const app = document.getElementById('app');
-            if (auth) auth.style.display = 'none';
-            if (app) app.style.display = 'none';
-
-            try {
-                const res = await api('verificarNannyPublico', { email: verifyId });
-                console.log("Resultado verificación:", res);
-                if (vLoading) vLoading.style.display = 'none';
-
-                if (res && res.activa) {
-                    if (vResult) vResult.style.display = 'block';
-                    if (vName) vName.textContent = res.nombre || 'Nanny Certificada';
-                } else {
-                    if (vError) vError.style.display = 'block';
-                    if (vErrorMsg) vErrorMsg.textContent = 'La credencial escaneada no es válida o la nanny no está activa en nuestro sistema actualmente.';
-                }
-            } catch (err) {
-                console.error("Error en verificación:", err);
-                if (vLoading) vLoading.style.display = 'none';
-                if (vError) vError.style.display = 'block';
-                if (vErrorMsg) vErrorMsg.textContent = 'No se pudo conectar con el servidor de verificación. Intenta de nuevo.';
-            }
-        };
-
-        if (document.readyState === 'loading') {
-            window.addEventListener('DOMContentLoaded', iniciarVerificacion);
-        } else {
-            iniciarVerificacion();
-        }
-    }
-})();
 
 let SEM1 = { dias: [], baseISO: null };
 let SEM2 = { dias: [], baseISO: null, cargada: false };
@@ -2087,8 +2033,6 @@ window.addEventListener('load', function () {
     }
 
     //Inicializar UI según sesión
-    if (window.NYP_VERIFY_MODE) return; // No inicializar UI normal si estamos verificando
-
     if (SESION.email) {
         document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente');
         if (SESION.admin) document.body.classList.add('admin');
@@ -3431,8 +3375,7 @@ function abrirCredencialNanny() {
     document.getElementById('cred_nombre').textContent = perf.nombre || 'Nombre no disponible';
 
     // Generar QR de Verificación
-    // Cambiamos a query parameter para mayor compatibilidad con PWA
-    const verificationUrl = `https://app.nannysypeques.com.mx/?verify_nanny=${encodeURIComponent(perf.email)}`;
+    const verificationUrl = `https://nannysypeques.com/verify?id=${encodeURIComponent(perf.email)}`;
     document.getElementById('cred_qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(verificationUrl)}`;
 
     // Manejar avatar si hay imagen
