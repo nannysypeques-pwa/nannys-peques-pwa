@@ -191,6 +191,11 @@
                 result = getActividadesClientePlanificadas(email);
                 break;
 
+            case 'uploadProfilePhoto':
+                _enforceRole(email, 'ninera');
+                result = uploadProfilePhoto(payload, email);
+                break;
+
             default:
                 throw new Error('Acción no soportada: ' + action);
         }
@@ -4736,7 +4741,8 @@ function obtenerPerfilCompleto(email) {
             direccion: getStaffVal(['dirección', 'direccion', 'direccion base']),
             ubicacion: getStaffVal(['ubicación', 'ubicacion']),
             emergencia: getStaffVal(['no. de emergencia', 'no. emergencia', 'emergencia']),
-            imagen: getStaffVal('imagen')
+            imagen: getStaffVal('imagen'),
+            foto: getStaffVal('foto')
         };
     }
 
@@ -5005,6 +5011,35 @@ function _sanitizePayload(obj) {
 /**
  * Envía una notificación crítica a los administradores.
  */
+function uploadProfilePhoto(payload, email) {
+    if (!payload || !payload.imagen_base64) throw new Error('No se recibió la imagen');
+
+    // 1. Guardar en Drive (reutilizando DriveUtils.js)
+    const timestamp = Utilities.formatDate(new Date(), ZONA_HORARIA, 'yyyyMMdd_HHmmss');
+    const nombreArchivo = `FOTO_PERFIL_${email.replace(/@/g, '_').replace(/\./g, '_')}_${timestamp}.jpg`;
+    const photoUrl = _guardarImagenDrive(payload.imagen_base64, nombreArchivo);
+
+    // 2. Actualizar hoja Usuarios
+    const sh = _hoja(NOMBRE_HOJA_USUARIOS);
+    const fila = _buscarFilaPorValor(sh, 'email', email);
+    if (fila === -1) throw new Error('Usuario no encontrado');
+
+    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => _norm(h));
+    let idxFoto = headers.indexOf('foto');
+
+    if (idxFoto === -1) {
+        // Crear columna si no existe
+        sh.insertColumnAfter(sh.getLastColumn());
+        sh.getRange(1, sh.getLastColumn()).setValue('foto');
+        idxFoto = sh.getLastColumn() - 1;
+    }
+
+    sh.getRange(fila, idxFoto + 1).setValue(photoUrl);
+
+    return { ok: true, url: photoUrl };
+}
+
+
 function _enviarAlertaSeguridad(asunto, cuerpo) {
     try {
         const fullCuerpo = `ALERTA DE SEGURIDAD - NANNYS Y PEQUES\n\nFecha: ${_nowHuman()}\nEvento: ${asunto}\n\nDetalles:\n${cuerpo}\n\n-- Sistema de Vigilancia Automático --`;

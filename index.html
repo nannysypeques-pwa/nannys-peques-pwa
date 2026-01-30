@@ -1374,9 +1374,20 @@
         <h2 id="cred_nombre" class="credential-name">Nombre Nanny</h2>
         <div class="credential-role">Nanny Certificada</div>
 
-        <div class="credential-qr-container">
-          <img id="cred_qr" src="" alt="QR de Verificación">
-          <div class="credential-verification-seal">✅</div>
+        <div id="cred_photo_container" class="credential-qr-container"
+          style="border: none; background: #f1f5f9; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; height: 180px; margin-top: 15px;">
+          <!-- Foto grande de la niñera -->
+          <img id="cred_foto_principal" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+
+          <!-- Botón de subida (se muestra si no hay foto) -->
+          <div id="cred_upload_ui" style="text-align: center; padding: 20px;">
+            <div style="font-size: 40px; margin-bottom: 10px;">📸</div>
+            <button class="btn-primary" onclick="document.getElementById('cred_foto_input').click()"
+              style="font-size: 12px; padding: 8px 15px;">Subir Foto Oficial</button>
+            <p style="font-size: 10px; color: #64748b; margin-top: 8px;">Requerido para la validez <br> de la
+              credencial</p>
+          </div>
+          <input type="file" id="cred_foto_input" accept="image/*" style="display: none;">
         </div>
 
         <div class="credential-dynamic-info">
@@ -1388,8 +1399,8 @@
 
         <div class="credential-footer">
           <p class="credential-footer-text" style="margin-bottom: 15px;">
-            Escanea el código QR para verificar la autenticidad <br>
-            de esta credencial en tiempo real.
+            Esta credencial es personal e intransferible. <br>
+            Válida solo durante el horario de servicio.
           </p>
           <button class="btn-primary" onclick="cerrarCredencial()" style="margin: 0; width: 100%;">Entendido</button>
         </div>

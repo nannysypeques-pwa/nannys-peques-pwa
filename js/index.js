@@ -3374,11 +3374,23 @@ function abrirCredencialNanny() {
 
     document.getElementById('cred_nombre').textContent = perf.nombre || 'Nombre no disponible';
 
-    // Generar QR de Verificación
-    const verificationUrl = `https://nannysypeques.com/verify?id=${encodeURIComponent(perf.email)}`;
-    document.getElementById('cred_qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(verificationUrl)}`;
+    // Manejar foto principal de la credencial
+    const imgPrincipal = document.getElementById('cred_foto_principal');
+    const uploadUI = document.getElementById('cred_upload_ui');
 
-    // Manejar avatar si hay imagen
+    // Priorizar 'foto' (nueva columna) luego 'imagen' (avatar anterior)
+    const fotoUrl = perf.foto || perf.imagen;
+
+    if (fotoUrl && fotoUrl.startsWith('http')) {
+        imgPrincipal.src = fotoUrl;
+        imgPrincipal.style.display = 'block';
+        if (uploadUI) uploadUI.style.display = 'none';
+    } else {
+        imgPrincipal.style.display = 'none';
+        if (uploadUI) uploadUI.style.display = 'block';
+    }
+
+    // Manejar avatar circular (header)
     const credAvatar = document.getElementById('cred_avatar');
     if (perf.imagen && perf.imagen.startsWith('http')) {
         credAvatar.innerHTML = `<img src="${perf.imagen}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
@@ -3386,7 +3398,7 @@ function abrirCredencialNanny() {
         credAvatar.textContent = '🍼';
     }
 
-    // Iniciar reloj en tiempo real (Seguridad Dinámica)
+    // Iniciar reloj en tiempo real
     const updateTime = () => {
         const ahora = new Date();
         const timeStr = ahora.toLocaleTimeString('es-MX', { hour12: false });
@@ -3398,9 +3410,53 @@ function abrirCredencialNanny() {
     timerCredencial = setInterval(updateTime, 1000);
 
     document.getElementById('credentialBackdrop').style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // Evitar scroll de fondo
+    document.body.style.overflow = 'hidden';
 }
 window.abrirCredencialNanny = abrirCredencialNanny;
+
+// Lógica de subida de foto de perfil
+document.addEventListener('change', async (e) => {
+    if (e.target.id === 'cred_foto_input') {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validar tamaño (máx 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert("La imagen es muy pesada. Máximo 5MB.");
+            return;
+        }
+
+        mostrarLoading(true, "Subiendo foto oficial...");
+
+        try {
+            const reader = new FileReader();
+            reader.onload = async (evt) => {
+                const base64 = evt.target.result;
+                const res = await api('uploadProfilePhoto', {
+                    imagen_base64: base64
+                });
+
+                if (res && res.url) {
+                    // Actualizar caché local
+                    if (CACHE_CLIENTE.profile) {
+                        CACHE_CLIENTE.profile.foto = res.url;
+                    }
+                    // Refrescar vista de la credencial
+                    abrirCredencialNanny();
+                    alert("¡Foto actualizada con éxito!");
+                } else {
+                    throw new Error("No se recibió la URL de la imagen.");
+                }
+                mostrarLoading(false);
+            };
+            reader.readAsDataURL(file);
+        } catch (err) {
+            console.error(err);
+            alert("Error al subir la foto: " + err.message);
+            mostrarLoading(false);
+        }
+    }
+});
 
 function cerrarCredencial() {
     document.getElementById('credentialBackdrop').style.display = 'none';
