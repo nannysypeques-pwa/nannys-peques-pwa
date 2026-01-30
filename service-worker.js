@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nannys-pwa-v11'; // Increment version
+const CACHE_NAME = 'nannys-pwa-v12'; // Increment version to v12
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
