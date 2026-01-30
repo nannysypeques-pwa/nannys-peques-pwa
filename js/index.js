@@ -3414,11 +3414,13 @@ function abrirCredencialNanny() {
 }
 window.abrirCredencialNanny = abrirCredencialNanny;
 
-// Lógica de subida de foto de perfil
+// Lógica de subida de foto de perfil (Credential)
 document.addEventListener('change', async (e) => {
     if (e.target.id === 'cred_foto_input') {
         const file = e.target.files[0];
         if (!file) return;
+
+        console.log("Archivo seleccionado para credencial:", file.name, file.size);
 
         // Validar tamaño (máx 5MB)
         if (file.size > 5 * 1024 * 1024) {
@@ -3426,34 +3428,54 @@ document.addEventListener('change', async (e) => {
             return;
         }
 
-        mostrarLoading(true, "Subiendo foto oficial...");
+        // Usar alert simple si mostrarLoading no existe
+        if (typeof mostrarLoading === 'function') {
+            mostrarLoading(true, "Subiendo foto oficial...");
+        } else {
+            console.log("Subiendo foto oficial...");
+        }
 
         try {
             const reader = new FileReader();
             reader.onload = async (evt) => {
-                const base64 = evt.target.result;
-                const res = await api('uploadProfilePhoto', {
-                    imagen_base64: base64
-                });
+                try {
+                    const base64 = evt.target.result;
+                    console.log("Enviando foto al servidor...");
+                    const res = await api('uploadProfilePhoto', {
+                        imagen_base64: base64
+                    });
 
-                if (res && res.url) {
-                    // Actualizar caché local
-                    if (CACHE_CLIENTE.profile) {
-                        CACHE_CLIENTE.profile.foto = res.url;
+                    console.log("Respuesta del servidor:", res);
+
+                    if (res && res.url) {
+                        // Actualizar caché local
+                        if (CACHE_CLIENTE.profile) {
+                            CACHE_CLIENTE.profile.foto = res.url;
+                            localStorage.setItem('nyp_profile_cache', JSON.stringify(CACHE_CLIENTE.profile));
+                        }
+                        // Refrescar vista de la credencial
+                        abrirCredencialNanny();
+                        alert("¡Foto actualizada con éxito!");
+                    } else {
+                        throw new Error("No se recibió la URL de la imagen correctamente.");
                     }
-                    // Refrescar vista de la credencial
-                    abrirCredencialNanny();
-                    alert("¡Foto actualizada con éxito!");
-                } else {
-                    throw new Error("No se recibió la URL de la imagen.");
+                } catch (innerErr) {
+                    console.error("Error procesando respuesta de subida:", innerErr);
+                    alert("Error al procesar la subida: " + innerErr.message);
+                } finally {
+                    if (typeof mostrarLoading === 'function') mostrarLoading(false);
                 }
-                mostrarLoading(false);
+            };
+            reader.onerror = (error) => {
+                console.error("Error en FileReader:", error);
+                alert("Error al leer el archivo.");
+                if (typeof mostrarLoading === 'function') mostrarLoading(false);
             };
             reader.readAsDataURL(file);
         } catch (err) {
-            console.error(err);
-            alert("Error al subir la foto: " + err.message);
-            mostrarLoading(false);
+            console.error("Error en flujo de subida:", err);
+            alert("Error al iniciar la subida: " + err.message);
+            if (typeof mostrarLoading === 'function') mostrarLoading(false);
         }
     }
 });
