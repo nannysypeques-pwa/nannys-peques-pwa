@@ -534,6 +534,12 @@ function actualizarPlaneaciones() {
 }
 
 function actualizarPlaneacionesSupervision() {
+    const btn = document.getElementById('btnRefreshSupervision');
+    if (btn) btn.textContent = 'Actualizando...';
+
+    // Limpiar caché del localStorage para forzar recarga real
+    localStorage.removeItem('CACHE_PLANEACIONES_SUP_' + SESION.email);
+
     CACHE_PLANEACIONES = {};
     PLANEACION_SESSION_ID++;
 
@@ -542,7 +548,7 @@ function actualizarPlaneacionesSupervision() {
     if (c1) c1.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
     if (c2) c2.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
 
-    cargarResumenPlaneaciones();
+    cargarResumenPlaneaciones(true);
 }
 
 async function cargarServicios(force = false) {
@@ -1197,21 +1203,25 @@ async function cargarResumenDisponibilidadAdmin() {
     }
 }
 
-function cargarResumenPlaneaciones() {
+function cargarResumenPlaneaciones(force = false) {
     const c1 = document.getElementById('resumenPlaneacionesActual');
     const c2 = document.getElementById('resumenPlaneacionesSiguiente');
+    const btn = document.getElementById('btnRefreshSupervision');
 
     // MÁXIMA VELOCIDAD: Usar caché del localStorage si existe para mostrar de inmediato
-    const cached = localStorage.getItem('CACHE_PLANEACIONES_SUP_' + SESION.email);
-    if (cached) {
-        try {
-            const parsed = JSON.parse(cached);
-            if (c1) renderResumenPlaneaciones(parsed.actual, c1);
-            if (c2) renderResumenPlaneaciones(parsed.siguiente, c2, 'siguiente');
-        } catch (e) { console.error("Error al leer caché planeaciones", e); }
-    } else {
-        if (c1) c1.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
-        if (c2) c2.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+    // Pero solo si NO es una recarga forzada
+    if (!force) {
+        const cached = localStorage.getItem('CACHE_PLANEACIONES_SUP_' + SESION.email);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (c1) renderResumenPlaneaciones(parsed.actual, c1);
+                if (c2) renderResumenPlaneaciones(parsed.siguiente, c2, 'siguiente');
+            } catch (e) { console.error("Error al leer caché planeaciones", e); }
+        } else {
+            if (c1) c1.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+            if (c2) c2.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+        }
     }
 
     // Llamada consolidada (Una sola petición para las 2 semanas)
@@ -1223,8 +1233,12 @@ function cargarResumenPlaneaciones() {
                 // Guardar para la próxima vez
                 localStorage.setItem('CACHE_PLANEACIONES_SUP_' + SESION.email, JSON.stringify(res));
             }
+            if (btn) btn.textContent = '🔄 Actualizar';
         })
-        .catch(console.error);
+        .catch(err => {
+            console.error(err);
+            if (btn) btn.textContent = '🔄 Actualizar';
+        });
 }
 
 function renderResumenPlaneaciones(data, cont, prefijo) {
