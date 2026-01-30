@@ -13,6 +13,30 @@ let SESION = {
 
 // --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
 let logoutTimer;
+
+function mostrarLoading(show, msg) {
+    const loadingUI = document.getElementById('cred_loading_ui');
+    const uploadUI = document.getElementById('cred_upload_ui');
+    const imgPrincipal = document.getElementById('cred_foto_principal');
+
+    if (show) {
+        if (loadingUI) loadingUI.style.display = 'flex';
+        if (uploadUI) uploadUI.style.display = 'none';
+        if (imgPrincipal) imgPrincipal.style.display = 'none';
+    } else {
+        if (loadingUI) loadingUI.style.display = 'none';
+        // El estado de visibilidad de uploadUI e imgPrincipal será restaurado 
+        // por abrirCredencialNanny() en éxito o debe ser restaurado manualmente en error.
+        // Como fallback para error, si abirCredencial no se llama:
+        if (!CACHE_CLIENTE.profile?.foto && !CACHE_CLIENTE.profile?.imagen) {
+            if (uploadUI) uploadUI.style.display = 'block';
+        } else {
+            if (imgPrincipal) imgPrincipal.style.display = 'block';
+        }
+    }
+}
+window.mostrarLoading = mostrarLoading;
+
 function reiniciarTemporizadorInactividad() {
     clearTimeout(logoutTimer);
     // 30 minutos (1,800,000 ms)

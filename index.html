@@ -1475,6 +1475,15 @@
             <p style="font-size: 10px; color: #64748b; margin-top: 8px;">Requerido para la validez <br> de la
               credencial</p>
           </div>
+
+          <!-- UI de Carga -->
+          <div id="cred_loading_ui"
+            style="display: none; text-align: center; padding: 20px; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+            <div class="loader-spinner" style="position: static; margin-bottom: 10px;"></div>
+            <p style="font-size: 14px; font-weight: 700; color: var(--pink-main);">Subiendo foto...</p>
+            <p class="muted" style="font-size: 10px; margin-top: 4px;">Esto puede tardar unos segundos</p>
+          </div>
+
           <input type="file" id="cred_foto_input" accept="image/*" style="display: none;">
         </div>
 
