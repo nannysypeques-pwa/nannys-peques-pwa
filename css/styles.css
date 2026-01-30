@@ -844,7 +844,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 }
 
 .credential-body {
-    padding: 25px 20px;
+    padding: 15px 20px;
     text-align: center;
     position: relative;
 }
@@ -864,7 +864,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     position: relative;
     width: 100px;
     height: 100px;
-    margin: 0 auto 15px;
+    margin: 0 auto 10px;
     z-index: 2;
 }
 
@@ -917,7 +917,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     color: var(--pink-main);
     text-transform: uppercase;
     letter-spacing: 2px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .credential-qr-container {
@@ -926,7 +926,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     border-radius: 20px;
     width: 160px;
     height: 160px;
-    margin: 0 auto 20px;
+    margin: 0 auto 15px;
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
     display: flex;
     align-items: center;
@@ -966,7 +966,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .credential-status-dot {
@@ -992,7 +992,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 }
 
 .credential-footer {
-    padding: 15px;
+    padding: 10px 15px;
     background: white;
     border-top: 1px solid #f1f5f9;
 }

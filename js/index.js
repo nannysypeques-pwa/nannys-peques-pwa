@@ -3375,7 +3375,7 @@ function abrirCredencialNanny() {
     document.getElementById('cred_nombre').textContent = perf.nombre || 'Nombre no disponible';
 
     // Generar QR de Verificación
-    const verificationUrl = `https://nannysypeques.com/verify?id=${encodeURIComponent(perf.email)}`;
+    const verificationUrl = `https://app.nannysypeques.com.mx/verify?id=${encodeURIComponent(perf.email)}`;
     document.getElementById('cred_qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(verificationUrl)}`;
 
     // Manejar avatar si hay imagen
