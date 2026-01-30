@@ -55,7 +55,9 @@
       background: #f1f5f9 !important;
       border-radius: 12px !important;
       width: 100% !important;
-      height: 200px !important;
+      min-height: 180px !important;
+      height: auto !important;
+      max-height: 250px !important;
       margin: 15px 0 !important;
       position: relative !important;
       overflow: hidden !important;
@@ -1441,11 +1443,12 @@
         </div>
 
         <h2 id="cred_nombre" class="credential-name">Nombre Nanny</h2>
-        <div class="credential-role">Nanny Certificada</div>
+        <div class="credential-role">Nanny Activa</div>
 
         <div id="cred_photo_container" class="credential-qr-container">
           <!-- Foto grande de la niñera -->
-          <img id="cred_foto_principal" src="" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+          <img id="cred_foto_principal" src=""
+            style="width: 100%; height: auto; max-height: 250px; object-fit: contain; display: none; border-radius: 8px;">
 
           <!-- Botón de subida (se muestra si no hay foto) -->
           <div id="cred_upload_ui" style="text-align: center; padding: 20px;">
@@ -1467,8 +1470,7 @@
 
         <div class="credential-footer">
           <p class="credential-footer-text" style="margin-bottom: 15px;">
-            Esta credencial es personal e intransferible. <br>
-            Válida solo durante el horario de servicio.
+            Esta credencial es personal e intransferible.
           </p>
           <button class="btn-primary" onclick="cerrarCredencial()" style="margin: 0; width: 100%;">Entendido</button>
         </div>
