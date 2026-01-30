@@ -805,21 +805,23 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 
 /* Botón en el Grid */
 .btn-smart-credential {
-    background: linear-gradient(135deg, #FF69B4, #3BB6C4);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    padding: 8px 12px;
-    font-size: 11px;
-    font-weight: 700;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    box-shadow: 0 4px 10px rgba(232, 76, 154, 0.2);
-    transition: all 0.3s ease;
-    width: fit-content;
-    margin-top: 5px;
+    background: linear-gradient(135deg, #FF69B4, #3BB6C4) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 25px !important;
+    padding: 10px 20px !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    box-shadow: 0 4px 15px rgba(232, 76, 154, 0.3) !important;
+    transition: all 0.3s ease !important;
+    width: 100% !important;
+    margin-top: 8px !important;
+    outline: none !important;
 }
 
 .btn-smart-credential:hover {
@@ -832,10 +834,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     background: #f8fafc;
     padding: 0 !important;
     max-width: 350px !important;
-    max-height: 85vh !important;
-    /* Limit height */
-    overflow-y: auto !important;
-    /* Allow scroll if needed on tiny screens */
+    overflow: hidden !important;
     border: none !important;
     position: relative;
 }
@@ -847,8 +846,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 }
 
 .credential-body {
-    padding: 15px 20px;
-    /* Reduced vertical padding */
+    padding: 25px 20px;
     text-align: center;
     position: relative;
 }
@@ -866,11 +864,9 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 
 .credential-avatar-container {
     position: relative;
-    width: 80px;
-    /* Smaller avatar */
-    height: 80px;
-    margin: 0 auto 10px;
-    /* Reduced margin */
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
     z-index: 2;
 }
 
@@ -878,16 +874,14 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    border: 3px solid white;
-    /* Thinner border */
+    border: 4px solid white;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     object-fit: cover;
     background: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 32px;
-    /* Smaller icon */
+    font-size: 40px;
 }
 
 .credential-hologram-effect {
@@ -914,37 +908,34 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 
 .credential-name {
     font-family: 'DM Serif Display', serif;
-    font-size: 20px;
-    /* Slightly smaller name */
+    font-size: 22px;
     color: var(--text-main);
-    margin-bottom: 3px;
+    margin-bottom: 5px;
 }
 
 .credential-role {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--pink-main);
     text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 12px;
-    /* Reduced margin */
+    letter-spacing: 2px;
+    margin-bottom: 20px;
 }
 
 .credential-qr-container {
     background: white;
-    padding: 10px;
-    /* Reduced padding */
-    border-radius: 15px;
-    width: 140px;
-    /* Smaller QR */
-    height: 140px;
-    margin: 0 auto 15px;
-    /* Reduced margin */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+    padding: 0;
+    border-radius: 12px;
+    width: 100%;
+    /* Fix: changed from 140px to 100% */
+    height: 180px;
+    margin: 15px auto 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
+    overflow: hidden;
 }
 
 .credential-qr-container img {
@@ -971,16 +962,15 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 
 .credential-dynamic-info {
     font-family: monospace;
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-muted);
     background: rgba(0, 0, 0, 0.03);
-    padding: 6px 12px;
+    padding: 8px 15px;
     border-radius: 50px;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
-    /* Reduced margin */
+    margin-bottom: 20px;
 }
 
 .credential-status-dot {
@@ -1006,8 +996,7 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
 }
 
 .credential-footer {
-    padding: 10px 15px;
-    /* Reduced vertical padding */
+    padding: 15px;
     background: white;
     border-top: 1px solid #f1f5f9;
 }
