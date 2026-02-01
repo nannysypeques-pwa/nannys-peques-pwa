@@ -116,6 +116,11 @@
                 result = getServiciosCliente(email, payload.fecha_inicio);
                 break;
 
+            case 'editarServicioCliente':
+                _enforceRole(email, 'cliente');
+                result = editarServicioCliente(email, payload);
+                break;
+
             // --- DISPONIBILIDAD ---
             case 'obtenerDisponibilidad':
                 _enforceRole(email, 'ninera');
@@ -298,6 +303,24 @@ function _toHM(v) {
     const m = s.match(/^(\d{1,2})[:.](\d{1,2})$/);
     if (m) return ('0' + m[1]).slice(-2) + ':' + ('0' + m[2]).slice(-2);
     return s;
+}
+
+/**
+ * Formatea HH:mm (24h) a h:mm A/P para el Sheet
+ */
+function _formatTimeForSheet(hhmm) {
+    if (!hhmm) return '';
+    try {
+        const parts = hhmm.split(':');
+        let h = parseInt(parts[0], 10);
+        const m = parts[1] || '00';
+        const ampm = h >= 12 ? 'P' : 'A';
+        h = h % 12;
+        if (h === 0) h = 12;
+        return `${h}:${m} ${ampm}`;
+    } catch (e) {
+        return hhmm;
+    }
 }
 function _nombrePorEmail(email) { const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) return ''; return String(sh.getRange(fila, 2).getValue() || '').trim(); }
 
@@ -4717,6 +4740,76 @@ function getServiciosCliente(email, fechaInicio) {
             'Notas': notasFinal
         };
     }).sort((a, b) => (a.fecha + ' ' + a.hora_inicio).localeCompare(b.fecha + ' ' + b.hora_inicio));
+}
+
+/**
+ * Permite al cliente editar el horario de inicio de un servicio
+ * SOLO si no ha sido confirmado por la agencia (celda Autorizado vacía)
+ */
+function editarServicioCliente(email, payload) {
+    const { fecha, hora } = payload; // hora viene en HH:mm (24h)
+    if (!fecha || !hora) throw new Error('Fecha y horario requeridos');
+
+    email = String(email).trim().toLowerCase();
+    const sheets = ['Servicios', 'Servicios_Siguiente_semana'];
+    let success = false;
+    let errorMsg = 'No se encontró el servicio o ya está confirmado.';
+
+    for (const sheetName of sheets) {
+        const sh = _hoja(sheetName);
+        const data = sh.getRange(1, 1, Math.min(sh.getLastRow(), 200), sh.getLastColumn()).getValues();
+        if (data.length < 2) continue;
+
+        const rowFechas = data[0];
+        const rowSub = data[1].map(h => String(h).trim().toLowerCase());
+
+        let idxEmail = -1;
+        for (let i = 0; i < rowFechas.length; i++) {
+            if (_norm(String(rowFechas[i])) === 'email') { idxEmail = i; break; }
+        }
+        if (idxEmail === -1) {
+            for (let i = 0; i < rowSub.length; i++) {
+                if (_norm(rowSub[i]) === 'email') { idxEmail = i; break; }
+            }
+        }
+        if (idxEmail === -1) continue;
+
+        const totalRows = sh.getLastRow();
+        const emailsCol = sh.getRange(1, idxEmail + 1, totalRows, 1).getValues();
+        let filaCliente = -1;
+        for (let r = 2; r < totalRows; r++) {
+            if (String(emailsCol[r][0]).trim().toLowerCase() === email) {
+                filaCliente = r + 1;
+                break;
+            }
+        }
+
+        if (filaCliente === -1) continue;
+
+        const mapa = _mapaColumnasPorFecha_(sh);
+        const colInfo = mapa[fecha];
+
+        if (colInfo && colInfo.hora_inicio) {
+            const idxConfirm = colInfo.confirmado_en;
+            if (idxConfirm) {
+                const valConfirm = String(sh.getRange(filaCliente, idxConfirm).getValue()).trim();
+                if (valConfirm !== '') {
+                    throw new Error('Este servicio ya ha sido confirmado y no puede ser editado.');
+                }
+            }
+
+            const horaFormateada = _formatTimeForSheet(hora);
+            sh.getRange(filaCliente, colInfo.hora_inicio).setValue(horaFormateada);
+
+            _auditLog(email, 'EDIT_SERVICE_TIME', { fecha, hora, sheet: sheetName, fila: filaCliente });
+
+            success = true;
+            break;
+        }
+    }
+
+    if (!success) throw new Error(errorMsg);
+    return { ok: true, mensaje: 'Horario actualizado correctamente' };
 }
 
 // -----------------------------------------

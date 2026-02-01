@@ -3304,8 +3304,88 @@ function mostrarDetalleServicioCliente(s) {
         ubicacionVacio.style.display = 'block';
     }
 
+    // --- LÓGICA DE EDICIÓN DE HORARIO ---
+    window._currentSvcCliente = s;
+    cancelarEdicionHorario(); // Resetear estado previo
+
+    const btnEdit = document.getElementById('btnEditarHorario');
+    if (btnEdit) {
+        // Mostrar botón editar solo si NO tiene confirmado_en (pill amarilla)
+        const isPending = !s.confirmado_en || String(s.confirmado_en).trim() === '';
+        btnEdit.style.display = isPending ? 'block' : 'none';
+    }
+
     //Mostrar el modal
     document.getElementById('modalServicioCliente').style.display = 'flex';
+}
+
+/**
+ * Habilita los campos de edición en el modal de cliente
+ */
+function habilitarEdicionHorario() {
+    const s = window._currentSvcCliente;
+    if (!s) return;
+
+    document.getElementById('mClienteHorarioCont').style.display = 'none';
+    document.getElementById('mClienteEditHorario').style.display = 'flex';
+    document.getElementById('btnEditarHorario').style.display = 'none';
+
+    const inputHora = document.getElementById('mClienteInputHora');
+    if (s.hora_inicio) {
+        inputHora.value = s.hora_inicio;
+    }
+}
+
+/**
+ * Cancela la edición y vuelve al estado normal
+ */
+function cancelarEdicionHorario() {
+    const contNormal = document.getElementById('mClienteHorarioCont');
+    const contEdit = document.getElementById('mClienteEditHorario');
+    if (contNormal) contNormal.style.display = 'block';
+    if (contEdit) contEdit.style.display = 'none';
+
+    const s = window._currentSvcCliente;
+    if (s) {
+        const isPending = !s.confirmado_en || String(s.confirmado_en).trim() === '';
+        const btnEdit = document.getElementById('btnEditarHorario');
+        if (btnEdit) btnEdit.style.display = isPending ? 'block' : 'none';
+    }
+}
+
+/**
+ * Envía la edición al backend
+ */
+async function guardarEdicionHorario() {
+    const s = window._currentSvcCliente;
+    if (!s) return;
+
+    const nuevaHora = document.getElementById('mClienteInputHora').value;
+    if (!nuevaHora) {
+        alert('Por favor selecciona una hora');
+        return;
+    }
+
+    try {
+        if (typeof mostrarCargando === 'function') mostrarCargando(true);
+        const res = await api('editarServicioCliente', {
+            fecha: s.fecha,
+            hora: nuevaHora
+        });
+
+        if (res.ok) {
+            alert('¡Horario actualizado correctamente!');
+            cerrarModalCliente();
+            if (typeof cargarServiciosCliente === 'function') await cargarServiciosCliente(true);
+        } else {
+            alert('Error: ' + (res.mensaje || 'No se pudo actualizar el horario'));
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Ocurrió un error al procesar la solicitud');
+    } finally {
+        if (typeof mostrarCargando === 'function') mostrarCargando(false);
+    }
 }
 window.mostrarDetalleServicioCliente = mostrarDetalleServicioCliente;
 
