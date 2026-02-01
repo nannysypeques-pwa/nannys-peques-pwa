@@ -3095,34 +3095,6 @@ async function cargarServiciosCliente(force = false) {
     }
 }
 
-async function confirmarSemanaCliente(offsetSemana) {
-    if (!confirm('¿Estás seguro de que deseas confirmar todos los servicios de esta semana? Se registrará la fecha y hora actual.')) return;
-
-    const btn = event.target;
-    const textoOriginal = btn.innerHTML;
-    btn.textContent = 'Guardando...';
-    btn.disabled = true;
-
-    try {
-        await api('confirmarSemanaCliente', {
-            email: SESION.email,
-            offset: offsetSemana
-        });
-
-        mostrarToast("✅ Semana confirmada exitosamente");
-        // Recargar servicios para ver los cambios de color
-        cargarServiciosCliente(true);
-
-    } catch (err) {
-        console.error(err);
-        alert("Error al confirmar semana: " + err.message);
-    } finally {
-        btn.innerHTML = textoOriginal;
-        btn.disabled = false;
-    }
-}
-window.confirmarSemanaCliente = confirmarSemanaCliente;
-
 function renderServiciosCliente(svcs) {
     const calActual = document.getElementById('cal-cliente-actual');
     const calSig = document.getElementById('cal-cliente-siguiente');
@@ -3206,11 +3178,8 @@ function renderCalendarioCliente(svcs) {
             } else {
                 serviciosDia.forEach(s => {
                     const btn = document.createElement('button');
-
-                    // Color logic based on "Autorizado" field for client view
-                    const autorizado = s.Autorizado || s.autorizado;
-                    const claseColor = autorizado ? 'confirmed' : 'pending';
-                    btn.className = 'svc-pill svc-pill-cliente ' + claseColor;
+                    const estado = (s.Estado || s.estado || 'pendiente').toLowerCase();
+                    btn.className = 'svc-pill svc-pill-cliente ' + (typeof stateClass === 'function' ? stateClass(estado) : 'pending');
 
                     //Extraer primer nombre de la niñera
                     const nombreCompleto = s['Nombre de la niñera'] || s.nombre_ninera || 'Por asignar';

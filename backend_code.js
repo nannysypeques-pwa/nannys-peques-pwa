@@ -105,12 +105,9 @@
                 _enforceRole(email, 'ninera');
                 result = registrarFinServicio(payload.sheet, payload.row_base, payload.fecha, email);
                 break;
+            case 'getServiciosCliente':
                 _enforceRole(email, 'cliente');
                 result = getServiciosCliente(email, payload.fecha_inicio);
-                break;
-            case 'confirmarSemanaCliente':
-                _enforceRole(email, 'cliente');
-                result = confirmarSemanaCliente(email, payload.offset);
                 break;
 
             // --- DISPONIBILIDAD ---
@@ -499,7 +496,6 @@ function _mapaColumnasPorFecha_(sh) {
         if (sub.includes('confirm')) mapa[fechaActualISO].confirmado_en = col + 1;
         if (sub.includes('inicio real')) mapa[fechaActualISO].inicio_real = col + 1;
         if (sub.includes('fin real')) mapa[fechaActualISO].fin_real = col + 1;
-        if (sub.includes('autorizado')) mapa[fechaActualISO].autorizado = col + 1;
     }
 
 
@@ -1562,12 +1558,11 @@ function _expandirServiciosSemanales_(sh) {
 
             const hi = _toHM(row[m.hora_inicio - 1]);
             const hf = _toHM(row[m.hora_fin - 1]);
-            if (!hi || !hf) return; // si ese día no tiene horas, no hay servicio ese día
+            if (!hi || !hf) return; // si ese dó­a no tiene horas, no hay servicio ese dó­a
             const estado = (m.estado ? String(row[m.estado - 1] || '').trim().toLowerCase() : 'pendiente') || 'pendiente';
             const confirmadoEn = m.confirmado_en ? String(row[m.confirmado_en - 1] || '').trim() : '';
             const inicioReal = m.inicio_real ? String(row[m.inicio_real - 1] || '').trim() : '';
             const finReal = m.fin_real ? String(row[m.fin_real - 1] || '').trim() : '';
-            const autorizado = m.autorizado ? String(row[m.autorizado - 1] || '').trim() : '';
 
 
 
@@ -1606,8 +1601,7 @@ function _expandirServiciosSemanales_(sh) {
                 inicio_real: inicioReal,
                 fin_real: finReal,
                 ver: verServicio,
-                tipo_servicio: tipoServicio,
-                Autorizado: autorizado
+                tipo_servicio: tipoServicio
             });
         });
     }
@@ -5055,99 +5049,6 @@ function _enviarAlertaSeguridad(asunto, cuerpo) {
             body: fullCuerpo
         });
     } catch (e) { console.error('Error enviando alerta:', e); }
-}
-
-function confirmarSemanaCliente(email, offsetSemana = 0) {
-    // 1. Calcular fechas de la semana (Lunes a Domingo)
-    const hoy = new Date();
-    const diaSemana = hoy.getDay();
-    const diasDesdeLunes = (diaSemana + 6) % 7;
-
-    // Lunes de la semana BASE (hoy)
-    const lunesBase = new Date(hoy);
-    lunesBase.setDate(hoy.getDate() - diasDesdeLunes);
-
-    // Ajustar por offset (0=actual, 1=siguiente)
-    const lunesObjetivo = new Date(lunesBase);
-    lunesObjetivo.setDate(lunesBase.getDate() + (offsetSemana * 7));
-
-    // Generar array de fechas ISO para esa semana
-    const fechasSemana = [];
-    for (let i = 0; i < 7; i++) {
-        const d = new Date(lunesObjetivo);
-        d.setDate(lunesObjetivo.getDate() + i);
-        fechasSemana.push(Utilities.formatDate(d, ZONA_HORARIA, 'yyyy-MM-dd'));
-    }
-
-    const timestamp = _nowHuman(); // Fecha y hora actual para registrar
-
-    // 2. Iterar sobre las hojas de servicios
-    const hojas = [NOMBRE_HOJA_SERVICIOS, 'Servicios_Siguiente_semana'];
-    let count = 0;
-
-    hojas.forEach(nombreHoja => {
-        try {
-            const sh = _hoja(nombreHoja);
-            const mapaCols = _mapaColumnasPorFecha_(sh);
-            const data = sh.getDataRange().getValues();
-
-            // Buscar columna de cliente
-            const headers = data[0];
-            // Buscar índices de cliente en fila 1 (no depende de fecha)
-            let idxCliente = -1;
-            for (let c = 0; c < headers.length; c++) {
-                if (_norm(headers[c]) === 'cliente') { idxCliente = c; break; }
-            }
-            if (idxCliente === -1) return;
-
-            // Iterar filas
-            for (let r = 2; r < data.length; r++) {
-                const rowEmail = String(data[r][idxCliente] || '').toLowerCase();
-                // Ojo: en la hoja servicios la col 'cliente' suele ser el nombre, 
-                // pero a veces necesitamos el email. 
-                // _expandirServiciosSemanales_ busca también 'email'. Busquemos email si existe.
-
-                // MEJOR ESTRATEGIA: Usar la lógica de expandir servicios para encontrar las filas y columnas exactas
-                // Pero como queremos ESCRIBIR, necesitamos índices concretos.
-
-                // Vamos a asumir que el email del cliente puede estar en una columna 'email' o 
-                // que debemos confiar en el filtro por nombre si no hay email.
-                // Para seguridad, busquemos columna email.
-                let currentRowEmail = '';
-                // Buscar columna email dinámicamente
-                const headersNorm = headers.map(h => _norm(h));
-                const idxEmailCol = headersNorm.indexOf('email');
-
-                if (idxEmailCol !== -1) {
-                    currentRowEmail = String(data[r][idxEmailCol] || '').trim().toLowerCase();
-                }
-
-                // Si no coincide el email, saltar fila
-                if (currentRowEmail !== email) continue;
-
-                // Si coincide el usuario, iterar las fechas de ESTA semana
-                fechasSemana.forEach(fechaISO => {
-                    if (mapaCols[fechaISO] && mapaCols[fechaISO].autorizado) {
-                        const colAutorizado = mapaCols[fechaISO].autorizado;
-                        const colHorario = mapaCols[fechaISO].hora_inicio; // Para validar si hay servicio ese día
-
-                        // Verificar si hay servicio ese día (tiene hora de inicio)
-                        const tieneServicio = rowEmail && colHorario && data[r][colHorario - 1];
-
-                        if (tieneServicio) {
-                            // Escribir en la celda
-                            sh.getRange(r + 1, colAutorizado).setValue(timestamp);
-                            count++;
-                        }
-                    }
-                });
-            }
-        } catch (e) {
-            console.error('Error procesando hoja ' + nombreHoja, e);
-        }
-    });
-
-    return { ok: true, actualizados: count };
 }
 
 
