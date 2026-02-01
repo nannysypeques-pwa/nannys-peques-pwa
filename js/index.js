@@ -3360,8 +3360,30 @@ window.mostrarDetalleServicioCliente = mostrarDetalleServicioCliente;
 function iniciarEdicionHorario(s) {
     const elHorario = document.getElementById('mClienteHorario');
 
-    const valInicio = s.hora_inicio || '09:00';
-    const valFin = s.hora_fin || '13:00';
+    // Convertir formato "3:00 P" o "8:00 A" a "HH:mm" para el input time
+    const _parseTime = (str) => {
+        if (!str) return '09:00';
+        str = String(str).trim();
+        // Si ya es HH:mm (tiene : y no espacios ni letras)
+        if (str.includes(':') && !str.includes(' ') && !str.match(/[a-zA-Z]/))
+            return str;
+
+        // "3:00 P" -> ["3", "00", "P"]
+        const match = str.match(/(\d{1,2}):(\d{2})\s*([APap])/);
+        if (!match) return str;
+
+        let [_, h, m, suffix] = match;
+        h = parseInt(h, 10);
+        suffix = suffix.toUpperCase();
+
+        if (suffix === 'P' && h !== 12) h += 12;
+        if (suffix === 'A' && h === 12) h = 0; // Midnight 12 A -> 00
+
+        return `${h.toString().padStart(2, '0')}:${m}`;
+    };
+
+    const valInicio = _parseTime(s.hora_inicio) || '09:00';
+    const valFin = _parseTime(s.hora_fin) || '13:00';
 
     elHorario.innerHTML = `
         <div style="display:flex; gap:8px; align-items:center;">

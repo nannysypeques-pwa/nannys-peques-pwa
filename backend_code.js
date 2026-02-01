@@ -5270,8 +5270,12 @@ function updateServicioCliente(email, payload) {
     }
 
     // ACTUALIZAR HORARIOS
-    sh.getRange(rowVal, cols.hora_inicio).setValue(nuevaInicio);
-    sh.getRange(rowVal, cols.hora_fin).setValue(nuevaFin);
+    // Formatear a estilo "3:00 P" o "8:00 A"
+    const inicioFmt = _formatTimeForSheet(nuevaInicio);
+    const finFmt = _formatTimeForSheet(nuevaFin);
+
+    sh.getRange(rowVal, cols.hora_inicio).setValue(inicioFmt);
+    sh.getRange(rowVal, cols.hora_fin).setValue(finFmt);
 
     // Opcional: Actualizar 'estado' a 'pendiente' si estaba en otro estado?
     // Generalmente si no está confirmado, sigue siendo pendiente.
@@ -5282,4 +5286,21 @@ function updateServicioCliente(email, payload) {
     }
 
     return { ok: true };
+}
+
+function _formatTimeForSheet(isoTime) {
+    if (!isoTime) return '';
+    // Espera formato HH:mm (24h)
+    const partes = isoTime.split(':');
+    if (partes.length < 2) return isoTime;
+
+    let h = parseInt(partes[0], 10);
+    const m = partes[1];
+
+    const suffix = h >= 12 ? 'P' : 'A';
+
+    let h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+
+    return `${h12}:${m} ${suffix}`;
 }
