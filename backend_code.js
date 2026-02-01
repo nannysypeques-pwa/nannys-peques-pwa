@@ -5058,3 +5058,134 @@ function _enviarAlertaSeguridad(asunto, cuerpo) {
 }
 
 
+
+
+function confirmarSemana(email, fechaInicioISO, timestamp) {
+    if (!email) throw new Error('Email requerido');
+
+    // Rango de la semana (Lunes - Domingo)
+    const lunes = new Date(fechaInicioISO + 'T00:00:00');
+    if (isNaN(lunes.getTime())) throw new Error('Fecha inválida');
+
+    // Normalizar a fechas strings para comparación fácil
+    const diasSemana = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(lunes);
+        d.setDate(lunes.getDate() + i);
+        diasSemana.push(_toISODate(d));
+    }
+
+    const sheetsToSearch = ['Servicios', 'Servicios_Siguiente_semana'];
+    let count = 0;
+    let debugLog = [];
+
+    sheetsToSearch.forEach(sheetName => {
+        try {
+            const sh = _hoja(sheetName);
+            const data = sh.getDataRange().getValues();
+            if (data.length < 3) return; // Mínimo 2 headers + data
+
+            // FILA 1: Fechas (posiblemente merged, por lo que algunas celdas estarán vacías pero pertenecen a la fecha anterior)
+            const rowFechas = data[0];
+            // FILA 2: Sub-encabezados (Hora inicio, Fin, Autorizado, etc)
+            const rowSub = data[1].map(h => String(h).trim().toLowerCase());
+
+            // 1. Mapear qué columnas corresponden a qué fecha y dónde está "Autorizado"
+            // Estructura: mapDates[ '2026-01-31' ] = { colAutorizado: 15 } (1-based index)
+            const mapDates = {};
+            let ultimaFecha = null;
+
+            for (let c = 0; c < rowFechas.length; c++) {
+                // Detectar si hay fecha nueva en Fila 1
+                const celdaFecha = rowFechas[c];
+                let isDate = false;
+                let iso = '';
+
+                if (celdaFecha instanceof Date) {
+                    iso = _toISODate(celdaFecha);
+                    isDate = true;
+                } else if (typeof celdaFecha === 'string' && celdaFecha.match(/\d{4}-\d{2}-\d{2}/)) {
+                    iso = celdaFecha.match(/\d{4}-\d{2}-\d{2}/)[0];
+                    isDate = true;
+                }
+
+                if (isDate) {
+                    ultimaFecha = iso;
+                }
+
+                // Si estamos dentro de un bloque de fecha
+                if (ultimaFecha) {
+                    if (!mapDates[ultimaFecha]) mapDates[ultimaFecha] = {};
+
+                    const subHeader = rowSub[c];
+
+                    // COLUMNA AUTORIZADO
+                    if (subHeader.includes('autorizado') || subHeader.includes('confirmado') || subHeader.includes('estado')) {
+                        // Prioridad a "confirmado" o "autorizado" sobre "estado" si hay ambiguëdad
+                        if (subHeader.includes('estado') && mapDates[ultimaFecha].colAutorizado) {
+                            // Si ya tenemos uno, y este es solo 'estado', quizás ignorar?
+                        } else {
+                            // Guardamos indice 1-based
+                            mapDates[ultimaFecha].colAutorizado = c + 1;
+                        }
+                    }
+
+                    // COLUMNA HORA INICIO (Para verificar si hay servicio)
+                    if (subHeader.includes('hora inicio') || subHeader === 'inicio' || subHeader.includes('entrada')) {
+                        mapDates[ultimaFecha].colInicio = c + 1;
+                    }
+                }
+            }
+
+            // 2. Buscar fila del Cliente
+            const headersF1 = rowFechas.map(h => _norm(String(h)));
+            let idxEmail = headersF1.indexOf('email');
+
+            // Fallback: buscar en Fila 2 si no está en Fila 1
+            if (idxEmail === -1) {
+                idxEmail = rowSub.map(h => _norm(h)).indexOf('email');
+            }
+
+            if (idxEmail === -1) {
+                // Fallback extremo: buscar 'cliente'
+                let idxCliente = headersF1.indexOf('cliente');
+                if (idxCliente === -1) idxCliente = rowSub.map(h => _norm(h)).indexOf('cliente');
+
+                debugLog.push(`Hoja ${sheetName}: No se encontró columna Email`);
+                return;
+            }
+
+            // 3. Iterar filas de datos (empiezan en Row 3, indice 2)
+            for (let r = 2; r < data.length; r++) {
+                const rowVal = String(data[r][idxEmail] || '').trim().toLowerCase();
+
+                if (rowVal === email) {
+                    // ENCONTRAMOS AL CLIENTE
+                    // Recorrer los días de la semana solicitada
+                    diasSemana.forEach(diaISO => {
+                        const cols = mapDates[diaISO];
+                        // SOLO CONFIRMAR SI A) Existe columna autorizado Y B) Hay servicio ese día (Hora Inicio no vacía)
+                        if (cols && cols.colAutorizado && cols.colInicio) {
+                            // Leer hora inicio de la matriz en memoria (Recordar: data es 0-indexed, r ya es indice correcto para data)
+                            // cols.colInicio es 1-based, así que restamos 1 para acceder a data
+                            const valInicio = data[r][cols.colInicio - 1];
+
+                            if (valInicio && String(valInicio).trim() !== '') {
+                                const displayTime = Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy HH:mm:ss");
+                                sh.getRange(r + 1, cols.colAutorizado).setValue(`${displayTime}`);
+                                count++;
+                            }
+                        }
+                    });
+                }
+            }
+
+        } catch (e) {
+            console.error(e);
+            debugLog.push(e.message);
+        }
+    });
+
+    return { ok: true, actualizados: count, debug: debugLog };
+}
+

@@ -1548,17 +1548,20 @@
 
         const fechaInicioISO = toISO(targetDate);
 
-        // Llamar API
-        await api('confirmarSemana', {
+        const res = await api('confirmarSemana', {
           email: SESION.email,
           fechaInicio: fechaInicioISO, // Backend usará esto para filtrar la semana
           timestamp: new Date().toISOString()
         });
 
-        mostrarToast("✅ ¡Semana confirmada con éxito!");
-
-        // Recargar servicios para ver cambios visuales (si el backend colorea o cambia estado)
-        await cargarServiciosCliente(true);
+        if (res && res.actualizados > 0) {
+          mostrarToast("✅ ¡Semana confirmada con éxito!");
+          // Recargar servicios para ver cambios visuales
+          await cargarServiciosCliente(true);
+        } else {
+          console.warn("Debug:", res.debug);
+          alert("No se encontraron servicios para confirmar.\n" + (res.debug ? res.debug.join('\n') : ''));
+        }
 
       } catch (e) {
         console.error(e);
