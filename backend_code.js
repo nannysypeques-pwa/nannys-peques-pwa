@@ -525,8 +525,10 @@ function _mapaColumnasPorFecha_(sh) {
         if (sub.includes('hora inicio') || sub === 'inicio' || sub.includes('hora de inicio')) mapa[fechaActualISO].hora_inicio = col + 1;
         if (sub.includes('hora fin') || sub === 'fin' || sub.includes('hora de fin')) mapa[fechaActualISO].hora_fin = col + 1;
         if (sub.includes('estado')) mapa[fechaActualISO].estado = col + 1;
-        // MAPEO CLAVE: "confirmado", "confirmacion", o "autorizado" -> confirmado_en
-        if (sub.includes('confirm') || sub.includes('autorizado')) mapa[fechaActualISO].confirmado_en = col + 1;
+
+        // SEPARAR MAPEO: familia vs niñera
+        if (sub.includes('autorizado')) mapa[fechaActualISO].autorizado = col + 1;
+        if (sub.includes('confirm')) mapa[fechaActualISO].confirmado_nanny = col + 1;
 
         if (sub.includes('inicio real')) mapa[fechaActualISO].inicio_real = col + 1;
         if (sub.includes('fin real')) mapa[fechaActualISO].fin_real = col + 1;
@@ -1573,7 +1575,8 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-        const verServicio = colIdx['ver'] != null ? _esVerdadero(row[colIdx['ver']]) : false;
+        const verNanny = colIdx['ver'] != null ? _esVerdadero(row[colIdx['ver']]) : false;
+        const verCliente = colIdx['ver cliente'] != null ? _esVerdadero(row[colIdx['ver cliente']]) : false;
 
 
 
@@ -1592,9 +1595,12 @@ function _expandirServiciosSemanales_(sh) {
 
             const hi = _toHM(row[m.hora_inicio - 1]);
             const hf = _toHM(row[m.hora_fin - 1]);
-            if (!hi || !hf) return; // si ese dó­a no tiene horas, no hay servicio ese dó­a
+            if (!hi || !hf) return; // si ese día no tiene horas, no hay servicio ese día
             const estado = (m.estado ? String(row[m.estado - 1] || '').trim().toLowerCase() : 'pendiente') || 'pendiente';
-            const confirmadoEn = m.confirmado_en ? String(row[m.confirmado_en - 1] || '').trim() : '';
+
+            const autorizado = m.autorizado ? String(row[m.autorizado - 1] || '').trim() : '';
+            const confirmadoNanny = m.confirmado_nanny ? String(row[m.confirmado_nanny - 1] || '').trim() : '';
+
             const inicioReal = m.inicio_real ? String(row[m.inicio_real - 1] || '').trim() : '';
             const finReal = m.fin_real ? String(row[m.fin_real - 1] || '').trim() : '';
 
@@ -1605,7 +1611,7 @@ function _expandirServiciosSemanales_(sh) {
 
 
 
-            if (!verServicio) return;
+            if (!verNanny && !verCliente) return; // No visible para nadie
 
 
 
@@ -1631,10 +1637,14 @@ function _expandirServiciosSemanales_(sh) {
                 edad_nino: edad,
                 notas,
                 estado,
-                confirmado_en: confirmadoEn,
+                confirmado_en: autorizado || confirmadoNanny, // Para compatibilidad visual si hace falta
+                autorizado: autorizado,
+                confirmado_nanny: confirmadoNanny,
                 inicio_real: inicioReal,
                 fin_real: finReal,
-                ver: verServicio,
+                ver: verNanny, // Retrocompatibilidad
+                ver_nanny: verNanny,
+                ver_cliente: verCliente,
                 tipo_servicio: tipoServicio
             });
         });
@@ -1701,6 +1711,7 @@ function obtenerServiciosProximosPorNombre(email, diasAdelante, fechaInicio) {
         // Asegurar comparación estricta de strings YYYY-MM-DD para evitar problemas de timezone
         const fechaServicioISO = _toISODate(s.fecha);
         return _norm(s.nombre_ninera) === _norm(nombreNanny) &&
+            s.ver_nanny &&
             fechaServicioISO >= hoyISO &&
             fechaServicioISO <= limISO;
     });
@@ -1923,19 +1934,24 @@ function confirmarServicioPorFila(sheetName, row, email) {
 
 
 
-        // Escribir estado y confirmació³n
+        // Escribir estado y confirmación de Niñera (SOLO SI ESTÁ VACÍO)
         if (m.estado) {
-            sh.getRange(rowNum, m.estado).setValue('confirmado');
+            const cellEstado = sh.getRange(rowNum, m.estado);
+            if (!String(cellEstado.getValue() || '').trim()) {
+                cellEstado.setValue('confirmado');
+            }
         }
-        if (m.confirmado_en) {
-            sh.getRange(rowNum, m.confirmado_en).setValue(ts);
+        if (m.confirmado_nanny) {
+            const cellConf = sh.getRange(rowNum, m.confirmado_nanny);
+            if (!String(cellConf.getValue() || '').trim()) {
+                cellConf.setValue(ts);
+            }
         }
-
-
-
 
         confirmados++;
     });
+
+    SpreadsheetApp.flush(); // Asegurar escritura inmediata
 
 
 
@@ -4709,6 +4725,8 @@ function getServiciosCliente(email, fechaInicio) {
     return todos.filter(s => {
         // Filtro por email
         if (String(s.email || '').toLowerCase() !== email) return false;
+        // Filtro por visibilidad CLIENTE
+        if (!s.ver_cliente) return false;
         // Filtro por fecha (solo hoy en adelante para el portal familia)
         return s.fecha >= hoyISO;
     }).map(s => {
@@ -4731,6 +4749,7 @@ function getServiciosCliente(email, fechaInicio) {
         // Mapear al formato que espera el frontend del cliente (PascalCase y nombres específicos)
         return {
             ...s,
+            confirmado_en: s.autorizado, // Para el CLIENTE, confirmado_en DEBE ser solo Autorizado
             'Fecha': s.fecha,
             'Horario': (s.hora_inicio && s.hora_fin) ? `${s.hora_inicio} – ${s.hora_fin}` : 'Pendiente',
             'Nombre de la niñera': s.nombre_ninera || 'Por asignar',
@@ -5281,7 +5300,7 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
                                     yaConfirmados++;
                                 } else {
                                     const displayTime = Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy HH:mm:ss");
-                                    sh.getRange(r + 1, cols.colAutorizado).setValue(`Confirmado: ${displayTime}`);
+                                    sh.getRange(r + 1, cols.colAutorizado).setValue(displayTime);
                                     count++;
                                 }
                             }
@@ -5289,7 +5308,7 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
                     });
                 }
             }
-
+            SpreadsheetApp.flush(); // Asegurar escritura inmediata
         } catch (e) {
             console.error(e);
             debugLog.push(e.message);
