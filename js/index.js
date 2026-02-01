@@ -3212,6 +3212,37 @@ function renderCalendarioCliente(svcs) {
 window.renderCalendarioCliente = renderCalendarioCliente;
 window.cargarServiciosCliente = cargarServiciosCliente;
 
+async function confirmarSemana(tipo) {
+    const btn = document.getElementById(`btn-confirmar-semana-${tipo}`);
+    const originalText = btn.textContent;
+
+    try {
+        btn.disabled = true;
+        btn.textContent = 'Confirmando...';
+
+        const result = await api('confirmarSemanaCliente', {
+            email: SESION.email,
+            tipo: tipo // 'actual' o 'siguiente'
+        });
+
+        btn.textContent = '✓ Confirmado';
+        mostrarToast('✅ Semana confirmada exitosamente');
+
+        // Recargar servicios para mostrar los cambios
+        setTimeout(() => {
+            cargarServiciosCliente(true);
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }, 2000);
+
+    } catch (err) {
+        btn.textContent = originalText;
+        btn.disabled = false;
+        mostrarToast('❌ Error al confirmar: ' + err.message);
+    }
+}
+window.confirmarSemana = confirmarSemana;
+
 function mostrarDetalleServicioCliente(s) {
     if (!s) return;
 

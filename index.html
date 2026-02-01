@@ -776,9 +776,16 @@
 
 
             <div class="calendar-section" style="margin-top:20px;">
-              <h4
-                style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
-                🗓️ Semana Actual</h4>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom:12px;">
+                <h4
+                  style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin:0;">
+                  🗓️ Semana Actual
+                </h4>
+                <button id="btn-confirmar-semana-actual" class="btn-confirmar-semana"
+                  onclick="confirmarSemana('actual')">
+                  ✓ Confirmo semana
+                </button>
+              </div>
               <div id="cal-cliente-actual" class="calendar"></div>
             </div>
 
@@ -786,9 +793,16 @@
 
 
             <div class="calendar-section" style="margin-top:25px; padding-top:15px; border-top: 1px dashed #e2e8f0;">
-              <h4
-                style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
-                🗓️ Próxima Semana</h4>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom:12px;">
+                <h4
+                  style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin:0;">
+                  🗓️ Próxima Semana
+                </h4>
+                <button id="btn-confirmar-semana-siguiente" class="btn-confirmar-semana"
+                  onclick="confirmarSemana('siguiente')">
+                  ✓ Confirmo semana
+                </button>
+              </div>
               <div id="cal-cliente-siguiente" class="calendar"></div>
             </div>
 

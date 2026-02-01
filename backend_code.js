@@ -109,6 +109,10 @@
                 _enforceRole(email, 'cliente');
                 result = getServiciosCliente(email, payload.fecha_inicio);
                 break;
+            case 'confirmarSemanaCliente':
+                _enforceRole(email, 'cliente');
+                result = confirmarSemanaCliente(email, payload.tipo);
+                break;
 
             // --- DISPONIBILIDAD ---
             case 'obtenerDisponibilidad':
@@ -5053,5 +5057,81 @@ function _enviarAlertaSeguridad(asunto, cuerpo) {
         });
     } catch (e) { console.error('Error enviando alerta:', e); }
 }
+
+/**
+ * Confirma todos los servicios de un cliente para una semana específica
+ * @param {string} emailCliente - Email del cliente
+ * @param {string} tipo - 'actual' o 'siguiente'
+ * @returns {object} Resultado con número de servicios actualizados
+ */
+function confirmarSemanaCliente(emailCliente, tipo) {
+    // Calcular rango de fechas
+    const hoy = new Date();
+    const diaSemana = hoy.getDay();
+    const diasDesdeLunes = (diaSemana + 6) % 7;
+
+    let lunes = new Date(hoy);
+    lunes.setDate(hoy.getDate() - diasDesdeLunes);
+
+    if (tipo === 'siguiente') {
+        lunes.setDate(lunes.getDate() + 7);
+    }
+
+    const fechas = [];
+    for (let i = 0; i < 7; i++) {
+        const fecha = new Date(lunes);
+        fecha.setDate(lunes.getDate() + i);
+        fechas.push(_toISODate(fecha));
+    }
+
+    // Timestamp de confirmación
+    const timestamp = _nowHuman();
+
+    // Actualizar en ambas hojas
+    const hojas = ['Servicios', 'Servicios_Siguiente_semana'];
+    let serviciosActualizados = 0;
+
+    hojas.forEach(nombreHoja => {
+        try {
+            const sh = _hoja(nombreHoja);
+            const mapa = _mapaColumnasPorFecha_(sh);
+            const data = sh.getDataRange().getValues();
+
+            // Buscar columna de email
+            const headers = data[0];
+            const headersNorm = headers.map(h => _norm(h));
+            const idxEmail = headersNorm.indexOf('email');
+            if (idxEmail === -1) return;
+
+            // Iterar filas
+            for (let r = 2; r < data.length; r++) {
+                const row = data[r];
+                const emailFila = String(row[idxEmail] || '').trim().toLowerCase();
+
+                if (emailFila !== emailCliente.toLowerCase()) continue;
+
+                // Actualizar columnas Autorizado para cada fecha
+                fechas.forEach(fechaISO => {
+                    const m = mapa[fechaISO];
+                    if (!m || !m.autorizado) return;
+
+                    // Verificar si hay servicio ese día (tiene horas)
+                    const hi = row[m.hora_inicio - 1];
+                    const hf = row[m.hora_fin - 1];
+                    if (!hi || !hf) return;
+
+                    // Escribir timestamp
+                    sh.getRange(r + 1, m.autorizado).setValue(timestamp);
+                    serviciosActualizados++;
+                });
+            }
+        } catch (e) {
+            // Si la hoja no existe, continuar
+        }
+    });
+
+    return { ok: true, serviciosActualizados };
+}
+
 
 
