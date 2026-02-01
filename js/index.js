@@ -3209,6 +3209,59 @@ function renderCalendarioCliente(svcs) {
 window.renderCalendarioCliente = renderCalendarioCliente;
 window.cargarServiciosCliente = cargarServiciosCliente;
 
+async function confirmarSemana(isCurrentWeek) {
+    if (!confirm("¿Deseas confirmar todos los servicios de esta semana? Esta acción registrará la fecha y hora de tu confirmación.")) {
+        return;
+    }
+
+    const btn = event?.currentTarget;
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Confirmando...';
+    }
+
+    try {
+        // Calcular fecha inicio de la semana objetivo
+        const hoy = new Date();
+        const diaSemana = hoy.getDay();
+        const diasDesdeLunes = (diaSemana + 6) % 7;
+
+        const lunesActual = new Date(hoy);
+        lunesActual.setDate(hoy.getDate() - diasDesdeLunes);
+        lunesActual.setHours(0, 0, 0, 0);
+
+        let targetDate = new Date(lunesActual);
+        if (!isCurrentWeek) {
+            targetDate.setDate(targetDate.getDate() + 7);
+        }
+
+        const fechaInicioISO = toISO(targetDate);
+
+        // Llamar API
+        await api('confirmarSemana', {
+            email: SESION.email,
+            fechaInicio: fechaInicioISO, // Backend usará esto para filtrar la semana
+            timestamp: new Date().toISOString()
+        });
+
+        mostrarToast("✅ ¡Semana confirmada con éxito!");
+
+        // Recargar servicios para ver cambios visuales (si el backend colorea o cambia estado)
+        await cargarServiciosCliente(true);
+
+    } catch (e) {
+        console.error(e);
+        alert("Error al confirmar: " + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+}
+window.confirmarSemana = confirmarSemana;
+
 function mostrarDetalleServicioCliente(s) {
     if (!s) return;
 

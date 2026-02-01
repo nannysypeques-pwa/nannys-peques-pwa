@@ -776,9 +776,15 @@
 
 
             <div class="calendar-section" style="margin-top:20px;">
-              <h4
-                style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
-                🗓️ Semana Actual</h4>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h4
+                  style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin: 0;">
+                  🗓️ Semana Actual</h4>
+                <button class="btn-primary" onclick="confirmarSemana(true)"
+                  style="padding: 4px 10px; font-size: 11px; background: #10b981; border-radius: 12px; display: flex; align-items: center; gap: 4px;">
+                  <span>✅</span> Confirmo semana
+                </button>
+              </div>
               <div id="cal-cliente-actual" class="calendar"></div>
             </div>
 
@@ -786,13 +792,17 @@
 
 
             <div class="calendar-section" style="margin-top:25px; padding-top:15px; border-top: 1px dashed #e2e8f0;">
-              <h4
-                style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
-                🗓️ Próxima Semana</h4>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h4
+                  style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin: 0;">
+                  🗓️ Próxima Semana</h4>
+                <button class="btn-primary" onclick="confirmarSemana(false)"
+                  style="padding: 4px 10px; font-size: 11px; background: #10b981; border-radius: 12px; display: flex; align-items: center; gap: 4px;">
+                  <span>✅</span> Confirmo semana
+                </button>
+              </div>
               <div id="cal-cliente-siguiente" class="calendar"></div>
             </div>
-
-
 
 
             <div id="msg-cal-cliente" class="muted" style="font-size: 12px; margin-top:10px;"></div>

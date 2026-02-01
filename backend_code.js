@@ -105,6 +105,12 @@
                 _enforceRole(email, 'ninera');
                 result = registrarFinServicio(payload.sheet, payload.row_base, payload.fecha, email);
                 break;
+            // --- SERVICIOS CLIENTE ---
+            case 'confirmarSemana':
+                _enforceRole(email, 'cliente');
+                result = confirmarSemana(email, payload.fechaInicio, payload.timestamp);
+                break;
+
             case 'getServiciosCliente':
                 _enforceRole(email, 'cliente');
                 result = getServiciosCliente(email, payload.fecha_inicio);
