@@ -5304,3 +5304,54 @@ function _formatTimeForSheet(isoTime) {
 
     return `${h12}:${m} ${suffix}`;
 }
+
+function _mapaColumnasPorFecha_(sh) {
+    const data = sh.getDataRange().getValues();
+    if (data.length < 2) return {};
+
+    const rowFechas = data[0];
+    const rowSub = data[1].map(h => String(h).trim().toLowerCase());
+
+    const mapDates = {};
+    let ultimaFecha = null;
+
+    for (let c = 0; c < rowFechas.length; c++) {
+        // Detectar si hay fecha nueva en Fila 1
+        const celdaFecha = rowFechas[c];
+        let isDate = false;
+        let iso = '';
+
+        if (celdaFecha instanceof Date) {
+            iso = _toISODate(celdaFecha);
+            isDate = true;
+        } else if (typeof celdaFecha === 'string' && celdaFecha.match(/\d{4}-\d{2}-\d{2}/)) {
+            iso = celdaFecha.match(/\d{4}-\d{2}-\d{2}/)[0];
+            isDate = true;
+        }
+
+        if (isDate) {
+            ultimaFecha = iso;
+        }
+
+        if (ultimaFecha) {
+            if (!mapDates[ultimaFecha]) mapDates[ultimaFecha] = {};
+
+            const subHeader = rowSub[c];
+            const idx = c + 1; // 1-based index for getRange
+
+            if (subHeader.includes('autorizado') || subHeader === 'autorizado') {
+                mapDates[ultimaFecha].confirmado_en = idx;
+            }
+            if (subHeader === 'hora de inicio' || subHeader === 'hora inicio') {
+                mapDates[ultimaFecha].hora_inicio = idx;
+            }
+            if (subHeader === 'hora de fin' || subHeader === 'hora fin' || subHeader === 'fin') {
+                mapDates[ultimaFecha].hora_fin = idx;
+            }
+            if (subHeader === 'estado') {
+                mapDates[ultimaFecha].estado = idx;
+            }
+        }
+    }
+    return mapDates;
+}
