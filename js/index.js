@@ -3095,6 +3095,34 @@ async function cargarServiciosCliente(force = false) {
     }
 }
 
+async function confirmarSemanaCliente(offsetSemana) {
+    if (!confirm('¿Estás seguro de que deseas confirmar todos los servicios de esta semana? Se registrará la fecha y hora actual.')) return;
+
+    const btn = event.target;
+    const textoOriginal = btn.innerHTML;
+    btn.textContent = 'Guardando...';
+    btn.disabled = true;
+
+    try {
+        await api('confirmarSemanaCliente', {
+            email: SESION.email,
+            offset: offsetSemana
+        });
+
+        mostrarToast("✅ Semana confirmada exitosamente");
+        // Recargar servicios para ver los cambios de color
+        cargarServiciosCliente(true);
+
+    } catch (err) {
+        console.error(err);
+        alert("Error al confirmar semana: " + err.message);
+    } finally {
+        btn.innerHTML = textoOriginal;
+        btn.disabled = false;
+    }
+}
+window.confirmarSemanaCliente = confirmarSemanaCliente;
+
 function renderServiciosCliente(svcs) {
     const calActual = document.getElementById('cal-cliente-actual');
     const calSig = document.getElementById('cal-cliente-siguiente');
@@ -3211,37 +3239,6 @@ function renderCalendarioCliente(svcs) {
 }
 window.renderCalendarioCliente = renderCalendarioCliente;
 window.cargarServiciosCliente = cargarServiciosCliente;
-
-async function confirmarSemana(tipo) {
-    const btn = document.getElementById(`btn-confirmar-semana-${tipo}`);
-    const originalText = btn.textContent;
-
-    try {
-        btn.disabled = true;
-        btn.textContent = 'Confirmando...';
-
-        const result = await api('confirmarSemanaCliente', {
-            email: SESION.email,
-            tipo: tipo // 'actual' o 'siguiente'
-        });
-
-        btn.textContent = '✓ Confirmado';
-        mostrarToast('✅ Semana confirmada exitosamente');
-
-        // Recargar servicios para mostrar los cambios
-        setTimeout(() => {
-            cargarServiciosCliente(true);
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }, 2000);
-
-    } catch (err) {
-        btn.textContent = originalText;
-        btn.disabled = false;
-        mostrarToast('❌ Error al confirmar: ' + err.message);
-    }
-}
-window.confirmarSemana = confirmarSemana;
 
 function mostrarDetalleServicioCliente(s) {
     if (!s) return;
