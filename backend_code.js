@@ -5080,6 +5080,7 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
 
     const sheetsToSearch = ['Servicios', 'Servicios_Siguiente_semana'];
     let count = 0;
+    let yaConfirmados = 0;
     let debugLog = [];
 
     sheetsToSearch.forEach(sheetName => {
@@ -5169,11 +5170,17 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
                         // Validar que tengamos las columnas necesarias Y que hora inicio tenga valor
                         if (cols && cols.colAutorizado && cols.colInicio) {
                             const valInicio = data[r][cols.colInicio - 1]; // data es 0-indexed
+                            const valAutorizado = data[r][cols.colAutorizado - 1]; // Valor actual en Autorizado
 
                             if (valInicio && String(valInicio).trim() !== '') {
-                                const displayTime = Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy HH:mm:ss");
-                                sh.getRange(r + 1, cols.colAutorizado).setValue(`${displayTime}`);
-                                count++;
+                                // NO SOBRESCRIBIR SI YA TIENE INFO
+                                if (valAutorizado && String(valAutorizado).trim() !== '') {
+                                    yaConfirmados++;
+                                } else {
+                                    const displayTime = Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy HH:mm:ss");
+                                    sh.getRange(r + 1, cols.colAutorizado).setValue(`Confirmado: ${displayTime}`);
+                                    count++;
+                                }
                             }
                         }
                     });
@@ -5186,6 +5193,6 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
         }
     });
 
-    return { ok: true, actualizados: count, debug: debugLog };
+    return { ok: true, actualizados: count, yaConfirmados: yaConfirmados, debug: debugLog };
 }
 

@@ -1580,6 +1580,8 @@
           mostrarToast("✅ ¡Semana confirmada con éxito!");
           // Recargar servicios para ver cambios visuales
           await cargarServiciosCliente(true);
+        } else if (res && res.yaConfirmados > 0) {
+          mostrarToast("⚠️ Su servicio ya está confirmado");
         } else {
           console.warn("Debug:", res.debug);
           alert("No se encontraron servicios para confirmar.\n" + (res.debug ? res.debug.join('\n') : ''));
@@ -1615,7 +1617,7 @@
         <p style="font-size: 16px; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">¿Deseas confirmar
           todos los servicios?</p>
         <p class="muted" style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 25px;">
-          Esta acción registrará la fecha y hora exacta de tu confirmación en el sistema.
+
         </p>
 
         <div style="display: flex; gap: 10px; justify-content: center;">
