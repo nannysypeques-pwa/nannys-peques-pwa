@@ -3386,7 +3386,7 @@ async function guardarEdicionHorario() {
     const nuevaHoraFin = document.getElementById('mClienteInputHoraFin').value;
 
     if (!nuevaHora || !nuevaHoraFin) {
-        alert('Por favor selecciona ambos horarios (inicio y fin)');
+        mostrarToast('Por favor selecciona ambos horarios (inicio y fin)');
         return;
     }
 
