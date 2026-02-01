@@ -3390,7 +3390,7 @@ async function guardarEdicionHorario() {
         }
     } catch (e) {
         console.error(e);
-        alert('Ocurrió un error al procesar la solicitud');
+        alert('Ocurrió un error: ' + (e.message || 'No se pudo procesar la solicitud'));
     } finally {
         if (typeof mostrarCargando === 'function') mostrarCargando(false);
     }

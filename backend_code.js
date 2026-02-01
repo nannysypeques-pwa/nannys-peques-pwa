@@ -462,12 +462,12 @@ function _leerServiciosDesdeHojas_(nombres) {
 
 
 function _mapaColumnasPorFecha_(sh) {
-    const headersFecha = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
-    const headersSub = sh.getRange(2, 1, 1, sh.getLastColumn()).getValues()[0];
+    const lastCol = sh.getLastColumn();
+    const lastRow = sh.getLastRow();
+    if (lastCol === 0 || lastRow < 2) return {};
 
-
-
-
+    const headersFecha = sh.getRange(1, 1, 1, lastCol).getValues()[0];
+    const headersSub = sh.getRange(2, 1, 1, lastCol).getValues()[0];
     const mapa = {};
     let fechaActualISO = null;
 
@@ -4760,8 +4760,11 @@ function editarServicioCliente(email, payload) {
 
     for (const sheetName of sheets) {
         const sh = _hoja(sheetName);
-        const data = sh.getRange(1, 1, Math.min(sh.getLastRow(), 200), sh.getLastColumn()).getValues();
-        if (data.length < 2) continue;
+        const lastRow = sh.getLastRow();
+        const lastCol = sh.getLastColumn();
+        if (lastRow < 2 || lastCol === 0) continue;
+
+        const data = sh.getRange(1, 1, Math.min(lastRow, 220), lastCol).getValues();
 
         const rowFechas = data[0];
         const rowSub = data[1].map(h => String(h).trim().toLowerCase());
