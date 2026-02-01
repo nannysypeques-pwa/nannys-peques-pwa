@@ -5060,6 +5060,7 @@ function _enviarAlertaSeguridad(asunto, cuerpo) {
 
 
 
+
 function confirmarSemana(email, fechaInicioISO, timestamp) {
     if (!email) throw new Error('Email requerido');
 
@@ -5083,15 +5084,17 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
         try {
             const sh = _hoja(sheetName);
             const data = sh.getDataRange().getValues();
-            if (data.length < 3) return; // Mínimo 2 headers + data
+            if (data.length < 3) {
+                debugLog.push(`Hoja ${sheetName}: Datos insuficientes (<3 filas)`);
+                return;
+            }
 
             // FILA 1: Fechas (posiblemente merged, por lo que algunas celdas estarán vacías pero pertenecen a la fecha anterior)
             const rowFechas = data[0];
             // FILA 2: Sub-encabezados (Hora inicio, Fin, Autorizado, etc)
             const rowSub = data[1].map(h => String(h).trim().toLowerCase());
 
-            // 1. Mapear qué columnas corresponden a qué fecha y dónde está "Autorizado"
-            // Estructura: mapDates[ '2026-01-31' ] = { colAutorizado: 15 } (1-based index)
+            // 1. Mapear columnas
             const mapDates = {};
             let ultimaFecha = null;
 
@@ -5113,25 +5116,23 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
                     ultimaFecha = iso;
                 }
 
-                // Si estamos dentro de un bloque de fecha
                 if (ultimaFecha) {
                     if (!mapDates[ultimaFecha]) mapDates[ultimaFecha] = {};
 
                     const subHeader = rowSub[c];
 
-                    // COLUMNA AUTORIZADO
-                    if (subHeader.includes('autorizado') || subHeader.includes('confirmado') || subHeader.includes('estado')) {
-                        // Prioridad a "confirmado" o "autorizado" sobre "estado" si hay ambiguëdad
-                        if (subHeader.includes('estado') && mapDates[ultimaFecha].colAutorizado) {
-                            // Si ya tenemos uno, y este es solo 'estado', quizás ignorar?
-                        } else {
-                            // Guardamos indice 1-based
+                    // COLUMNA AUTORIZADO (Exacta o muy específica)
+                    if (subHeader === 'autorizado') {
+                        mapDates[ultimaFecha].colAutorizado = c + 1;
+                    }
+                    else if (subHeader.includes('autorizado')) {
+                        if (!mapDates[ultimaFecha].colAutorizado) {
                             mapDates[ultimaFecha].colAutorizado = c + 1;
                         }
                     }
 
-                    // COLUMNA HORA INICIO (Para verificar si hay servicio)
-                    if (subHeader.includes('hora inicio') || subHeader === 'inicio' || subHeader.includes('entrada')) {
+                    // COLUMNA HORA DE INICIO
+                    if (subHeader === 'hora de inicio' || subHeader === 'hora inicio') {
                         mapDates[ultimaFecha].colInicio = c + 1;
                     }
                 }
@@ -5141,7 +5142,6 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
             const headersF1 = rowFechas.map(h => _norm(String(h)));
             let idxEmail = headersF1.indexOf('email');
 
-            // Fallback: buscar en Fila 2 si no está en Fila 1
             if (idxEmail === -1) {
                 idxEmail = rowSub.map(h => _norm(h)).indexOf('email');
             }
@@ -5155,24 +5155,22 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
                 return;
             }
 
-            // 3. Iterar filas de datos (empiezan en Row 3, indice 2)
+            // 3. Iterar filas de datos
             for (let r = 2; r < data.length; r++) {
                 const rowVal = String(data[r][idxEmail] || '').trim().toLowerCase();
 
                 if (rowVal === email) {
                     // ENCONTRAMOS AL CLIENTE
-                    // Recorrer los días de la semana solicitada
                     diasSemana.forEach(diaISO => {
                         const cols = mapDates[diaISO];
-                        // SOLO CONFIRMAR SI A) Existe columna autorizado Y B) Hay servicio ese día (Hora Inicio no vacía)
+
+                        // Validar que tengamos las columnas necesarias Y que hora inicio tenga valor
                         if (cols && cols.colAutorizado && cols.colInicio) {
-                            // Leer hora inicio de la matriz en memoria (Recordar: data es 0-indexed, r ya es indice correcto para data)
-                            // cols.colInicio es 1-based, así que restamos 1 para acceder a data
-                            const valInicio = data[r][cols.colInicio - 1];
+                            const valInicio = data[r][cols.colInicio - 1]; // data es 0-indexed
 
                             if (valInicio && String(valInicio).trim() !== '') {
                                 const displayTime = Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy HH:mm:ss");
-                                sh.getRange(r + 1, cols.colAutorizado).setValue(`${displayTime}`);
+                                sh.getRange(r + 1, cols.colAutorizado).setValue(`Confirmado: ${displayTime}`);
                                 count++;
                             }
                         }

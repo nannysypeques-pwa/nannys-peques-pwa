@@ -780,7 +780,7 @@
                 <h4
                   style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin: 0;">
                   🗓️ Semana Actual</h4>
-                <button class="btn-primary" onclick="confirmarSemana(true)"
+                <button class="btn-primary" onclick="abrirModalConfirmacion(true)"
                   style="padding: 4px 12px; font-size: 11px; width: auto; background: var(--pink-main); border-radius: 12px; display: flex; align-items: center; gap: 4px; box-shadow: none;">
                   <span>✅</span> Confirmo semana
                 </button>
@@ -796,7 +796,7 @@
                 <h4
                   style="font-size:14px; color:var(--blue-main); text-transform:uppercase; letter-spacing:1px; margin: 0;">
                   🗓️ Próxima Semana</h4>
-                <button class="btn-primary" onclick="confirmarSemana(false)"
+                <button class="btn-primary" onclick="abrirModalConfirmacion(false)"
                   style="padding: 4px 12px; font-size: 11px; width: auto; background: var(--pink-main); border-radius: 12px; display: flex; align-items: center; gap: 4px; box-shadow: none;">
                   <span>✅</span> Confirmo semana
                 </button>
@@ -1518,11 +1518,33 @@
   <script src="js/index.js"></script>
 
   <script>
+    // Variables globales para el modal
+    let _semanaAConfirmar = false;
+
+    function abrirModalConfirmacion(isCurrentWeek) {
+      _semanaAConfirmar = isCurrentWeek;
+      const modal = document.getElementById('modal-confirmacion-semana');
+      if (modal) {
+        modal.style.display = 'flex';
+        // Pequeña animación de entrada si quieres
+      }
+    }
+
+    function cerrarModalConfirmacion() {
+      const modal = document.getElementById('modal-confirmacion-semana');
+      if (modal) modal.style.display = 'none';
+    }
+
+    function ejecutarConfirmacionSemana() {
+      cerrarModalConfirmacion();
+      // Llamar a la función original, pasando el boleano almacenado
+      confirmarSemana(_semanaAConfirmar);
+    }
+
     // INLINE FALLBACK: Para evitar problemas de caché con index.js
     async function confirmarSemana(isCurrentWeek) {
-      if (!confirm("¿Deseas confirmar todos los servicios de esta semana? Esta acción registrará la fecha y hora de tu confirmación.")) {
-        return;
-      }
+      // confirm() nativo REMOVIDO en favor del modal personalizado
+
 
       const btn = event?.currentTarget;
       const originalText = btn ? btn.innerHTML : '';
@@ -1576,6 +1598,41 @@
     // Asegurar globalidad
     window.confirmarSemana = confirmarSemana;
   </script>
+
+  <!-- MODAL DE CONFIRMACIÓN DE SEMANA (Estilo PWA) -->
+  <div id="modal-confirmacion-semana" class="modal-overlay"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center; padding: 20px;">
+
+    <div class="service-premium-modal modal-card"
+      style="width: 100%; max-width: 350px; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+
+      <div class="modal-header-gradient"
+        style="background: linear-gradient(135deg, var(--pink-main), var(--pink-hover)); padding: 20px; text-align: center;">
+        <h3 style="color: white; margin: 0; font-size: 18px;">Confirmar Semana</h3>
+      </div>
+
+      <div style="padding: 25px 20px; text-align: center;">
+        <p style="font-size: 16px; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">¿Deseas confirmar
+          todos los servicios?</p>
+        <p class="muted" style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 25px;">
+          Esta acción registrará la fecha y hora exacta de tu confirmación en el sistema.
+        </p>
+
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button class="btn-ghost" onclick="cerrarModalConfirmacion()"
+            style="flex: 1; padding: 10px; border-radius: 12px; color: var(--text-muted); font-weight: 600;">
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="ejecutarConfirmacionSemana()"
+            style="flex: 1; padding: 10px; border-radius: 12px; background: var(--pink-main); color: white; font-weight: 600; box-shadow: 0 4px 12px rgba(232, 76, 154, 0.3);">
+            Confirmar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </body>
+
 
 </html>
