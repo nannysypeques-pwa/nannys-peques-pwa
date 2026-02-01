@@ -1550,3 +1550,18 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
         transform: translateY(0);
     }
 }
+
+/* =========================
+   CLIENT SERVICE PILL COLORS
+   ========================= */
+.svc-pill.client-green {
+    background-color: var(--success-bg) !important;
+    color: var(--success-text) !important;
+    border: 1px solid #065F4633 !important;
+}
+
+.svc-pill.client-yellow {
+    background-color: var(--warning-bg) !important;
+    color: var(--warning-text) !important;
+    border: 1px solid #92400E33 !important;
+}
