@@ -115,10 +115,6 @@
                 _enforceRole(email, 'cliente');
                 result = getServiciosCliente(email, payload.fecha_inicio);
                 break;
-            case 'updateServicioCliente':
-                _enforceRole(email, 'cliente');
-                result = updateServicioCliente(email, payload);
-                break;
 
             // --- DISPONIBILIDAD ---
             case 'obtenerDisponibilidad':
@@ -5182,7 +5178,7 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
                                     yaConfirmados++;
                                 } else {
                                     const displayTime = Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy HH:mm:ss");
-                                    sh.getRange(r + 1, cols.colAutorizado).setValue(`${displayTime}`);
+                                    sh.getRange(r + 1, cols.colAutorizado).setValue(`Confirmado: ${displayTime}`);
                                     count++;
                                 }
                             }
@@ -5200,158 +5196,3 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
     return { ok: true, actualizados: count, yaConfirmados: yaConfirmados, debug: debugLog };
 }
 
-
-function updateServicioCliente(email, payload) {
-    email = String(email || '').trim().toLowerCase();
-    if (!_estaAutorizado(email)) throw new Error('No autorizado.');
-
-    // Validar payload
-    const sheetName = payload.sheet;
-    const rowNum = Number(payload.row_base);
-    const fechaISO = payload.fecha;
-    const nuevaInicio = payload.hora_inicio;
-    const nuevaFin = payload.hora_fin;
-
-    if (!sheetName || !rowNum || !fechaISO || !nuevaInicio || !nuevaFin) {
-        throw new Error('Datos incompletos para actualizar el servicio.');
-    }
-
-    const sh = _hoja(sheetName);
-    const rowVal = rowNum;
-
-    // VALIDACIÓN DE SEGURIDAD: Verificar que la fila pertenece al cliente solicitante
-    // Buscamos la columna 'email' o 'cliente' en la hoja
-    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0].map(h => _norm(h));
-
-    let isOwner = false;
-
-    // 1. Verificar por email si existe columna email
-    const idxEmail = headers.indexOf('email');
-    if (idxEmail >= 0) {
-        const rowEmail = String(sh.getRange(rowVal, idxEmail + 1).getValue() || '').trim().toLowerCase();
-        if (rowEmail === email) isOwner = true;
-    }
-
-    // 2. Si no confirmó por email, verificar perfil del cliente
-    if (!isOwner) {
-        // Obtener datos del perfil del cliente para ver su nombre real
-        const perfil = getPerfilCliente(email);
-        const nombreCliente = perfil.nombre || perfil.nombre_completo;
-
-        if (nombreCliente) {
-            const idxCliente = headers.indexOf('cliente');
-            if (idxCliente >= 0) {
-                const rowCliente = String(sh.getRange(rowVal, idxCliente + 1).getValue() || '').trim();
-                // Comparación laxa normalizada
-                if (_norm(rowCliente) === _norm(nombreCliente)) isOwner = true;
-            }
-        }
-    }
-
-    if (!isOwner) {
-        throw new Error('No tienes permisos para editar este servicio.');
-    }
-
-    // OBTENER COLUMNAS DEL DÍA ESPECÍFICO
-    const mapa = _mapaColumnasPorFecha_(sh);
-    const cols = mapa[fechaISO];
-
-    if (!cols || !cols.hora_inicio || !cols.hora_fin) {
-        throw new Error('No se encontraron las columnas para la fecha ' + fechaISO);
-    }
-
-    // VALIDAR ESTADO (No se puede editar si ya está confirmado)
-    // "Autorizado" es la columna clave.
-    if (cols.confirmado_en) {
-        const valConfirmado = sh.getRange(rowVal, cols.confirmado_en).getValue();
-        if (valConfirmado && String(valConfirmado).trim() !== '') {
-            throw new Error('El servicio ya ha sido confirmado y no puede editarse.');
-        }
-    }
-
-    // ACTUALIZAR HORARIOS
-    // Formatear a estilo "3:00 P" o "8:00 A"
-    const inicioFmt = _formatTimeForSheet(nuevaInicio);
-    const finFmt = _formatTimeForSheet(nuevaFin);
-
-    sh.getRange(rowVal, cols.hora_inicio).setValue(inicioFmt);
-    sh.getRange(rowVal, cols.hora_fin).setValue(finFmt);
-
-    // Opcional: Actualizar 'estado' a 'pendiente' si estaba en otro estado?
-    // Generalmente si no está confirmado, sigue siendo pendiente.
-    if (cols.estado) {
-        // Asegurar que quede como 'pendiente' explícito si se edita
-        // sh.getRange(rowVal, cols.estado).setValue('pendiente'); 
-        // Comentado para no alterar flujos de nannies, pero podría ser buena idea.
-    }
-
-    return { ok: true };
-}
-
-function _formatTimeForSheet(isoTime) {
-    if (!isoTime) return '';
-    // Espera formato HH:mm (24h)
-    const partes = isoTime.split(':');
-    if (partes.length < 2) return isoTime;
-
-    let h = parseInt(partes[0], 10);
-    const m = partes[1];
-
-    const suffix = h >= 12 ? 'P' : 'A';
-
-    let h12 = h % 12;
-    if (h12 === 0) h12 = 12;
-
-    return `${h12}:${m} ${suffix}`;
-}
-
-function _mapaColumnasPorFecha_(sh) {
-    const data = sh.getDataRange().getValues();
-    if (data.length < 2) return {};
-
-    const rowFechas = data[0];
-    const rowSub = data[1].map(h => String(h).trim().toLowerCase());
-
-    const mapDates = {};
-    let ultimaFecha = null;
-
-    for (let c = 0; c < rowFechas.length; c++) {
-        // Detectar si hay fecha nueva en Fila 1
-        const celdaFecha = rowFechas[c];
-        let isDate = false;
-        let iso = '';
-
-        if (celdaFecha instanceof Date) {
-            iso = _toISODate(celdaFecha);
-            isDate = true;
-        } else if (typeof celdaFecha === 'string' && celdaFecha.match(/\d{4}-\d{2}-\d{2}/)) {
-            iso = celdaFecha.match(/\d{4}-\d{2}-\d{2}/)[0];
-            isDate = true;
-        }
-
-        if (isDate) {
-            ultimaFecha = iso;
-        }
-
-        if (ultimaFecha) {
-            if (!mapDates[ultimaFecha]) mapDates[ultimaFecha] = {};
-
-            const subHeader = rowSub[c];
-            const idx = c + 1; // 1-based index for getRange
-
-            if (subHeader.includes('autorizado') || subHeader === 'autorizado') {
-                mapDates[ultimaFecha].confirmado_en = idx;
-            }
-            if (subHeader === 'hora de inicio' || subHeader === 'hora inicio') {
-                mapDates[ultimaFecha].hora_inicio = idx;
-            }
-            if (subHeader === 'hora de fin' || subHeader === 'hora fin' || subHeader === 'fin') {
-                mapDates[ultimaFecha].hora_fin = idx;
-            }
-            if (subHeader === 'estado') {
-                mapDates[ultimaFecha].estado = idx;
-            }
-        }
-    }
-    return mapDates;
-}
