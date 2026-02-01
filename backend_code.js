@@ -499,7 +499,9 @@ function _mapaColumnasPorFecha_(sh) {
         if (sub.includes('hora de inicio')) mapa[fechaActualISO].hora_inicio = col + 1;
         if (sub.includes('hora de fin')) mapa[fechaActualISO].hora_fin = col + 1;
         if (sub.includes('estado')) mapa[fechaActualISO].estado = col + 1;
-        if (sub.includes('confirm')) mapa[fechaActualISO].confirmado_en = col + 1;
+        // MAPEO CLAVE: "confirmado", "confirmacion", o "autorizado" -> confirmado_en
+        if (sub.includes('confirm') || sub.includes('autorizado')) mapa[fechaActualISO].confirmado_en = col + 1;
+
         if (sub.includes('inicio real')) mapa[fechaActualISO].inicio_real = col + 1;
         if (sub.includes('fin real')) mapa[fechaActualISO].fin_real = col + 1;
     }
@@ -5170,7 +5172,7 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
 
                             if (valInicio && String(valInicio).trim() !== '') {
                                 const displayTime = Utilities.formatDate(new Date(), ZONA_HORARIA, "dd/MM/yyyy HH:mm:ss");
-                                sh.getRange(r + 1, cols.colAutorizado).setValue(`Confirmado: ${displayTime}`);
+                                sh.getRange(r + 1, cols.colAutorizado).setValue(`${displayTime}`);
                                 count++;
                             }
                         }

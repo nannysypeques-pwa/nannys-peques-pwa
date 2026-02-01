@@ -3178,8 +3178,17 @@ function renderCalendarioCliente(svcs) {
             } else {
                 serviciosDia.forEach(s => {
                     const btn = document.createElement('button');
-                    const estado = (s.Estado || s.estado || 'pendiente').toLowerCase();
-                    btn.className = 'svc-pill svc-pill-cliente ' + (typeof stateClass === 'function' ? stateClass(estado) : 'pending');
+
+                    // LÓGICA DE COLORES DEL CLIENTE (SOLICITUD USUARIO)
+                    // Verde (.completed) = Hay info en columna Autorizado (confirmado_en)
+                    // Amarillo (.pending) = No hay info en Autorizado
+
+                    let claseColor = 'pending'; // Amarillo por defecto
+                    if (s.confirmado_en && String(s.confirmado_en).trim() !== '') {
+                        claseColor = 'completed'; // Verde
+                    }
+
+                    btn.className = 'svc-pill svc-pill-cliente ' + claseColor;
 
                     //Extraer primer nombre de la niñera
                     const nombreCompleto = s['Nombre de la niñera'] || s.nombre_ninera || 'Por asignar';
