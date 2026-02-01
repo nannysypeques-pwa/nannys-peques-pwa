@@ -3274,40 +3274,166 @@ window.confirmarSemana = confirmarSemana;
 function mostrarDetalleServicioCliente(s) {
     if (!s) return;
 
-    //Formatear fecha con día de semana y mes en español
+    // Formatear fecha
     const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-    const fechaObj = new Date(s.Fecha + 'T00:00:00');
+    let fechaObj;
+    if (s.Fecha && s.Fecha.includes('-')) {
+        const [y, m, d] = s.Fecha.split('-').map(Number);
+        fechaObj = new Date(y, m - 1, d);
+    } else {
+        fechaObj = new Date(s.Fecha); // Fallback
+    }
+
     const diaSemana = diasSemana[fechaObj.getDay()];
     const dia = fechaObj.getDate();
     const mes = meses[fechaObj.getMonth()];
-    const fechaFormateada = `${diaSemana} ${dia} de ${mes} `;
+    const fechaFormateada = `${diaSemana} ${dia} de ${mes}`;
 
-    //Llenar el modal con la información
     document.getElementById('mClienteFecha').textContent = fechaFormateada;
-    document.getElementById('mClienteHorario').textContent = s.Horario || '—';
+
+    // HORARIO
+    const dispHorario = s.Horario || (s.hora_inicio && s.hora_fin ? `${s.hora_inicio} – ${s.hora_fin}` : 'Pendiente');
+    const elHorario = document.getElementById('mClienteHorario');
+
+    // Resetear contenido siempre al abrir
+    elHorario.textContent = dispHorario;
+
     document.getElementById('mClienteDireccion').textContent = s.Direccion || 'Por confirmar';
     document.getElementById('mClienteNinera').textContent = s['Nombre de la niñera'] || 'Por asignar';
 
-    //Manejar ubicación (link o texto vacío)
+    // Ubicacion logic
     const ubicacionLink = document.getElementById('mClienteUbicacion');
     const ubicacionVacio = document.getElementById('mClienteUbicacionVacio');
 
     if (s.Ubicacion && s.Ubicacion.trim()) {
         ubicacionLink.href = s.Ubicacion;
         ubicacionLink.style.display = 'block';
-        ubicacionVacio.style.display = 'none';
+        if (ubicacionVacio) ubicacionVacio.style.display = 'none';
     } else {
         ubicacionLink.style.display = 'none';
-        ubicacionVacio.style.display = 'block';
+        if (ubicacionVacio) ubicacionVacio.style.display = 'block';
     }
 
-    //Mostrar el modal
-    document.getElementById('modalServicioCliente').style.display = 'flex';
+    // GESTIÓN DEL FOOTER (Acciones)
+    const modal = document.getElementById('modalServicioCliente');
+    const card = modal.querySelector('.modal-card');
+
+    // Selección ROBUSTA del footer
+    let footer = card.querySelector('.modal-footer');
+    if (!footer) {
+        // Si no tiene clase, usamos el último hijo (según estructura HTML conocida)
+        footer = card.lastElementChild;
+        // Le agregamos la clase para facilitar selecciones futuras
+        footer.classList.add('modal-footer');
+    }
+
+    // Limpiar botones anteriores
+    footer.innerHTML = '';
+
+    // Botón Cerrar (Siempre visible)
+    const btnCerrar = document.createElement('button');
+    btnCerrar.className = 'btn-ghost';
+    btnCerrar.textContent = 'Cerrar';
+    btnCerrar.onclick = cerrarModalCliente;
+    footer.appendChild(btnCerrar);
+
+    // LÓGICA DE EDICIÓN: Solo si NO está confirmado
+    // s.confirmado_en viene del backend. Si tiene valor, es Verde (Confirmado).
+    const isConfirmed = s.confirmado_en && String(s.confirmado_en).trim() !== '';
+
+    if (!isConfirmed) {
+        const btnEditar = document.createElement('button');
+        btnEditar.className = 'btn-primary';
+        btnEditar.style.marginLeft = '10px';
+        btnEditar.textContent = '✏️ Editar Horario';
+        btnEditar.onclick = () => iniciarEdicionHorario(s);
+        footer.appendChild(btnEditar);
+    }
+
+    modal.style.display = 'flex';
 }
 window.mostrarDetalleServicioCliente = mostrarDetalleServicioCliente;
+
+function iniciarEdicionHorario(s) {
+    const elHorario = document.getElementById('mClienteHorario');
+
+    const valInicio = s.hora_inicio || '09:00';
+    const valFin = s.hora_fin || '13:00';
+
+    elHorario.innerHTML = `
+        <div style="display:flex; gap:8px; align-items:center;">
+            <input type="time" id="edit_inicio" value="${valInicio}" 
+                   style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; color:#334155;">
+            <span style="color:#94a3b8;">a</span>
+            <input type="time" id="edit_fin" value="${valFin}" 
+                   style="padding:6px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; color:#334155;">
+        </div>
+    `;
+
+    // Actualizar Footer
+    const modal = document.getElementById('modalServicioCliente');
+    // Usamos querySelector porque ya aseguramos agregar la clase en mostrarDetalleServicioCliente
+    const footer = modal.querySelector('.modal-footer') || modal.querySelector('.modal-card').lastElementChild;
+
+    footer.innerHTML = '';
+
+    const btnCancelar = document.createElement('button');
+    btnCancelar.className = 'btn-ghost';
+    btnCancelar.textContent = 'Cancelar';
+    btnCancelar.onclick = () => {
+        cerrarModalCliente();
+        // Reabrir para restaurar vista normal
+        mostrarDetalleServicioCliente(s);
+    };
+    footer.appendChild(btnCancelar);
+
+    const btnGuardar = document.createElement('button');
+    btnGuardar.className = 'btn-primary';
+    btnGuardar.style.marginLeft = '10px';
+    btnGuardar.innerHTML = '💾 Guardar';
+    btnGuardar.onclick = () => guardarEdicionServicio(s);
+    footer.appendChild(btnGuardar);
+}
+window.iniciarEdicionHorario = iniciarEdicionHorario;
+
+async function guardarEdicionServicio(s) {
+    const inicio = document.getElementById('edit_inicio').value;
+    const fin = document.getElementById('edit_fin').value;
+
+    if (!inicio || !fin) {
+        alert("Por favor define ambos horarios");
+        return;
+    }
+
+    const btn = event.currentTarget;
+    const prevHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳...';
+
+    try {
+        await api('updateServicioCliente', {
+            sheet: s.sheet,
+            row_base: s.row_base,
+            fecha: s.fecha,
+            hora_inicio: inicio,
+            hora_fin: fin
+        });
+
+        mostrarToast("✅ Horario actualizado con éxito");
+        cerrarModalCliente();
+        cargarServiciosCliente(true); // Recargar calendario para ver cambios
+
+    } catch (e) {
+        console.error(e);
+        alert("Error al guardar: " + e.message);
+        btn.disabled = false;
+        btn.innerHTML = prevHTML;
+    }
+}
+window.guardarEdicionServicio = guardarEdicionServicio;
 
 function cerrarModalCliente() {
     document.getElementById('modalServicioCliente').style.display = 'none';
