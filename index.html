@@ -1335,12 +1335,21 @@
           <div id="mClienteHorarioCont">
             <div id="mClienteHorario" style="font-size: 16px; color: var(--text-main);">—</div>
           </div>
-          <div id="mClienteEditHorario" style="display:none; margin-top:8px; align-items:center; gap:10px;">
-            <input type="time" id="mClienteInputHora" class="input" style="width: auto; padding: 4px 8px;">
-            <button class="btn-pink" style="padding: 6px 16px; font-size: 13px;"
-              onclick="guardarEdicionHorario()">Guardar</button>
-            <button class="btn-ghost" style="padding: 6px 16px; font-size: 13px;"
-              onclick="cancelarEdicionHorario()">Cancelar</button>
+          <div id="mClienteEditHorario" style="display:none; flex-direction:column; gap:10px; margin-top:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label style="font-size:11px; min-width:40px;">Inicio:</label>
+              <input type="time" id="mClienteInputHora" class="input" style="width: auto; padding: 4px 8px;">
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <label style="font-size:11px; min-width:40px;">Fin:</label>
+              <input type="time" id="mClienteInputHoraFin" class="input" style="width: auto; padding: 4px 8px;">
+            </div>
+            <div style="display:flex; gap:10px; margin-top:5px;">
+              <button class="btn-pink" style="padding: 6px 16px; font-size: 13px;"
+                onclick="guardarEdicionHorario()">Guardar</button>
+              <button class="btn-ghost" style="padding: 6px 16px; font-size: 13px;"
+                onclick="cancelarEdicionHorario()">Cancelar</button>
+            </div>
           </div>
         </div>
 

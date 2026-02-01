@@ -3331,8 +3331,13 @@ function habilitarEdicionHorario() {
     document.getElementById('btnEditarHorario').style.display = 'none';
 
     const inputHora = document.getElementById('mClienteInputHora');
+    const inputHoraFin = document.getElementById('mClienteInputHoraFin');
+
     if (s.hora_inicio) {
         inputHora.value = s.hora_inicio;
+    }
+    if (s.hora_fin) {
+        inputHoraFin.value = s.hora_fin;
     }
 }
 
@@ -3361,8 +3366,10 @@ async function guardarEdicionHorario() {
     if (!s) return;
 
     const nuevaHora = document.getElementById('mClienteInputHora').value;
-    if (!nuevaHora) {
-        alert('Por favor selecciona una hora');
+    const nuevaHoraFin = document.getElementById('mClienteInputHoraFin').value;
+
+    if (!nuevaHora || !nuevaHoraFin) {
+        alert('Por favor selecciona ambos horarios (inicio y fin)');
         return;
     }
 
@@ -3370,7 +3377,8 @@ async function guardarEdicionHorario() {
         if (typeof mostrarCargando === 'function') mostrarCargando(true);
         const res = await api('editarServicioCliente', {
             fecha: s.fecha,
-            hora: nuevaHora
+            horaInicio: nuevaHora,
+            horaFin: nuevaHoraFin
         });
 
         if (res.ok) {

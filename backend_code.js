@@ -4743,12 +4743,12 @@ function getServiciosCliente(email, fechaInicio) {
 }
 
 /**
- * Permite al cliente editar el horario de inicio de un servicio
+ * Permite al cliente editar el horario de inicio y fin de un servicio
  * SOLO si no ha sido confirmado por la agencia (celda Autorizado vacía)
  */
 function editarServicioCliente(email, payload) {
-    const { fecha, hora } = payload; // hora viene en HH:mm (24h)
-    if (!fecha || !hora) throw new Error('Fecha y horario requeridos');
+    const { fecha, horaInicio, horaFin } = payload; // horas vienen en HH:mm (24h)
+    if (!fecha || !horaInicio || !horaFin) throw new Error('Fecha y ambos horarios requeridos');
 
     email = String(email).trim().toLowerCase();
     const sheets = ['Servicios', 'Servicios_Siguiente_semana'];
@@ -4789,7 +4789,7 @@ function editarServicioCliente(email, payload) {
         const mapa = _mapaColumnasPorFecha_(sh);
         const colInfo = mapa[fecha];
 
-        if (colInfo && colInfo.hora_inicio) {
+        if (colInfo && colInfo.hora_inicio && colInfo.hora_fin) {
             const idxConfirm = colInfo.confirmado_en;
             if (idxConfirm) {
                 const valConfirm = String(sh.getRange(filaCliente, idxConfirm).getValue()).trim();
@@ -4798,10 +4798,13 @@ function editarServicioCliente(email, payload) {
                 }
             }
 
-            const horaFormateada = _formatTimeForSheet(hora);
-            sh.getRange(filaCliente, colInfo.hora_inicio).setValue(horaFormateada);
+            const hiFormateada = _formatTimeForSheet(horaInicio);
+            const hfFormateada = _formatTimeForSheet(horaFin);
 
-            _auditLog(email, 'EDIT_SERVICE_TIME', { fecha, hora, sheet: sheetName, fila: filaCliente });
+            sh.getRange(filaCliente, colInfo.hora_inicio).setValue(hiFormateada);
+            sh.getRange(filaCliente, colInfo.hora_fin).setValue(hfFormateada);
+
+            _auditLog(email, 'EDIT_SERVICE_TIME', { fecha, horaInicio, horaFin, sheet: sheetName, fila: filaCliente });
 
             success = true;
             break;
