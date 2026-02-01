@@ -496,6 +496,7 @@ function _mapaColumnasPorFecha_(sh) {
         if (sub.includes('confirm')) mapa[fechaActualISO].confirmado_en = col + 1;
         if (sub.includes('inicio real')) mapa[fechaActualISO].inicio_real = col + 1;
         if (sub.includes('fin real')) mapa[fechaActualISO].fin_real = col + 1;
+        if (sub.includes('autorizado')) mapa[fechaActualISO].autorizado = col + 1;
     }
 
 
@@ -1558,11 +1559,12 @@ function _expandirServiciosSemanales_(sh) {
 
             const hi = _toHM(row[m.hora_inicio - 1]);
             const hf = _toHM(row[m.hora_fin - 1]);
-            if (!hi || !hf) return; // si ese dó­a no tiene horas, no hay servicio ese dó­a
+            if (!hi || !hf) return; // si ese día no tiene horas, no hay servicio ese día
             const estado = (m.estado ? String(row[m.estado - 1] || '').trim().toLowerCase() : 'pendiente') || 'pendiente';
             const confirmadoEn = m.confirmado_en ? String(row[m.confirmado_en - 1] || '').trim() : '';
             const inicioReal = m.inicio_real ? String(row[m.inicio_real - 1] || '').trim() : '';
             const finReal = m.fin_real ? String(row[m.fin_real - 1] || '').trim() : '';
+            const autorizado = m.autorizado ? String(row[m.autorizado - 1] || '').trim() : '';
 
 
 
@@ -1601,7 +1603,8 @@ function _expandirServiciosSemanales_(sh) {
                 inicio_real: inicioReal,
                 fin_real: finReal,
                 ver: verServicio,
-                tipo_servicio: tipoServicio
+                tipo_servicio: tipoServicio,
+                Autorizado: autorizado
             });
         });
     }
