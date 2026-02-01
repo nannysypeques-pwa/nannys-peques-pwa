@@ -3180,12 +3180,12 @@ function renderCalendarioCliente(svcs) {
                     const btn = document.createElement('button');
 
                     // LÓGICA DE COLORES DEL CLIENTE (SOLICITUD USUARIO)
-                    // Verde (.client-green) = Hay info en columna Autorizado (confirmado_en)
-                    // Amarillo (.client-yellow) = No hay info en Autorizado
+                    // Verde (.completed) = Hay info en columna Autorizado (confirmado_en)
+                    // Amarillo (.pending) = No hay info en Autorizado
 
-                    let claseColor = 'client-yellow'; // Amarillo por defecto
+                    let claseColor = 'pending'; // Amarillo por defecto
                     if (s.confirmado_en && String(s.confirmado_en).trim() !== '') {
-                        claseColor = 'client-green'; // Verde
+                        claseColor = 'completed'; // Verde
                     }
 
                     btn.className = 'svc-pill svc-pill-cliente ' + claseColor;
