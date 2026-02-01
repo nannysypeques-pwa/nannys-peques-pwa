@@ -1535,18 +1535,19 @@
       if (modal) modal.style.display = 'none';
     }
 
-    function ejecutarConfirmacionSemana() {
+    async function ejecutarConfirmacionSemana() {
+      // No cerrar inmediatamente para permitir feedback visual
+      const btn = event?.currentTarget;
+      await confirmarSemana(_semanaAConfirmar, btn);
       cerrarModalConfirmacion();
-      // Llamar a la función original, pasando el boleano almacenado
-      confirmarSemana(_semanaAConfirmar);
     }
 
     // INLINE FALLBACK: Para evitar problemas de caché con index.js
-    async function confirmarSemana(isCurrentWeek) {
+    async function confirmarSemana(isCurrentWeek, btnElement = null) {
       // confirm() nativo REMOVIDO en favor del modal personalizado
 
 
-      const btn = event?.currentTarget;
+      const btn = btnElement || event?.currentTarget;
       const originalText = btn ? btn.innerHTML : '';
       if (btn) {
         btn.disabled = true;
