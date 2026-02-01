@@ -498,7 +498,10 @@ function _mapaColumnasPorFecha_(sh) {
 
         // Si la celda tiene fecha, la guardamos como fecha activa
         if (val instanceof Date) {
-            fechaActualISO = Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+            fechaActualISO = _toISODate(val);
+            if (!mapa[fechaActualISO]) mapa[fechaActualISO] = {};
+        } else if (typeof val === 'string' && val.match(/\d{4}-\d{2}-\d{2}/)) {
+            fechaActualISO = val.match(/\d{4}-\d{2}-\d{2}/)[0];
             if (!mapa[fechaActualISO]) mapa[fechaActualISO] = {};
         }
 
@@ -514,13 +517,13 @@ function _mapaColumnasPorFecha_(sh) {
 
 
 
-        const sub = (headersSub[col] || '').toString().toLowerCase().trim();
+        const sub = _norm(headersSub[col]);
 
 
 
 
-        if (sub.includes('hora de inicio')) mapa[fechaActualISO].hora_inicio = col + 1;
-        if (sub.includes('hora de fin')) mapa[fechaActualISO].hora_fin = col + 1;
+        if (sub.includes('hora inicio') || sub === 'inicio' || sub.includes('hora de inicio')) mapa[fechaActualISO].hora_inicio = col + 1;
+        if (sub.includes('hora fin') || sub === 'fin' || sub.includes('hora de fin')) mapa[fechaActualISO].hora_fin = col + 1;
         if (sub.includes('estado')) mapa[fechaActualISO].estado = col + 1;
         // MAPEO CLAVE: "confirmado", "confirmacion", o "autorizado" -> confirmado_en
         if (sub.includes('confirm') || sub.includes('autorizado')) mapa[fechaActualISO].confirmado_en = col + 1;
@@ -4803,8 +4806,9 @@ function editarServicioCliente(email, payload) {
 
             sh.getRange(filaCliente, colInfo.hora_inicio).setValue(hiFormateada);
             sh.getRange(filaCliente, colInfo.hora_fin).setValue(hfFormateada);
+            SpreadsheetApp.flush(); // Asegurar escritura inmediata
 
-            _auditLog(email, 'EDIT_SERVICE_TIME', { fecha, horaInicio, horaFin, sheet: sheetName, fila: filaCliente });
+            _auditLog(email, 'EDIT_SERVICE_TIME', { fecha, horaInicio, horaFin, sheet: sheetName, fila: filaCliente, colI: colInfo.hora_inicio, colF: colInfo.hora_fin });
 
             success = true;
             break;
