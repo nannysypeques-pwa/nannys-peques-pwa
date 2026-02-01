@@ -3210,7 +3210,7 @@ window.renderCalendarioCliente = renderCalendarioCliente;
 window.cargarServiciosCliente = cargarServiciosCliente;
 
 async function confirmarSemana(isCurrentWeek) {
-    if (!confirm("¿Deseas confirmar todos los servicios de esta semana? Esta acción registrará la fecha y hora de tu confirmación.")) {
+    if (!confirm("¿Deseas confirmar todos los servicios de esta semana?")) {
         return;
     }
 
