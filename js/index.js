@@ -14,6 +14,23 @@ let SESION = {
 // --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
 let logoutTimer;
 
+/**
+ * Muestra u oculta el overlay de carga global con un mensaje opcional
+ */
+function mostrarCargando(show, texto = 'Cargando...') {
+    const overlay = document.getElementById('global-loading-overlay');
+    const textEl = document.getElementById('global-loading-text');
+    if (!overlay) return;
+
+    if (show) {
+        if (textEl) textEl.textContent = texto;
+        overlay.style.display = 'flex';
+    } else {
+        overlay.style.display = 'none';
+    }
+}
+window.mostrarCargando = mostrarCargando;
+
 function mostrarLoading(show, msg) {
     const loadingUI = document.getElementById('cred_loading_ui');
     const uploadUI = document.getElementById('cred_upload_ui');
@@ -3374,7 +3391,7 @@ async function guardarEdicionHorario() {
     }
 
     try {
-        if (typeof mostrarCargando === 'function') mostrarCargando(true);
+        mostrarCargando(true, 'Actualizando horario...');
         const res = await api('editarServicioCliente', {
             fecha: s.fecha,
             horaInicio: nuevaHora,
@@ -3382,17 +3399,17 @@ async function guardarEdicionHorario() {
         });
 
         if (res.ok) {
-            alert('¡Horario actualizado correctamente!');
+            mostrarToast('¡Horario actualizado correctamente!');
             cerrarModalCliente();
             if (typeof cargarServiciosCliente === 'function') await cargarServiciosCliente(true);
         } else {
-            alert('Error: ' + (res.mensaje || 'No se pudo actualizar el horario'));
+            mostrarToast('Error: ' + (res.mensaje || 'No se pudo actualizar el horario'));
         }
     } catch (e) {
         console.error(e);
-        alert('Ocurrió un error: ' + (e.message || 'No se pudo procesar la solicitud'));
+        mostrarToast('Error: ' + (e.message || 'No se pudo procesar la solicitud'));
     } finally {
-        if (typeof mostrarCargando === 'function') mostrarCargando(false);
+        mostrarCargando(false);
     }
 }
 window.mostrarDetalleServicioCliente = mostrarDetalleServicioCliente;
