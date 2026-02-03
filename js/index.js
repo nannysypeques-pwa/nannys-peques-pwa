@@ -11,6 +11,10 @@ let SESION = {
     token: null
 };
 
+// --- PERSISTENCIA DE ÚLTIMO LOGIN ---
+const LAST_LOGIN_KEY = 'nyp_last_login';
+
+
 // --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
 let logoutTimer;
 
@@ -69,7 +73,10 @@ function reiniciarTemporizadorInactividad() {
     logoutTimer = setTimeout(() => {
         if (SESION && SESION.token) {
             console.warn('Cierre de sesión automático por inactividad.');
-            cerrarSesion();
+            const eraCliente = !!SESION.cliente;
+            const ultimoEmail = SESION.email;
+
+            logout(true); // true = es por inactividad
             alert('Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.');
         }
     }, 1800000);
@@ -229,6 +236,9 @@ async function login(rol) {
         else document.body.classList.add('ninera');
 
         localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
+        // Guardar persistencia para retorno por inactividad
+        localStorage.setItem(LAST_LOGIN_KEY, JSON.stringify({ email: SESION.email, cliente: SESION.cliente }));
+
 
         // --- INICIO CAMBIO PRELOADER ---
         // En vez de mostrar app directo, mostramos preloader
@@ -340,7 +350,11 @@ async function guardarNueva() {
     }
 }
 
-function logout() {
+function logout(isTimeout = false) {
+    // Si no es timeout, podríamos querer limpiar la persistencia, 
+    // pero el requerimiento pide recordar el usuario. 
+    // Así que lo mantenemos en LAST_LOGIN_KEY siempre que se loguee con éxito.
+
     localStorage.removeItem('nyp_sesion');
     SESION = { email: null, nombre: '', admin: false, supervision: false, cliente: false, token: null };
 
@@ -348,12 +362,28 @@ function logout() {
     document.getElementById('auth').style.display = 'flex';
     document.querySelector('.bottom-nav').style.display = 'none';
 
-    const email = document.getElementById('email');
-    const pass = document.getElementById('pass');
-    if (email) email.value = '';
-    if (pass) pass.value = '';
+    // Limpiar campos por seguridad, pero los rellenaremos si es necesario
+    const emailField = document.getElementById('email');
+    const passField = document.getElementById('pass');
+    const emailRegField = document.getElementById('email-reg');
+    const passRegField = document.getElementById('pass-reg');
 
-    volverSeleccion();
+    if (emailField) emailField.value = '';
+    if (passField) passField.value = '';
+    if (emailRegField) emailRegField.value = '';
+    if (passRegField) passRegField.value = '';
+
+    if (isTimeout) {
+        // Redirigir según el último tipo de usuario
+        const last = JSON.parse(localStorage.getItem(LAST_LOGIN_KEY) || '{}');
+        if (last.cliente) {
+            mostrarPortalFamilia();
+        } else {
+            mostrarLoginStaff();
+        }
+    } else {
+        volverSeleccion();
+    }
 }
 
 /* =========================================
@@ -3423,6 +3453,13 @@ function mostrarLoginStaff() {
     document.getElementById('paso-seleccion').style.display = 'none';
     document.getElementById('paso-login').style.display = 'block';
     document.getElementById('paso-registro-cliente').style.display = 'none';
+
+    // Auto-completar email si existe persistencia
+    const last = JSON.parse(localStorage.getItem(LAST_LOGIN_KEY) || '{}');
+    if (last.email && !last.cliente) {
+        const el = document.getElementById('email');
+        if (el) el.value = last.email;
+    }
 }
 window.mostrarLoginStaff = mostrarLoginStaff;
 
@@ -3430,6 +3467,13 @@ function mostrarPortalFamilia() {
     document.getElementById('paso-seleccion').style.display = 'none';
     document.getElementById('paso-login').style.display = 'none';
     document.getElementById('paso-registro-cliente').style.display = 'block';
+
+    // Auto-completar email si existe persistencia
+    const last = JSON.parse(localStorage.getItem(LAST_LOGIN_KEY) || '{}');
+    if (last.email && last.cliente) {
+        const el = document.getElementById('email-reg');
+        if (el) el.value = last.email;
+    }
 }
 window.mostrarPortalFamilia = mostrarPortalFamilia;
 
