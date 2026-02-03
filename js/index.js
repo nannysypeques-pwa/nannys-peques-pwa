@@ -69,7 +69,7 @@ window.mostrarToast = mostrarToast;
 
 function reiniciarTemporizadorInactividad() {
     clearTimeout(logoutTimer);
-    // 30 minutos (1,800,000 ms)
+    // 5 minutos (300,000 ms) para pruebas
     logoutTimer = setTimeout(() => {
         if (SESION && SESION.token) {
             console.warn('Cierre de sesión automático por inactividad.');
@@ -79,7 +79,7 @@ function reiniciarTemporizadorInactividad() {
             logout(true); // true = es por inactividad
             alert('Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.');
         }
-    }, 1800000);
+    }, 300000);
 }
 
 // Inyectar listeners globales para detectar actividad
