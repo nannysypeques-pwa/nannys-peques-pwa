@@ -14,6 +14,10 @@ let SESION = {
 // --- PERSISTENCIA DE ÚLTIMO LOGIN ---
 const LAST_LOGIN_KEY = 'nyp_last_login';
 
+// --- CACHÉ DE LLAMADAS AL BACKEND (TTL) ---
+let LAST_FETCH = {}; // { key: timestamp }
+const DEFAULT_TTL = 30000; // 30 segundos
+
 
 // --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
 let logoutTimer;
@@ -420,6 +424,9 @@ function marcarSemana(targetId, val) {
 /* --- DATA FETCHING (Refactored) --- */
 
 async function cargar(force = false) {
+    if (!force && LAST_FETCH['cargar'] && (Date.now() - LAST_FETCH['cargar'] < DEFAULT_TTL)) return;
+    LAST_FETCH['cargar'] = Date.now();
+
     const msg = document.getElementById('msgApp');
     const fechaISO = document.getElementById('fecha').value || null;
 
@@ -632,6 +639,9 @@ function actualizarPlaneacionesSupervision() {
 }
 
 async function cargarServicios(force = false) {
+    if (!force && LAST_FETCH['cargarServicios'] && (Date.now() - LAST_FETCH['cargarServicios'] < DEFAULT_TTL)) return;
+    LAST_FETCH['cargarServicios'] = Date.now();
+
     const cont = document.getElementById('cal');
     const msg = document.getElementById('calMsg');
 
@@ -1284,6 +1294,9 @@ async function cargarResumenDisponibilidadAdmin() {
 }
 
 function cargarResumenPlaneaciones(force = false) {
+    if (!force && LAST_FETCH['cargarResumenPlaneaciones'] && (Date.now() - LAST_FETCH['cargarResumenPlaneaciones'] < DEFAULT_TTL)) return;
+    LAST_FETCH['cargarResumenPlaneaciones'] = Date.now();
+
     const c1 = document.getElementById('resumenPlaneacionesActual');
     const c2 = document.getElementById('resumenPlaneacionesSiguiente');
     const btn = document.getElementById('btnRefreshSupervision');
@@ -1649,9 +1662,13 @@ function irVista(nombre, skipLogic = false) {
 
     // Si es niñera (y no admin/supervision/cliente), obligar a completar perfil
     if (!SESION.cliente && !SESION.admin && !SESION.supervision) {
-        api('getProfile', { email: SESION.email }).then(p => {
-            verificarDatosFaltantesNinera(p);
-        }).catch(err => console.error("Error validando perfi en irVista:", err));
+        const now = Date.now();
+        if (!LAST_FETCH['validarPerfil'] || (now - LAST_FETCH['validarPerfil'] > 300000)) { // 5 min
+            LAST_FETCH['validarPerfil'] = now;
+            api('getProfile', { email: SESION.email }).then(p => {
+                verificarDatosFaltantesNinera(p);
+            }).catch(err => console.error("Error validando perfi en irVista:", err));
+        }
     }
 
     if (nombre === 'disponibilidad') {

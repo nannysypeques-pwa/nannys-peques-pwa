@@ -45,6 +45,9 @@
             if (token) {
                 email = _validarToken(token, currentFingerprint); // Retorna email o null
                 if (!email) throw new Error('Tu sesión ha expirado o el dispositivo no coincide. Inicia sesión nuevamente.');
+
+                // Cargar contexto de usuario una sola vez
+                _cargarContextoUsuario(email);
             } else {
                 // Si no hay token, rechazamos la petición por seguridad
                 throw new Error('No autorizado. Falta token de sesión.');
@@ -249,6 +252,49 @@ const NOMBRE_HOJA_SERVICIOS = 'Servicios';
 const ZONA_HORARIA = Session.getScriptTimeZone() || 'America/Mexico_City';
 const MINUTOS_REENVIO_OTP = 2;
 
+function _cargarContextoUsuario(email) {
+    if (!email) return;
+    email = email.toLowerCase().trim();
+    const roles = [];
+    const userData = {};
+
+    // 1. Staff / Admin / Supervision
+    const shU = _hoja(NOMBRE_HOJA_USUARIOS);
+    const filaU = _buscarFilaPorValor(shU, 'email', email);
+    if (filaU !== -1) {
+        roles.push('staff');
+        const dataU = _leerComoObjetos(shU)[filaU - 2]; // index is filaU-2 due to header and slice
+        if (dataU) {
+            if (_esVerdadero(dataU.es_admin) || String(dataU.rol).toLowerCase() === 'admin') roles.push('admin');
+            if (String(dataU.rol).toLowerCase() === 'supervision') roles.push('supervision');
+            if (String(dataU.rol).toLowerCase() === 'ninera') roles.push('ninera');
+            Object.assign(userData, dataU);
+        }
+    }
+
+    // 2. Cliente
+    const shC = _hoja(NOMBRE_HOJA_CLIENTES);
+    const filaC = _buscarFilaPorValor(shC, 'email', email);
+    if (filaC !== -1) {
+        roles.push('cliente');
+        const dataC = _leerComoObjetos(shC)[filaC - 2];
+        if (dataC) Object.assign(userData, dataC);
+    }
+
+    GLOBAL_CTX.user = { email, roles, data: userData };
+}
+
+/**
+ * CONTEXTO GLOBAL DE EJECUCIÓN (Request-Level Cache)
+ * Almacena datos de hojas leídas para evitar re-lecturas en la misma petición.
+ */
+const GLOBAL_CTX = {
+    sheets: {},     // { nombreHoja: SheetObject }
+    data: {},       // { nombreHoja: [[]] (values) }
+    objects: {},     // { nombreHoja: [{}] (mapped objects) }
+    user: null      // { email, roles: [], data: {} }
+};
+
 
 
 
@@ -268,17 +314,72 @@ const MINUTOS_REENVIO_OTP = 2;
  *  UTILIDADES
  *  ========================= */
 function _ss() { return SpreadsheetApp.getActive(); }
-function _hoja(nombre) { const sh = _ss().getSheetByName(nombre); if (!sh) throw new Error('No se encontró³ la hoja: ' + nombre); return sh; }
+function _hoja(nombre) {
+    if (GLOBAL_CTX.sheets[nombre]) return GLOBAL_CTX.sheets[nombre];
+    const sh = _ss().getSheetByName(nombre);
+    if (!sh) throw new Error('No se encontró la hoja: ' + nombre);
+    GLOBAL_CTX.sheets[nombre] = sh;
+    return sh;
+}
 function _ahoraISO() { return Utilities.formatDate(new Date(), ZONA_HORARIA, "yyyy-MM-dd'T'HH:mm:ss"); }
 function _nowHuman() { return Utilities.formatDate(new Date(), ZONA_HORARIA, "yyyy-MM-dd HH:mm:ss"); }
 function _sha256(t) { const raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, t, Utilities.Charset.UTF_8); return raw.map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join(''); }
-function _leerComoObjetos(hoja) { const rng = hoja.getDataRange(), vals = rng.getValues(); if (vals.length < 2) return []; const headers = vals[0].map(h => String(h).trim()); return vals.slice(1).map(r => { const o = {}; headers.forEach((h, i) => o[String(h).trim()] = r[i]); return o; }); }
-function _escribirObjeto(hoja, fila1, obj) { const headers = hoja.getDataRange().getValues()[0].map(h => String(h).trim()); headers.forEach((h, i) => { if (obj.hasOwnProperty(h)) hoja.getRange(fila1, i + 1).setValue(obj[h]); }); }
+
+function _leerComoObjetos(hoja) {
+    const nombre = hoja.getName();
+    if (GLOBAL_CTX.objects[nombre]) return GLOBAL_CTX.objects[nombre];
+
+    let vals;
+    if (GLOBAL_CTX.data[nombre]) {
+        vals = GLOBAL_CTX.data[nombre];
+    } else {
+        vals = hoja.getDataRange().getValues();
+        GLOBAL_CTX.data[nombre] = vals;
+    }
+
+    if (vals.length < 2) return [];
+    const headers = vals[0].map(h => String(h).trim());
+    const result = vals.slice(1).map(r => {
+        const o = {};
+        headers.forEach((h, i) => o[h] = r[i]);
+        return o;
+    });
+
+    GLOBAL_CTX.objects[nombre] = result;
+    return result;
+}
+
+function _escribirObjeto(hoja, fila1, obj) {
+    // Nota: Esta función asume que escribimos celda por celda. 
+    // Para optimizarla requeriría saber todos los cambios de antemano.
+    // Por ahora, solo invalidamos el caché de esa hoja si escribimos.
+    const nombre = hoja.getName();
+    delete GLOBAL_CTX.data[nombre];
+    delete GLOBAL_CTX.objects[nombre];
+
+    const headers = hoja.getDataRange().getValues()[0].map(h => String(h).trim());
+    headers.forEach((h, i) => { if (obj.hasOwnProperty(h)) hoja.getRange(fila1, i + 1).setValue(obj[h]); });
+}
+
 function _buscarFilaPorValor(hoja, nombreCol, valor) {
-    const vals = hoja.getDataRange().getValues(); if (vals.length < 2) return -1;
-    const headers = vals[0].map(h => String(h).trim()); const idx = headers.indexOf(nombreCol);
+    const nombre = hoja.getName();
+    let vals;
+    if (GLOBAL_CTX.data[nombre]) {
+        vals = GLOBAL_CTX.data[nombre];
+    } else {
+        vals = hoja.getDataRange().getValues();
+        GLOBAL_CTX.data[nombre] = vals;
+    }
+
+    if (vals.length < 2) return -1;
+    const headers = vals[0].map(h => String(h).trim());
+    const idx = headers.indexOf(nombreCol);
     if (idx === -1) throw new Error('Columna no existe: ' + nombreCol);
-    for (let i = 1; i < vals.length; i++) { if (String(vals[i][idx]).trim().toLowerCase() === String(valor).trim().toLowerCase()) return i + 1; }
+
+    const valBusca = String(valor).trim().toLowerCase();
+    for (let i = 1; i < vals.length; i++) {
+        if (String(vals[i][idx]).trim().toLowerCase() === valBusca) return i + 1;
+    }
     return -1;
 }
 function _idxCol(hoja, nombreCol) {
@@ -588,11 +689,29 @@ function _validarToken(token, currentFingerprint) {
     }
 }
 
+function _enforceRole(email, requiredRole) {
+    if (!GLOBAL_CTX.user || GLOBAL_CTX.user.email !== email) {
+        _cargarContextoUsuario(email);
+    }
+
+    const userRoles = GLOBAL_CTX.user ? GLOBAL_CTX.user.roles : [];
+
+    // Si es admin, tiene acceso a todo
+    if (userRoles.includes('admin')) return true;
+
+    if (!userRoles.includes(requiredRole)) {
+        throw new Error('No tienes permiso para realizar esta acción. Se requiere el rol: ' + requiredRole);
+    }
+    return true;
+}
+
 
 /** =========================
  *  AUTORIZACIó“N / ROLES / OTP / LOGIN
  *  ========================= */
 function _estaAutorizado(email) {
+    if (GLOBAL_CTX.user && GLOBAL_CTX.user.email === email) return true;
+
     email = String(email || '').trim().toLowerCase();
 
     // 1. Revisar si Está en hoja Usuarios y activo
@@ -615,21 +734,26 @@ function _estaAutorizado(email) {
     const filaS = _buscarFilaPorValor(shS, 'email', email);
     if (filaS !== -1) return true;
 
-    // 3. Permitir autorizar nuevos registros de clientes (la ló³gica de registro manejaró¡ la creació³n)
-    // Para que el login no falle antes de dar clic en registrar, permitimos pasar esta fase
-    // si el backend lo permite dinó¡micamente.
     return true;
 }
 
 function esCliente(email) {
+    if (GLOBAL_CTX.user && GLOBAL_CTX.user.email === email) {
+        return GLOBAL_CTX.user.roles.includes('cliente');
+    }
     email = String(email || '').trim().toLowerCase();
     const shC = _hoja(NOMBRE_HOJA_CLIENTES);
     const filaC = _buscarFilaPorValor(shC, 'email', email);
     return filaC !== -1;
 }
+
 function esAdmin(email) {
+    if (GLOBAL_CTX.user && GLOBAL_CTX.user.email === email) {
+        return GLOBAL_CTX.user.roles.includes('admin');
+    }
     email = String(email || '').trim().toLowerCase();
-    const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email);
+    const sh = _hoja(NOMBRE_HOJA_USUARIOS);
+    const fila = _buscarFilaPorValor(sh, 'email', email);
     if (fila === -1) return false;
     const idxRol = _idxCol(sh, 'rol');
     const idxEA = _idxCol(sh, 'es_admin');
@@ -643,32 +767,23 @@ function esAdmin(email) {
     return false;
 }
 
-
-
-
 function esSupervision(email) {
+    if (GLOBAL_CTX.user && GLOBAL_CTX.user.email === email) {
+        return GLOBAL_CTX.user.roles.includes('supervision');
+    }
     email = String(email || '').trim().toLowerCase();
     const sh = _hoja(NOMBRE_HOJA_USUARIOS);
     const fila = _buscarFilaPorValor(sh, 'email', email);
     if (fila === -1) return false;
 
-
-
-
     const idxRol = _idxCol(sh, 'rol');
     if (idxRol <= 0) return false;
-
-
-
 
     const rol = String(sh.getRange(fila, idxRol).getValue() || '')
         .normalize('NFD')                 // elimina acentos
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .trim();
-
-
-
 
     return rol === 'supervision';
 }
@@ -1272,13 +1387,24 @@ function guardarDisponibilidad(email, payload) {
 
 
 
-    // Agregar nuevos
+    // Agregar nuevos en lote (Batch)
+    const newRows = [];
     payload.dias.forEach(d => {
         const mat = !!d.Matutino; const ves = !!d.Vespertino;
         // si ambos false, no escribimos
         if (!mat && !ves) return;
-        sh.appendRow([nombreNanny, d.fecha, d.dia, mat, ves]);
+        newRows.push([nombreNanny, d.fecha, d.dia, mat, ves]);
     });
+
+    if (newRows.length > 0) {
+        sh.getRange(sh.getLastRow() + 1, 1, newRows.length, 5).setValues(newRows);
+    }
+
+    // Invalidar caché tras escritura
+    delete GLOBAL_CTX.data[NOMBRE_HOJA_DISPONIBILIDAD];
+    delete GLOBAL_CTX.objects[NOMBRE_HOJA_DISPONIBILIDAD];
+
+    return { ok: true };
 
 
 
