@@ -81,7 +81,7 @@ function reiniciarTemporizadorInactividad() {
             const ultimoEmail = SESION.email;
 
             logout(true); // true = es por inactividad
-            alert('Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.');
+            mostrarToast('⏱️ Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.');
         }
     }, 300000);
 }
