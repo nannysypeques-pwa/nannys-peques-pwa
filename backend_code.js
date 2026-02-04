@@ -4185,7 +4185,11 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     const nombreNineraActual = _nombrePorEmail(email);
 
     // Verificar si el usuario es supervisión o admin (pueden ver todas las planeaciones)
-    const esSupervisionOAdmin = esAdmin(email) || esSupervision(email);
+    if (!GLOBAL_CTX.user || GLOBAL_CTX.user.email !== email) {
+        _cargarContextoUsuario(email);
+    }
+    const userRoles = GLOBAL_CTX.user ? GLOBAL_CTX.user.roles : [];
+    const esSupervisionOAdmin = userRoles.includes('admin') || userRoles.includes('supervision');
 
     for (let i = 1; i < data.length; i++) {
         const rFecha = _toISODate(data[i][idxFecha]);
