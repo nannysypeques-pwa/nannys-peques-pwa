@@ -3861,7 +3861,8 @@ function obtenerResumenPlaneacionesSemana(fechaBaseISO, email, tipo) {
     const servicios = _leerServiciosDesdeHojas_(hojasALeer).filter(s =>
         ['neuronanny', 'nanny educativa', 'miss nanny']
             .includes(_norm(s.tipo_servicio)) &&
-        fechasSemana.includes(s.fecha)
+        fechasSemana.includes(s.fecha) &&
+        s.ver_nanny === true  // ✅ Solo servicios visibles para niñera
     );
 
 
