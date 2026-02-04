@@ -3,7 +3,7 @@
         let action = '';
         let payload = {};
 
-        // 1ï¸ƒ£ LEER BODY
+        // 1ï¸ ƒ£ LEER BODY
         if (e && e.postData && e.postData.contents) {
             const type = String(e.postData.type || '').toLowerCase();
             if (type.includes('application/json')) {
@@ -423,18 +423,7 @@ function _formatTimeForSheet(hhmm) {
         return hhmm;
     }
 }
-function _nombrePorEmail(email) {
-    const sh = _hoja(NOMBRE_HOJA_USUARIOS);
-    const fila = _buscarFilaPorValor(sh, 'email', email);
-    if (fila === -1) return '';
-    // Optimización: Usar caché si existe para evitar lectura lenta
-    const nombreHoja = NOMBRE_HOJA_USUARIOS;
-    if (GLOBAL_CTX.data[nombreHoja] && GLOBAL_CTX.data[nombreHoja][fila - 1]) {
-        // Asumiendo columna 2 es la B (índice 1 en array 0-indexed)
-        return String(GLOBAL_CTX.data[nombreHoja][fila - 1][1] || '').trim();
-    }
-    return String(sh.getRange(fila, 2).getValue() || '').trim();
-}
+function _nombrePorEmail(email) { const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) return ''; return String(sh.getRange(fila, 2).getValue() || '').trim(); }
 
 /**
  * Construye notas detalladas desde los datos del cliente
@@ -1170,7 +1159,7 @@ function _diasDeSemana(baseFechaISO) {
         // Forzamos hora media (mediodó­a) para evitar saltos por huso horario
         base = new Date(baseFechaISO + 'T12:00:00');
     } else {
-        // Hoy pero €œsin hora€
+        // Hoy pero €œsin hora€ 
         const hoy = new Date();
         base = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
     }
@@ -2054,7 +2043,7 @@ function confirmarServicioPorFila(sheetName, row, email) {
 
 
 
-        // Solo confirmar dó­as que Só tengan horas
+        // Solo confirmar dó­as que Só  tengan horas
         if (!m.hora_inicio || !m.hora_fin) return;
 
 
@@ -3279,7 +3268,7 @@ function leerPuntosManualPorNombre_(nombreNinera) {
 
 
 /**
- * Calcula puntos AUTOMóTICOS por semanas a partir de servicios eventuales
+ * Calcula puntos AUTOMó TICOS por semanas a partir de servicios eventuales
  * y restricciones por castigos manuales.
  *
  * Reglas automó¡ticas:
@@ -4054,11 +4043,11 @@ function guardarPlaneacionNeuronanny(payload, email) {
     }
 
     // ====================================================
-    // œï¸ GUARDADO (MISMO appendRow, SIN ROMPER NADA)
+    // œ ï¸  GUARDADO (MISMO appendRow, SIN ROMPER NADA)
     // ====================================================
     sh.appendRow([
         payload.fecha || '',
-        nombreNinera,                 // œ… aquí YA VA GARANTIZADO
+        nombreNinera,                 // œ… aquí  YA VA GARANTIZADO
         payload.cliente || '',
         payload.edad_nino || '',
         payload.area_desarrollo || '',
@@ -4091,7 +4080,7 @@ function reenviarPlaneacionCorregida(payload, email) {
     const data = sh.getDataRange().getValues();
     const headers = data[0].map(h => _norm(h));
 
-    // ðŸ”Ž óndices por encabezado
+    // ðŸ”Ž ó ndices por encabezado
     const idxFecha = headers.indexOf('fecha');
     const idxCliente = headers.indexOf('cliente');
     const idxArea = headers.indexOf('area de desarrollo');
@@ -4111,7 +4100,7 @@ function reenviarPlaneacionCorregida(payload, email) {
 
     let fila = -1;
 
-    // ðŸ” Buscar la planeació³n existente
+    // ðŸ”  Buscar la planeació³n existente
     for (let i = 1; i < data.length; i++) {
         const f = _toISODate(data[i][idxFecha]);
         const c = String(data[i][idxCliente] || '').trim();
@@ -4127,10 +4116,7 @@ function reenviarPlaneacionCorregida(payload, email) {
     }
 
     // --- IDOR PROTECTION: VALIDATE OWNERSHIP ---
-    if (!GLOBAL_CTX.user || GLOBAL_CTX.user.email !== email) _cargarContextoUsuario(email);
-    const esAdmin = GLOBAL_CTX.user && GLOBAL_CTX.user.roles.includes('admin');
-
-    if (!esAdmin) {
+    if (!esAdmin(email)) {
         const nombreNannyFila = String(sh.getRange(fila, 2).getValue() || '').trim();
         const miNombre = _nombrePorEmail(email);
         if (_norm(nombreNannyFila) !== _norm(miNombre)) {
@@ -4139,14 +4125,14 @@ function reenviarPlaneacionCorregida(payload, email) {
         }
     }
 
-    // œï¸ Actualizar datos de la planeació³n
+    // œ ï¸  Actualizar datos de la planeació³n
     if (idxArea >= 0) sh.getRange(fila, idxArea + 1).setValue(payload.area_desarrollo || '');
     if (idxObjetivo >= 0) sh.getRange(fila, idxObjetivo + 1).setValue(payload.objetivo || '');
     if (idxDescripcion >= 0) sh.getRange(fila, idxDescripcion + 1).setValue(payload.descripcion || '');
     if (idxMateriales >= 0) sh.getRange(fila, idxMateriales + 1).setValue(payload.materiales || '');
     if (idxImagen >= 0) sh.getRange(fila, idxImagen + 1).setValue(payload.imagen || '');
 
-    // ðŸ” Cambiar estado de revisió³n †’ pendiente
+    // ðŸ”  Cambiar estado de revisió³n †’ pendiente
     if (idxEstadoRev >= 0) {
         sh.getRange(fila, idxEstadoRev + 1).setValue('pendiente');
     }
@@ -4172,7 +4158,6 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     if (!sh) return null;
 
     const data = sh.getDataRange().getValues();
-
     if (data.length < 2) return null;
 
     const headers = data[0].map(h => _norm(h));
@@ -4199,38 +4184,25 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     // Obtener nombre de la niñera que está solicitando la planeación
     const nombreNineraActual = _nombrePorEmail(email);
 
-    // Verificar si el usuario es supervisión o admin (pueden ver todas las planeaciones)
-    // Usamos GLOBAL_CTX porque las funciones esAdmin() no existen como globales simples
-    if (!GLOBAL_CTX.user || GLOBAL_CTX.user.email !== email) {
-        _cargarContextoUsuario(email);
-    }
-    const userRoles = GLOBAL_CTX.user ? GLOBAL_CTX.user.roles : [];
-    const esSupervisionOAdmin = userRoles.includes('admin') || userRoles.includes('supervision');
-
-    // 🔍 ESTRATEGIA DE MEJOR COINCIDENCIA (SMART MATCH)
-    // En lugar de devolver el primer match (que podría ser una fila vacía antigua),
-    // buscamos la "mejor" fila posible.
-
-    let mejorFila = null;
-
     for (let i = 1; i < data.length; i++) {
         const rFecha = _toISODate(data[i][idxFecha]);
         const rCliente = String(data[i][idxCliente] || '').trim();
         const rNinera = idxNinera >= 0 ? String(data[i][idxNinera] || '').trim() : '';
 
-        // ✅ FILTRO HÍBRIDO MEJORADO:
+        // ✅ FILTRO MEJORADO: fecha + cliente + niñera
+        // Si la planeación tiene niñera asignada, verificar que coincida
+        // Si no tiene niñera (planeaciones antiguas), hacer match solo por fecha+cliente (fallback)
         const coincideFechaCliente = rFecha === payload.fecha && rCliente === payload.cliente;
 
         let coincideNinera = true;
-        if (!esSupervisionOAdmin) {
-            // Si es NIÑERA: Filtro estricto (su propio nombre o vacía si es legacy)
+        if (!esAdmin(email) && !esSupervision(email)) {
             coincideNinera = !rNinera || _norm(rNinera) === _norm(nombreNineraActual);
         }
-        // Si es SUPERVISIÓN/ADMIN: coincideNinera ya es true por defecto.
 
         if (coincideFechaCliente && coincideNinera) {
-            const candidato = {
+            return {
                 fila: i + 1,
+
                 // 📋 PLANEACIÓN
                 area_desarrollo: data[i][headers.indexOf('area de desarrollo')] || '',
                 objetivo: data[i][headers.indexOf('objetivo')] || '',
@@ -4252,7 +4224,7 @@ function obtenerPlaneacionNeuronanny(payload, email) {
                     ? String(data[i][idxObsSup] || '').trim()
                     : '',
 
-                // 📅 FECHAS
+                // 📅 FECHAS (AHORA SÍ EXISTEN)
                 fecha_revision: idxFechaCreacion >= 0
                     ? String(data[i][idxFechaCreacion] || '').trim()
                     : '',
@@ -4261,29 +4233,8 @@ function obtenerPlaneacionNeuronanny(payload, email) {
                     ? String(data[i][idxFechaCorreccion] || '').trim()
                     : ''
             };
-
-            // CRITERIO DE SELECCIÓN: Priorizar si tiene contenido
-            // Si ya tenemos uno y es "bueno", ¿lo reemplazamos?
-            // Preferimos el que tenga 'area_desarrollo' lleno.
-            if (!mejorFila) {
-                mejorFila = candidato; // Primer candidato
-            } else {
-                const actualTieneData = !!mejorFila.area_desarrollo;
-                const nuevoTieneData = !!candidato.area_desarrollo;
-
-                // Si el actual está vacío y el nuevo tiene data, reemplazamos
-                if (!actualTieneData && nuevoTieneData) {
-                    mejorFila = candidato;
-                }
-                // Si ambos tienen data (o ambos vacíos), preferimos el más reciente (mayor índice de fila en Sheets suele ser más nuevo)
-                else if (actualTieneData === nuevoTieneData) {
-                    mejorFila = candidato;
-                }
-            }
         }
     }
-
-    if (mejorFila) return mejorFila;
 
     return null;
 }
@@ -4317,11 +4268,7 @@ function editarPlaneacionNeuronanny(payload, email) {
     }
 
     // --- IDOR PROTECTION: VALIDATE OWNERSHIP ---
-    // Verificar si es admin usando GLOBAL_CTX
-    if (!GLOBAL_CTX.user || GLOBAL_CTX.user.email !== email) _cargarContextoUsuario(email);
-    const esAdmin = GLOBAL_CTX.user && GLOBAL_CTX.user.roles.includes('admin');
-
-    if (!esAdmin) {
+    if (!esAdmin(email)) {
         const nombreNannyFila = String(sh.getRange(fila, 2).getValue() || '').trim();
         const miNombre = _nombrePorEmail(email);
         if (_norm(nombreNannyFila) !== _norm(miNombre)) {
@@ -4394,7 +4341,7 @@ function guardarObservacionesSupervision(payload, email) {
         idxRevision = sh.getLastColumn() - 1;
     }
 
-    // ---- FECHA ENVóO A CORRECCIó“N ----
+    // ---- FECHA ENVó O A CORRECCIó“N ----
     let idxCorreccion = headers.indexOf('fecha de envio a correccion');
     if (idxCorreccion === -1) {
         sh.insertColumnAfter(sh.getLastColumn());
@@ -4417,10 +4364,10 @@ function guardarObservacionesSupervision(payload, email) {
 
     const ahora = _nowHuman();
 
-    // 1ï¸ƒ£ Guardar observaciones
+    // 1ï¸ ƒ£ Guardar observaciones
     sh.getRange(fila, idxObs + 1).setValue(payload.observaciones || '');
 
-    // 2ï¸ƒ£ Guardar estado + fecha segóºn acció³n
+    // 2ï¸ ƒ£ Guardar estado + fecha segóºn acció³n
     if (payload.tipo === 'revisada') {
         sh.getRange(fila, idxEstado + 1).setValue('revisada');
         sh.getRange(fila, idxRevision + 1).setValue(ahora);
@@ -4778,7 +4725,7 @@ function enviarPushPrueba(email) {
     };
 
     const payload = JSON.stringify({
-        title: 'ðŸ¼ Nannys y Peques',
+        title: 'ðŸ ¼ Nannys y Peques',
         body: 'Tienes un nuevo servicio asignado',
         url: 'https://app.nannysypeques.com.mx'
     });
@@ -5519,4 +5466,3 @@ function confirmarSemana(email, fechaInicioISO, timestamp) {
 
     return { ok: true, actualizados: count, yaConfirmados: yaConfirmados, debug: debugLog };
 }
-

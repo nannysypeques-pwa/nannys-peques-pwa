@@ -2316,15 +2316,24 @@ function cerrarPlaneacionNeuronanny() {
     document.getElementById('planeacionBackdrop').style.display = 'none';
 }
 
-function precargarPlaneacionesCliente() {
-    PLANEACIONES_FECHAS.forEach(fecha => {
+async function precargarPlaneacionesCliente() {
+    // FIX: Sequential pre-loading to avoid hammering the GAS backend with parallel heavy requests
+    for (const fecha of PLANEACIONES_FECHAS) {
         const key = `${PLANEACION_CLIENTE}|${fecha}`;
-        if (key in CACHE_PLANEACIONES) return;
+        if (key in CACHE_PLANEACIONES) continue;
 
-        api('obtenerPlaneacionNeuronanny', { fecha, cliente: PLANEACION_CLIENTE, email: SESION.email })
-            .then(res => { CACHE_PLANEACIONES[key] = res || null; })
-            .catch(() => { CACHE_PLANEACIONES[key] = null; });
-    });
+        try {
+            const res = await api('obtenerPlaneacionNeuronanny', {
+                fecha,
+                cliente: PLANEACION_CLIENTE,
+                email: SESION.email
+            });
+            CACHE_PLANEACIONES[key] = res || null;
+        } catch (e) {
+            console.error(`Error precargando planeación ${fecha}:`, e);
+            CACHE_PLANEACIONES[key] = null;
+        }
+    }
 }
 
 function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServicioResumen, nombreNineraResumen) {
