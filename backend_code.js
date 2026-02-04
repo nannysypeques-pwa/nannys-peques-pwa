@@ -4184,6 +4184,9 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     // Obtener nombre de la niñera que está solicitando la planeación
     const nombreNineraActual = _nombrePorEmail(email);
 
+    // Verificar si el usuario es supervisión o admin (pueden ver todas las planeaciones)
+    const esSupervisionOAdmin = esAdmin(email) || esSupervision(email);
+
     for (let i = 1; i < data.length; i++) {
         const rFecha = _toISODate(data[i][idxFecha]);
         const rCliente = String(data[i][idxCliente] || '').trim();
@@ -4192,8 +4195,9 @@ function obtenerPlaneacionNeuronanny(payload, email) {
         // ✅ FILTRO MEJORADO: fecha + cliente + niñera
         // Si la planeación tiene niñera asignada, verificar que coincida
         // Si no tiene niñera (planeaciones antiguas), hacer match solo por fecha+cliente (fallback)
+        // Si es supervisión/admin, NO filtrar por niñera
         const coincideFechaCliente = rFecha === payload.fecha && rCliente === payload.cliente;
-        const coincideNinera = !rNinera || _norm(rNinera) === _norm(nombreNineraActual);
+        const coincideNinera = esSupervisionOAdmin || !rNinera || _norm(rNinera) === _norm(nombreNineraActual);
 
         if (coincideFechaCliente && coincideNinera) {
             return {
