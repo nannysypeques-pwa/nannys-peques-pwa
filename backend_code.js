@@ -4171,14 +4171,7 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     const sh = _hoja('Planeaciones_Neuronanny');
     if (!sh) return null;
 
-    let data;
-    const nombreHoja = 'Planeaciones_Neuronanny';
-    if (GLOBAL_CTX.data[nombreHoja]) {
-        data = GLOBAL_CTX.data[nombreHoja];
-    } else {
-        data = sh.getDataRange().getValues();
-        GLOBAL_CTX.data[nombreHoja] = data;
-    }
+    const data = sh.getDataRange().getValues();
 
     if (data.length < 2) return null;
 
@@ -4214,6 +4207,12 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     const userRoles = GLOBAL_CTX.user ? GLOBAL_CTX.user.roles : [];
     const esSupervisionOAdmin = userRoles.includes('admin') || userRoles.includes('supervision');
 
+    // 🔍 ESTRATEGIA DE MEJOR COINCIDENCIA (SMART MATCH)
+    // En lugar de devolver el primer match (que podría ser una fila vacía antigua),
+    // buscamos la "mejor" fila posible.
+
+    let mejorFila = null;
+
     for (let i = 1; i < data.length; i++) {
         const rFecha = _toISODate(data[i][idxFecha]);
         const rCliente = String(data[i][idxCliente] || '').trim();
@@ -4227,13 +4226,11 @@ function obtenerPlaneacionNeuronanny(payload, email) {
             // Si es NIÑERA: Filtro estricto (su propio nombre o vacía si es legacy)
             coincideNinera = !rNinera || _norm(rNinera) === _norm(nombreNineraActual);
         }
-        // Si es SUPERVISIÓN/ADMIN: coincideNinera ya es true por defecto, sin condiciones extra.
-
+        // Si es SUPERVISIÓN/ADMIN: coincideNinera ya es true por defecto.
 
         if (coincideFechaCliente && coincideNinera) {
-            return {
+            const candidato = {
                 fila: i + 1,
-
                 // 📋 PLANEACIÓN
                 area_desarrollo: data[i][headers.indexOf('area de desarrollo')] || '',
                 objetivo: data[i][headers.indexOf('objetivo')] || '',
@@ -4255,7 +4252,7 @@ function obtenerPlaneacionNeuronanny(payload, email) {
                     ? String(data[i][idxObsSup] || '').trim()
                     : '',
 
-                // 📅 FECHAS (AHORA SÍ EXISTEN)
+                // 📅 FECHAS
                 fecha_revision: idxFechaCreacion >= 0
                     ? String(data[i][idxFechaCreacion] || '').trim()
                     : '',
@@ -4264,8 +4261,29 @@ function obtenerPlaneacionNeuronanny(payload, email) {
                     ? String(data[i][idxFechaCorreccion] || '').trim()
                     : ''
             };
+
+            // CRITERIO DE SELECCIÓN: Priorizar si tiene contenido
+            // Si ya tenemos uno y es "bueno", ¿lo reemplazamos?
+            // Preferimos el que tenga 'area_desarrollo' lleno.
+            if (!mejorFila) {
+                mejorFila = candidato; // Primer candidato
+            } else {
+                const actualTieneData = !!mejorFila.area_desarrollo;
+                const nuevoTieneData = !!candidato.area_desarrollo;
+
+                // Si el actual está vacío y el nuevo tiene data, reemplazamos
+                if (!actualTieneData && nuevoTieneData) {
+                    mejorFila = candidato;
+                }
+                // Si ambos tienen data (o ambos vacíos), preferimos el más reciente (mayor índice de fila en Sheets suele ser más nuevo)
+                else if (actualTieneData === nuevoTieneData) {
+                    mejorFila = candidato;
+                }
+            }
         }
     }
+
+    if (mejorFila) return mejorFila;
 
     return null;
 }
