@@ -3993,18 +3993,8 @@ function guardarPlaneacionNeuronanny(payload, email) {
     const fechaPayload = _toISODate(payload.fecha);
     const clientePayload = String(payload.cliente || '').trim();
 
-    // ðŸ”’ Validació³n existente (NO se toca)
-    for (let i = 1; i < data.length; i++) {
-        const rFecha = _toISODate(data[i][idxFecha]);
-        const rCliente = String(data[i][idxCliente] || '').trim();
-
-        if (rFecha === fechaPayload && rCliente === clientePayload) {
-            throw new Error('Ya existe una planeació³n para este cliente en esta fecha.');
-        }
-    }
-
     // ====================================================
-    // ðŸ”‘ ASEGURAR NOMBRE DE NIó‘ERA (ARREGLO REAL)
+    // 🔒 ASEGURAR NOMBRE DE NIÑERA (ARREGLO REAL)
     // ====================================================
     let nombreNinera =
         payload.nombre_ninera ||
@@ -4014,6 +4004,24 @@ function guardarPlaneacionNeuronanny(payload, email) {
         '';
 
     nombreNinera = String(nombreNinera || '').trim();
+
+    // ====================================================
+    // ✅ VALIDACIÓN MEJORADA: Verificar duplicados por niñera
+    // ====================================================
+    const idxNinera = headers.findIndex(h => h.includes('nombre') && h.includes('ninera'));
+
+    for (let i = 1; i < data.length; i++) {
+        const rFecha = _toISODate(data[i][idxFecha]);
+        const rCliente = String(data[i][idxCliente] || '').trim();
+        const rNinera = idxNinera >= 0 ? String(data[i][idxNinera] || '').trim() : '';
+
+        // Solo error si es la MISMA niñera + mismo cliente + misma fecha
+        if (rFecha === fechaPayload &&
+            rCliente === clientePayload &&
+            _norm(rNinera) === _norm(nombreNinera)) {
+            throw new Error('Ya guardaste una planeación para este cliente en esta fecha.');
+        }
+    }
 
     // ====================================================
     // 🟠 GESTIÓN DE IMAGEN (DRIVE)
@@ -4172,27 +4180,37 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     const idxFechaCreacion = headers.indexOf('fecha de creacion');
     const idxFechaCorreccion = headers.indexOf('fecha de correccion');
 
+    // Obtener nombre de la niñera que está solicitando la planeación
+    const nombreNineraActual = _nombrePorEmail(email);
+
     for (let i = 1; i < data.length; i++) {
         const rFecha = _toISODate(data[i][idxFecha]);
         const rCliente = String(data[i][idxCliente] || '').trim();
+        const rNinera = idxNinera >= 0 ? String(data[i][idxNinera] || '').trim() : '';
 
-        if (rFecha === payload.fecha && rCliente === payload.cliente) {
+        // ✅ FILTRO MEJORADO: fecha + cliente + niñera
+        // Si la planeación tiene niñera asignada, verificar que coincida
+        // Si no tiene niñera (planeaciones antiguas), hacer match solo por fecha+cliente (fallback)
+        const coincideFechaCliente = rFecha === payload.fecha && rCliente === payload.cliente;
+        const coincideNinera = !rNinera || _norm(rNinera) === _norm(nombreNineraActual);
+
+        if (coincideFechaCliente && coincideNinera) {
             return {
                 fila: i + 1,
 
-                // ðŸ“‹ PLANEACIó“N
+                // 📋 PLANEACIÓN
                 area_desarrollo: data[i][headers.indexOf('area de desarrollo')] || '',
                 objetivo: data[i][headers.indexOf('objetivo')] || '',
                 descripcion: data[i][headers.indexOf('descripcion')] || '',
                 materiales: data[i][headers.indexOf('materiales')] || '',
                 imagen: data[i][headers.indexOf('imagen')] || '',
 
-                // ðŸ§¸ NIó‘ERA
+                // 🧸 NIÑERA
                 nombre_ninera: idxNinera >= 0
                     ? String(data[i][idxNinera] || '').trim()
                     : '',
 
-                // ðŸ” REVISIó“N
+                // 📝 REVISIÓN
                 estado_revision: idxEstado >= 0
                     ? String(data[i][idxEstado] || '').trim()
                     : '',
@@ -4201,7 +4219,7 @@ function obtenerPlaneacionNeuronanny(payload, email) {
                     ? String(data[i][idxObsSup] || '').trim()
                     : '',
 
-                // ðŸ“… FECHAS (AHORA Só EXISTEN)
+                // 📅 FECHAS (AHORA SÍ EXISTEN)
                 fecha_revision: idxFechaCreacion >= 0
                     ? String(data[i][idxFechaCreacion] || '').trim()
                     : '',
