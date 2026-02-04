@@ -423,7 +423,18 @@ function _formatTimeForSheet(hhmm) {
         return hhmm;
     }
 }
-function _nombrePorEmail(email) { const sh = _hoja(NOMBRE_HOJA_USUARIOS); const fila = _buscarFilaPorValor(sh, 'email', email); if (fila === -1) return ''; return String(sh.getRange(fila, 2).getValue() || '').trim(); }
+function _nombrePorEmail(email) {
+    const sh = _hoja(NOMBRE_HOJA_USUARIOS);
+    const fila = _buscarFilaPorValor(sh, 'email', email);
+    if (fila === -1) return '';
+    // Optimización: Usar caché si existe para evitar lectura lenta
+    const nombreHoja = NOMBRE_HOJA_USUARIOS;
+    if (GLOBAL_CTX.data[nombreHoja] && GLOBAL_CTX.data[nombreHoja][fila - 1]) {
+        // Asumiendo columna 2 es la B (índice 1 en array 0-indexed)
+        return String(GLOBAL_CTX.data[nombreHoja][fila - 1][1] || '').trim();
+    }
+    return String(sh.getRange(fila, 2).getValue() || '').trim();
+}
 
 /**
  * Construye notas detalladas desde los datos del cliente
@@ -4116,7 +4127,10 @@ function reenviarPlaneacionCorregida(payload, email) {
     }
 
     // --- IDOR PROTECTION: VALIDATE OWNERSHIP ---
-    if (!esAdmin(email)) {
+    if (!GLOBAL_CTX.user || GLOBAL_CTX.user.email !== email) _cargarContextoUsuario(email);
+    const esAdmin = GLOBAL_CTX.user && GLOBAL_CTX.user.roles.includes('admin');
+
+    if (!esAdmin) {
         const nombreNannyFila = String(sh.getRange(fila, 2).getValue() || '').trim();
         const miNombre = _nombrePorEmail(email);
         if (_norm(nombreNannyFila) !== _norm(miNombre)) {
@@ -4157,7 +4171,15 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     const sh = _hoja('Planeaciones_Neuronanny');
     if (!sh) return null;
 
-    const data = sh.getDataRange().getValues();
+    let data;
+    const nombreHoja = 'Planeaciones_Neuronanny';
+    if (GLOBAL_CTX.data[nombreHoja]) {
+        data = GLOBAL_CTX.data[nombreHoja];
+    } else {
+        data = sh.getDataRange().getValues();
+        GLOBAL_CTX.data[nombreHoja] = data;
+    }
+
     if (data.length < 2) return null;
 
     const headers = data[0].map(h => _norm(h));
@@ -4279,7 +4301,11 @@ function editarPlaneacionNeuronanny(payload, email) {
     }
 
     // --- IDOR PROTECTION: VALIDATE OWNERSHIP ---
-    if (!esAdmin(email)) {
+    // Verificar si es admin usando GLOBAL_CTX
+    if (!GLOBAL_CTX.user || GLOBAL_CTX.user.email !== email) _cargarContextoUsuario(email);
+    const esAdmin = GLOBAL_CTX.user && GLOBAL_CTX.user.roles.includes('admin');
+
+    if (!esAdmin) {
         const nombreNannyFila = String(sh.getRange(fila, 2).getValue() || '').trim();
         const miNombre = _nombrePorEmail(email);
         if (_norm(nombreNannyFila) !== _norm(miNombre)) {
