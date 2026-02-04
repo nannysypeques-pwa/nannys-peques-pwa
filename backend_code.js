@@ -4185,6 +4185,7 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     const nombreNineraActual = _nombrePorEmail(email);
 
     // Verificar si el usuario es supervisión o admin (pueden ver todas las planeaciones)
+    // Usamos GLOBAL_CTX porque las funciones esAdmin() no existen como globales simples
     if (!GLOBAL_CTX.user || GLOBAL_CTX.user.email !== email) {
         _cargarContextoUsuario(email);
     }
@@ -4196,12 +4197,18 @@ function obtenerPlaneacionNeuronanny(payload, email) {
         const rCliente = String(data[i][idxCliente] || '').trim();
         const rNinera = idxNinera >= 0 ? String(data[i][idxNinera] || '').trim() : '';
 
-        // ✅ FILTRO MEJORADO: fecha + cliente + niñera
-        // Si la planeación tiene niñera asignada, verificar que coincida
-        // Si no tiene niñera (planeaciones antiguas), hacer match solo por fecha+cliente (fallback)
-        // Si es supervisión/admin, NO filtrar por niñera
+        // ✅ FILTRO HÍBRIDO:
+        // 1. Fecha y Cliente SIEMPRE deben coincidir
+        // 2. Si es Supervisión/Admin -> NO importa la niñera (ven todo)
+        // 3. Si es Niñera -> Debe coincidir su nombre (o estar vacía si es planeación antigua)
+
         const coincideFechaCliente = rFecha === payload.fecha && rCliente === payload.cliente;
-        const coincideNinera = esSupervisionOAdmin || !rNinera || _norm(rNinera) === _norm(nombreNineraActual);
+
+        let coincideNinera = true; // Por defecto asumimos éxito para Admin/Sup
+        if (!esSupervisionOAdmin) {
+            // Si NO es admin/sup, aplicamos filtro estricto de niñera
+            coincideNinera = !rNinera || _norm(rNinera) === _norm(nombreNineraActual);
+        }
 
         if (coincideFechaCliente && coincideNinera) {
             return {
