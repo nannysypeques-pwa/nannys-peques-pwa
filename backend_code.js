@@ -263,11 +263,12 @@ function _cargarContextoUsuario(email) {
     const filaU = _buscarFilaPorValor(shU, 'email', email);
     if (filaU !== -1) {
         roles.push('staff');
-        const dataU = _leerComoObjetos(shU)[filaU - 2]; // index is filaU-2 due to header and slice
+        const dataU = _leerComoObjetos(shU)[filaU - 2];
         if (dataU) {
-            if (_esVerdadero(dataU.es_admin) || String(dataU.rol).toLowerCase() === 'admin') roles.push('admin');
-            if (String(dataU.rol).toLowerCase() === 'supervision') roles.push('supervision');
-            if (String(dataU.rol).toLowerCase() === 'ninera') roles.push('ninera');
+            const rolNorm = _norm(dataU.rol);
+            if (_esVerdadero(dataU.es_admin) || rolNorm === 'admin') roles.push('admin');
+            if (rolNorm === 'supervision') roles.push('supervision');
+            if (rolNorm === 'ninera') roles.push('ninera');
             Object.assign(userData, dataU);
         }
     }
@@ -4184,6 +4185,7 @@ function obtenerPlaneacionNeuronanny(payload, email) {
     // Obtener nombre de la niñera que está solicitando la planeación
     const nombreNineraActual = _nombrePorEmail(email);
 
+    let mejorFila = null;
     for (let i = 1; i < data.length; i++) {
         const rFecha = _toISODate(data[i][idxFecha]);
         const rCliente = String(data[i][idxCliente] || '').trim();
@@ -4200,7 +4202,7 @@ function obtenerPlaneacionNeuronanny(payload, email) {
         }
 
         if (coincideFechaCliente && coincideNinera) {
-            return {
+            const candidato = {
                 fila: i + 1,
 
                 // 📋 PLANEACIÓN
@@ -4233,10 +4235,22 @@ function obtenerPlaneacionNeuronanny(payload, email) {
                     ? String(data[i][idxFechaCorreccion] || '').trim()
                     : ''
             };
+
+            if (!mejorFila) {
+                mejorFila = candidato;
+            } else {
+                const actualTieneData = !!mejorFila.area_desarrollo || !!mejorFila.objetivo;
+                const nuevoTieneData = !!candidato.area_desarrollo || !!candidato.objetivo;
+
+                if (!actualTieneData && nuevoTieneData) {
+                    mejorFila = candidato;
+                } else if (actualTieneData === nuevoTieneData) {
+                    mejorFila = candidato;
+                }
+            }
         }
     }
-
-    return null;
+    return mejorFila;
 }
 
 

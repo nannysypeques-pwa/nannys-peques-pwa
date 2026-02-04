@@ -2701,9 +2701,8 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
 
-    // MOSTRAR inmediato para evitar el hueco de 2 segundos
-    // El usuario verá el saludo "Hola familia" al instante
-    if (d && !forceOnboarding) d.style.display = 'block';
+    // Inicialmente ocultar ambos para evitar flashes o encimamientos
+    if (d) d.style.display = 'none';
     if (o) o.style.display = 'none';
 
     let perf = CACHE_CLIENTE.profile;
@@ -2725,6 +2724,7 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
     if (forceOnboarding || faltanDatos) {
         if (o) {
             o.style.display = 'block';
+            if (d) d.style.display = 'none'; // Asegurar que el dashboard esté oculto
             // Pre-llenar campos con nombres normalizados del backend
             if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || perf.nombre_completo || '';
             if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
@@ -2777,6 +2777,7 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
         }
     } else {
         if (d) d.style.display = 'block';
+        if (o) o.style.display = 'none';
         cargarServiciosCliente(forceFetch);
     }
 }
