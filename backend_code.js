@@ -4226,19 +4226,9 @@ function obtenerPlaneacionNeuronanny(payload, email) {
         if (!esSupervisionOAdmin) {
             // Si es NIÑERA: Filtro estricto (su propio nombre o vacía si es legacy)
             coincideNinera = !rNinera || _norm(rNinera) === _norm(nombreNineraActual);
-        } else {
-            // Si es SUPERVISIÓN/ADMIN:
-            // Si el frontend nos manda un nombre específico (ej. desde el resumen), intentamos coincidir con ese.
-            // Esto evita ambigüedad si hay 2 filas (una vacía y una llena)
-            if (payload.nombre_ninera) {
-                const nombreBuscado = _norm(payload.nombre_ninera);
-                // Si la fila tiene nombre, debe coincidir. Si está vacía, la aceptamos como "posible" pero preferiríamos match exacto.
-                // Para simplicidad y robustez: Si buscamos a "Ana", la fila debe decir "Ana".
-                if (rNinera) {
-                    coincideNinera = _norm(rNinera) === nombreBuscado;
-                }
-            }
         }
+        // Si es SUPERVISIÓN/ADMIN: coincideNinera ya es true por defecto, sin condiciones extra.
+
 
         if (coincideFechaCliente && coincideNinera) {
             return {
