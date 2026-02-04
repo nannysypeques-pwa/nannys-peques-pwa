@@ -2244,7 +2244,7 @@ function abrirPlaneacionPorIndice() {
     const sessionAtRequest = PLANEACION_SESSION_ID;
 
     //Refactored to api
-    api('obtenerPlaneacionNeuronanny', { fecha, cliente: PLANEACION_CLIENTE, email: SESION.email })
+    api('obtenerPlaneacionNeuronanny', { fecha, cliente: PLANEACION_CLIENTE, email: SESION.email, nombre_ninera: servicio.nombre_ninera })
         .then(res => {
             if (sessionAtRequest !== PLANEACION_SESSION_ID) return;
             CACHE_PLANEACIONES[key] = res || null;

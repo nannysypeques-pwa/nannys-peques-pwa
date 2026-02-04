@@ -4219,17 +4219,25 @@ function obtenerPlaneacionNeuronanny(payload, email) {
         const rCliente = String(data[i][idxCliente] || '').trim();
         const rNinera = idxNinera >= 0 ? String(data[i][idxNinera] || '').trim() : '';
 
-        // ✅ FILTRO HÍBRIDO:
-        // 1. Fecha y Cliente SIEMPRE deben coincidir
-        // 2. Si es Supervisión/Admin -> NO importa la niñera (ven todo)
-        // 3. Si es Niñera -> Debe coincidir su nombre (o estar vacía si es planeación antigua)
-
+        // ✅ FILTRO HÍBRIDO MEJORADO:
         const coincideFechaCliente = rFecha === payload.fecha && rCliente === payload.cliente;
 
-        let coincideNinera = true; // Por defecto asumimos éxito para Admin/Sup
+        let coincideNinera = true;
         if (!esSupervisionOAdmin) {
-            // Si NO es admin/sup, aplicamos filtro estricto de niñera
+            // Si es NIÑERA: Filtro estricto (su propio nombre o vacía si es legacy)
             coincideNinera = !rNinera || _norm(rNinera) === _norm(nombreNineraActual);
+        } else {
+            // Si es SUPERVISIÓN/ADMIN:
+            // Si el frontend nos manda un nombre específico (ej. desde el resumen), intentamos coincidir con ese.
+            // Esto evita ambigüedad si hay 2 filas (una vacía y una llena)
+            if (payload.nombre_ninera) {
+                const nombreBuscado = _norm(payload.nombre_ninera);
+                // Si la fila tiene nombre, debe coincidir. Si está vacía, la aceptamos como "posible" pero preferiríamos match exacto.
+                // Para simplicidad y robustez: Si buscamos a "Ana", la fila debe decir "Ana".
+                if (rNinera) {
+                    coincideNinera = _norm(rNinera) === nombreBuscado;
+                }
+            }
         }
 
         if (coincideFechaCliente && coincideNinera) {
