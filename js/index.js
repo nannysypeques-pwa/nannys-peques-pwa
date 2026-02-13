@@ -98,6 +98,9 @@ try {
     if (s) SESION = JSON.parse(s);
 } catch (e) { console.error(e); }
 
+// EXPOSICIÓN GLOBAL EXPLÍCITA
+window.SESION = SESION;
+
 let SEM1 = { dias: [], baseISO: null };
 let SEM2 = { dias: [], baseISO: null, cargada: false };
 let CAL_SERVICIOS = [];
@@ -238,6 +241,7 @@ async function login(rol) {
         else if (SESION.cliente) document.body.classList.add('cliente');
         else document.body.classList.add('ninera');
 
+        window.SESION = SESION; // Actualizar referencia global
         localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
         // Guardar persistencia para retorno por inactividad
         localStorage.setItem(LAST_LOGIN_KEY, JSON.stringify({ email: SESION.email, cliente: SESION.cliente }));
@@ -562,7 +566,6 @@ async function refreshServicios() {
 
     // Limpiar caché para forzar recarga
     CACHE_NINERA.servicios = null;
-    CACHE_NINERA.planeaciones = null;
 
     try {
         // Calcular fecha de inicio: Lunes de la semana actual
@@ -589,7 +592,6 @@ async function refreshServicios() {
         }
 
         renderCalendario2Semanas();
-        cargarResumenPlaneacionesNinera(true); // Forzar recarga de planeaciones
 
         btn.textContent = '🔄 Actualizar';
         msg.textContent = 'Actualizado';
@@ -648,7 +650,6 @@ async function cargarServicios(force = false) {
     if (!force && CACHE_NINERA.servicios) {
         CAL_SERVICIOS = CACHE_NINERA.servicios;
         renderCalendario2Semanas();
-        cargarResumenPlaneacionesNinera(false); // También usar caché para planeaciones
         return;
     }
 
@@ -691,7 +692,6 @@ async function cargarServicios(force = false) {
         }
 
         renderCalendario2Semanas();
-        cargarResumenPlaneacionesNinera(false); // Usar caché si está disponible
         setTimeout(() => { if (msg.textContent.startsWith('Servicios recibidos')) msg.textContent = ''; }, 1500);
 
     } catch (err) {
@@ -1292,7 +1292,7 @@ async function cargarResumenDisponibilidadAdmin() {
     }
 }
 
-function cargarResumenPlaneaciones(force = false) {
+function cargarResumenPlaneaciones(force = false, silent = false) {
     if (!force && LAST_FETCH['cargarResumenPlaneaciones'] && (Date.now() - LAST_FETCH['cargarResumenPlaneaciones'] < DEFAULT_TTL)) return;
     LAST_FETCH['cargarResumenPlaneaciones'] = Date.now();
 
@@ -1468,15 +1468,27 @@ function toggleCiudad(id) {
 /* =========================================
    PUNTAJE: VISTA NIÑERA
    ========================================= */
-async function cargarPuntajeNinera() {
+async function cargarPuntajeNinera(force = false) {
     const msg = document.getElementById('pt_msg');
     const nivel = document.getElementById('pt_nivel');
     const total = document.getElementById('pt_total');
     const serv = document.getElementById('pt_servicios');
-    msg.textContent = 'Calculando...';
+
+    if (!force && CACHE_NINERA.puntaje) {
+        const res = CACHE_NINERA.puntaje;
+        if (nivel) nivel.textContent = res.nivel || 'Pink Nanny';
+        if (total) total.textContent = res.total || 0;
+        if (serv) serv.textContent = res.servicios || 0;
+        if (msg) msg.textContent = '';
+        return;
+    }
+
+    if (msg) msg.textContent = 'Calculando...';
 
     try {
         const res = await api('obtenerPuntajePorNombre', { nombre: SESION.nombre });
+
+        if (res) CACHE_NINERA.puntaje = res;
 
         if (!res) {
             nivel.textContent = 'Pink Nanny';
@@ -1590,7 +1602,8 @@ function mostrarVistaAdmin() {
     cargarListaNinerasAdmin();
 }
 
-function mostrarVistaNinera() {
+
+async function mostrarVistaNinera() {
     ocultarTodo();
     irVista('servicios');
     document.getElementById('svcCard').style.display = 'block';
@@ -1600,13 +1613,21 @@ function mostrarVistaNinera() {
 
     document.getElementById('fecha').valueAsDate = new Date();
 
-    cargarServicios();
-    cargarServiciosSiguienteSemana();
-    cargarResumenPlaneacionesNinera();
-    cargarPuntajeNinera();
+    // 🔥 CARGA PARALELA: Todo debe terminar antes de ocultar el preloader
+    await Promise.all([
+        cargarServicios(),
+        cargarServiciosSiguienteSemana(),
+        cargarResumenPlaneacionesNinera(),
+        cargarPuntajeNinera(),
+        cargarPerfil(), // 👤 Cargar Perfil
+        cargar()        // 📅 Cargar Disponibilidad
+    ]);
 }
 
 function irVista(nombre, skipLogic = false) {
+    // 🏠 Siempre subir al inicio al cambiar de vista
+    window.scrollTo({ top: 0, behavior: 'instant' });
+
     document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
 
     let target = nombre;
@@ -1618,6 +1639,37 @@ function irVista(nombre, skipLogic = false) {
 
     const vista = document.getElementById('vista-' + target);
     if (vista) vista.classList.add('activa');
+
+    // Inicializar módulos dinámicos
+    if (target === 'comunidad') {
+        // Restricción temporal: Todos ven "Próximamente" (Nannys inclusive)
+        const container = document.getElementById('vista-comunidad');
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 40px; margin-bottom: 20px;">✨</div>
+                    <h2 style="color: var(--pink-main); margin-bottom: 15px;">¡Próximamente!</h2>
+                    <p style="color: var(--text-main); font-size: 16px; line-height: 1.5; max-width: 400px; margin: 0 auto;">
+                        Nuevas sorpresas para nuestra comunidad Nannys y Peques.
+                    </p>
+                </div>
+            `;
+        }
+
+        /* Código original comentado temporalmente
+        if (SESION.cliente) {
+            const container = document.getElementById('vista-comunidad');
+            if (container) {
+                container.innerHTML = ...
+            }
+        } else if (window.Comunidad) {
+            Comunidad.init();
+        }
+        */
+    }
+    if (target === 'convenios' && window.Convenios) {
+        Convenios.init();
+    }
 
     document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('activo'));
     const btn = [...document.querySelectorAll('.bottom-nav button')].find(b => b.getAttribute('onclick')?.includes(nombre));
@@ -1702,10 +1754,10 @@ function verificarDatosFaltantesNinera(p) {
     if (!p || SESION.cliente || SESION.admin || SESION.supervision) return;
 
     const faltantes = [];
-    if (!p.telefono || p.telefono.trim().length < 8) faltantes.push('Teléfono personal');
-    if (!p.direccion || p.direccion.trim().length < 8) faltantes.push('Dirección completa');
-    if (!p.emergencia || p.emergencia.trim().length < 8) faltantes.push('Teléfono de emergencia');
-    if (!p.ubicacion || !p.ubicacion.trim().startsWith('http')) faltantes.push('Link de Ubicación (Google Maps)');
+    if (!p.telefono || String(p.telefono).trim().length < 8) faltantes.push('Teléfono personal');
+    if (!p.direccion || String(p.direccion).trim().length < 8) faltantes.push('Dirección completa');
+    if (!p.emergencia || String(p.emergencia).trim().length < 8) faltantes.push('Teléfono de emergencia');
+    if (!p.ubicacion || !String(p.ubicacion).trim().startsWith('http')) faltantes.push('Link de Ubicación (Google Maps)');
 
     const modal = document.getElementById('modalRegistroStaff');
     if (faltantes.length > 0) {
@@ -1939,10 +1991,20 @@ async function reenviarPlaneacionCorregida() {
     try {
         await api('reenviarPlaneacionCorregida', { ...payload, email: SESION.email });
         btn.textContent = 'Enviado ✓';
-        setTimeout(() => restaurarBoton(btn), 800);
-        cargarResumenPlaneaciones(); //Wait, this updates local view? No, this is for admin? Or ninera?
-        //PWA: Nina sees her own list updated? The logic in HTML was calling 'loadResumenPlaneaciones'?
-        //Original HTML called 'cargarResumenPlaneaciones()' which is defined for both.
+        setTimeout(() => {
+            restaurarBoton(btn);
+        }, 1500);
+
+        if (SESION.cliente) {
+            // No aplica
+        } else if (SESION.admin || SESION.supervision) {
+            cargarResumenPlaneaciones(true, true);
+        } else {
+            cargarResumenPlaneacionesNinera(true, true);
+        }
+
+        // SMART CACHE: Invalida esta fecha específica para que se recargue si se abre el modal
+        delete CACHE_PLANEACIONES[`${payload.cliente}|${payload.fecha}`];
     } catch (err) {
         restaurarBoton(btn);
         mostrarToast('❌ Error al reenviar');
@@ -2003,13 +2065,20 @@ async function guardarPlaneacionNeuronanny() {
 
     try {
         await api(fn, { ...payload, email: SESION.email });
+        // Actualización Reactiva: Refrescar resumen en segundo plano
+        if (SESION.admin || SESION.supervision) {
+            cargarResumenPlaneaciones(true, true);
+        } else {
+            cargarResumenPlaneacionesNinera(true, true);
+        }
+
+        // SMART CACHE: Invalida esta fecha específica para que se recargue si se abre el modal
+        delete CACHE_PLANEACIONES[`${payload.cliente}|${payload.fecha}`];
+
         btn.textContent = 'Guardado ✓';
-        setTimeout(() => restaurarBoton(btn), 800);
-
-        // Limpiar caché de planeaciones para reflejar cambios
-        CACHE_NINERA.planeaciones = null;
-
-        //Wait, should we close modal or refresh list? Original code: just feedback.
+        setTimeout(() => {
+            restaurarBoton(btn);
+        }, 1500);
     } catch (err) {
         restaurarBoton(btn);
         mostrarToast('❌ Error al guardar');
@@ -2040,7 +2109,7 @@ function mostrarToast(msg) {
     setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-async function cargarResumenPlaneacionesNinera(force = false) {
+async function cargarResumenPlaneacionesNinera(force = false, silent = false) {
     const contActual = document.getElementById('listaPlaneacionesNinera');
     const contSig = document.getElementById('listaPlaneacionesNineraSiguiente');
 
@@ -2059,25 +2128,28 @@ async function cargarResumenPlaneacionesNinera(force = false) {
         return;
     }
 
-    if (contActual) contActual.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
-    if (contSig) contSig.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+    if (!silent) {
+        if (contActual) contActual.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+        if (contSig) contSig.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
+    }
 
     try {
-        //Semana Actual
-        const dataActual = await api('getResumenPlaneacionesSemana', {
-            email: SESION.email,
-            fechaBase: isoActual,
-            tipo: 'actual'
-        });
+        // 🔥 Optimización: Cargar ambas semanas en paralelo
+        const [dataActual, dataSig] = await Promise.all([
+            api('getResumenPlaneacionesSemana', {
+                email: SESION.email,
+                fechaBase: isoActual,
+                tipo: 'actual'
+            }),
+            api('getResumenPlaneacionesSemana', {
+                email: SESION.email,
+                fechaBase: isoSig,
+                tipo: 'siguiente'
+            })
+        ]);
+
         //Reutilizamos la función de renderizado que aplana los datos por ciudad
         renderResumenPlaneaciones(dataActual, contActual, 'ninera_actual');
-
-        //Semana Siguiente
-        const dataSig = await api('getResumenPlaneacionesSemana', {
-            email: SESION.email,
-            fechaBase: isoSig,
-            tipo: 'siguiente'
-        });
         renderResumenPlaneaciones(dataSig, contSig, 'ninera_siguiente');
 
         // Guardar en caché
@@ -2134,7 +2206,10 @@ async function guardarObservaciones() {
 /* =========================================
    INICIALIZACIÓN
    ========================================= */
-window.addEventListener('load', function () {
+window.addEventListener('load', async function () {
+    const splashStartTime = Date.now();
+    const MIN_SPLASH_TIME = 4000; // 4 segundos mínimo
+
     //Registrar SW
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('./service-worker.js')
@@ -2159,24 +2234,45 @@ window.addEventListener('load', function () {
         document.getElementById('auth').style.display = 'none';
         document.getElementById('app').style.display = 'block';
 
-        if (SESION.admin) {
-            document.querySelector('.bottom-nav').style.display = 'none';
-            mostrarVistaAdmin();
-        } else if (SESION.supervision) {
-            document.querySelector('.bottom-nav').style.display = 'none';
-            irVista('supervision');
-        } else if (SESION.cliente) {
-            document.querySelector('.bottom-nav').style.display = 'flex';
-            irVista('servicios'); //Esto redirigirá a vista-cliente
-        } else {
-            document.querySelector('.bottom-nav').style.display = 'flex';
-            mostrarVistaNinera();
+        // 🔥 CARGAR DATOS ANTES DE OCULTAR SPLASH
+        try {
+            if (SESION.admin) {
+                document.querySelector('.bottom-nav').style.display = 'none';
+                mostrarVistaAdmin();
+            } else if (SESION.supervision) {
+                document.querySelector('.bottom-nav').style.display = 'none';
+                irVista('supervision');
+            } else if (SESION.cliente) {
+                document.querySelector('.bottom-nav').style.display = 'flex';
+                irVista('servicios'); //Esto redirigirá a vista-cliente
+                await mostrarVistaCliente(false, false); // ⚡ ESPERAR A QUE CARGUE TODO
+            } else {
+                document.querySelector('.bottom-nav').style.display = 'flex';
+                await mostrarVistaNinera(); // ⚡ ESPERAR A QUE CARGUE TODO
+            }
+        } catch (error) {
+            console.error('Error cargando datos iniciales:', error);
         }
     } else {
         //Mostrar login
         document.getElementById('auth').style.display = 'flex';
         document.getElementById('app').style.display = 'none';
     }
+
+    // 🕐 ASEGURAR MÍNIMO 4 SEGUNDOS DE SPLASH
+    const elapsedTime = Date.now() - splashStartTime;
+    const remainingTime = Math.max(0, MIN_SPLASH_TIME - elapsedTime);
+
+    setTimeout(() => {
+        const splash = document.getElementById('splash-screen');
+        if (splash) {
+            splash.style.animation = 'fadeOut 0.5s ease-out forwards';
+            setTimeout(() => {
+                splash.style.display = 'none';
+            }, 500);
+        }
+    }, remainingTime);
+
     //Close modal when clicking outside
     const back = document.getElementById('modalBackdrop');
     if (back) {
@@ -2240,18 +2336,38 @@ function abrirPlaneacionPorIndice() {
         return;
     }
 
+
+    // ---------------------------------------------------------
+    // CHANGE: Clear form BEFORE showing preloader to avoid mixed content glitch
+    abrirPlaneacionNeuronanny(servicio, null);
+    // ---------------------------------------------------------
+
+    // Mostrar preloader mientras carga
+    mostrarPreloaderModal();
+
     const sessionAtRequest = PLANEACION_SESSION_ID;
 
     //Refactored to api
     api('obtenerPlaneacionNeuronanny', { fecha, cliente: PLANEACION_CLIENTE, email: SESION.email })
         .then(res => {
             if (sessionAtRequest !== PLANEACION_SESSION_ID) return;
-            CACHE_PLANEACIONES[key] = res || null;
-            abrirPlaneacionNeuronanny(servicio, res || null);
+
+            // Ocultar preloader cuando la data está lista
+            ocultarPreloaderModal();
+
+            if (!res) {
+                CACHE_PLANEACIONES[key] = null;
+                abrirPlaneacionNeuronanny(servicio, null);
+                actualizarNavegacionPlaneacion();
+                return;
+            }
+            CACHE_PLANEACIONES[key] = res;
+            abrirPlaneacionNeuronanny(servicio, res);
             actualizarNavegacionPlaneacion();
         })
         .catch(err => {
             if (sessionAtRequest !== PLANEACION_SESSION_ID) return;
+            ocultarPreloaderModal(); // Ocultar preloader también en caso de error
             CACHE_PLANEACIONES[key] = null;
             abrirPlaneacionNeuronanny(servicio, null);
             actualizarNavegacionPlaneacion();
@@ -2310,29 +2426,35 @@ function actualizarNavegacionPlaneacion() {
 
 function cerrarPlaneacionNeuronanny() {
     SERVICIO_PLANEACION = null;
-    CACHE_PLANEACIONES = {};
+    // CACHE_PLANEACIONES = {}; // SMART CACHE: We keep it for the session
     CACHE_PLANEACION_MODAL = {};
     PLANEACION_SESSION_ID++;
     document.getElementById('planeacionBackdrop').style.display = 'none';
 }
 
 async function precargarPlaneacionesCliente() {
-    // FIX: Sequential pre-loading to avoid hammering the GAS backend with parallel heavy requests
-    for (const fecha of PLANEACIONES_FECHAS) {
-        const key = `${PLANEACION_CLIENTE}|${fecha}`;
-        if (key in CACHE_PLANEACIONES) continue;
+    if (!PLANEACIONES_FECHAS || PLANEACIONES_FECHAS.length === 0) return;
 
-        try {
-            const res = await api('obtenerPlaneacionNeuronanny', {
-                fecha,
-                cliente: PLANEACION_CLIENTE,
-                email: SESION.email
-            });
-            CACHE_PLANEACIONES[key] = res || null;
-        } catch (e) {
-            console.error(`Error precargando planeación ${fecha}:`, e);
-            CACHE_PLANEACIONES[key] = null;
-        }
+    const fechasPendientes = PLANEACIONES_FECHAS.filter(f => !(`${PLANEACION_CLIENTE}|${f}` in CACHE_PLANEACIONES));
+    if (fechasPendientes.length === 0) return;
+
+    try {
+        const res = await api('obtenerPlaneacionesBulk', {
+            fechas: fechasPendientes,
+            cliente: PLANEACION_CLIENTE,
+            email: SESION.email
+        });
+
+        // El backend devuelve { "2024-01-01": { data }, "2024-01-02": { data } }
+        // Marcamos todas como procesadas, incluso si no tienen datos
+        fechasPendientes.forEach(f => {
+            CACHE_PLANEACIONES[`${PLANEACION_CLIENTE}|${f}`] = res[f] || null;
+        });
+
+        // Forzar renderizado del actual si ya se cargó (por si acaso abrirPlaneacionPorIndice tardó más)
+        abrirPlaneacionPorIndice();
+    } catch (e) {
+        console.error(`Error precargando planeaciones bulk:`, e);
     }
 }
 
@@ -2372,6 +2494,8 @@ function marcarPlaneacionRevisada() {
         email: SESION.email
     }).then(() => {
         mostrarToast('✅ Planeación marcada como revisada');
+        // Actualización en segundo plano (como el panel de niñera)
+        cargarResumenPlaneaciones(true, true);
     }).catch(err => {
         mostrarToast('❌ Error al guardar revisión');
         console.error(err);
@@ -2388,6 +2512,8 @@ function enviarACorreccion() {
         email: SESION.email
     }).then(() => {
         mostrarToast('🟠 Observaciones enviadas a corrección');
+        // Actualización en segundo plano (como el panel de niñera)
+        cargarResumenPlaneaciones(true, true);
     }).catch(err => {
         mostrarToast('❌ Error al enviar a corrección');
         console.error(err);
@@ -2628,15 +2754,15 @@ function verificarDatosFaltantesCliente(p) {
         { keys: ['dirección', 'direccion'], label: 'Dirección' },
         { keys: ['ubicación', 'ubicacion'], label: 'Ubicación' },
         { keys: ['teléfono', 'telefono'], label: 'Teléfono' },
-        { keys: ['no._de_emergencia', 'No. de emergencia', 'no. de emergencia'], label: 'Contacto de emergencia' },
+        { keys: ['no._de_emergencia', 'No. de emergencia', 'no. de emergencia', 'emergencia'], label: 'Contacto de emergencia' }, // Added 'emergencia'
         { keys: ['no._de_mascotas', 'no. de mascotas', 'mascotas'], label: 'No. de mascotas' },
-        { keys: ['nombre_del_peque', 'nombre del peque'], label: 'Nombre del peque' },
-        { keys: ['fecha_de_nacimiento', 'fecha de nacimiento'], label: 'Fecha de nacimiento' },
+        { keys: ['nombre_del_peque', 'nombre del peque', 'peque_nombre'], label: 'Nombre del peque' }, // Added 'peque_nombre'
+        { keys: ['fecha_de_nacimiento', 'fecha de nacimiento', 'peque_nacimiento'], label: 'Fecha de nacimiento' }, // Added 'peque_nacimiento'
         { keys: ['alergias'], label: 'Alergias' },
         { keys: ['condición_médica_o_especificaciones_adicionales', 'condicion_medica', 'condicion'], label: 'Condición médica' },
         { keys: ['estado_de_salud_actual', 'estado de salud', 'salud'], label: 'Estado de salud' },
         { keys: ['preferencias_o_actividades_favoritas', 'preferencias'], label: 'Preferencias' },
-        { keys: ['políticas_de_contratación', 'politicas_de_contratacion', 'politicas'], label: 'Políticas de contratación' }
+        { keys: ['políticas_de_contratación', 'politicas_de_contratacion', 'politicas', 'politicas_aceptadas'], label: 'Políticas de contratación' } // Added 'politicas_aceptadas'
     ];
 
     const faltantes = [];
@@ -2776,14 +2902,32 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
             if (perf.rol) seleccionarRol(perf.rol);
         }
     } else {
+        // 🔥 CARGA PARALELA: Servicios, Actividades y Perfil al mismo tiempo
         if (d) d.style.display = 'block';
         if (o) o.style.display = 'none';
-        cargarServiciosCliente(forceFetch);
+
+        // Cargar todo en paralelo para que el preloader muestre hasta que TODO esté listo
+        await Promise.all([
+            cargarServiciosCliente(forceFetch),
+            cargarActividadesCliente(forceFetch),
+            cargarPerfil() // 👤 Renderizar perfil siempre (aunque ya tenga datos en caché)
+        ]);
     }
 }
 window.mostrarVistaCliente = mostrarVistaCliente;
 
 async function guardarRegistroCompleto() {
+    // ---------------------------------------------------------
+    // CHANGE: Get button reference for UI feedback
+    const btn = document.getElementById('btnGuardarCliente');
+    const originalText = btn ? btn.textContent : 'Guardar y Continuar';
+
+    if (btn) {
+        btn.textContent = 'Guardando...';
+        btn.disabled = true;
+    }
+    // ---------------------------------------------------------
+
     const payload = {
         nombre_completo: document.getElementById('reg_nombre').value,
         rol: document.getElementById('reg_rol').value,
@@ -2821,6 +2965,18 @@ async function guardarRegistroCompleto() {
         email: SESION.email
     };
 
+    // ---------------------------------------------------------
+    // CHANGE: Validate before sending
+    if (verificarDatosFaltantesCliente(payload)) {
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        mostrarToast('⚠️ Complete toda la información del formulario');
+        return;
+    }
+    // ---------------------------------------------------------
+
     try {
         await api('updatePerfilCliente', payload);
         CACHE_CLIENTE.profile = null; // Limpiar caché para forzar recarga y validación
@@ -2830,6 +2986,13 @@ async function guardarRegistroCompleto() {
         if (o) o.style.display = 'none';
         irVista('perfil');
     } catch (e) {
+        // ---------------------------------------------------------
+        // CHANGE: Revert button state on error
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        // ---------------------------------------------------------
         mostrarToast('Error: ' + e.message);
     }
 }
@@ -2864,9 +3027,15 @@ function formatearFechaElegante(fechaStr) {
     }
 }
 
-async function cargarPerfil() {
+async function cargarPerfil(force = false) {
     try {
-        const perf = await api('getProfile', { email: SESION.email });
+        let perf;
+        if (!force && CACHE_CLIENTE.profile) {
+            perf = CACHE_CLIENTE.profile;
+        } else {
+            perf = await api('getProfile', { email: SESION.email });
+        }
+
         if (perf) {
             CACHE_CLIENTE.profile = perf; // Guardar en caché para evitar re-carga en el dashboard
             //Header
@@ -3770,3 +3939,4 @@ function cerrarCredencial() {
     clearInterval(timerCredencial);
 }
 window.cerrarCredencial = cerrarCredencial;
+

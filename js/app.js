@@ -1,4 +1,5 @@
-const API_URL = 'https://script.google.com/macros/s/AKfycbyaXxP9NjCLwv-zqwkpQVmVxQBX_iM15Hpghg4nKNO6B9Z7hfJKFUNh4xK5doLFUEc/exec';
+// La constante API_URL ahora se toma de CONFIG (en js/config.js)
+const API_URL = CONFIG.API_URL;
 const VAPID_PUBLIC_KEY = 'BFuZVf-LVmWBDS76oBlDcRPlgwuQMkUvEfh3I5EDl4XH7H3kYWzWMAvk4-8-xYZt61IjaxDgiCMmzq23qUycCg4';
 
 
@@ -120,6 +121,5 @@ if ('serviceWorker' in navigator) {
     }
   });
 }
-
 
 

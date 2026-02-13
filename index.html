@@ -4,6 +4,10 @@
 
 
 
+
+
+
+
 <head>
   <!-- Tipografías Nannys y Peques -->
   <link
@@ -11,6 +15,7 @@
     rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/splash.css">
+
 
   <style>
     /* ESTILOS DE EMERGENCIA PARA CREDENCIAL (EVITAR CACHE) */
@@ -35,6 +40,7 @@
       font-family: 'Nunito Sans', sans-serif !important;
     }
 
+
     .credential-modal-card {
       background: #f8fafc !important;
       padding: 0 !important;
@@ -45,12 +51,14 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2) !important;
     }
 
+
     .credential-name {
       font-family: 'DM Serif Display', serif !important;
       font-size: 24px !important;
       color: #1e293b !important;
       margin: 10px 0 5px !important;
     }
+
 
     .credential-qr-container {
       background: #f1f5f9 !important;
@@ -68,20 +76,24 @@
       justify-content: center !important;
     }
 
+
     .credential-body {
       padding: 10px 15px !important;
       /* Reduced from 15px 20px */
     }
 
+
     .credential-footer {
       padding-top: 5px !important;
     }
+
 
     .credential-footer-text {
       margin-bottom: 8px !important;
       /* Reduced from 15px */
       font-size: 11px !important;
     }
+
 
     .credential-logo-watermark {
       position: absolute !important;
@@ -93,12 +105,14 @@
       z-index: 0 !important;
     }
 
+
     .credential-avatar-container {
       margin-top: -15px !important;
       position: relative !important;
       z-index: 5 !important;
     }
   </style>
+
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,
@@ -108,13 +122,15 @@
             viewport-fit=cover">
 
 
+
+
   <!-- SECURITY: CSP -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' https://cdn.onesignal.com https://onesignal.com;
+    script-src 'self' 'unsafe-inline' https://cdn.onesignal.com https://onesignal.com https://api.onesignal.com;
     style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
     font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: https://drive.google.com https://lh3.googleusercontent.com https://blogger.googleusercontent.com https://*.googleusercontent.com;
+    img-src 'self' data: https://drive.google.com https://lh3.googleusercontent.com https://blogger.googleusercontent.com https://*.googleusercontent.com https://images.unsplash.com;
     connect-src 'self' https://script.google.com https://*.googleusercontent.com https://onesignal.com https://*.onesignal.com https://onesignal.com/api/v1/notifications;
     frame-src 'self' https://script.google.com;
   ">
@@ -123,17 +139,28 @@
 
 
 
-  <title>Disponibilidad – Nannys y Peques</title>
 
 
 
 
-  <!-- =====================
-     PWA iOS CONFIG
-===================== -->
+  <title>Nannys y Peques</title>
+
+
+
+
+
+
+
+
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Nannys y Peques">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+
+
+
+
 
 
 
@@ -144,11 +171,22 @@
 
 
 
+
+
+
+
   <!-- OneSignal -->
   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
   <script>
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function (OneSignal) {
+      // Evitar OneSignal en desarrollo local
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isLocal) {
+        console.warn('🔕 OneSignal deshabilitado en localhost.');
+        return;
+      }
+
       await OneSignal.init({
         appId: "49543b11-f7f6-451d-95d8-a28c0f3a0aa3",
         safari_web_id: "web.onesignal.auto.5a4f7f6e-eec9-48b6-8a5c-3683e8870b3c",
@@ -159,7 +197,15 @@
 
 
 
+
+
+
+
 </head>
+
+
+
+
 
 
 
@@ -174,30 +220,22 @@
     </div>
   </div>
   <script>
-    // Función segura para quitar el Splash
-    function removeSplash() {
-      setTimeout(() => {
-        const splash = document.getElementById('splash-screen');
-        if (splash && !splash.classList.contains('splash-hidden')) {
-          splash.classList.add('splash-hidden');
-          setTimeout(() => {
-            splash.style.display = 'none';
-          }, 800);
-        }
-      }, 2500);
-    }
+    // ⚡ El splash screen ahora se controla desde js/index.js
+    // Esto asegura que espere a que los datos carguen completamente
 
-    // Ejecutar cuando esté cargado o si ya cargó
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      removeSplash();
-    } else {
-      window.addEventListener('load', removeSplash);
-      window.addEventListener('DOMContentLoaded', removeSplash);
-    }
-
-    // Fallback de seguridad por si todo falla (4s)
-    setTimeout(removeSplash, 4000);
+    // Solo fallback de emergencia si algo sale mal (10 segundos máximo)
+    setTimeout(() => {
+      const splash = document.getElementById('splash-screen');
+      if (splash && splash.style.display !== 'none') {
+        console.warn('Fallback: Ocultando splash screen después de 10s');
+        splash.style.animation = 'fadeOut 0.5s ease-out forwards';
+        setTimeout(() => {
+          splash.style.display = 'none';
+        }, 500);
+      }
+    }, 10000);
   </script>
+
 
   <!-- LOGIN PRELOADER (Oculto por defecto) -->
   <div id="login-preloader">
@@ -207,8 +245,13 @@
     <div class="loader-spinner"></div>
   </div>
 
+
   <h2>Disponibilidad – Nannys y Peques</h2>
   <div class="container">
+
+
+
+
 
 
 
@@ -216,6 +259,10 @@
     <!-- LOGIN -->
     <div id="auth" class="auth-wrapper">
       <div class="auth-card">
+
+
+
+
 
 
 
@@ -242,9 +289,17 @@
 
 
 
+
+
+
+
         <div id="paso-login" style="display:none;">
           <div class="brand-title">Ingreso</div>
           <p class="login-subtitle">Personal de Nannys y Peques</p>
+
+
+
+
 
 
 
@@ -262,12 +317,20 @@
 
 
 
+
+
+
+
         <div id="paso-registro-cliente" style="display:none;">
           <div class="brand-title">Portal Familia</div>
           <p class="login-subtitle" style="font-size: 14px; line-height: 1.4; color: var(--text-main);">
             Gracias por confiar en Nannys y Peques, estamos listos para acompañarte a ti y a tu familia en los momentos
             más bonitos de la niñez. 💗
           </p>
+
+
+
+
 
 
 
@@ -293,6 +356,8 @@
           </div>
 
 
+
+
           <!-- REGISTRO: PASO 2 (OTP) -->
           <div id="reg-paso-2" style="display:none; text-align:center;">
             <p>Hemos enviado un código a tu correo.</p>
@@ -308,9 +373,15 @@
           </div>
 
 
+
+
           <button class="btn-ghost" onclick="volverSeleccion()" style="margin-top: 10px;">← Volver</button>
           <p id="msgRegistro"></p>
         </div>
+
+
+
+
 
 
 
@@ -341,6 +412,14 @@
 
 
 
+
+
+
+
+
+
+
+
     <!-- APP -->
     <div id="app" style="display:none;">
       <!-- HEADER ADMIN / SUPERVISIÓN -->
@@ -354,6 +433,10 @@
 
 
 
+
+
+
+
       <div id="vista-perfil" class="vista">
         <div class="card profile-premium-card" id="perfilCard">
           <div class="profile-header">
@@ -361,6 +444,10 @@
             <h4 id="perfil_rol_header" style="margin-bottom: 2px; font-size: 18px; color: white; display: none;"></h4>
             <h3 id="perfil_nombre_header">Mi perfil</h3>
           </div>
+
+
+
+
 
 
 
@@ -420,6 +507,10 @@
 
 
 
+
+
+
+
           <div id="perfil-peques-container" class="profile-section">
             <div class="section-title">Información de los Peques</div>
             <div id="perfil-lista-peques">
@@ -444,6 +535,10 @@
 
 
 
+
+
+
+
               <div id="perfil-peque-2" class="peque-profile-card" style="display:none; margin-top:15px;">
                 <div class="peque-header">
                   <span class="peque-icon">👧</span>
@@ -460,6 +555,10 @@
                   <p><b>Preferencias:</b> <span id="perfil_preferencias_2">—</span></p>
                 </div>
               </div>
+
+
+
+
 
 
 
@@ -486,6 +585,10 @@
 
 
 
+
+
+
+
           <div class="profile-actions" style="margin-top:20px;">
             <button class="btn-primary" onclick="editarPerfilCliente()" style="background: var(--blue-main);">
               📝 Editar perfil
@@ -500,6 +603,10 @@
 
 
 
+
+
+
+
       <div id="vista-servicios" class="vista">
         <!-- HEADER PANEL NIÑERA -->
         <div class="card panel-header">
@@ -508,6 +615,10 @@
             <button class="btn-ghost logout-btn" onclick="logout()">Cerrar sesión</button>
           </div>
         </div>
+
+
+
+
 
 
 
@@ -525,6 +636,10 @@
 
 
 
+
+
+
+
         <div class="card" id="planeacionesNineraCard">
           <div class="row" style="justify-content:space-between;align-items:center;">
             <h3>Planeaciones de actividades</h3>
@@ -536,11 +651,19 @@
 
 
 
+
+
+
+
         <div class="card" id="planeacionesNineraCardSiguiente">
           <h3>Planeaciones de actividades – semana siguiente</h3>
           <div id="listaPlaneacionesNineraSiguiente"></div>
         </div>
       </div>
+
+
+
+
 
 
 
@@ -558,6 +681,10 @@
           <p id="pt_msg" class="muted"></p>
         </div>
       </div>
+
+
+
+
 
 
 
@@ -585,6 +712,8 @@
                 </div>
                 <input type="hidden" id="reg_rol" value="">
               </div>
+
+
 
 
               <div class="form-group full">
@@ -615,6 +744,10 @@
 
 
 
+
+
+
+
               <!-- POLÍTICAS DE CONTRATACIÓN -->
               <div class="form-group full">
                 <label>He leído y aceptado las políticas de contratación</label>
@@ -629,6 +762,10 @@
                   onclick="aceptarPoliticas()">Aceptar</button>
               </div>
               <input type="hidden" id="reg_politicas_aceptadas" value="">
+
+
+
+
 
 
 
@@ -659,6 +796,10 @@
                 <label>Preferencias o actividades favoritas</label>
                 <textarea id="reg_preferencias" placeholder="¿Qué le gusta hacer? ¿A qué hora duerme?"></textarea>
               </div>
+
+
+
+
 
 
 
@@ -697,6 +838,10 @@
 
 
 
+
+
+
+
               <!-- PEQUE 3 -->
               <div id="section-peque-3" style="display:none;" class="full">
                 <div class="onboarding-section-title">Información del Peque 3</div>
@@ -731,6 +876,10 @@
 
 
 
+
+
+
+
               <div class="full" style="text-align:center; margin-top:10px;">
                 <button type="button" id="btn-agregar-peque" class="btn-ghost" onclick="toggleMultiPeque()"
                   style="border:1px dashed var(--blue-main); color:var(--blue-main); width:100%;">
@@ -738,7 +887,8 @@
                 </button>
               </div>
             </div>
-            <button class="btn-primary" onclick="guardarRegistroCompleto()" style="margin-top:20px; width: 100%;">
+            <button id="btnGuardarCliente" class="btn-primary" onclick="guardarRegistroCompleto()"
+              style="margin-top:20px; width: 100%;">
               Guardar y Continuar
             </button>
             <button class="btn-ghost" onclick="cancelarFormularioCliente()" style="margin-top:10px; width: 100%;">
@@ -746,6 +896,10 @@
             </button>
           </div>
         </div>
+
+
+
+
 
 
 
@@ -762,6 +916,10 @@
 
 
 
+
+
+
+
           <div class="card slide-up-fade delay-1">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <h3 style="margin:0;">Mis próximos servicios</h3>
@@ -771,6 +929,10 @@
               </button>
             </div>
             <p class="muted">Calendario de servicios para las próximas 2 semanas.</p>
+
+
+
+
 
 
 
@@ -791,6 +953,10 @@
 
 
 
+
+
+
+
             <div class="calendar-section" style="margin-top:25px; padding-top:15px; border-top: 1px dashed #e2e8f0;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <h4
@@ -805,7 +971,13 @@
             </div>
 
 
+
+
             <div id="msg-cal-cliente" class="muted" style="font-size: 12px; margin-top:10px;"></div>
+
+
+
+
 
 
 
@@ -814,6 +986,10 @@
           </div>
         </div>
       </div>
+
+
+
+
 
 
 
@@ -832,10 +1008,18 @@
 
 
 
+
+
+
+
         <div id="container-semana-actual" style="margin-top: 15px;">
           <h4 class="weekly-section-title">Semana Actual</h4>
           <div id="lista-actividades-actual"></div>
         </div>
+
+
+
+
 
 
 
@@ -850,12 +1034,26 @@
 
 
 
+
+
+
+
       <div id="vista-comunidad" class="vista">
-        <div class="card">
-          <h3>Comunidad</h3>
-          <p>Próximamente: más sorpresas para Nannies y Familias.</p>
-        </div>
       </div>
+
+
+      <!-- VISTA CONVENIOS (NUEVO) -->
+      <div id="vista-convenios" class="vista">
+      </div>
+
+
+      <!-- VISTA ARTICULO (NUEVO) -->
+      <div id="vista-articulo" class="vista">
+      </div>
+
+
+
+
 
 
 
@@ -877,6 +1075,10 @@
 
 
 
+
+
+
+
         <!-- CARD SEMANA SIGUIENTE -->
         <div class="supervision-card">
           <div class="supervision-title">
@@ -889,11 +1091,19 @@
 
 
 
+
+
+
+
       <div id="vista-disponibilidad" class="vista">
         <!-- PANEL (solo niñeras) -->
         <div class="card" id="panel">
           <div class="row" style="justify-content:space-between;align-items:center;">
           </div>
+
+
+
+
 
 
 
@@ -912,6 +1122,10 @@
 
 
 
+
+
+
+
         <!-- SEMANA ACTUAL -->
         <div class="card" id="tablaActualCard">
           <div class="week-title">
@@ -923,6 +1137,14 @@
           </div>
           <div id="tabla"></div>
         </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -947,6 +1169,10 @@
 
 
 
+
+
+
+
         <!-- RESÚMENES -->
         <div class="card" id="resumenCard">
           <details open>
@@ -961,6 +1187,14 @@
           </details>
         </div>
       </div>
+
+
+
+
+
+
+
+
 
 
 
@@ -992,6 +1226,10 @@
 
 
 
+
+
+
+
       <!-- ADMIN: Agenda semanal (L–D) -->
       <div id="adminAgendaCard" class="card" style="display:none;">
         <div class="week-head">
@@ -1005,6 +1243,10 @@
         <div class="muted" id="admWeekLabel" style="margin-bottom:8px;"></div>
         <div id="adminAgenda"></div>
       </div>
+
+
+
+
 
 
 
@@ -1047,6 +1289,10 @@
 
 
 
+
+
+
+
       <!-- ADMIN: Resumen de disponibilidad semanal -->
       <div id="adminResumenDispCard" class="card" style="display:none;">
         <div class="row" style="justify-content:space-between;align-items:center;">
@@ -1056,6 +1302,10 @@
         <p class="muted">Verde: ya capturó horarios · Rojo: no ha capturado horarios.</p>
         <div id="adminResumenDisp"></div>
       </div>
+
+
+
+
 
 
 
@@ -1080,6 +1330,10 @@
 
 
 
+
+
+
+
   <!-- MODAL Detalle -->
   <div id="modalBackdrop" class="modal-backdrop" style="display:none;">
     <div class="modal-card service-premium-modal">
@@ -1087,6 +1341,10 @@
         <h3 id="mCliente">Detalle del servicio</h3>
         <span id="mFecha" class="modal-subtitle">—</span>
       </div>
+
+
+
+
 
 
 
@@ -1100,6 +1358,10 @@
             <div id="mHorario" class="value highlight">—</div>
           </div>
         </div>
+
+
+
+
 
 
 
@@ -1130,6 +1392,10 @@
 
 
 
+
+
+
+
         <!-- Section: Child Info -->
         <div class="info-section">
           <span class="section-label">Información del Peque</span>
@@ -1148,6 +1414,10 @@
 
 
 
+
+
+
+
         <!-- Section: Financial -->
         <div class="financial-box">
           Cuota Nanny: <b id="mCuota">—</b>
@@ -1156,8 +1426,16 @@
 
 
 
+
+
+
+
         <div id="mMsg" class="muted"></div>
       </div>
+
+
+
+
 
 
 
@@ -1169,6 +1447,10 @@
 
 
 
+
+
+
+
   <!-- MODAL Planeación Neuronanny -->
   <div id="planeacionBackdrop" class="modal-backdrop" style="display:none;">
     <div class="modal-card modal-planeacion">
@@ -1176,137 +1458,190 @@
 
 
 
-      <!-- HEADER: TÍTULO + CLIENTE + NIÑERA -->
-      <div id="planeacionHeader" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
-        <h3 class="modal-title pink" id="pl_titulo">
-          Planeación de actividades
-        </h3>
-        <div class="muted" id="pl_info_cliente" style="margin-top:4px;"></div>
-        <div class="muted" id="pl_info_ninera"></div>
-        <div id="pl_fechas_revision" class="muted"
-          style="margin-top:6px;font-size:13px;display:none;display:flex;gap:12px;flex-wrap:wrap;">
-          <span id="pl_fecha_revision"></span>
-          <span id="pl_fecha_correccion"></span>
-        </div>
-      </div>
 
 
 
 
-      <!-- NAVEGACIÓN ENTRE DÍAS -->
-      <div class="row" style="display:grid;grid-template-columns: 1fr auto 1fr;align-items:center;margin-bottom:18px;">
-        <div style="justify-self:start;">
-          <button class="btn-ghost" onclick="planeacionAnterior()">⬅️ Día anterior</button>
+      <div id="planeacion-content-wrapper">
+        <!-- HEADER: TÍTULO + CLIENTE + NIÑERA -->
+        <div id="planeacionHeader" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
+          <h3 class="modal-title pink" id="pl_titulo">
+            Planeación de actividades
+          </h3>
+          <div class="muted" id="pl_info_cliente" style="margin-top:4px;"></div>
+          <div class="muted" id="pl_info_ninera"></div>
+          <div id="pl_fechas_revision" class="muted"
+            style="margin-top:6px;font-size:13px;display:none;display:flex;gap:12px;flex-wrap:wrap;">
+            <span id="pl_fecha_revision"></span>
+            <span id="pl_fecha_correccion"></span>
+          </div>
         </div>
 
 
 
 
-        <span id="pl_fecha_actual" class="muted" style="font-weight:600; justify-self:center;">
-          Fecha del servicio
-        </span>
 
 
 
 
-        <div style="justify-self:end;">
-          <button class="btn-ghost" onclick="planeacionSiguiente()">Día siguiente ➡️</button>
-        </div>
-      </div>
+        <!-- NAVEGACIÓN ENTRE DÍAS -->
+        <div class="row"
+          style="display:grid;grid-template-columns: 1fr auto 1fr;align-items:center;margin-bottom:18px;">
+          <div style="justify-self:start;">
+            <button class="btn-ghost" onclick="planeacionAnterior()">⬅️ Día anterior</button>
+          </div>
 
 
 
 
-      <!-- FORMULARIO -->
-      <div class="form-grid">
-        <div class="form-group full">
-          <label>Área de desarrollo</label>
-          <input id="pl_area" type="text" placeholder="Ej. Motricidad fina" />
-        </div>
 
 
 
 
-        <div class="form-group full">
-          <label>Objetivo de la actividad</label>
-          <textarea id="pl_objetivo" placeholder="¿Qué se busca estimular?"></textarea>
-        </div>
+          <span id="pl_fecha_actual" class="muted" style="font-weight:600; justify-self:center;">
+            Fecha del servicio
+          </span>
 
 
 
 
-        <div class="form-group full">
-          <label>Descripción de la actividad</label>
-          <textarea id="pl_descripcion" placeholder="Describe paso a paso la actividad"></textarea>
+
+
+
+
+          <div style="justify-self:end;">
+            <button class="btn-ghost" onclick="planeacionSiguiente()">Día siguiente ➡️</button>
+          </div>
         </div>
 
 
 
 
-        <div class="form-group full">
-          <label>Materiales requeridos</label>
-          <textarea id="pl_materiales" placeholder="Ej. hojas, colores, bloques"></textarea>
+
+
+
+
+        <!-- FORMULARIO -->
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Área de desarrollo</label>
+            <input id="pl_area" type="text" placeholder="Ej. Motricidad fina" />
+          </div>
+
+
+
+
+
+
+
+
+          <div class="form-group full">
+            <label>Objetivo de la actividad</label>
+            <textarea id="pl_objetivo" placeholder="¿Qué se busca estimular?"></textarea>
+          </div>
+
+
+
+
+
+
+
+
+          <div class="form-group full">
+            <label>Descripción de la actividad</label>
+            <textarea id="pl_descripcion" placeholder="Describe paso a paso la actividad"></textarea>
+          </div>
+
+
+
+
+
+
+
+
+          <div class="form-group full">
+            <label>Materiales requeridos</label>
+            <textarea id="pl_materiales" placeholder="Ej. hojas, colores, bloques"></textarea>
+          </div>
+
+
+
+
+
+
+
+
+          <label>Imagen de referencia</label>
+          <!-- Contenedor de PREVIEW -->
+          <div id="pl_imagen_preview_container"
+            style="margin-bottom:10px; display:none; border:1px solid #ddd; padding:5px; border-radius:8px; text-align:center;">
+            <img id="pl_imagen_preview" src="" style="max-width:100%; max-height:200px; border-radius:4px;" />
+            <br>
+            <button class="btn-ghost" style="font-size:11px; padding:4px 8px; margin-top:5px;"
+              onclick="limpiarImagenSeleccionada()">❌ Quitar imagen</button>
+          </div>
+
+
+
+
+          <!-- Input FILE (visible) -->
+          <input type="file" id="pl_imagen_file" accept="image/*" />
+
+
+
+
+          <!-- Input TEXT (oculto, para guardar la URL final o legacy) -->
+          <input id="pl_imagen" type="text" placeholder="https://..." style="display:none;" />
         </div>
 
 
 
 
-        <label>Imagen de referencia</label>
-        <!-- Contenedor de PREVIEW -->
-        <div id="pl_imagen_preview_container"
-          style="margin-bottom:10px; display:none; border:1px solid #ddd; padding:5px; border-radius:8px; text-align:center;">
-          <img id="pl_imagen_preview" src="" style="max-width:100%; max-height:200px; border-radius:4px;" />
-          <br>
-          <button class="btn-ghost" style="font-size:11px; padding:4px 8px; margin-top:5px;"
-            onclick="limpiarImagenSeleccionada()">❌ Quitar imagen</button>
+
+
+
+
+        <!-- OBSERVACIONES DE SUPERVISIÓN -->
+        <div id="obsSupervisionContainer" class="form-group full" style="display:none;">
+          <label>Observaciones de supervisión</label>
+          <!-- Supervisión escribe -->
+          <textarea id="obsSupervision" placeholder="Escriba aquí las observaciones para la niñera" rows="4"
+            style="display:none;"></textarea>
+          <!-- Niñera solo lectura -->
+          <textarea id="obsSupervisionNinera" rows="4" readonly disabled
+            style="display:none; background:#f9fafb; color:#6b7280;"></textarea>
         </div>
 
 
-        <!-- Input FILE (visible) -->
-        <input type="file" id="pl_imagen_file" accept="image/*" />
 
 
-        <!-- Input TEXT (oculto, para guardar la URL final o legacy) -->
-        <input id="pl_imagen" type="text" placeholder="https://..." style="display:none;" />
-      </div>
-
-
-
-
-      <!-- OBSERVACIONES DE SUPERVISIÓN -->
-      <div id="obsSupervisionContainer" class="form-group full" style="display:none;">
-        <label>Observaciones de supervisión</label>
-        <!-- Supervisión escribe -->
-        <textarea id="obsSupervision" placeholder="Escriba aquí las observaciones para la niñera" rows="4"
-          style="display:none;"></textarea>
-        <!-- Niñera solo lectura -->
-        <textarea id="obsSupervisionNinera" rows="4" readonly disabled
-          style="display:none; background:#f9fafb; color:#6b7280;"></textarea>
-      </div>
-
-
-      <!-- ACCIONES DEL MODAL -->
-      <div class="modal-actions">
-        <button id="btnGuardarPlaneacion" class="btn-pink" onclick="guardarPlaneacionNeuronanny()">
-          Guardar planeación
-        </button>
-        <button id="btnEnviarCorreccion" class="btn-ghost" style="display:none;" onclick="enviarACorreccion()">
-          🟠 Enviar a corrección
-        </button>
-        <button id="btnMarcarRevisada" class="btn-pink" style="display:none;" onclick="marcarPlaneacionRevisada()">
-          🟢 Marcar como revisada
-        </button>
-        <button id="btnReenviarPlaneacion" class="btn-pink" style="display:none;"
-          onclick="reenviarPlaneacionCorregida()">
-          🔄 Reenviar planeación
-        </button>
-        <button class="btn-ghost" onclick="cerrarPlaneacionNeuronanny()">
-          Cancelar
-        </button>
+        <!-- ACCIONES DEL MODAL -->
+        <div class="modal-actions">
+          <button id="btnGuardarPlaneacion" class="btn-pink" onclick="guardarPlaneacionNeuronanny()">
+            Guardar planeación
+          </button>
+          <button id="btnEnviarCorreccion" class="btn-ghost" style="display:none;" onclick="enviarACorreccion()">
+            🟠 Enviar a corrección
+          </button>
+          <button id="btnMarcarRevisada" class="btn-pink" style="display:none;" onclick="marcarPlaneacionRevisada()">
+            🟢 Marcar como revisada
+          </button>
+          <button id="btnReenviarPlaneacion" class="btn-pink" style="display:none;"
+            onclick="reenviarPlaneacionCorregida()">
+            🔄 Reenviar planeación
+          </button>
+          <button class="btn-ghost" onclick="cerrarPlaneacionNeuronanny()">
+            Cancelar
+          </button>
+        </div>
       </div>
     </div>
   </div>
   </div>
+
+
+
+
 
 
 
@@ -1319,12 +1654,20 @@
 
 
 
+
+
+
+
       <div style="display: flex; flex-direction: column; gap: 15px;">
         <div>
           <label style="font-weight: 700; font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">📅
             Fecha</label>
           <div id="mClienteFecha" style="font-size: 16px; color: var(--text-main);">—</div>
         </div>
+
+
+
+
 
 
 
@@ -1356,11 +1699,19 @@
 
 
 
+
+
+
+
         <div>
           <label style="font-weight: 700; font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">📍
             Dirección</label>
           <div id="mClienteDireccion" style="font-size: 14px; color: var(--text-main);">—</div>
         </div>
+
+
+
+
 
 
 
@@ -1376,12 +1727,20 @@
 
 
 
+
+
+
+
         <div>
           <label style="font-weight: 700; font-size: 12px; color: #64748b; display: block; margin-bottom: 4px;">👤
             Niñera</label>
           <div id="mClienteNinera" style="font-size: 16px; color: var(--text-main);">—</div>
         </div>
       </div>
+
+
+
+
 
 
 
@@ -1394,6 +1753,10 @@
       </div>
     </div>
   </div>
+
+
+
+
 
 
 
@@ -1412,12 +1775,20 @@
 
 
 
+
+
+
+
       <div class="form-group" style="margin-bottom: 15px;">
         <label style="font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Dirección
           Completa</label>
         <textarea id="reg_staff_direccion" class="input" placeholder="Calle, número, colonia, CP..."
           style="min-height: 80px; padding: 12px;"></textarea>
       </div>
+
+
+
+
 
 
 
@@ -1431,11 +1802,19 @@
 
 
 
+
+
+
+
       <div class="form-group" style="margin-bottom: 15px;">
         <label style="font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Teléfono de
           Emergencia</label>
         <input type="tel" id="reg_staff_emergencia" class="input" placeholder="Número de un familiar o contacto">
       </div>
+
+
+
+
 
 
 
@@ -1451,7 +1830,15 @@
 
 
 
+
+
+
+
       <div id="msgRegistroStaff" style="margin-bottom: 15px; text-align: center; font-size: 13px;"></div>
+
+
+
+
 
 
 
@@ -1466,7 +1853,22 @@
 
 
 
+
+
+
+
   <div id="toast" class="toast"></div>
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1485,18 +1887,22 @@
       <div class="credential-body">
         <img src="logo-sin-fondo.png" class="credential-logo-watermark">
 
+
         <div class="credential-avatar-container">
           <div id="cred_avatar" class="credential-avatar">🍼</div>
           <div class="credential-hologram-effect"></div>
         </div>
 
+
         <h2 id="cred_nombre" class="credential-name">Nombre Nanny</h2>
         <div class="credential-role">Nanny Activa</div>
+
 
         <div id="cred_photo_container" class="credential-qr-container">
           <!-- Foto grande de la niñera -->
           <img id="cred_foto_principal" src=""
             style="width: 100%; height: auto; max-height: 250px; object-fit: contain; display: none; border-radius: 8px;">
+
 
           <!-- Botón de subida (se muestra si no hay foto) -->
           <div id="cred_upload_ui" style="text-align: center; padding: 20px;">
@@ -1507,6 +1913,7 @@
               credencial</p>
           </div>
 
+
           <!-- UI de Carga -->
           <div id="cred_loading_ui"
             style="display: none; text-align: center; padding: 20px; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
@@ -1515,8 +1922,10 @@
             <p class="muted" style="font-size: 10px; margin-top: 4px;">Esto puede tardar unos segundos</p>
           </div>
 
+
           <input type="file" id="cred_foto_input" accept="image/*" style="display: none;">
         </div>
+
 
         <div class="credential-dynamic-info">
           <div class="credential-status-dot"></div>
@@ -1524,6 +1933,7 @@
           <span style="color: #94a3b8; margin: 0 4px;">|</span>
           <span>ESTADO: ACTIVA</span>
         </div>
+
 
         <div class="credential-footer">
           <p class="credential-footer-text">
@@ -1535,12 +1945,19 @@
     </div>
   </div>
 
+
+  <script src="js/config.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/comunidad.js"></script>
+  <script src="js/convenios.js"></script>
+  <script src="js/preloader-modal.js"></script>
   <script src="js/index.js"></script>
+
 
   <script>
     // Variables globales para el modal
     let _semanaAConfirmar = false;
+
 
     function abrirModalConfirmacion(isCurrentWeek) {
       _semanaAConfirmar = isCurrentWeek;
@@ -1551,10 +1968,12 @@
       }
     }
 
+
     function cerrarModalConfirmacion() {
       const modal = document.getElementById('modal-confirmacion-semana');
       if (modal) modal.style.display = 'none';
     }
+
 
     async function ejecutarConfirmacionSemana() {
       // No cerrar inmediatamente para permitir feedback visual
@@ -1563,9 +1982,12 @@
       cerrarModalConfirmacion();
     }
 
+
     // INLINE FALLBACK: Para evitar problemas de caché con index.js
     async function confirmarSemana(isCurrentWeek, btnElement = null) {
       // confirm() nativo REMOVIDO en favor del modal personalizado
+
+
 
 
       const btn = btnElement || event?.currentTarget;
@@ -1575,28 +1997,34 @@
         btn.innerHTML = '⏳ Confirmando...';
       }
 
+
       try {
         // Calcular fecha inicio de la semana objetivo
         const hoy = new Date();
         const diaSemana = hoy.getDay();
         const diasDesdeLunes = (diaSemana + 6) % 7;
 
+
         const lunesActual = new Date(hoy);
         lunesActual.setDate(hoy.getDate() - diasDesdeLunes);
         lunesActual.setHours(0, 0, 0, 0);
+
 
         let targetDate = new Date(lunesActual);
         if (!isCurrentWeek) {
           targetDate.setDate(targetDate.getDate() + 7);
         }
 
+
         const fechaInicioISO = toISO(targetDate);
+
 
         const res = await api('confirmarSemana', {
           email: SESION.email,
           fechaInicio: fechaInicioISO, // Backend usará esto para filtrar la semana
           timestamp: new Date().toISOString()
         });
+
 
         if (res && res.actualizados > 0) {
           mostrarToast("✅ ¡Semana confirmada con éxito!");
@@ -1608,6 +2036,7 @@
           console.warn("Debug:", res.debug);
           alert("No se encontraron servicios para confirmar.\n" + (res.debug ? res.debug.join('\n') : ''));
         }
+
 
       } catch (e) {
         console.error(e);
@@ -1623,24 +2052,30 @@
     window.confirmarSemana = confirmarSemana;
   </script>
 
+
   <!-- MODAL DE CONFIRMACIÓN DE SEMANA (Estilo PWA) -->
   <div id="modal-confirmacion-semana" class="modal-overlay"
     style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center; padding: 20px;">
 
+
     <div class="service-premium-modal modal-card"
       style="width: 100%; max-width: 350px; background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+
 
       <div class="modal-header-gradient"
         style="background: linear-gradient(135deg, var(--pink-main), var(--pink-hover)); padding: 20px; text-align: center;">
         <h3 style="color: white; margin: 0; font-size: 18px;">Confirmar Semana</h3>
       </div>
 
+
       <div style="padding: 25px 20px; text-align: center;">
         <p style="font-size: 16px; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">¿Deseas confirmar
           todos los servicios?</p>
         <p class="muted" style="font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 25px;">
 
+
         </p>
+
 
         <div style="display: flex; gap: 10px; justify-content: center;">
           <button class="btn-ghost" onclick="cerrarModalConfirmacion()"
@@ -1656,6 +2091,7 @@
     </div>
   </div>
 
+
   <!-- GLOBAL LOADING OVERLAY -->
   <div id="global-loading-overlay" class="modal-overlay"
     style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 20000; justify-content: center; align-items: center; flex-direction: column;">
@@ -1665,10 +2101,14 @@
       style="color: white; font-family: 'Quicksand', sans-serif; font-size: 18px; font-weight: 700;">Cargando...</div>
   </div>
 
+
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast"></div>
 
+
 </body>
+
+
 
 
 </html>
