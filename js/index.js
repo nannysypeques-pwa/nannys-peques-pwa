@@ -17,6 +17,9 @@ const LAST_LOGIN_KEY = 'nyp_last_login';
 let LAST_FETCH = {}; // { key: timestamp }
 const DEFAULT_TTL = 30000; // 30 segundos
 
+// --- CACHÉ ESPECÍFICO PARA BITÁCORAS ---
+let BITACORA_CACHE = {}; // { 'fecha_idServicio': datos }
+
 
 // --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
 let logoutTimer;
@@ -38,20 +41,49 @@ function mostrarCargando(show, texto = 'Cargando...') {
 }
 window.mostrarCargando = mostrarCargando;
 
-function mostrarLoading(show, msg) {
+/**
+ * Muestra u oculta el overlay de carga con soporte para firmas antiguas y UI de credencial
+ */
+function mostrarLoading(showOrMsg, msg) {
+    const loadingUI = document.getElementById('cred_loading_ui');
+    const uploadUI = document.getElementById('cred_upload_ui');
+    const imgPrincipal = document.getElementById('cred_foto_principal');
+    const loadingText = loadingUI ? loadingUI.querySelector('p') : null;
+
+    let show = true;
+    let text = 'Cargando...';
+
+    if (typeof showOrMsg === 'boolean') {
+        show = showOrMsg;
+        text = msg || 'Cargando...';
+    } else {
+        text = showOrMsg || 'Cargando...';
+    }
+
+    if (show) {
+        if (loadingUI) {
+            if (loadingText) loadingText.textContent = text;
+            loadingUI.style.display = 'flex';
+        }
+        if (uploadUI) uploadUI.style.display = 'none';
+        if (imgPrincipal) imgPrincipal.style.display = 'none';
+    } else {
+        ocultarLoading();
+    }
+}
+
+/**
+ * Oculta el overlay de carga y restaura la UI de credencial si es necesario
+ */
+function ocultarLoading() {
     const loadingUI = document.getElementById('cred_loading_ui');
     const uploadUI = document.getElementById('cred_upload_ui');
     const imgPrincipal = document.getElementById('cred_foto_principal');
 
-    if (show) {
-        if (loadingUI) loadingUI.style.display = 'flex';
-        if (uploadUI) uploadUI.style.display = 'none';
-        if (imgPrincipal) imgPrincipal.style.display = 'none';
-    } else {
-        if (loadingUI) loadingUI.style.display = 'none';
-        // El estado de visibilidad de uploadUI e imgPrincipal será restaurado 
-        // por abrirCredencialNanny() en éxito o debe ser restaurado manualmente en error.
-        // Como fallback para error, si abirCredencial no se llama:
+    if (loadingUI) loadingUI.style.display = 'none';
+
+    // Restaurar visibilidad de foto en la sección de credencial si existe la caché
+    if (typeof CACHE_CLIENTE !== 'undefined') {
         if (!CACHE_CLIENTE.profile?.foto && !CACHE_CLIENTE.profile?.imagen) {
             if (uploadUI) uploadUI.style.display = 'block';
         } else {
@@ -59,6 +91,11 @@ function mostrarLoading(show, msg) {
         }
     }
 }
+
+// Alias para evitar errores por mayúsculas/minúsculas
+const ocultarloading = ocultarLoading;
+window.ocultarLoading = ocultarLoading;
+window.ocultarloading = ocultarloading;
 window.mostrarLoading = mostrarLoading;
 
 function mostrarToast(msg) {
@@ -255,49 +292,45 @@ async function login(rol) {
 
         msg.textContent = '';
 
-        // Carga de datos en segundo plano según rol
-        const promesaCarga = new Promise(async (resolve) => {
+        // 🔥 CARGA DE DATOS REAL (Mientras el preloader está visible)
+        const startTime = Date.now();
+        const promesasCarga = (async () => {
             try {
                 if (SESION.admin) {
-                    // Admin no tiene carga pesada inicial automática por ahora, pero preparamos
+                    // ...
                 } else if (SESION.supervision) {
-                    cargarPerfil();
-                    actualizarPlaneacionesSupervision();
+                    await Promise.all([cargarPerfil(), actualizarPlaneacionesSupervision()]);
                 } else if (SESION.cliente) {
-                    cargarPerfil();
-                    cargarServiciosCliente(true);
-                    cargarActividadesCliente(true);
+                    await mostrarVistaCliente(false, true);
                 } else {
-                    // Niñera
-                    cargarPerfil();
-                    cargar(true); // Disponibilidad
-                    cargarServicios(true); // Servicios
-                    cargarResumenPlaneacionesNinera(true);
-                    cargarPuntajeNinera(); // Puntos
+                    await mostrarVistaNinera();
                 }
-            } catch (e) { console.error('Error pre-carga background', e); }
-            resolve();
-        });
+            } catch (e) { console.error('Error pre-carga', e); }
+        })();
 
-        // Esperar 6 segundos exactos de animación preloader
-        setTimeout(async () => {
+        // Race: Cargar datos vs Timeout de 10 segundos (máximo permitido)
+        await Promise.race([
+            promesasCarga,
+            new Promise(resolve => setTimeout(resolve, 10000))
+        ]);
+
+        const tiempoTranscurrido = Date.now() - startTime;
+        // Esperar al menos los 6s de la animación del logo (si la carga fue más rápida)
+        // O continuar si ya pasaron los 6s (pero máximo 10s por el race anterior).
+        const tiempoRestante = Math.max(0, 6000 - tiempoTranscurrido);
+
+        setTimeout(() => {
+            const preloader = document.getElementById('login-preloader');
             if (preloader) {
-                // 1. Iniciar desvanecimiento del preloader (dura 1s según CSS)
+                preloader.style.transition = 'opacity 0.8s ease';
                 preloader.style.opacity = '0';
-
-                // 2. Esperar a que se desvanezca casi por completo antes de quitarlo del DOM
                 setTimeout(() => {
                     preloader.style.display = 'none';
-                    preloader.style.opacity = '1'; // Reset para futuro
-                }, 1000);
+                    preloader.style.opacity = '1'; // Reset
+                }, 800);
             }
 
-            // 3. Mostrar la APP con animación suave simultánea
-            // Hacemos que la app entre suavemente MIENTRAS el preloader se va
-            const appDiv = document.getElementById('app');
-            appDiv.style.display = 'block';
-            appDiv.style.opacity = '1'; /* Asegurar visibilidad inmediata detrás del preloader */
-
+            // 🕒 DETERMINAR VISTA ANTES DE MOSTRAR APP
             const headerAdmin = document.getElementById('header-admin');
             if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
 
@@ -312,9 +345,18 @@ async function login(rol) {
                 irVista('servicios');
             } else {
                 document.querySelector('.bottom-nav').style.display = 'flex';
-                mostrarVistaNinera();
+                irVista('servicios');
             }
-        }, 6000);
+
+            const appDiv = document.getElementById('app');
+            appDiv.style.display = 'block';
+            appDiv.style.opacity = '0';
+            appDiv.style.transition = 'opacity 0.6s ease';
+
+            appDiv.offsetHeight;
+            appDiv.style.opacity = '1';
+
+        }, tiempoRestante); // Mantenemos los 6s de marca
         // --- FIN CAMBIO PRELOADER ---
 
         msg.textContent = '';
@@ -806,6 +848,29 @@ function renderCalendario2Semanas() {
 /* =========================================
    MODAL DE SERVICIO
    ========================================= */
+
+/**
+ * Formatea un timestamp a formato corto: DD/MM/YY HH:MM:SS
+ * Ejemplo: "Thu Feb 12 2026 17:17:08 GMT-0600" -> "12/02/26 17:17:08"
+ */
+function formatTimestamp(timestamp) {
+    if (!timestamp) return '';
+    try {
+        const date = new Date(timestamp);
+        if (isNaN(date.getTime())) return timestamp; // Si no es válido, devolver original
+
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = String(date.getFullYear()).slice(-2);
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    } catch (e) {
+        return timestamp; // En caso de error, devolver original
+    }
+}
 function abrirModalServicio(s) {
     document.getElementById('mCliente').textContent = s.cliente || 'Detalle del servicio';
 
@@ -964,9 +1029,9 @@ function abrirModalServicio(s) {
 
     const chips = document.createElement('div');
     chips.style.marginBottom = '6px';
-    if (confirmadoEn) chips.innerHTML += `<span class="pill">Confirmado: ${confirmadoEn}</span> `;
-    if (inicioReal) chips.innerHTML += `<span class="pill">Inicio real: ${inicioReal}</span> `;
-    if (finReal) chips.innerHTML += `<span class="pill">Fin real: ${finReal}</span> `;
+    if (confirmadoEn) chips.innerHTML += `<span class="pill">Confirmado: ${formatTimestamp(confirmadoEn)}</span><br>`;
+    if (inicioReal) chips.innerHTML += `<span class="pill">Inicio real: ${formatTimestamp(inicioReal)}</span><br>`;
+    if (finReal) chips.innerHTML += `<span class="pill">Fin real: ${formatTimestamp(finReal)}</span><br>`;
     actions.appendChild(chips);
 
     if (SESION.admin) {
@@ -994,21 +1059,69 @@ function abrirModalServicio(s) {
             b.onclick = () => accionIniciar(s.sheet, s.row_base, s.fecha);
             actions.appendChild(b);
         } else if (!finReal) {
+            // Botón Bitácora - aparece después de iniciar servicio
+            const btnBitacora = document.createElement('button');
+            btnBitacora.className = 'btn-primary';
+            btnBitacora.textContent = 'Bitácora';
+            btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
+            btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
+            btnBitacora.style.marginBottom = '10px';
+            btnBitacora.onclick = () => abrirBitacora(s);
+            actions.appendChild(btnBitacora);
+
             const b = document.createElement('button');
             b.className = 'btn-primary';
             b.textContent = 'Finalizar servicio';
             b.onclick = () => accionFinalizar(s.sheet, s.row_base, s.fecha);
             actions.appendChild(b);
+        } else {
+            // Botón Bitácora - permanece visible después de finalizar
+            const btnBitacora = document.createElement('button');
+            btnBitacora.className = 'btn-primary';
+            btnBitacora.textContent = 'Bitácora';
+            btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
+            btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
+            btnBitacora.onclick = () => abrirBitacora(s);
+            actions.appendChild(btnBitacora);
         }
     }
     else if (estado === 'en curso') {
         if (!finReal) {
+            // Botón Bitácora - aparece en estado "en curso"
+            const btnBitacora = document.createElement('button');
+            btnBitacora.className = 'btn-primary';
+            btnBitacora.textContent = 'Bitácora';
+            btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
+            btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
+            btnBitacora.style.marginBottom = '10px';
+            btnBitacora.onclick = () => abrirBitacora(s);
+            actions.appendChild(btnBitacora);
+
             const b = document.createElement('button');
             b.className = 'btn-primary';
             b.textContent = 'Finalizar servicio';
             b.onclick = () => accionFinalizar(s.sheet, s.row_base, s.fecha);
             actions.appendChild(b);
+        } else {
+            // Botón Bitácora - permanece visible después de finalizar
+            const btnBitacora = document.createElement('button');
+            btnBitacora.className = 'btn-primary';
+            btnBitacora.textContent = 'Bitácora';
+            btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
+            btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
+            btnBitacora.onclick = () => abrirBitacora(s);
+            actions.appendChild(btnBitacora);
         }
+    }
+    else if (estado === 'completado') {
+        // Botón Bitácora - visible en servicios completados
+        const btnBitacora = document.createElement('button');
+        btnBitacora.className = 'btn-primary';
+        btnBitacora.textContent = 'Bitácora';
+        btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
+        btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
+        btnBitacora.onclick = () => abrirBitacora(s);
+        actions.appendChild(btnBitacora);
     }
 
     const c = document.createElement('button');
@@ -1024,6 +1137,378 @@ function cerrarModal() {
     const mb = document.getElementById('modalBackdrop');
     if (mb) mb.style.display = 'none';
 }
+
+/* =========================================
+   BITÁCORA DE SERVICIO
+   ========================================= */
+
+// Variable global para almacenar el contexto del servicio actual
+let BITACORA_SERVICIO_ACTUAL = null;
+
+/**
+ * Maneja la selección visual de botones de opción en la bitácora
+ */
+function selectBitOption(btn, inputId, value) {
+    // --- NUEVO: Prevent changes in read-only mode ---
+    if (document.getElementById('bitacoraBackdrop').classList.contains('bitacora-solo-lectura')) return;
+
+    // 1. Quitar 'active' de todos los botones en el mismo grupo
+    const container = btn.closest('.bitacora-options');
+    if (!container) return; // Seguridad
+    container.querySelectorAll('.bitacora-option-btn').forEach(b => b.classList.remove('active'));
+
+    // 2. Activar el botón clickeado
+    btn.classList.add('active');
+
+    // 3. Actualizar el input oculto
+    const input = document.getElementById(inputId);
+    if (input) input.value = value;
+
+    // 4. Lógica especial para la pregunta 1 (síntomas)
+    if (inputId === 'bit_p1') {
+        const p1Cuales = document.getElementById('bit_p1_cuales');
+        if (p1Cuales) {
+            if (value === 'No') {
+                p1Cuales.style.display = 'block';
+                p1Cuales.required = true;
+            } else {
+                p1Cuales.style.display = 'none';
+                p1Cuales.required = false;
+                p1Cuales.value = '';
+            }
+        }
+    }
+}
+
+/**
+ * Abre el modal de bitácora y guarda el contexto del servicio
+ */
+/**
+ * Abre el modal de bitácora y pre-llena con datos existentes si los hay
+ */
+async function abrirBitacora(servicio, soloLectura = false) {
+    BITACORA_SERVICIO_ACTUAL = servicio;
+
+    const backdrop = document.getElementById('bitacoraBackdrop');
+    // Mostrar modal inmediatamente para que el preloader sea visible dentro
+    backdrop.style.display = 'flex';
+
+    // --- NUEVO: Manejo de solo lectura ---
+    const btnGuardar = document.querySelector('#formBitacora button[type="submit"]');
+    const form = document.getElementById('formBitacora');
+
+    if (soloLectura) {
+        backdrop.classList.add('bitacora-solo-lectura');
+        if (btnGuardar) btnGuardar.style.display = 'none';
+        if (form) {
+            form.querySelectorAll('input:not([type="hidden"]), textarea').forEach(el => {
+                el.readOnly = true;
+                el.disabled = true;
+            });
+        }
+    } else {
+        backdrop.classList.remove('bitacora-solo-lectura');
+        if (btnGuardar) btnGuardar.style.display = 'block';
+        if (form) {
+            form.querySelectorAll('input:not([type="hidden"]), textarea').forEach(el => {
+                // Mantener horas como readonly (p21 y p22)
+                if (el.id !== 'bit_p21' && el.id !== 'bit_p22') {
+                    el.readOnly = false;
+                    el.disabled = false;
+                }
+            });
+        }
+    }
+
+    // Mostrar preloader premium
+    mostrarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper', 'Buscando bitácora guardada...');
+
+    // Resetear formulario
+    if (form) form.reset();
+
+    // Limpiar clases active de botones y valores de inputs ocultos
+    if (form) {
+        form.querySelectorAll('.bitacora-option-btn').forEach(btn => btn.classList.remove('active'));
+        form.querySelectorAll('input[type="hidden"]').forEach(input => input.value = '');
+    }
+
+    // Ocultar campo condicional de "¿Cuáles?"
+    const cuales = document.getElementById('bit_p1_cuales');
+    if (cuales) {
+        cuales.style.display = 'none';
+        cuales.required = false;
+    }
+
+    // Pre-llenar horas siempre (desde el servicio)
+    _prellenarHorasServicio(servicio);
+
+    // Identificador único para el caché
+    const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}`;
+
+    // 1. Revisar Caché primero (Instantáneo)
+    if (BITACORA_CACHE[cacheKey]) {
+        console.log('Bitácora recuperada de caché local:', cacheKey);
+        _llenarFormularioBitacora(BITACORA_CACHE[cacheKey]);
+        ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
+        return;
+    }
+
+    // 2. Si no hay caché, intentar obtener del backend
+    try {
+        const bitacoraExistente = await api('obtenerBitacora', {
+            correo_cliente: servicio.email || '',
+            nombre_cliente: servicio.cliente || '',
+            fecha: servicio.fecha
+        });
+
+        if (bitacoraExistente) {
+            console.log('Bitácora encontrada en backend:', bitacoraExistente);
+            // Guardar en caché para futuras aperturas
+            BITACORA_CACHE[cacheKey] = bitacoraExistente;
+            _llenarFormularioBitacora(bitacoraExistente);
+            mostrarToast('📋 Bitácora cargada');
+        }
+    } catch (e) {
+        console.error('Error al obtener bitácora:', e);
+    } finally {
+        // Ocultar preloader premium
+        ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
+    }
+}
+
+/**
+ * Pre-llena las horas fijas del servicio (inicio_real / fin_real)
+ */
+function _prellenarHorasServicio(servicio) {
+    if (servicio.inicio_real) {
+        try {
+            const val = servicio.inicio_real.includes('T') ? servicio.inicio_real : servicio.inicio_real.replace(' ', 'T');
+            const inicio = new Date(val);
+            if (!isNaN(inicio)) {
+                const horaInicio = String(inicio.getHours()).padStart(2, '0') + ':' + String(inicio.getMinutes()).padStart(2, '0');
+                document.getElementById('bit_p23').value = horaInicio;
+            }
+        } catch (e) { console.error('Error al parsear hora de inicio:', e); }
+    }
+
+    if (servicio.fin_real) {
+        try {
+            const val = servicio.fin_real.includes('T') ? servicio.fin_real : servicio.fin_real.replace(' ', 'T');
+            const fin = new Date(val);
+            if (!isNaN(fin)) {
+                const horaFin = String(fin.getHours()).padStart(2, '0') + ':' + String(fin.getMinutes()).padStart(2, '0');
+                document.getElementById('bit_p24').value = horaFin;
+            }
+        } catch (e) { console.error('Error al parsear hora de fin:', e); }
+    }
+}
+
+/**
+ * Llena el formulario con los datos de una bitácora existente
+ */
+function _llenarFormularioBitacora(datos) {
+    if (!datos) return;
+
+    // Mapeo de preguntas 1 a 24
+    for (let i = 1; i <= 24; i++) {
+        const fieldName = `Pregunta ${i}`;
+        const val = datos[fieldName] || '';
+        const inputId = `bit_p${i}`;
+        const input = document.getElementById(inputId);
+
+        if (!input) continue;
+
+        if (input.type === 'hidden') {
+            // Caso especial P1 con condicional
+            if (i === 1 && String(val).includes(' / ')) {
+                const parts = String(val).split(' / ');
+                _marcarOpcionBotones(inputId, parts[0]);
+                const cualesEl = document.getElementById('bit_p1_cuales');
+                if (cualesEl) {
+                    cualesEl.value = parts[1];
+                    cualesEl.style.display = 'block';
+                }
+            } else {
+                _marcarOpcionBotones(inputId, val);
+            }
+        } else {
+            // Inputs normales (number, text, textarea, time)
+            if (input.type === 'time' && val) {
+                // Asegurar formato HH:mm para inputs de tipo time
+                try {
+                    if (val instanceof Date) {
+                        input.value = String(val.getHours()).padStart(2, '0') + ':' + String(val.getMinutes()).padStart(2, '0');
+                    } else if (String(val).includes(':')) {
+                        const parts = String(val).split(':');
+                        input.value = parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
+                    } else {
+                        input.value = val;
+                    }
+                } catch (e) {
+                    console.error('Error al formatear tiempo para P' + i, e);
+                    input.value = val;
+                }
+            } else {
+                input.value = val;
+            }
+        }
+    }
+}
+
+/**
+ * Marca un botón como activo basándose en su valor e input oculto
+ */
+function _marcarOpcionBotones(inputId, valor) {
+    if (!valor) return;
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.value = valor;
+
+    // Buscar botones que pertenecen a este input y tengan este valor
+    // Cada botón llama a selectBitOption(this, 'inputId', 'valor')
+    const form = document.getElementById('formBitacora');
+    const botones = form.querySelectorAll(`.bitacora-option-btn`);
+
+    botones.forEach(btn => {
+        // Checar si el onclick contiene el inputId y el valor
+        const onclick = btn.getAttribute('onclick') || '';
+        if (onclick.includes(`'${inputId}'`) && onclick.includes(`'${valor}'`)) {
+            btn.classList.add('active');
+        } else if (onclick.includes(`'${inputId}'`)) {
+            btn.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Cierra el modal de bitácora y limpia el formulario
+ */
+function cerrarBitacora() {
+    const backdrop = document.getElementById('bitacoraBackdrop');
+    backdrop.style.display = 'none';
+    backdrop.classList.remove('bitacora-solo-lectura');
+
+    const form = document.getElementById('formBitacora');
+    if (form) form.reset();
+
+    BITACORA_SERVICIO_ACTUAL = null;
+}
+
+/**
+ * Maneja el envío del formulario de bitácora
+ */
+async function enviarBitacora(event) {
+    event.preventDefault();
+
+    if (!BITACORA_SERVICIO_ACTUAL) {
+        alert('Error: No hay servicio seleccionado');
+        return;
+    }
+
+    // Recopilar datos del formulario
+    const datos = {
+        // Datos del servicio
+        fecha: BITACORA_SERVICIO_ACTUAL.fecha,
+        correo_ninera: SESION.email,
+        nombre_ninera: SESION.nombre || '',
+        correo_cliente: BITACORA_SERVICIO_ACTUAL.email || '',
+        nombre_cliente: BITACORA_SERVICIO_ACTUAL.cliente || '',
+
+        // Preguntas 1-24
+        p1: document.getElementById('bit_p1').value,
+        p1_cuales: document.getElementById('bit_p1').value === 'No' ? document.getElementById('bit_p1_cuales').value : '',
+        p2: document.getElementById('bit_p2').value,
+        p3: document.getElementById('bit_p3').value,
+        p4: document.getElementById('bit_p4').value,
+        p5: document.getElementById('bit_p5').value,
+        p6: document.getElementById('bit_p6').value,
+        p7: document.getElementById('bit_p7').value || '',
+        p8: document.getElementById('bit_p8').value || '0',
+        p9: document.getElementById('bit_p9').value || '0',
+        p10: document.getElementById('bit_p10').value,
+        p11: document.getElementById('bit_p11').value || '0',
+        p12: document.getElementById('bit_p12').value || '0',
+        p13: document.getElementById('bit_p13').value,
+        p14: document.getElementById('bit_p14').value,
+        p15: document.getElementById('bit_p15').value,
+        p16: document.getElementById('bit_p16').value,
+        p17: document.getElementById('bit_p17').value,
+        p18: document.getElementById('bit_p18').value || '',
+        p19: document.getElementById('bit_p19').value,
+        p20: document.getElementById('bit_p20').value || '',
+        p21: document.getElementById('bit_p21').value || '',
+        p22: document.getElementById('bit_p22').value,
+        p23: document.getElementById('bit_p23').value,
+        p24: document.getElementById('bit_p24').value,
+        acepta: 'Sí' // Campo de aceptación por defecto
+    };
+
+    try {
+        // Mostrar preloader premium
+        mostrarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper', 'Guardando bitácora...');
+
+        // Enviar al backend
+        await api('guardarBitacora', datos);
+
+        // Actualizar caché local para que la próxima apertura sea instantánea
+        const cacheKey = `${BITACORA_SERVICIO_ACTUAL.fecha}_${BITACORA_SERVICIO_ACTUAL.email || BITACORA_SERVICIO_ACTUAL.cliente}`;
+        BITACORA_CACHE[cacheKey] = _mapPayloadToSheetFormat(datos);
+
+        // Cerrar modal y mostrar éxito
+        cerrarBitacora();
+        ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
+        mostrarToast('✅ Bitácora guardada', 'success');
+
+    } catch (error) {
+        ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
+        alert('Error al guardar la bitácora: ' + error.message);
+    }
+}
+
+/**
+ * Mapea el payload de envío al formato que devuelve el backend (nombres de columnas)
+ * para mantener consistencia en la caché.
+ */
+function _mapPayloadToSheetFormat(p) {
+    const mapeo = {
+        'Fecha': p.fecha,
+        'correo niñera': p.correo_ninera,
+        'nombre niñera': p.nombre_ninera,
+        'correo cliente': p.correo_cliente,
+        'Nombre cliente': p.nombre_cliente,
+        'Acepta': p.acepta
+    };
+
+    // Agregar preguntas 1 a 24
+    for (let i = 1; i <= 24; i++) {
+        let val = p[`p${i}`];
+        if (i === 1 && p.p1_cuales) val += ` / ${p.p1_cuales}`;
+        mapeo[`Pregunta ${i}`] = val;
+    }
+
+    return mapeo;
+}
+
+// Event listener para mostrar/ocultar campo "¿Cuáles?" en pregunta 1
+document.addEventListener('DOMContentLoaded', function () {
+    // Event listener para el formulario
+    const formBitacora = document.getElementById('formBitacora');
+    if (formBitacora) {
+        formBitacora.addEventListener('submit', enviarBitacora);
+    }
+
+    // Cerrar modal al hacer click fuera (en el backdrop)
+    const bitBackdrop = document.getElementById('bitacoraBackdrop');
+    if (bitBackdrop) {
+        bitBackdrop.addEventListener('click', function (e) {
+            // Si el click fue directamente en el backdrop (no en sus hijos/card)
+            if (e.target === this) {
+                cerrarBitacora();
+            }
+        });
+    }
+});
 
 //Event listener added in init block later
 
@@ -1642,30 +2127,24 @@ function irVista(nombre, skipLogic = false) {
 
     // Inicializar módulos dinámicos
     if (target === 'comunidad') {
-        // Restricción temporal: Todos ven "Próximamente" (Nannys inclusive)
-        const container = document.getElementById('vista-comunidad');
-        if (container) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 40px 20px;">
-                    <div style="font-size: 40px; margin-bottom: 20px;">✨</div>
-                    <h2 style="color: var(--pink-main); margin-bottom: 15px;">¡Próximamente!</h2>
-                    <p style="color: var(--text-main); font-size: 16px; line-height: 1.5; max-width: 400px; margin: 0 auto;">
-                        Nuevas sorpresas para nuestra comunidad Nannys y Peques.
-                    </p>
-                </div>
-            `;
-        }
-
-        /* Código original comentado temporalmente
         if (SESION.cliente) {
+            // Cliente: Mostrar mensaje de "Próximamente"
             const container = document.getElementById('vista-comunidad');
             if (container) {
-                container.innerHTML = ...
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 40px; margin-bottom: 20px;">✨</div>
+                        <h2 style="color: var(--pink-main); margin-bottom: 15px;">¡Próximamente!</h2>
+                        <p style="color: var(--text-main); font-size: 16px; line-height: 1.5; max-width: 400px; margin: 0 auto;">
+                            Nuevas sorpresas para nuestra comunidad Nannys y Peques.
+                        </p>
+                    </div>
+                `;
             }
         } else if (window.Comunidad) {
+            // Staff/Admin: Cargar feed normal
             Comunidad.init();
         }
-        */
     }
     if (target === 'convenios' && window.Convenios) {
         Convenios.init();
@@ -1703,8 +2182,13 @@ function irVista(nombre, skipLogic = false) {
             }
         }
 
-        if (target === 'cliente') mostrarVistaCliente();
-        if (target === 'actividades-cliente') cargarActividadesCliente();
+        if (target === 'cliente') {
+            // No hacemos await aquí para no bloquear irVista, pero la función es async interna
+            mostrarVistaCliente();
+        }
+        if (target === 'actividades-cliente') {
+            cargarActividadesCliente();
+        }
         return;
     }
 
@@ -2231,11 +2715,8 @@ window.addEventListener('load', async function () {
         const headerAdmin = document.getElementById('header-admin');
         if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
 
-        document.getElementById('auth').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-
-        // 🔥 CARGAR DATOS ANTES DE OCULTAR SPLASH
-        try {
+        // 🔥 DETERMINAR VISTA ANTES DE MOSTRAR APP
+        const preDeterminarVista = () => {
             if (SESION.admin) {
                 document.querySelector('.bottom-nav').style.display = 'none';
                 mostrarVistaAdmin();
@@ -2244,15 +2725,35 @@ window.addEventListener('load', async function () {
                 irVista('supervision');
             } else if (SESION.cliente) {
                 document.querySelector('.bottom-nav').style.display = 'flex';
-                irVista('servicios'); //Esto redirigirá a vista-cliente
-                await mostrarVistaCliente(false, false); // ⚡ ESPERAR A QUE CARGUE TODO
+                irVista('servicios');
             } else {
                 document.querySelector('.bottom-nav').style.display = 'flex';
-                await mostrarVistaNinera(); // ⚡ ESPERAR A QUE CARGUE TODO
+                irVista('servicios');
             }
-        } catch (error) {
-            console.error('Error cargando datos iniciales:', error);
-        }
+        };
+
+        preDeterminarVista();
+
+        document.getElementById('auth').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+
+        // 🔥 CARGAR DATOS EN PARALELO (Máximo 10s)
+        const loadPromesas = (async () => {
+            try {
+                if (SESION.cliente) {
+                    await mostrarVistaCliente(false, false);
+                } else if (!SESION.admin && !SESION.supervision) {
+                    await mostrarVistaNinera();
+                }
+            } catch (error) {
+                console.error('Error cargando datos iniciales:', error);
+            }
+        })();
+
+        await Promise.race([
+            loadPromesas,
+            new Promise(r => setTimeout(r, 10000))
+        ]);
     } else {
         //Mostrar login
         document.getElementById('auth').style.display = 'flex';
@@ -2266,10 +2767,20 @@ window.addEventListener('load', async function () {
     setTimeout(() => {
         const splash = document.getElementById('splash-screen');
         if (splash) {
-            splash.style.animation = 'fadeOut 0.5s ease-out forwards';
+            splash.style.transition = 'opacity 0.8s ease';
+            splash.style.opacity = '0';
+
+            // Sincronizar entrada de la app con el splash
+            const appDiv = document.getElementById('app');
+            if (appDiv) {
+                appDiv.style.opacity = '0';
+                appDiv.style.transition = 'opacity 0.6s ease';
+                setTimeout(() => appDiv.style.opacity = '1', 50);
+            }
+
             setTimeout(() => {
                 splash.style.display = 'none';
-            }, 500);
+            }, 800);
         }
     }, remainingTime);
 
@@ -2288,7 +2799,7 @@ window.addEventListener('load', async function () {
    COMPLEMENTOS PLANEACIÓN Y NAVEGACIÓN
    ========================================= */
 
-function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResumen) {
+async function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResumen) {
     PLANEACION_SESSION_ID++;
     MODO_SOLO_LECTURA = false;
     PLANEACION_CLIENTE = cliente;
@@ -2308,19 +2819,24 @@ function abrirPlaneacionesCliente(cliente, esSiguienteSemana, tipoServicioResume
     PLANEACION_FUENTE = PLANEACIONES_FECHAS.map(f => ({
         cliente,
         fecha: f,
-        tipo_servicio: tipoServicioResumen || ''
+        tipo_servicio: tipoServicioResumen || '',
+        nombre_ninera: SESION.nombre || '' // FIX: Usar nombre de sesión para la niñera
     }));
 
+    // Mostrar modal y preloader inmediatamente
     document.getElementById('planeacionBackdrop').style.display = 'flex';
+    mostrarPreloaderModal('planeacionBackdrop', 'planeacion-content-wrapper', 'Cargando planeaciones de la semana...');
+
     actualizarNavegacionPlaneacion();
-    precargarPlaneacionesCliente();
+
+    // 🔥 ESPERAR CARGA MASIVA (Evita que el usuario vea un preloader por cada día que cambie)
+    await precargarPlaneacionesCliente();
+
     abrirPlaneacionPorIndice();
 }
 
 function abrirPlaneacionPorIndice() {
     const fecha = PLANEACIONES_FECHAS[PLANEACION_INDEX];
-    const key = `${PLANEACION_CLIENTE}|${fecha}`;
-
     const servicio = PLANEACION_FUENTE.find(
         s => s.cliente === PLANEACION_CLIENTE && s.fecha === fecha
     );
@@ -2330,7 +2846,13 @@ function abrirPlaneacionPorIndice() {
         return;
     }
 
+    // FIX: Clave única por cliente + fecha + niñera para evitar colisiones
+    // Se mueve aquí porque necesitamos 'servicio' definido
+    // 🔥 USAR NORMALIZACIÓN EN LA CLAVE PARA EVITAR MISSES POR MAYÚSCULAS/TILDES
+    const key = `${PLANEACION_CLIENTE}|${fecha}|${normalizarTexto(servicio.nombre_ninera || '')}`;
+
     if (key in CACHE_PLANEACIONES) {
+        ocultarPreloaderModal(); // Asegurar que el preloader se oculte si viene de cache
         abrirPlaneacionNeuronanny(servicio, CACHE_PLANEACIONES[key]);
         actualizarNavegacionPlaneacion();
         return;
@@ -2348,7 +2870,12 @@ function abrirPlaneacionPorIndice() {
     const sessionAtRequest = PLANEACION_SESSION_ID;
 
     //Refactored to api
-    api('obtenerPlaneacionNeuronanny', { fecha, cliente: PLANEACION_CLIENTE, email: SESION.email })
+    api('obtenerPlaneacionNeuronanny', {
+        fecha,
+        cliente: PLANEACION_CLIENTE,
+        email: SESION.email,
+        nombre_ninera: servicio.nombre_ninera // FIX: Enviar nombre de niñera para filtrar correctamente
+    })
         .then(res => {
             if (sessionAtRequest !== PLANEACION_SESSION_ID) return;
 
@@ -2433,32 +2960,51 @@ function cerrarPlaneacionNeuronanny() {
 }
 
 async function precargarPlaneacionesCliente() {
-    if (!PLANEACIONES_FECHAS || PLANEACIONES_FECHAS.length === 0) return;
+    const localSession = PLANEACION_SESSION_ID;
+    const localCliente = PLANEACION_CLIENTE;
+    const localFechas = [...PLANEACIONES_FECHAS];
 
-    const fechasPendientes = PLANEACIONES_FECHAS.filter(f => !(`${PLANEACION_CLIENTE}|${f}` in CACHE_PLANEACIONES));
-    if (fechasPendientes.length === 0) return;
+    // Si ya tenemos cache de todo, no insistir
+    const faltaCache = localFechas.some(f => {
+        const s = PLANEACION_FUENTE.find(pf => pf.fecha === f);
+        const key = `${localCliente}|${f}|${normalizarTexto(s?.nombre_ninera || '')}`;
+        return !(key in CACHE_PLANEACIONES);
+    });
+
+    if (!faltaCache) {
+        return;
+    }
+
+    // Tomar el nombre de la niñera del primer elemento (asumimos que es la misma para este bloque)
+    const primerServicio = PLANEACION_FUENTE[0];
+    const nombreNinera = primerServicio?.nombre_ninera || '';
 
     try {
+        // Llamada Bulk
         const res = await api('obtenerPlaneacionesBulk', {
-            fechas: fechasPendientes,
-            cliente: PLANEACION_CLIENTE,
-            email: SESION.email
+            fechas: localFechas,
+            cliente: localCliente,
+            email: SESION.email,
+            nombre_ninera: nombreNinera // FIX: Enviar filtro de niñera
         });
 
-        // El backend devuelve { "2024-01-01": { data }, "2024-01-02": { data } }
-        // Marcamos todas como procesadas, incluso si no tienen datos
-        fechasPendientes.forEach(f => {
-            CACHE_PLANEACIONES[`${PLANEACION_CLIENTE}|${f}`] = res[f] || null;
+        // Abortar si la sesión cambió mientras esperábamos al servidor
+        if (localSession !== PLANEACION_SESSION_ID) return;
+
+        // Populate cache para TODAS las fechas solicitadas
+        localFechas.forEach(fecha => {
+            const data = (res && res[fecha]) ? res[fecha] : null;
+            // Construir key consistente con abrirPlaneacionPorIndice
+            const key = `${localCliente}|${fecha}|${normalizarTexto(nombreNinera)}`;
+            CACHE_PLANEACIONES[key] = data;
         });
 
-        // Forzar renderizado del actual si ya se cargó (por si acaso abrirPlaneacionPorIndice tardó más)
-        abrirPlaneacionPorIndice();
     } catch (e) {
         console.error(`Error precargando planeaciones bulk:`, e);
     }
 }
 
-function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServicioResumen, nombreNineraResumen) {
+async function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServicioResumen, nombreNineraResumen) {
     PLANEACION_SESSION_ID++;
     MODO_SOLO_LECTURA = true;
     PLANEACION_CLIENTE = cliente;
@@ -2479,8 +3025,13 @@ function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServicioResu
     }));
 
     document.getElementById('planeacionBackdrop').style.display = 'flex';
+    mostrarPreloaderModal('planeacionBackdrop', 'planeacion-content-wrapper', 'Cargando planeaciones de la semana...');
+
     actualizarNavegacionPlaneacion();
-    precargarPlaneacionesCliente();
+
+    // 🔥 ESPERAR CARGA MASIVA
+    await precargarPlaneacionesCliente();
+
     abrirPlaneacionPorIndice();
 }
 
@@ -2751,6 +3302,8 @@ function verificarDatosFaltantesCliente(p) {
     if (!p) return true; // Falta todo
 
     const req = [
+        { keys: ['rol'], label: 'Rol (Mamá, Papá, Familiar)' },
+        { keys: ['nombre_completo', 'nombre'], label: 'Nombre completo' },
         { keys: ['dirección', 'direccion'], label: 'Dirección' },
         { keys: ['ubicación', 'ubicacion'], label: 'Ubicación' },
         { keys: ['teléfono', 'telefono'], label: 'Teléfono' },
@@ -2827,9 +3380,11 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
     const d = document.getElementById('cliente-dashboard');
     const o = document.getElementById('cliente-onboarding');
 
-    // Inicialmente ocultar ambos para evitar flashes o encimamientos
-    if (d) d.style.display = 'none';
-    if (o) o.style.display = 'none';
+    // Evitar ocultar si ya estamos en la vista correcta para no causar parpadeo
+    const isShowingDashboard = d && d.style.display === 'block';
+    const isShowingOnboarding = o && o.style.display === 'block';
+
+    // No ocultamos nada todavía, dejaremos que la lógica decida qué mostrar
 
     let perf = CACHE_CLIENTE.profile;
 
@@ -2839,6 +3394,10 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
             CACHE_CLIENTE.profile = perf;
         } catch (e) {
             console.error("Error cargando perfil:", e);
+            // Si el error es de sesión expirada, no mostrar onboarding, dejar que el api() global maneje el logout
+            if (e.message && e.message.includes('Tu sesión ha expirado')) {
+                return;
+            }
             if (o) o.style.display = 'block';
             return;
         }
@@ -2903,15 +3462,26 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
         }
     } else {
         // 🔥 CARGA PARALELA: Servicios, Actividades y Perfil al mismo tiempo
-        if (d) d.style.display = 'block';
-        if (o) o.style.display = 'none';
-
-        // Cargar todo en paralelo para que el preloader muestre hasta que TODO esté listo
+        // Cargar todo en paralelo antes de mostrar el dashboard
         await Promise.all([
             cargarServiciosCliente(forceFetch),
             cargarActividadesCliente(forceFetch),
-            cargarPerfil() // 👤 Renderizar perfil siempre (aunque ya tenga datos en caché)
+            cargarPerfil()
         ]);
+
+        if (o) o.style.display = 'none';
+        if (d) {
+            // Solo si no estaba ya visible, o si queremos forzar el efecto
+            if (d.style.display !== 'block') {
+                d.style.display = 'block';
+                d.classList.remove('fade-in-smooth');
+                void d.offsetWidth;
+                d.classList.add('fade-in-smooth');
+            } else {
+                // Ya estaba visible (probablemente pre-cargado), solo nos aseguramos
+                d.style.display = 'block';
+            }
+        }
     }
 }
 window.mostrarVistaCliente = mostrarVistaCliente;
@@ -3218,7 +3788,20 @@ async function editarPerfilCliente() {
         const perf = await api('getProfile', { email: SESION.email });
         if (perf) {
             //Datos comunes
-            if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || '';
+            if (document.getElementById('reg_nombre')) {
+                const inputNombre = document.getElementById('reg_nombre');
+                inputNombre.value = perf.nombre || '';
+                // Bloquear si ya tiene nombre (evitar errores de sistema)
+                if (perf.nombre && perf.nombre.trim() !== "") {
+                    inputNombre.readOnly = true;
+                    inputNombre.style.background = "#f1f5f9";
+                    inputNombre.title = "El nombre no puede ser modificado una vez registrado.";
+                } else {
+                    inputNombre.readOnly = false;
+                    inputNombre.style.background = "";
+                    inputNombre.title = "";
+                }
+            }
             if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
             if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || perf.ubicacion || '';
             if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.telefono || perf.teléfono || '';
@@ -3324,12 +3907,23 @@ async function cargarServiciosCliente(force = false) {
         lunes.setDate(hoy.getDate() - diasDesdeLunes);
         const fechaInicioISO = toISO(lunes);
 
-        const res = await api('getServiciosCliente', {
-            email: SESION.email,
-            fecha_inicio: fechaInicioISO
-        });
+        // --- CARGA PARALELA (Servicios + Saldo) ---
+        // Optimizamos para que ambos carguen al mismo tiempo
+        const [res, resSaldo] = await Promise.all([
+            api('getServiciosCliente', {
+                email: SESION.email,
+                fecha_inicio: fechaInicioISO
+            }),
+            api('getSaldoCliente', { email: SESION.email }).catch(e => {
+                console.error("Error al cargar saldo:", e);
+                return null;
+            })
+        ]);
+
         CACHE_CLIENTE.servicios = Array.isArray(res) ? res : [];
         renderServiciosCliente(CACHE_CLIENTE.servicios);
+        renderSaldoCliente(resSaldo);
+
         if (msg) msg.textContent = '';
     } catch (err) {
         console.error('Error cargarServiciosCliente:', err);
@@ -3359,6 +3953,32 @@ function renderServiciosCliente(svcs) {
     if (msg) {
         msg.textContent = `Se encontraron ${svcs.length} servicios próximamente.`;
         setTimeout(() => { if (msg.textContent.includes('servicios')) msg.textContent = ''; }, 3000);
+    }
+}
+
+function renderSaldoCliente(data) {
+    const container = document.getElementById('saldo-cliente-container');
+    const montoEl = document.getElementById('saldo-cliente-monto');
+    if (!container || !montoEl) return;
+
+    if (data && data.saldo > 0) {
+        montoEl.textContent = new Intl.NumberFormat('es-MX', {
+            style: 'currency',
+            currency: 'MXN'
+        }).format(data.saldo);
+
+        // Cambiar diseño si es moroso
+        if (data.esMoroso) {
+            container.style.background = 'linear-gradient(135deg, #ff4251ff 0%, #ff8271ff 100%)'; // Degradado rojizo cálido
+            montoEl.style.color = '#ffffff';
+        } else {
+            container.style.background = 'linear-gradient(135deg, #22C55E 0%, #16A34A 100%)'; // Verde alineado con el calendario
+            montoEl.style.color = '#ffffff';
+        }
+
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
     }
 }
 
@@ -3445,6 +4065,20 @@ function renderCalendarioCliente(svcs) {
                     btn.title = `${s.Horario || ''} - Niñera: ${nombreCompleto} `;
                     btn.onclick = () => mostrarDetalleServicioCliente(s);
                     body.appendChild(btn);
+
+                    // --- NUEVO: PÍLDORA DE BITÁCORA (SOLO LECTURA PARA CLIENTE) ---
+                    if (s.tiene_bitacora) {
+                        const bitBtn = document.createElement('button');
+                        bitBtn.className = 'svc-pill-bitacora';
+                        bitBtn.innerHTML = `
+                            <div style="font-weight: 700; font-size: 11px;">📋 Bitácora</div>
+                        `;
+                        bitBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            abrirBitacora(s, true); // Segundo parámetro: soloLectura = true
+                        };
+                        body.appendChild(bitBtn);
+                    }
                 });
             }
             dayEl.appendChild(body);
@@ -3939,4 +4573,3 @@ function cerrarCredencial() {
     clearInterval(timerCredencial);
 }
 window.cerrarCredencial = cerrarCredencial;
-

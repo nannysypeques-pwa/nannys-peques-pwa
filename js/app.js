@@ -55,7 +55,24 @@ async function api(action, payload = {}) {
   }
 
 
-  if (!json.ok) throw new Error(json.error || 'Error desconocido');
+  if (!json.ok) {
+    const errorMsg = json.error || 'Error desconocido';
+
+    // 🔥 CONTROL GLOBAL DE SESIÓN EXPIRADA
+    if (errorMsg.includes('Tu sesión ha expirado')) {
+      console.warn('Sesión expirada detectada globalmente:', errorMsg);
+      if (typeof logout === 'function') {
+        logout(true); // true = es por inactividad/error de sesión
+      } else {
+        // Fallback si logout no está definido aún
+        localStorage.removeItem('nyp_sesion');
+        window.location.reload();
+      }
+      throw new Error(errorMsg);
+    }
+
+    throw new Error(errorMsg);
+  }
   return json.data;
 }
 

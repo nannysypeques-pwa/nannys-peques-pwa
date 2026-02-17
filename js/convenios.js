@@ -317,12 +317,41 @@ const Convenios = {
                 imagen: "assets/img/convenios/ludo.jpg"
             },
 
+            {
+                id: 23,
+                ciudad: "Puebla",
+                categoria: "Nutrición",
+                nombre: "AWEN Psicología Puebla - Psic. Oscar López Méndez",
+                cedula: "13602629",
+                descripcion: "AWEN Psicología Puebla es un centro de psicología y nutrición, enfocado en brindar la mejor atención para que siempre este bien, física y emocionalmente.",
+                beneficio: "$350 por consultas individuales de nutrición<br> Programa de Capacitación (Talleres y Pláticas): Sin costo para nannys y padres de familia. Programadas por Nannys y Peques",
+                maps: "https://maps.app.goo.gl/RwQxDBRhUJWvgiTW8",
+                whatsapp: "https://wa.me/522212987936",
+                telefono: "2212987936",
+                imagen: "assets/img/convenios/awen.jpeg"
+            },
+
+            {
+                id: 24,
+                ciudad: "Puebla",
+                categoria: "Psicología",
+                nombre: "AWEN Psicología Puebla - Psic. Oscar López Méndez",
+                cedula: "13602629",
+                descripcion: "AWEN Psicología Puebla es un centro de psicología y nutrición, enfocado en brindar la mejor atención para que siempre este bien, física y emocionalmente.",
+                beneficio: "$350 por consultas individuales de psicología<br> Programa de Capacitación (Talleres y Pláticas): Sin costo para nannys y padres de familia. Programadas por Nannys y Peques",
+                maps: "https://maps.app.goo.gl/RwQxDBRhUJWvgiTW8",
+                whatsapp: "https://wa.me/522212987936",
+                telefono: "2212987936",
+                imagen: "assets/img/convenios/awen.jpeg"
+            },
+
+
 
 
         ],
         ciudades: ["Puebla", "Xalapa", "Querétaro", "CDMX"],
         categorias: [
-            "Doctor", "Pediatra", "Dentista", "Psicologia",
+            "Doctor", "Pediatra", "Dentista", "Psicología",
             "Fisioterapia", "Nutrición", "Ginecología", "Diversión", "Salud y belleza", "Ejercicio",
             "Restaurantes", "Tiendas de moda", "Lactancia"
         ]

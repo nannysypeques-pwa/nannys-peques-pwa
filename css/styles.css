@@ -357,7 +357,7 @@ body>h2:first-of-type {
 
 .vista {
     display: none;
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeInPremium 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 
@@ -366,12 +366,24 @@ body>h2:first-of-type {
 }
 
 
+@keyframes fadeInPremium {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Para compatibilidad si algo usa fadeIn todavia */
 @keyframes fadeIn {
     from {
         opacity: 0;
         transform: translateY(10px);
     }
-
 
     to {
         opacity: 1;
@@ -1531,6 +1543,10 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
     animation: slideUpFade 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
+.fade-in-smooth {
+    animation: fadeInPremium 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
 .slide-up-fade.delay-1 {
     animation-delay: 0.2s;
 }
@@ -1549,4 +1565,62 @@ body.ninera .modal-planeacion::-webkit-scrollbar-thumb {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* =========================================
+   BITÁCORA - BOTONES DE OPCIÓN (UX IMPROVEMENT)
+   ========================================= */
+
+.bitacora-options {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.bitacora-option-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px 10px;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    background: white;
+    color: #4B5563;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    border-bottom: 4px solid #E5E7EB;
+}
+
+.bitacora-option-btn:hover {
+    border-color: var(--blue-main);
+    background: rgba(59, 182, 196, 0.05);
+}
+
+.bitacora-option-btn.active {
+    border-color: var(--blue-main);
+    background: var(--blue-main);
+    color: white;
+    border-bottom: 4px solid #339ba7;
+    transform: translateY(2px);
+}
+
+.bitacora-option-btn:active {
+    transform: translateY(2px);
+    border-bottom-width: 2px;
+}
+
+/* Variantes de columnas para que se vean organizadas */
+.options-2 .bitacora-option-btn {
+    flex: 1 1 45%;
+}
+
+.options-3 .bitacora-option-btn {
+    flex: 1 1 30%;
+}
+
+.options-4 .bitacora-option-btn {
+    flex: 1 1 22%;
 }

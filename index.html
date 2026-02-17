@@ -100,16 +100,111 @@
       top: 50% !important;
       left: 50% !important;
       transform: translate(-50%, -50%) !important;
-      opacity: 0.05 !important;
-      width: 70% !important;
-      z-index: 0 !important;
+      opacity: 0.1 !important;
+      width: 150px !important;
     }
 
+    /* =========================================
+       BITÁCORA - BOTONES DE OPCIÓN (EVITAR CACHE)
+       ========================================= */
+    .bitacora-options {
+      display: flex !important;
+      gap: 8px !important;
+      flex-wrap: wrap !important;
+      margin-top: 8px !important;
+    }
+
+    .bitacora-option-btn {
+      flex: 1 !important;
+      min-width: 80px !important;
+      padding: 12px 10px !important;
+      border: 2px solid #E5E7EB !important;
+      border-radius: 12px !important;
+      background: white !important;
+      color: #4B5563 !important;
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      cursor: pointer !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      text-align: center !important;
+      border-bottom: 4px solid #E5E7EB !important;
+      font-family: 'Nunito Sans', sans-serif !important;
+    }
+
+    .bitacora-option-btn:hover {
+      border-color: #3BB6C4 !important;
+      background: rgba(59, 182, 196, 0.05) !important;
+    }
+
+    .bitacora-option-btn.active {
+      border-color: #3BB6C4 !important;
+      background: #3BB6C4 !important;
+      color: white !important;
+      border-bottom: 4px solid #339ba7 !important;
+      transform: translateY(2px) !important;
+    }
+
+    /* Variantes de columnas */
+    .options-2 .bitacora-option-btn {
+      flex: 1 1 45% !important;
+    }
+
+    .options-3 .bitacora-option-btn {
+      flex: 1 1 30% !important;
+    }
+
+    .options-4 .bitacora-option-btn {
+      flex: 1 1 22% !important;
+    }
 
     .credential-avatar-container {
       margin-top: -15px !important;
       position: relative !important;
       z-index: 5 !important;
+    }
+
+    /* Estilos específicos para Bitácora del Cliente */
+    .svc-pill-bitacora {
+      background: #FEF9C3 !important;
+      /* Amarillo premium suave */
+      color: #854D0E !important;
+      border: none !important;
+      border-left: 5px solid #FBBF24 !important;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      border-radius: 10px;
+      width: 80%;
+      margin-top: 8px;
+      transition: all 0.2s ease;
+      font-weight: 700;
+      font-size: 12px;
+      font-family: 'Nunito Sans', sans-serif;
+    }
+
+    .svc-pill-bitacora:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    .bitacora-solo-lectura .bitacora-option-btn {
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+
+    .bitacora-solo-lectura .bitacora-option-btn.active {
+      background: var(--blue-main);
+      color: white;
+      opacity: 1;
+    }
+
+    .bitacora-solo-lectura input,
+    .bitacora-solo-lectura textarea {
+      background-color: #f9fafb !important;
+      cursor: not-allowed !important;
     }
   </style>
 
@@ -691,7 +786,7 @@
 
       <div id="vista-cliente" class="vista">
         <!-- ONBOARDING: Completar perfil -->
-        <div id="cliente-onboarding" style="display:none;">
+        <div id="cliente-onboarding" class="fade-in-smooth" style="display:none;">
           <div class="card">
             <h2 class="welcome-title">¡Bienvenida Familia! ✨</h2>
             <p>Para poder brindarte el mejor servicio, por favor completa tu información por única vez:</p>
@@ -905,12 +1000,36 @@
 
 
         <!-- DASHBOARD CLIENTE: Próximos servicios -->
-        <div id="cliente-dashboard" style="display:none;">
+        <div id="cliente-dashboard" class="fade-in-smooth" style="display:none;">
           <!-- CARD DE BIENVENIDA COMPACTA -->
-          <div class="card welcome-family-card slide-up-fade">
+          <div class="card welcome-family-card">
             <h2 class="welcome-title-bold">¡Hola, querida familia! ✨</h2>
             <p class="welcome-subtitle-light">Gracias por permitirnos ser parte de tu día a día. 💖</p>
             <button class="btn-ghost logout-btn-premium" onclick="logout()">Cerrar sesión</button>
+          </div>
+
+          <!-- CARD DE SALDO SEMANAL (Dinámico) -->
+          <div id="saldo-cliente-container" class="card"
+            style="display:none; background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%); color: white; border: none; overflow: hidden; position: relative; margin-bottom: 20px;">
+            <div style="position: relative; z-index: 2;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span
+                  style="background: rgba(255, 255, 255, 0.2); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; backdrop-filter: blur(4px);">
+                  💳 Saldo de la semana actual
+                </span>
+              </div>
+              <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 5px;">
+                <span style="font-size: 28px; font-weight: 800;" id="saldo-cliente-monto">$0.00</span>
+                <span style="font-size: 12px; opacity: 0.8;">MXN</span>
+              </div>
+              <p style="margin: 10px 0 0 0; font-size: 11px; opacity: 0.9; line-height: 1.4;">
+                Este es el total acumulado para sus servicios de esta semana (Lunes - Domingo) SIN IVA INCLUIDO.
+              </p>
+            </div>
+            <!-- Decoración sutil -->
+            <div
+              style="position: absolute; top: -20px; right: -20px; font-size: 80px; opacity: 0.15; transform: rotate(15deg);">
+              💰</div>
           </div>
 
 
@@ -920,7 +1039,7 @@
 
 
 
-          <div class="card slide-up-fade delay-1">
+          <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <h3 style="margin:0;">Mis próximos servicios</h3>
               <button class="btn-primary" onclick="cargarServiciosCliente(true)"
@@ -1212,7 +1331,7 @@
           <div><label>Fin</label><br><input id="sv_hf" type="time" step="1800" value="12:00"></div>
           <div><label>Edad (años)</label><br><input id="sv_edad" type="number" step="0.1" value="1"></div>
         </div>
-        <div class="row" style="margin-top:8px%;">
+        <div class="row" style="margin-top:8px;">
           <label style="width:100%;">Ubicación (dirección)</label>
           <input id="sv_ubic" type="text" placeholder="Ej. Parque México, CDMX" style="max-width:580px; width:100%;">
         </div>
@@ -2105,6 +2224,378 @@
   <!-- TOAST NOTIFICATION -->
   <div id="toast" class="toast"></div>
 
+  <!-- MODAL Bitácora de Servicio -->
+  <div id="bitacoraBackdrop" class="modal-backdrop" style="display:none;">
+    <div class="modal-card" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+      <div
+        style="background: linear-gradient(135deg, var(--blue-main), var(--pink-main)); padding: 20px; text-align: center; border-radius: 28px 28px 0 0; margin: -24px -24px 20px -24px;">
+        <h2 style="color: white; margin: 0; font-family: 'DM Serif Display', serif; font-size: 24px;">📋 Bitácora del
+          Servicio</h2>
+        <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 5px 0 0 0;">Registra las actividades realizadas
+        </p>
+      </div>
+
+      <div id="bitacora-content-wrapper">
+        <form id="formBitacora">
+          <!-- Pregunta 1 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              1. El peque se recibió en buenas condiciones / sin síntomas de enfermedad
+            </label>
+            <div class="bitacora-options options-2">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p1', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p1', 'No')">No</button>
+            </div>
+            <input type="hidden" id="bit_p1" required>
+            <input type="text" id="bit_p1_cuales" class="input" placeholder="¿Cuáles síntomas?"
+              style="display:none; margin-top: 8px;">
+          </div>
+
+          <!-- Pregunta 2 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              2. ¿Se dejó medicamento con receta médica?
+            </label>
+            <div class="bitacora-options options-3">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p2', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p2', 'No')">No</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p2', 'NA')">NA</button>
+            </div>
+            <input type="hidden" id="bit_p2" required>
+          </div>
+
+          <!-- Pregunta 3 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              3. Consumo de alimentos - Desayuno
+            </label>
+            <div class="bitacora-options options-4">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p3', 'Nada')">Nada</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p3', 'Poco')">Poco</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p3', 'Pidió más')">Más</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p3', 'NA')">NA</button>
+            </div>
+            <input type="hidden" id="bit_p3" required>
+          </div>
+
+          <!-- Pregunta 4 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              4. Consumo de alimentos - Comida
+            </label>
+            <div class="bitacora-options options-4">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p4', 'Nada')">Nada</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p4', 'Poco')">Poco</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p4', 'Pidió más')">Más</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p4', 'NA')">NA</button>
+            </div>
+            <input type="hidden" id="bit_p4" required>
+          </div>
+
+          <!-- Pregunta 5 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              5. Consumo de alimentos - Cena
+            </label>
+            <div class="bitacora-options options-4">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p5', 'Nada')">Nada</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p5', 'Poco')">Poco</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p5', 'Pidió más')">Más</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p5', 'NA')">NA</button>
+            </div>
+            <input type="hidden" id="bit_p5" required>
+          </div>
+
+          <!-- Pregunta 6 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              6. ¿El peque durmió?
+            </label>
+            <div class="bitacora-options options-2">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p6', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p6', 'No')">No</button>
+            </div>
+            <input type="hidden" id="bit_p6" required>
+          </div>
+
+          <!-- Pregunta 7 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              7. Tiempo de la siesta (minutos)
+            </label>
+            <input type="number" id="bit_p7" class="input" placeholder="Ej: 60" min="0">
+          </div>
+
+          <!-- Pregunta 8 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              8. Pañal - Pipí (Número de veces)
+            </label>
+            <input type="number" id="bit_p8" class="input" placeholder="0" min="0" value="0">
+          </div>
+
+          <!-- Pregunta 9 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              9. Pañal - Popó (Número de veces)
+            </label>
+            <input type="number" id="bit_p9" class="input" placeholder="0" min="0" value="0">
+          </div>
+
+          <!-- Pregunta 10 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              10. Control de esfínteres
+            </label>
+            <div class="bitacora-options options-4">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p10', 'NA')">NA</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p10', 'Avisó')">Avisó</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p10', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p10', 'No')">No</button>
+            </div>
+            <input type="hidden" id="bit_p10" required>
+          </div>
+
+          <!-- Pregunta 11 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              11. Control de esfínteres - Pipí (Número de veces)
+            </label>
+            <input type="number" id="bit_p11" class="input" placeholder="0" min="0" value="0">
+          </div>
+
+          <!-- Pregunta 12 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              12. Control de esfínteres - Popó (Número de veces)
+            </label>
+            <input type="number" id="bit_p12" class="input" placeholder="0" min="0" value="0">
+          </div>
+
+          <!-- Pregunta 13 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              13. El peque estuvo:
+            </label>
+            <div class="bitacora-options options-3">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p13', 'Feliz')">Feliz</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p13', 'Triste')">Triste</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p13', 'Enojado')">Enojado</button>
+            </div>
+            <input type="hidden" id="bit_p13" required>
+          </div>
+
+
+          <!-- Pregunta 14 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              14. Durante las actividades ¿Lloró?
+            </label>
+            <div class="bitacora-options options-2">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p14', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p14', 'No')">No</button>
+            </div>
+            <input type="hidden" id="bit_p14" required>
+          </div>
+
+          <!-- Pregunta 15 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              15. Durante las actividades ¿Peleó?
+            </label>
+            <div class="bitacora-options options-2">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p15', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p15', 'No')">No</button>
+            </div>
+            <input type="hidden" id="bit_p15" required>
+          </div>
+
+          <!-- Pregunta 16 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              16. Durante las actividades ¿Participó?
+            </label>
+            <div class="bitacora-options options-2">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p16', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p16', 'No')">No</button>
+            </div>
+            <input type="hidden" id="bit_p16" required>
+          </div>
+
+          <!-- Pregunta 17 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              17. ¿El peque tuvo algún accidente?
+            </label>
+            <div class="bitacora-options options-2">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p17', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p17', 'No')">No</button>
+            </div>
+            <input type="hidden" id="bit_p17" required>
+          </div>
+
+          <!-- Pregunta 18 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              18. Descripción breve del accidente:
+            </label>
+            <textarea id="bit_p18" class="input" rows="3"
+              placeholder="Describe brevemente si hubo algún accidente..."></textarea>
+          </div>
+
+          <!-- Pregunta 19 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              19. ¿El peque se entrega en buen estado físico?
+            </label>
+            <div class="bitacora-options options-2">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p19', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p19', 'No')">No</button>
+            </div>
+            <input type="hidden" id="bit_p19" required>
+          </div>
+
+          <!-- Pregunta 20 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              20. Lesiones (rasguño, mordida, quemadura, golpe, rozadura, etc.)
+            </label>
+            <textarea id="bit_p20" class="input" rows="3"
+              placeholder="Indica la parte del cuerpo y tipo de lesión..."></textarea>
+          </div>
+
+          <!-- Pregunta 21 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              21. Observaciones generales:
+            </label>
+            <textarea id="bit_p21" class="input" rows="4"
+              placeholder="Cualquier observación adicional sobre el servicio..."></textarea>
+          </div>
+
+          <!-- Pregunta 22 -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              22. El peque se entregó limpio:
+            </label>
+            <div class="bitacora-options options-2">
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p22', 'Sí')">Sí</button>
+              <button type="button" class="bitacora-option-btn"
+                onclick="selectBitOption(this, 'bit_p22', 'No')">No</button>
+            </div>
+            <input type="hidden" id="bit_p22" required>
+          </div>
+
+          <!-- Pregunta 23 - Hora de entrada -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              23. Hora de entrada:
+            </label>
+            <input type="time" id="bit_p23" class="input" readonly
+              style="background-color: #f3f4f6; cursor: not-allowed;">
+          </div>
+
+          <!-- Pregunta 24 - Hora de salida -->
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label style="font-weight: 700; color: #374151; margin-bottom: 8px; display: block; font-size: 14px;">
+              24. Hora de salida:
+            </label>
+            <input type="time" id="bit_p24" class="input" readonly
+              style="background-color: #f3f4f6; cursor: not-allowed;">
+          </div>
+
+          <!-- Botones de acción -->
+          <div style="display: flex; gap: 10px; margin-top: 30px;">
+            <button type="button" class="btn-ghost" onclick="cerrarBitacora()" style="flex: 1;">
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary" style="flex: 2; background: var(--blue-main);">
+              💾 Guardar Bitácora
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * LÓGICA DE BITÁCORA (INLINE PARA EVITAR CACHE)
+     */
+    function selectBitOption(btn, inputId, value) {
+      // --- NUEVO: Prevent changes in read-only mode ---
+      if (document.getElementById('bitacoraBackdrop').classList.contains('bitacora-solo-lectura')) return;
+
+      console.log('Seleccionando opción:', inputId, value);
+
+      // 1. Quitar 'active' de todos los botones en el mismo grupo
+      const container = btn.closest('.bitacora-options');
+      if (!container) return;
+
+      container.querySelectorAll('.bitacora-option-btn').forEach(b => b.classList.remove('active'));
+
+      // 2. Activar el botón clickeado
+      btn.classList.add('active');
+
+      // 3. Actualizar el input oculto
+      const input = document.getElementById(inputId);
+      if (input) input.value = value;
+
+      // 4. Lógica especial para la pregunta 1 (síntomas)
+      if (inputId === 'bit_p1') {
+        const p1Cuales = document.getElementById('bit_p1_cuales');
+        if (p1Cuales) {
+          if (value === 'No') {
+            p1Cuales.style.display = 'block';
+            p1Cuales.required = true;
+          } else {
+            p1Cuales.style.display = 'none';
+            p1Cuales.required = false;
+            p1Cuales.value = '';
+          }
+        }
+      }
+    }
+    // Asegurar disponibilidad global
+    window.selectBitOption = selectBitOption;
+  </script>
 
 </body>
 

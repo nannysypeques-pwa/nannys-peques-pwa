@@ -1,17 +1,30 @@
 /* ========================================
-   PRELOADER MODAL PLANEACIONES
+   PRELOADER MODAL GENÉRICO
    ======================================== */
 
-function mostrarPreloaderModal() {
-    // Buscar el modal de planeaciones
-    const modalCard = document.querySelector('#planeacionBackdrop .modal-card');
+/**
+ * Muestra un preloader premium dentro de un modal específico
+ * @param {string} backdropId ID del backdrop del modal (ej: 'planeacionBackdrop')
+ * @param {string} wrapperId ID del contenedor de contenido a ocultar (ej: 'planeacion-content-wrapper')
+ * @param {string} loadingText Texto a mostrar (ej: 'Cargando planeación...')
+ */
+function mostrarPreloaderModal(backdropId = 'planeacionBackdrop', wrapperId = 'planeacion-content-wrapper', loadingText = 'Cargando...') {
+    // Buscar el modal-card dentro del backdrop
+    const backdrop = document.getElementById(backdropId);
+    if (!backdrop) return;
+
+    const modalCard = backdrop.querySelector('.modal-card');
     if (!modalCard) return;
 
-    let preloader = document.getElementById('planeacion-preloader');
+    // El ID del preloader será dinámico para evitar colisiones si se usan múltiples
+    const preloaderId = `${backdropId}-preloader`;
+    let preloader = document.getElementById(preloaderId);
+
     if (!preloader) {
         // Crear preloader DENTRO del modal
         preloader = document.createElement('div');
-        preloader.id = 'planeacion-preloader';
+        preloader.id = preloaderId;
+        preloader.className = 'modal-preloader-premium'; // Clase para estilos si se prefiere, o usar cssText
         preloader.style.cssText = `
             position: absolute;
             top: 0;
@@ -24,7 +37,7 @@ function mostrarPreloaderModal() {
             align-items: center;
             justify-content: center;
             z-index: 100;
-            border-radius: 16px;
+            border-radius: 28px;
         `;
 
         const logoContainer = document.createElement('div');
@@ -46,7 +59,8 @@ function mostrarPreloaderModal() {
         `;
 
         const text = document.createElement('p');
-        text.textContent = 'Cargando planeación...';
+        text.className = 'preloader-text';
+        text.textContent = loadingText;
         text.style.cssText = `
             color: #e84c9a;
             font-size: 15px;
@@ -62,27 +76,37 @@ function mostrarPreloaderModal() {
         // Asegurar que el modal-card tenga position relative
         modalCard.style.position = 'relative';
         modalCard.appendChild(preloader);
+    } else {
+        // Actualizar texto si ya existe
+        const textEl = preloader.querySelector('.preloader-text');
+        if (textEl) textEl.textContent = loadingText;
     }
 
     preloader.style.display = 'flex';
 
-    // Ocultar wrapper de contenido (para que el preloader sea lo único visible y limpio)
-    const contentWrapper = document.getElementById('planeacion-content-wrapper');
+    // Ocultar wrapper de contenido
+    const contentWrapper = document.getElementById(wrapperId);
     if (contentWrapper) {
         contentWrapper.style.display = 'none';
-        modalCard.style.minHeight = '300px'; // Mantener altura mínima
+        modalCard.style.minHeight = '300px';
     }
 }
 
-function ocultarPreloaderModal() {
-    const preloader = document.getElementById('planeacion-preloader');
+/**
+ * Oculta el preloader de un modal específico
+ */
+function ocultarPreloaderModal(backdropId = 'planeacionBackdrop', wrapperId = 'planeacion-content-wrapper') {
+    const preloaderId = `${backdropId}-preloader`;
+    const preloader = document.getElementById(preloaderId);
     if (preloader) {
         preloader.style.display = 'none';
     }
 
     // Mostrar wrapper de contenido nuevamente
-    const contentWrapper = document.getElementById('planeacion-content-wrapper');
-    const modalCard = document.querySelector('#planeacionBackdrop .modal-card');
+    const contentWrapper = document.getElementById(wrapperId);
+    const backdrop = document.getElementById(backdropId);
+    const modalCard = backdrop ? backdrop.querySelector('.modal-card') : null;
+
     if (contentWrapper) {
         contentWrapper.style.display = '';
         if (modalCard) modalCard.style.minHeight = '';
