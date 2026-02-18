@@ -345,6 +345,121 @@ const Convenios = {
                 imagen: "assets/img/convenios/awen.jpeg"
             },
 
+            {
+                id: 25,
+                ciudad: "Puebla",
+                categoria: "Ginecología",
+                nombre: "Dra. Lidia Cuautle Rosales",
+                cedula: "4857181",
+                descripcion: "Ginecóloga colposcopista con diplomado en ginecología regenerativa y uso de láser, especializada en el manejo integral de la salud femenina, tratamiento de lesiones por VPH sin dolor y mejora hormonal sin uso obligatorio de anticonceptivos. Atención amable en instalaciones de primer nivel.",
+                beneficio: "10% de descuento en consulta ginecológica<br> Papanicolaou y colposcopía con descuento exclusivo: En la toma de papanicolau a costo regular ; colposcopia al 50% sobre precio regular <br> 15% de descuento en chequeo ginecológico preventivo anual.",
+                maps: "https://maps.app.goo.gl/BuT7huXk6nTTVd7F7",
+                whatsapp: "https://wa.me/522224485957",
+                telefono: "2224485957",
+                imagen: "assets/img/convenios/25.jpg"
+            },
+
+            {
+                id: 26,
+                ciudad: "Puebla",
+                categoria: "Psicología",
+                nombre: "PrevenHealth - Psic. María Elena Badillo Pérez",
+                cedula: "12701129",
+                descripcion: "Prevenhealth es un clínica que ofrece principalmente servicios relacionados con atención física y mental, combinando elementos de fisioterapia y acompañamiento psicológico.",
+                beneficio: "15% de descuento en los servicios de la clínica de salud a comunidad Nannys y Peques y a su familia nuclear (pareja e hijos) y a sus clientes.",
+                maps: "https://maps.app.goo.gl/rkBNr4iaWBVf8Lop7",
+                whatsapp: "https://wa.me/522223084785",
+                telefono: "2223084785",
+                imagen: "assets/img/convenios/26.jpeg"
+            },
+
+            {
+                id: 27,
+                ciudad: "Puebla",
+                categoria: "Ópticas",
+                nombre: "Grupo Optico AT - CENTRO",
+                cedula: "6766636",
+                descripcion: "Prevenhealth es un clínica que ofrece principalmente servicios relacionados con atención física y mental, combinando elementos de fisioterapia y acompañamiento psicológico.",
+                beneficio: "20% de descuento en cualquier servicio, incluyendo: armazón oftálmico, micas graduadas, adaptación de lentes de contacto y lentes solares. <br> Además, se incluye tratamiento antirreflejante sin costo en todas las micas graduadas.",
+                maps: "https://maps.app.goo.gl/h723fnFM8kFLZDyV6",
+                whatsapp: "https://wa.me/522215868081",
+                telefono: "2215868081",
+                imagen: "assets/img/convenios/27.jpg"
+            },
+
+            {
+                id: 28,
+                ciudad: "Puebla",
+                categoria: "Ópticas",
+                nombre: "Grupo Optico AT - ZONA MILITAR",
+                cedula: "6766636",
+                descripcion: "Prevenhealth es un clínica que ofrece principalmente servicios relacionados con atención física y mental, combinando elementos de fisioterapia y acompañamiento psicológico.",
+                beneficio: "20% de descuento en cualquier servicio, incluyendo: armazón oftálmico, micas graduadas, adaptación de lentes de contacto y lentes solares. <br> Además, se incluye tratamiento antirreflejante sin costo en todas las micas graduadas.",
+                maps: "https://maps.app.goo.gl/h723fnFM8kFLZDyV6",
+                whatsapp: "https://wa.me/522215868081",
+                telefono: "2215868081",
+                imagen: "assets/img/convenios/27.jpg"
+            },
+
+            {
+                id: 29,
+                ciudad: "Puebla",
+                categoria: "Ópticas",
+                nombre: "Grupo Optico AT - SAN MANUEL",
+                cedula: "6766636",
+                descripcion: "Prevenhealth es un clínica que ofrece principalmente servicios relacionados con atención física y mental, combinando elementos de fisioterapia y acompañamiento psicológico.",
+                beneficio: "20% de descuento en cualquier servicio, incluyendo: armazón oftálmico, micas graduadas, adaptación de lentes de contacto y lentes solares. <br> Además, se incluye tratamiento antirreflejante sin costo en todas las micas graduadas.",
+                maps: "https://maps.app.goo.gl/h723fnFM8kFLZDyV6",
+                whatsapp: "https://wa.me/522215868081",
+                telefono: "2215868081",
+                imagen: "assets/img/convenios/27.jpg"
+            },
+
+            {
+                id: 30,
+                ciudad: "Xalapa",
+                categoria: "Nutrición",
+                nombre: "FER LEMUS LNCA",
+                cedula: "72170",
+                descripcion: "Nutrióloga especializada en planes de alimentación personalizados, con consultas online, seguimiento y acompañamiento para mejorar la salud, el bienestar y el control de peso.",
+                beneficio: "20% de descuento<br>Cada consulta incluye:<br>1. Plan de alimentación completamente personalizado<br>2. Lista de súper y alimentos equivalentes<br>3. Educación nutricional<br>4. Acompañamiento y asesoría vía WhatsApp",
+                maps: "https://maps.app.goo.gl/6i6uu7oo5zekoCEX6",
+                whatsapp: "https://wa.me/522222159472",
+                telefono: "2222159472",
+                imagen: "assets/img/convenios/lemus.jpg"
+            },
+
+            {
+                id: 31,
+                ciudad: "Querétaro",
+                categoria: "Nutrición",
+                nombre: "FER LEMUS LNCA",
+                cedula: "72170",
+                descripcion: "Nutrióloga especializada en planes de alimentación personalizados, con consultas online, seguimiento y acompañamiento para mejorar la salud, el bienestar y el control de peso.",
+                beneficio: "20% de descuento<br>Cada consulta incluye:<br>1. Plan de alimentación completamente personalizado<br>2. Lista de súper y alimentos equivalentes<br>3. Educación nutricional<br>4. Acompañamiento y asesoría vía WhatsApp",
+                maps: "https://maps.app.goo.gl/6i6uu7oo5zekoCEX6",
+                whatsapp: "https://wa.me/522222159472",
+                telefono: "2222159472",
+                imagen: "assets/img/convenios/lemus.jpg"
+            },
+
+            {
+                id: 32,
+                ciudad: "CDMX",
+                categoria: "Nutrición",
+                nombre: "FER LEMUS LNCA",
+                cedula: "72170",
+                descripcion: "Nutrióloga especializada en planes de alimentación personalizados, con consultas online, seguimiento y acompañamiento para mejorar la salud, el bienestar y el control de peso.",
+                beneficio: "20% de descuento<br>Cada consulta incluye:<br>1. Plan de alimentación completamente personalizado<br>2. Lista de súper y alimentos equivalentes<br>3. Educación nutricional<br>4. Acompañamiento y asesoría vía WhatsApp",
+                maps: "https://maps.app.goo.gl/6i6uu7oo5zekoCEX6",
+                whatsapp: "https://wa.me/522222159472",
+                telefono: "2222159472",
+                imagen: "assets/img/convenios/lemus.jpg"
+            },
+
+
+
+
 
 
 
@@ -353,7 +468,7 @@ const Convenios = {
         categorias: [
             "Doctor", "Pediatra", "Dentista", "Psicología",
             "Fisioterapia", "Nutrición", "Ginecología", "Diversión", "Salud y belleza", "Ejercicio",
-            "Restaurantes", "Tiendas de moda", "Lactancia"
+            "Restaurantes", "Tiendas de moda", "Ópticas", "Lactancia"
         ]
     },
 
