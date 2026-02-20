@@ -4585,7 +4585,7 @@ function renderSaldoCliente(data) {
     const montoEl = document.getElementById('saldo-cliente-monto');
     if (!container || !montoEl) return;
 
-    if (data && data.saldo > 0) {
+    if (data && data.saldo > 0 && data.ver !== false) {
         montoEl.textContent = new Intl.NumberFormat('es-MX', {
             style: 'currency',
             currency: 'MXN'
