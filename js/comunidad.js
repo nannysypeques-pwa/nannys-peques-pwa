@@ -8,6 +8,7 @@ const Comunidad = {
     lastScrollPos: 0,
     estado: {
         inicializado: false,
+        categoriaSeleccionada: null,
         datos: {
             articulos: [
                 {
@@ -15,7 +16,7 @@ const Comunidad = {
                     titulo: "Alimentación complementaria",
                     resumen: "La comida no debe sentirse como batalla. Aprende cómo iniciar la alimentación complementaria cuidando hábitos, seguridad, autorregulación y un ambiente emocional sano.",
                     imagen: "assets/img/articulos/alimentacion.jpg",
-                    categoria: "Nutrición",
+                    categoria: "Sensorial",
                     contenido: `
                         <p>La alimentación complementaria (AC) se considera un proceso por el cual se ofrecen al lactante alimentos sólidos o líquidos distintos de la leche materna (LM) o de una fórmula infantil como complemento y no como sustitución de esta.</p>
                         
@@ -135,7 +136,7 @@ const Comunidad = {
                     titulo: "💬 Cada conversación cuenta: lo que hoy haces puede abrirle el mundo del lenguaje a tu peque",
                     resumen: "El habla no se “enseña” con presión, se despierta con presencia. Este artículo te ayuda a entender qué impulsa el lenguaje, cuándo conviene pedir apoyo y cómo acompañar con pequeñas acciones diarias que hacen una gran diferencia, con amor y paciencia.",
                     imagen: "assets/img/articulos/2.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Lenguaje",
                     contenido: `
                         <h3>Factores que influyen en el desarrollo del habla</h3>
 
@@ -261,7 +262,7 @@ const Comunidad = {
                     titulo: "¿Cómo fomentar la lectura en peques?",
                     resumen: "Estrategias sencillas y prácticas para que la lectura sea un momento divertido, afectivo y constante en casa.",
                     imagen: "assets/img/articulos/lectura.jpg",
-                    categoria: "Educación",
+                    categoria: "Lenguaje",
                     contenido: `
                     <p><strong>La lectura</strong> es una de las herramientas más poderosas para el desarrollo de los peques. Leer en voz alta desde temprana edad estimula el <strong>lenguaje</strong>, la <strong>memoria</strong> y la <strong>concentración</strong>, además de ser una inversión para el futuro, ayudando a que se conviertan en lectores activos.</p>
 
@@ -352,7 +353,7 @@ const Comunidad = {
                     titulo: "Impulsa la motivación de tu peque",
                     resumen: "Descubre cómo acompañar a tu peque para que encuentre su propia motivación. Estrategias sencillas para fomentar su curiosidad, autonomía y entusiasmo por aprender, respetando su ritmo y fortaleciendo su confianza.",
                     imagen: "assets/img/articulos/motivacion.jpg",
-                    categoria: "Educación",
+                    categoria: "Socioemocional",
                     contenido: `
                         <p><strong>La motivación</strong> es la fuerza que nos mueve; nos invita a explorar, a actuar y a descubrir. En los peques la motivación es especialmente importante, porque se encuentran en sus <strong>primerasfases</strong> del aprendizaje.</p>
 
@@ -461,7 +462,7 @@ const Comunidad = {
                     titulo: "Cuando la ira aparece: acompaña a tu peque sin miedo 💛",
                     resumen: "La ira no es ‘mala’: es una emoción que necesita guía. Aprende por qué aparece, cómo se manifiesta y qué herramientas prácticas pueden ayudar a tu peque a calmarse, expresarse y sentirse seguro.",
                     imagen: "assets/img/articulos/abc.jpg",
-                    categoria: "Emociones",
+                    categoria: "Socioemocional",
                     contenido: `
                         <p>Hoy en día podemos definir a las emociones como respuestas complejas a estímulos internos o externos que implican una coordinación de sistemas psicológicos, fisiológicos y comportamentales; las emociones no solo son fenómenos internos, sino también procesos socialmente construidos y culturalmente influenciados que desempeñan un papel fundamental en la vida de los peques.</p>
 
@@ -535,7 +536,7 @@ const Comunidad = {
                     titulo: "Vincular con tu bebé: el amor que le da seguridad 🤍",
                     resumen: "El apego seguro se construye en lo cotidiano: miradas, caricias, rutinas y presencia. Descubre cómo fortalecer ese vínculo que le dará confianza, calma y bases emocionales para toda la vida.",
                     imagen: "assets/img/articulos/vinc.jpg",
-                    categoria: "Apego",
+                    categoria: "Socioemocional",
                     contenido: `
                         <h3>¿Cómo vincular con mi bebé?</h3>
                         <p><strong>Bebés de 0 a 1 año 6 meses</strong></p>
@@ -591,7 +592,7 @@ const Comunidad = {
                     titulo: "Conviértete en su zona segura: cómo vincular con tu peque 🌈",
                     resumen: "Conectar no es ‘controlar’: es mirar, escuchar y jugar desde el corazón. Técnicas simples para crear confianza, ser co-participante y fortalecer una relación respetuosa y afectuosa con tu peque.",
                     imagen: "assets/img/articulos/vinculo.jpg",
-                    categoria: "Vínculo",
+                    categoria: "Socioemocional",
                     contenido: `
                         <h3>¿Cómo vincular con mi peque?</h3>
 
@@ -658,7 +659,7 @@ const Comunidad = {
                     titulo: "Cuando la pantalla manda… tu peque se apaga 😔📱",
                     resumen: "Señales claras de adicción al teléfono y una guía paso a paso para recuperar rutina, juego y calma… sin gritos ni peleas.",
                     imagen: "assets/img/articulos/adiccion.jpg",
-                    categoria: "Bienestar digital",
+                    categoria: "Cognitivo",
                     contenido: ` 
                     <h3>Adicción al teléfono: ¿Cómo trabajarla?</h3>
 
@@ -774,7 +775,7 @@ const Comunidad = {
                     titulo: "Actividades que sí funcionan (1 año+): juego, conexión y desarrollo ✨",
                     resumen: "Un listado enorme de ideas prácticas para entretener y estimular a tu peque desde 1 año… con materiales sencillos y mucha diversión.",
                     imagen: "assets/img/articulos/actividades.jpg",
-                    categoria: "Actividades",
+                    categoria: "Motriz",
                     contenido: `
                     <h3>Actividades para peques de 1 año en adelante</h3>
 
@@ -936,7 +937,7 @@ const Comunidad = {
                     titulo: "Acompañamiento seguro: cuando hay tensión en casa 🫶",
                     resumen: "Cómo cuidar la seguridad emocional de tu peque ante discusiones: señales, efectos y acciones concretas para volver a la calma.",
                     imagen: "assets/img/articulos/Familia.jpg",
-                    categoria: "Familia",
+                    categoria: "Socioemocional",
                     contenido: `
                     <h3>Acompañamiento seguro</h3>
 
@@ -982,7 +983,7 @@ const Comunidad = {
                     titulo: "¿Morder es malo? Lo que tu peque intenta decirte 🧡",
                     resumen: "Morder no siempre es ‘maldad’: suele ser emoción sin palabras. Aprende qué hacer, qué evitar y cómo acompañarlo con límites amorosos.",
                     imagen: "assets/img/articulos/Morder.jpg",
-                    categoria: "Morder",
+                    categoria: "Socioemocional",
                     contenido: `
                     <h3>¿Morder es malo?</h3>
 
@@ -1190,7 +1191,7 @@ const Comunidad = {
                     titulo: "Apps que sí aportan: aprendizaje con intención (sin reemplazar la infancia) 📱✨",
                     resumen: "La tecnología no tiene por qué ser enemiga: con límites, acompañamiento y buenas apps, tu peque puede aprender, crear y descubrir… sin perder el juego libre ni la conexión real.",
                     imagen: "assets/img/articulos/14.jpg",
-                    categoria: "Educación",
+                    categoria: "Cognitivo",
                     contenido: `
                         <p><strong>Aplicaciones educativas para peques</strong></p>
 
@@ -1323,7 +1324,7 @@ const Comunidad = {
                     titulo: "🌊 Que el agua no le asuste: acompaña a tu peque a sentirse valiente y seguro",
                     resumen: "Si tu peque siente miedo al agua, respira… es más común de lo que imaginas. Con paciencia, juego y acompañamiento amoroso, puedes ayudarle a transformar el temor en confianza y diversión.",
                     imagen: "assets/img/articulos/17.jpg",
-                    categoria: "Bienestar",
+                    categoria: "Socioemocional",
                     contenido: `
                     <div class="reading-view">
 
@@ -1418,7 +1419,7 @@ const Comunidad = {
                     titulo: "🤍 Cólicos en tu peque: cuando el llanto duele… y tú solo quieres ayudar",
                     resumen: "Hay noches en las que sientes que ya lo intentaste todo y el llanto no para. Respira: no estás sola. Este artículo te guía con claridad, calma y estrategias amorosas para acompañar a tu peque durante los cólicos.",
                     imagen: "assets/img/articulos/18.jpg",
-                    categoria: "Salud",
+                    categoria: "Extras",
                     contenido: `
                     <div class="reading-view">
 
@@ -1600,7 +1601,7 @@ const Comunidad = {
                     titulo: "🥑 BLW con amor y confianza: cuando tu bebé aprende a comer… a su ritmo",
                     resumen: "Ver a tu bebé descubrir la comida con sus propias manos es emocionante. Este artículo te guía paso a paso para aplicar BLW de forma respetuosa, segura y tranquila, cuidando señales, tiempos y desarrollo.",
                     imagen: "assets/img/articulos/19.jpg",
-                    categoria: "Nutrición",
+                    categoria: "Sensorial",
                     contenido: `
                     <div class="reading-view">
 
@@ -1790,7 +1791,7 @@ const Comunidad = {
                     titulo: "💗 Berrinches y frustración en bebés: cuando tu peque explota… y tú necesitas calma",
                     resumen: "Los berrinches pueden sentirse intensos y agotadores, pero también son una puerta para enseñar seguridad emocional. Aquí tienes una guía clara, amorosa y práctica para acompañar a tu peque con paciencia, límites y estrategias que sí funcionan.",
                     imagen: "assets/img/articulos/20.jpg",
-                    categoria: "Educación",
+                    categoria: "Socioemocional",
                     contenido: `
                     <div class="reading-view">
 
@@ -2029,7 +2030,7 @@ const Comunidad = {
                     titulo: "🍼 Dejar el biberón con amor: una transición tranquila, sin luchas y con pequeños logros",
                     resumen: "Soltar el biberón puede sentirse como soltar una parte de su seguridad… y la tuya también. Este artículo te acompaña con pasos claros y cariñosos para lograrlo con calma, respeto y mucha paciencia.",
                     imagen: "assets/img/articulos/21.jpg",
-                    categoria: "Salud",
+                    categoria: "Sensorial",
                     contenido: `
                     <div class="reading-view">
 
@@ -2137,7 +2138,7 @@ const Comunidad = {
                     titulo: "🧩 Jugar juntos con amor: cómo ayudar a tu peque con TEA a sentirse incluido y feliz",
                     resumen: "Cuando tu peque quiere acercarse pero el mundo social se siente demasiado… duele. Este artículo te acompaña con ideas claras y amables para incluirlo en el juego con otros peques sin forzar, respetando su ritmo y celebrando cada pequeño avance.",
                     imagen: "assets/img/articulos/22.jpg",
-                    categoria: "Educación",
+                    categoria: "Socioemocional",
                     contenido: `
                     <div class="reading-view">
 
@@ -2314,7 +2315,7 @@ const Comunidad = {
                     titulo: "✨ Que tu peque se enamore de la actividad: cómo despertar su interés sin forzarlo",
                     resumen: "A veces planeas algo con toda la ilusión… y tu peque simplemente no conecta. Respira: no es fracaso. Aquí tienes ideas claras y amorosas para entender qué pasa y lograr que participe con más ganas, a su ritmo.",
                     imagen: "assets/img/articulos/23.jpg",
-                    categoria: "Educación",
+                    categoria: "Cognitivo",
                     contenido: `
                     <div class="reading-view">
 
@@ -2501,7 +2502,7 @@ const Comunidad = {
                     titulo: "⏱️ Tareas sin lágrimas: cómo ayudar a tu peque a concentrarse sin estrés (método Pomodoro)",
                     resumen: "Cuando las tareas se vuelven pelea, el corazón se cansa. Esta guía te muestra una forma sencilla de estudiar por bloques con descansos, para bajar la tensión, mejorar la concentración y que tu peque se sienta capaz… sin saturarse.",
                     imagen: "assets/img/articulos/24.jpg",
-                    categoria: "Educación",
+                    categoria: "Cognitivo",
                     contenido: `
                     <div class="reading-view">
 
@@ -2925,7 +2926,7 @@ const Comunidad = {
                     titulo: "🤍 Hermanos sin guerra: cómo cuidar el vínculo, el amor… y la calma en casa",
                     resumen: "Cuando hay peleas entre hermanos, a veces duele más por dentro que por fuera. Esta guía te ayuda a saber cuándo intervenir, cómo acompañar sin favoritismos y qué hacer para fortalecer la armonía familiar con respeto y empatía.",
                     imagen: "assets/img/articulos/26.jpg",
-                    categoria: "Familia",
+                    categoria: "Socioemocional",
                     contenido: `
                     <div class="reading-view">
 
@@ -3081,7 +3082,7 @@ const Comunidad = {
                     titulo: "🌙 Las rutinas son la calma que tu peque necesita para sentirse seguro y florecer",
                     resumen: "Las rutinas no son rigidez… son amor convertido en seguridad. Cuando tu peque sabe qué viene después, su mente descansa, su corazón se tranquiliza y todo el día se vuelve más fácil. Aquí encontrarás estrategias sencillas para crear rutinas efectivas y herramientas visuales que fortalecen su autonomía.",
                     imagen: "assets/img/articulos/27.jpg",
-                    categoria: "Educación",
+                    categoria: "Cognitivo",
                     contenido: `
                     <div class="reading-view">
 
@@ -3442,7 +3443,7 @@ const Comunidad = {
                     titulo: "💛 El divorcio y los peques: cómo acompañarlos sin romper su calma por dentro",
                     resumen: "Cuando una separación sucede, el mundo de un peque puede moverse en silencio. Este artículo te ayuda a entender lo que sienten, lo que pueden mostrar con su conducta y cómo acompañarlos con palabras claras, rutinas y herramientas emocionales.",
                     imagen: "assets/img/articulos/29.jpg",
-                    categoria: "Familia",
+                    categoria: "Socioemocional",
                     contenido: `
                         <p><b>El divorcio y los peques</b></p>
 
@@ -3547,7 +3548,7 @@ const Comunidad = {
                     titulo: "🌈 Cuando tu peque dice “no”: lo que en realidad te está queriendo comunicar",
                     resumen: "Si últimamente sientes que tu peque te reta, te contesta o ignora límites, no estás sola. Este artículo te ayuda a leer lo que hay detrás de la “desobediencia” y te da estrategias claras para acompañarlo con respeto, empatía y amor… sin perder la calma en el intento.",
                     imagen: "assets/img/articulos/30.jpg",
-                    categoria: "Familia",
+                    categoria: "Socioemocional",
                     contenido: `
                         <p><strong>Desobediencia en peques: interpretando las conductas desafiantes.</strong></p>
 
@@ -3643,9 +3644,7 @@ const Comunidad = {
                     titulo: "🌙✨ Control de esfínteres: el camino suave hacia la autonomía (sin prisas y con mucho amor)",
                     resumen: "Dejar el pañal no es una carrera: es un proceso con avances y retrocesos que se logra con paciencia, cariño y refuerzo positivo. Esta guía le ayudará a identificar las señales, acompañar con calma y construir confianza paso a paso, de día… y también de noche.",
                     imagen: "assets/img/articulos/31.jpg",
-                    categoria: "Familia",
-                    tipo: "html",
-                    fuente: "Control de esfínteres (PDF)",
+                    categoria: "Cognitivo",
                     contenido: `
                         <p><strong>Control de esfínteres</strong></p>
 
@@ -3756,7 +3755,7 @@ const Comunidad = {
                     titulo: "💗 Enseñar a compartir sin peleas: estrategias reales para formar empatía y cooperación",
                     resumen: "Compartir no se obliga: se aprende con paciencia, ejemplo y acompañamiento. Estas estrategias le ayudan a guiar a su peque (4 a 7 años) para que comparta con más seguridad, menos frustración y más conexión con los demás.",
                     imagen: "assets/img/articulos/32.jpg",
-                    categoria: "Habilidades socioemocionales",
+                    categoria: "Socioemocional",
                     contenido: `
                         <div class="reading-hero" style="background-image:url('assets/img/articulos/29.jpg')"></div>
 
@@ -3844,7 +3843,7 @@ const Comunidad = {
                     titulo: "🌟 Estimulación temprana (0 a 6 meses): pequeñas acciones que construyen un gran futuro",
                     resumen: "En los primeros meses, cada mirada, caricia y juego deja huella. Esta guía reúne actividades sencillas y amorosas para potenciar el desarrollo físico, mental y emocional de tu peque, respetando su ritmo y convirtiendo cada momento en una oportunidad de conexión.",
                     imagen: "assets/img/articulos/33.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Motriz",
                     contenido: `
                         <h1>Estimulación temprana en peques de 0 a 6 meses</h1>
 
@@ -4054,7 +4053,7 @@ const Comunidad = {
                     titulo: "🌙 Sueño tranquilo, hogar en calma: la guía que tu peque necesita para descansar mejor",
                     resumen: "Dormir bien no es un lujo: es crecimiento, aprendizaje y estabilidad emocional. Este artículo te explica cómo funciona el sueño infantil, cuántas horas necesita tu peque según su edad y qué hacer para ayudarle a dormir solo, mejor y con seguridad… sin cambiar su esencia, solo entendiendo su ritmo.",
                     imagen: "assets/img/articulos/34.jpeg",
-                    categoria: "Salud",
+                    categoria: "Extras",
                     contenido: `
                         <h3>El sueño en los peques</h3>
 
@@ -4191,8 +4190,7 @@ const Comunidad = {
                     titulo: "👣💗 Aprendiendo a caminar: acompañe sus primeros pasos con calma, juego y confianza",
                     resumen: "Cada pasito es una conquista. Esta guía le ayuda a respetar el ritmo del peque, fomentar el gateo, preparar un entorno seguro y aplicar estrategias sencillas para que caminar sea un proceso más fácil, enriquecedor y lleno de motivación.",
                     imagen: "assets/img/articulos/35.jpg",
-                    categoria: "Desarrollo",
-                    tipo: "html",
+                    categoria: "Motriz",
                     contenido: `
                         <h1 style="font-size:32px;line-height:1.15;margin:10px 0 14px 0;">Aprendiendo a caminar</h1>
 
@@ -4299,7 +4297,7 @@ const Comunidad = {
                     titulo: "🤍 Estreñimiento en peques: señales, causas y cómo ayudarle sin sufrir (ni pelear)",
                     resumen: "Ver a tu peque incómodo duele… y más cuando no sabes qué hacer. Aquí encontrarás señales claras para identificar el estreñimiento, por qué sucede y estrategias prácticas (alimentación, agua, fibra, postura y movimiento) para ayudarlo con calma y cuidado.",
                     imagen: "assets/img/articulos/36.jpg",
-                    categoria: "Salud",
+                    categoria: "Extras",
                     contenido: `
                     <div class="reading-view">
 
@@ -4484,7 +4482,7 @@ const Comunidad = {
                     titulo: "🌱 Independencia en los peques: cómo ayudar sin estorbar (y verlos crecer con seguridad)",
                     resumen: "A veces, por amor, hacemos de más… y sin querer frenamos su autonomía. Esta guía le da ideas claras y prácticas para acompañar a su peque con presencia, confianza y rutinas que lo ayudan a sentirse capaz todos los días.",
                     imagen: "assets/img/articulos/37.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Socioemocional",
                     contenido: `
                         <div class="reading-hero" style="background-image:url('assets/img/articulos/30.jpg')"></div>
 
@@ -4603,7 +4601,7 @@ const Comunidad = {
                     titulo: "🧡 Guía para el cambio de pañal: 15 pasos para cuidar con amor, seguridad y calma",
                     resumen: "Cada cambio de pañal puede ser un momento de conexión, confianza y cuidado. Esta guía práctica te acompaña paso a paso para que el proceso sea seguro, cómodo y siempre respetuoso con la integridad física y emocional de tu peque.",
                     imagen: "assets/img/articulos/38.jpg",
-                    categoria: "Cuidado infantil",
+                    categoria: "Extras",
                     contenido: `
                         <h1>Guía para el cambio de pañal</h1>
 
@@ -4752,7 +4750,7 @@ const Comunidad = {
                     titulo: "🗣️ Cada palabra es un puente: lo que impulsa (y frena) el desarrollo del habla en tu peque",
                     resumen: "El lenguaje no aparece “de golpe”: se construye día a día con miradas, juegos, conversaciones y seguridad emocional. Esta guía te ayuda a entender los factores que influyen en el habla, reconocer señales de alerta a tiempo y aplicar estrategias simples en la rutina para acompañar el proceso con paciencia y amor.",
                     imagen: "assets/img/articulos/39.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Lenguaje",
                     contenido: `
                         <h3>Factores que influyen en el desarrollo del habla</h3>
 
@@ -4879,7 +4877,7 @@ const Comunidad = {
                     titulo: "💞 Cuando no logramos conectar: claves para cuidar el vínculo con su peque (sin culpas y con paciencia)",
                     resumen: "A veces, aunque haya amor, la conexión no se siente inmediata… y eso puede doler. Este texto le acompaña a entender por qué pasa, cómo entrar con respeto a su mundo emocional y qué hacer para construir un vínculo seguro, genuino y amoroso paso a paso.",
                     imagen: "assets/img/articulos/28.jpg",
-                    categoria: "Familia",
+                    categoria: "Socioemocional",
                     contenido: `
                         <h1 style="font-size:32px;line-height:1.15;margin:10px 0 14px 0;">Factores que interfieren el vínculo con mi peque</h1>
 
@@ -4980,7 +4978,7 @@ const Comunidad = {
                     titulo: "📚 Aprender a leer jugando: 23 ideas para que tu peque se enamore de las letras",
                     resumen: "A veces lo que tu peque necesita no es presión… es juego. Aquí tienes actividades simples, divertidas y súper efectivas para que reconozca letras, sílabas y palabras con emoción, confianza y mucha risa en casa.",
                     imagen: "assets/img/articulos/41.jpg",
-                    categoria: "Educación",
+                    categoria: "Lenguaje",
                     contenido: `
                     <div class="reading-view">
 
@@ -5151,7 +5149,7 @@ const Comunidad = {
                     titulo: "🌟 Independencia en los peques: acompañar con amor para que se sientan capaces",
                     resumen: "La autonomía no nace de la presión, sino de la confianza. Este artículo le muestra cómo guiar a su peque con rutinas, opciones y acompañamiento respetuoso para que crezca seguro, valiente y cada vez más independiente.",
                     imagen: "assets/img/articulos/42.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Socioemocional",
                     contenido: `
                         <div class="reading-hero" style="background-image:url('assets/img/articulos/31.jpg')"></div>
 
@@ -5270,7 +5268,7 @@ const Comunidad = {
                     titulo: "🫶 Cambio de pañal con amor: una guía clara para cuidar, conectar y proteger en cada paso",
                     resumen: "Un cambio de pañal no es solo higiene: es vínculo, respeto y seguridad. Esta guía práctica reúne 15 pasos esenciales para que cada cambio sea cómodo, ordenado y siempre cuidando la integridad física y emocional del peque.",
                     imagen: "assets/img/articulos/43.jpg",
-                    categoria: "Cuidado infantil",
+                    categoria: "Extras",
                     contenido: `
                         <h1>Guía para el cambio de pañal</h1>
 
@@ -5419,7 +5417,7 @@ const Comunidad = {
                     titulo: "💗 Cuando no se siente la conexión: cómo volver al vínculo con su peque, paso a paso",
                     resumen: "A veces el amor está… pero la cercanía no se logra de inmediato. Este texto le acompaña a entender por qué puede pasar, cómo entrar con respeto a su mundo emocional y qué acciones simples ayudan a construir una conexión segura, auténtica y amorosa.",
                     imagen: "assets/img/articulos/44.jpg",
-                    categoria: "Familia",
+                    categoria: "Socioemocional",
                     contenido: `
                         <h1 style="font-size:32px;line-height:1.15;margin:10px 0 14px 0;">Factores que interfieren el vínculo con mi peque</h1>
 
@@ -5535,7 +5533,7 @@ const Comunidad = {
                     titulo: "💖 Letras con risas: juegos que convierten la lectura en un momento mágico con tu peque",
                     resumen: "Tu peque no necesita presión para aprender… necesita emoción. Aquí tienes juegos simples y divertidos para que identifique letras, sílabas y palabras con confianza, curiosidad y alegría. Ideal para crear el hábito sin peleas y con mucha conexión.",
                     imagen: "assets/img/articulos/45.jpg",
-                    categoria: "Educación",
+                    categoria: "cognitivo",
                     contenido: `
                     <div class="reading-view">
 
@@ -5829,7 +5827,7 @@ const Comunidad = {
                     titulo: "🌿 Menos pantalla, más calma: cómo proteger a tu peque de la sobreestimulación en YouTube",
                     resumen: "A veces, lo que parece “solo un video” puede dejar a un peque inquieto, irritable o con dificultad para concentrarse. Este artículo te ayuda a entender qué es la sobreestimulación, qué señales observar y cómo equilibrar pantallas con experiencias reales que nutren su desarrollo.",
                     imagen: "assets/img/articulos/47.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Cognitivo",
                     contenido: `
                         <h1>La sobreestimulación en los peques a través <br>de programas y videos de YouTube</h1>
 
@@ -5955,7 +5953,7 @@ const Comunidad = {
                     titulo: "🦷✨ Dentición sin miedo: acompaña a tu bebé con calma, amor y alivio real",
                     resumen: "La salida de los primeros dientitos puede sentirse intensa: más babita, noches movidas, mordidas por todos lados… y un corazón de mamá/papá queriendo ayudar. Esta guía te explica señales, tips prácticos y focos rojos para atravesar la dentición con seguridad, cariño y mucha paciencia.",
                     imagen: "assets/img/articulos/48.jpg",
-                    categoria: "Salud",
+                    categoria: "Extras",
                     contenido: `
                         <h3>La dentición en bebés: todo lo que necesitas saber</h3>
 
@@ -6018,7 +6016,7 @@ const Comunidad = {
                     titulo: "🌈🫶 La crisis de los dos años: entendiendo sus emociones para acompañar con firmeza y amor",
                     resumen: "No es “mala conducta”, es crecimiento. Este texto le ayuda a comprender qué hay detrás de los “terribles dos”, qué comportamientos pueden aparecer y qué hacer, con rutinas, límites y apoyo emocional, para que su peque se sienta seguro y acompañado.",
                     imagen: "assets/img/articulos/49.jpg",
-                    categoria: "Familia",
+                    categoria: "Socioemocional",
                     contenido: `
                         <h1 style="font-size:32px;line-height:1.15;margin:10px 0 14px 0;">La Crisis de los Dos Años</h1>
 
@@ -6138,7 +6136,7 @@ const Comunidad = {
                     titulo: "🗣️ Cuando tu peque habla, su mundo se abre: guía amorosa para estimular el lenguaje a los 2 años",
                     resumen: "Cada palabra que tu peque intenta decir es un paso enorme hacia su confianza y su conexión contigo. Aquí encontrarás orientaciones claras y juegos sencillos (0 a 3 años) para acompañar su lenguaje con paciencia, cariño y constancia, respetando su ritmo.",
                     imagen: "assets/img/articulos/50.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Lenguaje",
                     contenido: `
                     <div class="reading-view">
 
@@ -6290,7 +6288,7 @@ const Comunidad = {
                     titulo: "🗣️✨ Lenguaje en peques de 2 años: cómo acompañar su voz, su mente… y su mundo",
                     resumen: "El lenguaje no solo son palabras: es emoción, pensamiento y conexión. Este material le guía por teorías clave y estrategias prácticas para estimular el lenguaje de forma respetuosa, natural y significativa en la rutina diaria.",
                     imagen: "assets/img/articulos/51.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Lenguaje",
                     contenido: `
                         <div class="reading-note" style="background:linear-gradient(135deg, rgba(232,76,154,.08), rgba(59,182,196,.10));border-left:5px solid var(--pink-main);">
                         <h1 style="font-size:32px;line-height:1.15;margin:4px 0 10px 0;">Lenguaje en peques de 2 años</h1>
@@ -6584,7 +6582,7 @@ const Comunidad = {
                     titulo: "✍️ Manuscrita: el arte de escribir bonito (y cómo ayuda al cerebro de su peque)",
                     resumen: "La letra cursiva no es solo “caligrafía”: es coordinación, memoria muscular y desarrollo cognitivo. Aquí encontrará características clave y ejercicios prácticos para acompañar a su peque paso a paso, con actividades claras y visuales.",
                     imagen: "assets/img/articulos/52.jpeg",
-                    categoria: "Educación",
+                    categoria: "Cognitivo",
                     contenido: `
                         <div class="reading-hero" style="background-image:url('assets/img/articulos/33.jpg')"></div>
 
@@ -6686,7 +6684,7 @@ const Comunidad = {
                     titulo: "🌈 Manejo de berrinches: calma, amor y herramientas para acompañar sin romper el vínculo",
                     resumen: "Un berrinche no es “mala conducta”: es un peque desbordado que todavía está aprendiendo a sentir y regularse. Esta guía te da alternativas claras para antes, durante y después, con frases y acciones que sostienen, enseñan y cuidan la confianza.",
                     imagen: "assets/img/articulos/53.jpg",
-                    categoria: "Disciplina positiva",
+                    categoria: "Socioemocional",
                     contenido: `
                         <h1>Manejo de berrinches</h1>
 
@@ -6804,7 +6802,7 @@ const Comunidad = {
                     titulo: "🧡 Límites con amor: la guía que te ayuda a criar con calma, firmeza y conexión",
                     resumen: "Poner límites no es “ser duro”, es cuidar. Este material te acompaña paso a paso para establecer reglas claras sin gritos, ayudar a tu peque a autorregularse y convertir los momentos difíciles en oportunidades de aprendizaje y vínculo.",
                     imagen: "assets/img/articulos/54.jpg",
-                    categoria: "Crianza",
+                    categoria: "Socioemocional",
                     contenido: `
                         <h3>Manejo de límites</h3>
 
@@ -6900,7 +6898,7 @@ const Comunidad = {
                     titulo: "🧠✨ Matemáticas sin lágrimas: juegos para que tu peque aprenda con emoción y confianza",
                     resumen: "Si a tu peque le cuestan las matemáticas, no está solo. Con actividades simples y sensoriales, puede entender números, patrones y operaciones de forma concreta… y disfrutarlo. Aquí tienes ideas prácticas para convertir el “me cuesta” en “¡yo puedo!”",
                     imagen: "assets/img/articulos/55.jpg",
-                    categoria: "Educación",
+                    categoria: "Cognitivo",
                     contenido: `
                     <div class="reading-view">
 
@@ -7078,7 +7076,7 @@ const Comunidad = {
                     titulo: "🎶 Canta, baila y conecta: canciones para acompañar a tu peque en cada emoción del día",
                     resumen: "A veces una canción calma, otras despierta la alegría… pero siempre deja huella. Esta selección te ayuda a usar la música para mover el cuerpo, expresar emociones, aprender y crear recuerdos que tu peque llevará en el corazón.",
                     imagen: "assets/img/articulos/56.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Sensorial",
                     contenido: `
                     <div class="reading-view">
 
@@ -7272,7 +7270,7 @@ const Comunidad = {
                     titulo: "🍽️ Cuando su peque “no come”: calma, guía y pasos que sí funcionan (sin presionar)",
                     resumen: "Ver que su peque come poquito puede angustiar… pero muchas veces es una etapa normal. Aquí encontrará qué tomar en cuenta, cuándo preocuparse y 15 consejos prácticos para mejorar la relación con la comida con amor, paciencia y sin batallas.",
                     imagen: "assets/img/articulos/57.jpg",
-                    categoria: "Nutrición",
+                    categoria: "Sensorial",
                     contenido: `
                         <div class="reading-hero" style="background-image:url('assets/img/articulos/34.jpg')"></div>
 
@@ -7420,7 +7418,7 @@ const Comunidad = {
                     titulo: "✨ Métodos de lectoescritura: caminos amorosos para que tu peque lea y escriba con confianza",
                     resumen: "Leer y escribir no es una carrera: es un proceso que se construye paso a paso, con paciencia, juego y mucho acompañamiento. Aquí encontrarás los principales métodos de lectoescritura, sus fases, ventajas y desventajas, para elegir el camino más adecuado para tu peque.",
                     imagen: "assets/img/articulos/58.jpg",
-                    categoria: "Educación",
+                    categoria: "Lenguaje",
                     contenido: `
                         <h1>Métodos de lectoescritura</h1>
 
@@ -7750,7 +7748,7 @@ const Comunidad = {
                     titulo: "🌿 Montessori en casa: cuando el entorno se vuelve tu mejor aliado para criar con calma y autonomía",
                     resumen: "A veces no hace falta “más”, sino mejor: un espacio que respete a tu peque, lo invite a descubrir y le dé libertad con orden. Este artículo te muestra cómo aplicar Montessori más allá del aula, con ideas sencillas y reales para transformar tu casa en un lugar que acompaña su independencia y confianza.",
                     imagen: "assets/img/articulos/59.jpg",
-                    categoria: "Educación",
+                    categoria: "Cognitivo",
                     contenido: `
                         <h3>Método Montessori más allá del aula</h3>
 
@@ -7836,7 +7834,7 @@ const Comunidad = {
                     titulo: "📚✨ Método silábico: el camino paso a paso para que su peque lea y escriba con confianza",
                     resumen: "Leer y escribir no es magia: es un proceso precioso que se construye con paciencia, juego y constancia. Este material le guía por los pasos del método silábico, desde las vocales hasta las consonantes menos frecuentes, para acompañar la lectoescritura con estructura y motivación.",
                     imagen: "assets/img/articulos/60.jpg",
-                    categoria: "Educación",
+                    categoria: "Lenguaje",
                     contenido: `
                         <div class="reading-note" style="background:linear-gradient(135deg, rgba(232,76,154,.08), rgba(59,182,196,.10));border-left:5px solid var(--pink-main);">
                         <h1 style="font-size:32px;line-height:1.15;margin:4px 0 10px 0;">Método silábico</h1>
@@ -7928,7 +7926,7 @@ const Comunidad = {
                     titulo: "🌙 Pesadillas en los peques: cómo sostenerlos con amor cuando el miedo aparece en la noche",
                     resumen: "Escuchar su llanto en la madrugada parte el corazón… pero también puede ser una oportunidad hermosa de acompañar, calmar y fortalecer su seguridad. Esta guía le explica por qué pasan las pesadillas, qué hacer en el momento y cómo distinguirlas de los terrores nocturnos.",
                     imagen: "assets/img/articulos/61.jpg",
-                    categoria: "Sueño",
+                    categoria: "Socioemocional",
                     contenido: `
                         <div class="reading-hero" style="background-image:url('assets/img/articulos/35.jpg')"></div>
 
@@ -8117,7 +8115,7 @@ const Comunidad = {
                     titulo: "💛 Deberes sin lágrimas: cómo acompañar a tu peque con calma, rutina y motivación real",
                     resumen: "A veces la tarea se siente como una batalla… pero puede convertirse en un momento de conexión y logro. Aquí tienes tips prácticos para ayudar a tus peques a hacer sus deberes con descansos, refuerzo positivo y dinámicas divertidas que sí funcionan.",
                     imagen: "assets/img/articulos/62.jpg",
-                    categoria: "Educación",
+                    categoria: "Cognitivo",
                     contenido: `
                         <h1>¿Cómo logro que mis peques hagan sus deberes?</h1>
 
@@ -8205,7 +8203,7 @@ const Comunidad = {
                     titulo: "💗 Celos, berrinches y emociones intensas: una guía para acompañar sin gritos y con amor firme",
                     resumen: "A veces tu peque no “se porta mal”… está desbordado por dentro. Este material te ayuda a entender qué son las emociones, qué hacer cuando hay agresión, cómo acompañar con conexión antes que corrección y cómo manejar los celos entre hermanos para fortalecer el apego y la calma en casa.",
                     imagen: "assets/img/articulos/63.jpg",
-                    categoria: "Familia",
+                    categoria: "Socioemocional",
                     contenido: `
                         <h3>Pautas para una correcta gestión de emociones y celos</h3>
 
@@ -8346,7 +8344,7 @@ const Comunidad = {
                     titulo: "🧩💙 Nannys y Autismo: acompañar con respeto, calma y seguridad en cada momento",
                     resumen: "Cuando una nanny entiende, acompaña mejor. Este material reúne conceptos clave sobre TEA y guía práctica para observar con objetividad, comunicarse con la familia y actuar con calma antes, durante y después de una crisis, siempre priorizando la seguridad y el cuidado emocional.",
                     imagen: "assets/img/articulos/64.jpg",
-                    categoria: "Neurodiversidad",
+                    categoria: "Cognitivo",
                     contenido: `
                         <div class="reading-note" style="background:linear-gradient(135deg, rgba(232,76,154,.08), rgba(59,182,196,.10));border-left:5px solid var(--pink-main);">
                         <h1 style="font-size:32px;line-height:1.15;margin:4px 0 10px 0;">Nannys y Autismo</h1>
@@ -8494,7 +8492,7 @@ const Comunidad = {
                     titulo: "🩹✨ Primeros auxilios con calma: lo básico para actuar rápido y cuidar a tu peque con seguridad",
                     resumen: "Cuando pasa algo, tu calma puede salvar el momento. Esta guía te ayuda a actuar con claridad: qué hacer, qué NO hacer y cómo responder ante urgencias comunes en peques. Ideal para nannies y familias que quieren estar preparadas sin pánico.",
                     imagen: "assets/img/articulos/65.jpg",
-                    categoria: "Seguridad",
+                    categoria: "Extras",
                     contenido: `
                     <div class="reading-view">
 
@@ -8738,7 +8736,7 @@ const Comunidad = {
                     titulo: "🫧 Respirar para calmar: juegos sencillos que transforman un berrinche en un abrazo de paz",
                     resumen: "Cuando la emoción se desborda, el cuerpo necesita una salida segura. Estas técnicas divertidas de respiración ayudan a los peques a relajarse, concentrarse y sentirse protegidos, mientras usted crea un momento de conexión y calma que se queda para toda la vida.",
                     imagen: "assets/img/articulos/66.jpg",
-                    categoria: "Regulación emocional",
+                    categoria: "Socioemocional",
                     contenido: `
                         <div class="reading-hero" style="background-image:url('assets/img/articulos/36.jpg')"></div>
 
@@ -8834,7 +8832,7 @@ const Comunidad = {
                     titulo: "💗 Noviazgo en la adolescencia: cómo abrir conversaciones que protegen, guían y fortalecen su corazón",
                     resumen: "Hablar de amor con adolescentes no es incómodo: es una oportunidad para sembrar respeto, límites y autoestima. Este recurso te ayuda a comprender sus etapas, detectar señales de una relación sana o tóxica y acompañarlos con diálogo, empatía y seguridad.",
                     imagen: "assets/img/articulos/67.jpg",
-                    categoria: "Adolescencia",
+                    categoria: "Extras",
                     contenido: `
                         <h1>Relaciones de noviazgo en adolescentes</h1>
 
@@ -8996,7 +8994,7 @@ const Comunidad = {
                     titulo: "🌟 La “R” llega con juego y paciencia: una guía amorosa para ayudarle a tu peque a pronunciarla",
                     resumen: "Si a tu peque le cuesta decir la “r” o la “rr”, no significa atraso: significa proceso. Aquí encontrarás por qué pasa, cuándo conviene intervenir y actividades divertidas (respiración, lengua, juegos y trabalenguas) para acompañarlo con calma y constancia, sin presionarlo.",
                     imagen: "assets/img/articulos/68.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Cognitivo",
                     contenido: `
                         <h3>Pronunciación de la letra R</h3>
 
@@ -9112,7 +9110,7 @@ const Comunidad = {
                     titulo: "🧡🤱 Tummy Time: pequeños minutos, grandes fortalezas (y un vínculo que crece contigo)",
                     resumen: "El tiempo boca abajo no es solo un ejercicio: es un momento para fortalecer su cuerpecito, estimular su desarrollo y crear conexión afectiva. Con estas estrategias y actividades, el tummy time puede volverse más fácil, más divertido y lleno de avances que se sienten en cada semana.",
                     imagen: "assets/img/articulos/69.jpg",
-                    categoria: "Desarrollo",
+                    categoria: "Motriz",
                     contenido: `
                         <div class="reading-note" style="background:linear-gradient(135deg, rgba(232,76,154,.08), rgba(59,182,196,.10));border-left:5px solid var(--pink-main);">
                         <h1 style="font-size:32px;line-height:1.15;margin:4px 0 10px 0;">Tummy Time:</h1>
@@ -9246,7 +9244,7 @@ const Comunidad = {
                     titulo: "🌸 Hablarlo con calma y sin miedo: guía para acompañar la sexualidad en tu peque con respeto",
                     resumen: "Cuando un peque explora su cuerpo, no está ‘haciendo algo malo’: está aprendiendo. Esta guía te enseña cómo reaccionar con naturalidad, poner límites sin vergüenza y crear un espacio seguro para que tu peque crezca con autoestima, confianza y tranquilidad.",
                     imagen: "assets/img/articulos/70.jpg",
-                    categoria: "Familia",
+                    categoria: "Extras",
                     contenido: `
                     <div class="reading-view">
 
@@ -9449,7 +9447,7 @@ const Comunidad = {
                     titulo: "🎮 Diversión con cuidado: cómo proteger a los peques en videojuegos en línea (sin quitarles su mundo)",
                     resumen: "Los videojuegos pueden ser creatividad, amistad y juego… pero también esconden riesgos que muchos adultos no ven. Esta guía le ayuda a identificar peligros reales y a poner límites y hábitos que cuidan a su peque sin romper la diversión.",
                     imagen: "assets/img/articulos/71.jpg",
-                    categoria: "Seguridad digital",
+                    categoria: "Extras",
                     contenido: `
                         <div class="reading-hero" style="background-image:url('assets/img/articulos/37.jpg')"></div>
 
@@ -9753,7 +9751,7 @@ const Comunidad = {
                 padding-bottom: 100px;
                 position: relative;
             }
-            .btn-volver {
+            .reading-view .btn-volver {
                 position: absolute;
                 top: 20px;
                 left: 20px;
@@ -9847,8 +9845,32 @@ const Comunidad = {
                 .comunidad-title { font-size: 26px; }
                 .comunidad-grid { grid-template-columns: 1fr; }
             }
+
+            /* Filtros de Categoría */
+            .category-scroll {
+                display: flex; overflow-x: auto; gap: 10px;
+                padding: 10px 0; margin-bottom: 20px; scrollbar-width: none;
+            }
+            .category-scroll::-webkit-scrollbar { display: none; }
+            .btn-category {
+                white-space: nowrap; padding: 8px 16px; border-radius: 15px;
+                background: #f1f5f9; color: var(--text-muted); font-size: 13px;
+                font-weight: 700; border: 1px solid transparent;
+                cursor: pointer;
+            }
+            .btn-category.active {
+                background: var(--blue-main); color: white;
+            }
         `;
         document.head.appendChild(style);
+    },
+
+    seleccionarCategoria: function (cat) {
+        // Si se hace clic en la misma categoría, quitamos el filtro
+        this.estado.categoriaSeleccionada = (this.estado.categoriaSeleccionada === cat) ? null : cat;
+        this.render();
+        // Si hay scroll, lo llevamos arriba para ver los resultados
+        window.scrollTo({ top: 300, behavior: 'smooth' });
     },
 
     /**
@@ -9877,6 +9899,17 @@ const Comunidad = {
 
         const noticiasMostradas = esCliente ? this.estado.datos.noticiasCliente : this.estado.datos.noticiasNinera;
         const etiquetaNoticias = esCliente ? "Novedades y Promociones" : "Capacitaciones y Novedades";
+
+        // --- LÓGICA DE FILTRADO DE ARTÍCULOS ---
+        const todosLosArticulos = this.estado.datos.articulos;
+
+        // Categorías fijas solicitadas por el usuario
+        const categorias = ["Cognitivo", "Lenguaje", "Motriz", "Sensorial", "Socioemocional", "Extras"];
+
+        // Filtrar artículos por categoría seleccionada
+        const articulosFiltrados = this.estado.categoriaSeleccionada
+            ? todosLosArticulos.filter(a => a.categoria === this.estado.categoriaSeleccionada)
+            : todosLosArticulos;
 
         container.innerHTML = `
             <div class="comunidad-header">
@@ -9912,8 +9945,19 @@ const Comunidad = {
             <div class="comunidad-section-header">
                 <h3 class="comunidad-section-title">Artículos de Interés</h3>
             </div>
+
+            <!-- BARRA DE CATEGORÍAS -->
+            <div class="category-scroll">
+                <div class="btn-category ${!this.estado.categoriaSeleccionada ? 'active' : ''}" 
+                     onclick="Comunidad.seleccionarCategoria(null)">Todas</div>
+                ${categorias.map(cat => `
+                    <div class="btn-category ${this.estado.categoriaSeleccionada === cat ? 'active' : ''}" 
+                         onclick="Comunidad.seleccionarCategoria('${cat}')">${cat}</div>
+                `).join('')}
+            </div>
+
             <div class="comunidad-grid">
-                ${this.estado.datos.articulos.map(art => `
+                ${articulosFiltrados.map(art => `
                     <div class="comunidad-card">
                         <img src="${art.imagen}" alt="${art.titulo}" class="comunidad-card-img">
                         <div class="comunidad-card-content">
@@ -9925,6 +9969,12 @@ const Comunidad = {
                     </div>
                 `).join('')}
             </div>
+
+            ${articulosFiltrados.length === 0 ? `
+                <div class="no-data" style="padding: 40px; text-align: center; color: var(--text-muted);">
+                    <p>No se encontraron artículos en esta categoría.</p>
+                </div>
+            ` : ''}
         `;
     },
 

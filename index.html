@@ -149,6 +149,24 @@
       flex: 1 1 45% !important;
     }
 
+    /* Spinner para botones dinámicos */
+    .spinner-inline {
+      width: 18px;
+      height: 18px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin-inline 0.8s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    @keyframes spin-inline {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     .options-3 .bitacora-option-btn {
       flex: 1 1 30% !important;
     }
@@ -183,6 +201,13 @@
       font-weight: 700;
       font-size: 12px;
       font-family: 'Nunito Sans', sans-serif;
+    }
+
+    .svc-pill-bitacora.aceptada {
+      background: #dcfce7 !important;
+      color: #166534 !important;
+      border-left-color: #22c55e !important;
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);
     }
 
     .svc-pill-bitacora:hover {
@@ -1204,6 +1229,25 @@
             Resumen de planeaciones – semana siguiente
           </div>
           <div id="resumenPlaneacionesSiguiente"></div>
+        </div>
+        <!-- CARD BITÁCORAS -->
+        <div class="supervision-card">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <div class="supervision-title">
+              Resumen de bitácoras – semana actual
+            </div>
+            <button class="btn-ghost" onclick="actualizarBitacorasSupervision(this)">
+              🔄 Actualizar
+            </button>
+          </div>
+          <div id="resumenBitacorasActual"></div>
+        </div>
+
+        <div class="supervision-card">
+          <div class="supervision-title">
+            Resumen de bitácoras – semana anterior
+          </div>
+          <div id="resumenBitacorasSiguiente"></div>
         </div>
       </div>
 
@@ -2227,12 +2271,19 @@
   <!-- MODAL Bitácora de Servicio -->
   <div id="bitacoraBackdrop" class="modal-backdrop" style="display:none;">
     <div class="modal-card" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
-      <div
-        style="background: linear-gradient(135deg, var(--blue-main), var(--pink-main)); padding: 20px; text-align: center; border-radius: 28px 28px 0 0; margin: -24px -24px 20px -24px;">
-        <h2 style="color: white; margin: 0; font-family: 'DM Serif Display', serif; font-size: 24px;">📋 Bitácora del
-          Servicio</h2>
-        <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 5px 0 0 0;">Registra las actividades realizadas
-        </p>
+      <div id="bitacoraHeader" style="margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #f0f0f0;">
+        <h3 class="modal-title pink" id="bit_titulo" style="margin-bottom: 8px;">
+          Bitácora del Servicio
+        </h3>
+        <div class="muted" id="bit_info_cliente" style="margin-top:4px; font-size: 15px; color: #374151;"></div>
+        <div class="muted" id="bit_info_ninera" style="font-size: 15px; color: #374151;"></div>
+        <div class="muted" id="bit_info_fecha_creacion"
+          style="font-size: 13px; color: #6b7280; font-style: italic; margin-top: 2px;"></div>
+      </div>
+
+      <!-- NAVEGACIÓN ENTRE DÍAS -->
+      <div id="nav-bitacora-supervision-container" class="row"
+        style="display:grid;grid-template-columns: 1fr auto 1fr;align-items:center;margin-bottom:18px;">
       </div>
 
       <div id="bitacora-content-wrapper">

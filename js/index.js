@@ -20,9 +20,24 @@ const DEFAULT_TTL = 30000; // 30 segundos
 // --- CACHÉ ESPECÍFICO PARA BITÁCORAS ---
 let BITACORA_CACHE = {}; // { 'fecha_idServicio': datos }
 
+// --- ESTADO PARA RESUMEN DE SUPERVISIÓN ---
+let RESUMEN_BITACORAS_SUP = {};
+let BITACORAS_FECHAS = [];
+let BITACORA_INDEX = 0;
+let BITACORA_CLIENTE = '';
+let BITACORA_FUENTE = [];
+let BITACORA_SESSION_ID = 0;
+
 
 // --- SEGURIDAD: AUTO-LOGOUT POR INACTIVIDAD ---
 let logoutTimer;
+
+// --- UTILIDADES ---
+function _norm(s) {
+    if (!s) return '';
+    return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+window._norm = _norm;
 
 /**
  * Muestra u oculta el overlay de carga global con un mensaje opcional
@@ -678,7 +693,129 @@ function actualizarPlaneacionesSupervision() {
     if (c1) c1.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
     if (c2) c2.innerHTML = '<p class="muted">Verificando planeaciones...</p>';
 
+    const b1 = document.getElementById('resumenBitacorasActual');
+    const b2 = document.getElementById('resumenBitacorasSiguiente');
+    if (b1) b1.innerHTML = '<p class="muted">Verificando bitácoras...</p>';
+    if (b2) b2.innerHTML = '<p class="muted">Verificando bitácoras...</p>';
+
     cargarResumenPlaneaciones(true);
+    cargarResumenBitacoras(true);
+}
+
+function actualizarBitacorasSupervision(btn) {
+    if (btn) btn.textContent = 'Actualizando...';
+
+    // Limpiar caché específico de bitácoras (LocalStorage + Memoria)
+    localStorage.removeItem('CACHE_BITACORAS_SUP_' + SESION.email);
+    BITACORA_CACHE = {};
+    RESUMEN_BITACORAS_SUP = {};
+    BITACORA_SESSION_ID++;
+
+    const c1 = document.getElementById('resumenBitacorasActual');
+    const c2 = document.getElementById('resumenBitacorasSiguiente');
+
+    if (c1) c1.innerHTML = '<p class="muted">Actualizando bitácoras...</p>';
+    if (c2) c2.innerHTML = '<p class="muted">Actualizando bitácoras...</p>';
+
+    cargarResumenBitacoras(true).then(() => {
+        if (btn) btn.textContent = '🔄 Actualizar';
+    }).catch(() => {
+        if (btn) btn.textContent = '🔄 Actualizar';
+    });
+}
+
+function cargarResumenBitacoras(force = false) {
+    if (!force && LAST_FETCH['cargarResumenBitacoras'] && (Date.now() - LAST_FETCH['cargarResumenBitacoras'] < DEFAULT_TTL)) return Promise.resolve();
+    LAST_FETCH['cargarResumenBitacoras'] = Date.now();
+
+    const c1 = document.getElementById('resumenBitacorasActual');
+    const c2 = document.getElementById('resumenBitacorasSiguiente');
+
+    if (!force) {
+        const cached = localStorage.getItem('CACHE_BITACORAS_SUP_' + SESION.email);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (c1) renderResumenBitacoras(parsed.actual, c1);
+                if (c2) renderResumenBitacoras(parsed.siguiente, c2, 'siguiente');
+            } catch (e) { console.error("Error al leer caché bitácoras", e); }
+        }
+    }
+
+    return api('getResumenBitacorasDosSemanas', { email: SESION.email })
+        .then(res => {
+            if (res) {
+                if (c1) renderResumenBitacoras(res.actual, c1);
+                if (c2) renderResumenBitacoras(res.siguiente, c2, 'siguiente');
+                localStorage.setItem('CACHE_BITACORAS_SUP_' + SESION.email, JSON.stringify(res));
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+function renderResumenBitacoras(data, cont, prefijo) {
+    if (!data || Object.keys(data).length === 0) {
+        cont.innerHTML = '<p class="muted">No hay bitácoras requeridas.</p>';
+        return;
+    }
+
+    let html = '';
+    Object.keys(data).forEach((ciudad, indexCiudad) => {
+        const ciudadId = `bitacoras_${prefijo || 'actual'}_ciudad_${indexCiudad}`;
+        // REGLA DE MEMORIA: Verificar si ya estaba abierta
+        const estabaAbierta = window.CIUDADES_ABIERTAS && window.CIUDADES_ABIERTAS.has(ciudadId);
+        const display = estabaAbierta ? 'block' : 'none';
+        const icono = estabaAbierta ? '➖' : '➕';
+
+        html += `
+            <div class="ciudad-group" style="margin-bottom:15px;">
+                <div class="ciudad-header" style="display:flex;align-items:center;gap:10px;cursor:pointer; font-weight:700; color:var(--blue-main); margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:4px;" onclick="toggleCiudad('${ciudadId}')">
+                    <span id="${ciudadId}_icon" style="font-size:18px;user-select:none;">${icono}</span>
+                    <h4 style="margin:0;">📍 ${ciudad}</h4>
+                </div>
+                <div id="${ciudadId}" style="display:${display}; margin-left:28px; margin-top:6px;">
+                    <ul style="list-style:none; padding-left:0; margin:0;">
+        `;
+
+        data[ciudad].forEach(s => {
+            const colorBitacora = s.tieneBitacora ? '#16a34a' : '#dc2626'; // Mismos que planeaciones (Verde/Rojo)
+            const bgBadge = s.aceptada ? '#dcfce7' : '#fef9c3';
+            const colorBadge = s.aceptada ? '#166534' : '#854d0e';
+            const textoBadge = s.aceptada ? 'aceptadas' : 'pendientes';
+
+            const key = `${prefijo || 'actual'}|${s.cliente}|${s.ninera || ''}`;
+            RESUMEN_BITACORAS_SUP[key] = s.dias || [];
+
+            const sClienteSafe = (s.cliente || '').replace(/'/g, "\\'");
+            const sNineraSafe = (s.ninera || '').replace(/'/g, "\\'");
+            const sTipoSafe = (s.tipo_servicio || '').replace(/'/g, "\\'");
+
+            const handler = `abrirBitacorasClienteDesdeResumen('${sClienteSafe}', '${prefijo || 'actual'}', '${sTipoSafe}', '${sNineraSafe}')`;
+
+            html += `
+                <li style="display:flex; align-items:flex-start; gap:8px; margin-bottom:8px; font-size:14px; cursor:pointer;" onclick="${handler}">
+                    <span style="width:10px; height:10px; border-radius:50%; background:${colorBitacora}; flex-shrink:0; margin-top:5px;"></span>
+                    <div style="display:flex; flex-direction:column;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span style="font-weight:600;">${s.cliente}</span>
+                            ${s.tieneBitacora ? `
+                                <div style="display:flex; align-items:center; gap:4px;">
+                                    <span style="font-size:9px; font-weight:700; text-transform:uppercase; padding:1px 5px; border-radius:4px; background:${bgBadge}; color:${colorBadge}; border:1px solid rgba(0,0,0,0.05); white-space:nowrap;">
+                                        ${textoBadge}
+                                    </span>
+                                    <span id="indicador-rev-${prefijo || 'actual'}-${s.cliente.replace(/[^a-z0-9]/gi, '_')}_${(s.ninera || '').replace(/[^a-z0-9]/gi, '_')}" style="width:8px; height:8px; border-radius:50%; background:${s.revisada ? '#16a34a' : '#3b82f6'}; flex-shrink:0;" title="${s.revisada ? 'Revisado' : 'Pendiente de revisar'}"></span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <span class="muted" style="font-size:12px;">Niñera: ${s.ninera}</span>
+                    </div>
+                </li>
+            `;
+        });
+
+        html += `</ul></div></div>`;
+    });
+    cont.innerHTML = html;
 }
 
 async function cargarServicios(force = false) {
@@ -1193,9 +1330,37 @@ async function abrirBitacora(servicio, soloLectura = false) {
     // Mostrar modal inmediatamente para que el preloader sea visible dentro
     backdrop.style.display = 'flex';
 
+    // Poblar cabecera dinámica (ID actualizados en index.html)
+    const titulo = document.getElementById('bit_titulo');
+    const infoCliente = document.getElementById('bit_info_cliente');
+    const infoNinera = document.getElementById('bit_info_ninera');
+
+    if (titulo) {
+        const tipoBase = (servicio.tipo_servicio || '').toLowerCase();
+        let textoTitulo = 'Bitácora del Servicio';
+        if (tipoBase.includes('neuronanny')) textoTitulo = 'Bitácora Neuronanny';
+        else if (tipoBase.includes('educativa')) textoTitulo = 'Bitácora Nanny Educativa';
+
+        titulo.textContent = soloLectura ? `${textoTitulo} (Lectura)` : textoTitulo;
+    }
+    if (infoCliente) infoCliente.innerHTML = `👶 Cliente: ${servicio.cliente || '—'}`;
+    if (infoNinera) {
+        const nombreNinera = servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'] || '—';
+        infoNinera.innerHTML = `🧸 Niñera: ${nombreNinera}`;
+    }
+
+    const infoFechaCreacion = document.getElementById('bit_info_fecha_creacion');
+    if (infoFechaCreacion) infoFechaCreacion.innerHTML = '';
+
     // --- NUEVO: Manejo de solo lectura ---
     const btnGuardar = document.querySelector('#formBitacora button[type="submit"]');
     const form = document.getElementById('formBitacora');
+
+    // Eliminar botones dinámicos previos (para evitar duplicados)
+    const btnLeidoExistente = document.getElementById('btn-leido-aceptado');
+    if (btnLeidoExistente) btnLeidoExistente.remove();
+    const btnRevisadaExistente = document.getElementById('btn-revisada-supervision');
+    if (btnRevisadaExistente) btnRevisadaExistente.remove();
 
     if (soloLectura) {
         backdrop.classList.add('bitacora-solo-lectura');
@@ -1205,6 +1370,196 @@ async function abrirBitacora(servicio, soloLectura = false) {
                 el.readOnly = true;
                 el.disabled = true;
             });
+
+            // Inyectar botón "Leído y aceptado" SOLO PARA CLIENTES (No supervisores/admins)
+            if (SESION.rol === 'cliente' || (SESION.cliente && !SESION.supervision && !SESION.admin)) {
+                const btnLeido = document.createElement('button');
+                btnLeido.id = 'btn-leido-aceptado';
+                btnLeido.type = 'button';
+                btnLeido.innerHTML = '✅ Leído y aceptado';
+                btnLeido.style.cssText = `
+                width: 100%;
+                margin-bottom: 12px;
+                padding: 14px 20px;
+                background: #FEF9C3;
+                color: #854D0E;
+                font-family: 'Nunito Sans', sans-serif;
+                font-size: 15px;
+                font-weight: 700;
+                border: none;
+                border-left: 5px solid #FBBF24;
+                border-radius: 14px;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+                letter-spacing: 0.3px;
+                transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+                text-align: center;
+            `;
+                btnLeido.onmouseenter = () => {
+                    if (!btnLeido.dataset.aceptado) {
+                        btnLeido.style.filter = 'brightness(0.97)';
+                    }
+                };
+                btnLeido.onmouseleave = () => {
+                    btnLeido.style.filter = '';
+                };
+                btnLeido.onclick = async () => {
+                    if (btnLeido.dataset.aceptado) return; // Evitar doble click
+
+                    // Estado de carga
+                    btnLeido.disabled = true;
+                    btnLeido.innerHTML = '⏳ Guardando...';
+
+                    try {
+                        const servicio = BITACORA_SERVICIO_ACTUAL;
+                        await api('aceptarBitacora', {
+                            correo_cliente: SESION.email,
+                            nombre_cliente: SESION.nombre || '',
+                            fecha: servicio ? servicio.fecha : '',
+                            nombre_ninera: servicio ? (servicio.nombre_ninera || servicio['Nombre de la niñera'] || '') : ''
+                        });
+
+                        // --- FIX: Actualizar caché local para persistencia inmediata al reabrir ---
+                        const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}_${_norm(servicio.nombre_ninera || servicio['Nombre de la niñera'])}`;
+                        if (BITACORA_CACHE && BITACORA_CACHE[cacheKey]) {
+                            BITACORA_CACHE[cacheKey].Acepta = 'Sí'; // Coincide con _mapPayloadToSheetFormat
+                        }
+
+                        // --- NUEVO: Actualizar el objeto de servicio para persistencia en el calendario ---
+                        servicio.bitacora_aceptada = true;
+                        if (CACHE_CLIENTE.servicios && Array.isArray(CACHE_CLIENTE.servicios)) {
+                            const bitKey = `${servicio.fecha}|${_norm(servicio.nombre_ninera || servicio['Nombre de la niñera'])}`;
+                            // Buscar y actualizar en el caché global de servicios
+                            const sCache = CACHE_CLIENTE.servicios.find(sv =>
+                                sv.fecha === servicio.fecha &&
+                                _norm(sv.nombre_ninera || sv['Nombre de la niñera']) === _norm(servicio.nombre_ninera || servicio['Nombre de la niñera'])
+                            );
+                            if (sCache) sCache.bitacora_aceptada = true;
+
+                            // Actualizar visualmente la pill en el calendario si existe
+                            const pill = document.querySelector(`.svc-pill-bitacora[data-bit-key="${bitKey}"]`);
+                            if (pill) pill.classList.add('aceptada');
+                        }
+
+                        // Animar a verde (igual que las pills confirmadas)
+                        btnLeido.dataset.aceptado = 'true';
+                        btnLeido.innerHTML = '✅ ¡Aceptado!';
+                        btnLeido.style.background = '#dcfce7';
+                        btnLeido.style.color = '#166534';
+                        btnLeido.style.borderLeftColor = '#22c55e';
+                        btnLeido.style.boxShadow = '0 4px 12px rgba(34, 197, 94, 0.3)';
+
+                        // Cerrar después de una pequeña pausa para que se vea el cambio
+                        // setTimeout(() => cerrarBitacora(), 800); // COMENTADO POR SOLICITUD DEL USUARIO (Mantener modal abierto)
+
+                    } catch (err) {
+                        // Revertir en caso de error
+                        btnLeido.disabled = false;
+                        btnLeido.innerHTML = '✅ Leído y aceptado';
+                        mostrarToast('❌ Error al guardar: ' + (err.message || 'Intenta de nuevo'));
+                    }
+                };
+
+                // Insertar ANTES del div de botones (Cancelar), que es el último hijo del form
+                const divBotones = form.querySelector('div[style*="display: flex"][style*="gap"]');
+                if (divBotones) {
+                    form.insertBefore(btnLeido, divBotones);
+                } else {
+                    form.appendChild(btnLeido);
+                }
+            }
+
+            // Inyectar botón "Revisada" PARA SUPERVISIÓN / ADMIN
+            if (SESION.supervision || SESION.admin) {
+                const btnRevisada = document.createElement('button');
+                btnRevisada.id = 'btn-revisada-supervision';
+                btnRevisada.type = 'button';
+                btnRevisada.innerHTML = '🎯 Marcar como Revisada';
+                btnRevisada.style.cssText = `
+                    width: 100%;
+                    margin-bottom: 20px;
+                    padding: 16px 20px;
+                    background: var(--blue-main, #3b82f6);
+                    color: white;
+                    font-family: 'Nunito Sans', sans-serif;
+                    font-size: 16px;
+                    font-weight: 800;
+                    border: none;
+                    border-radius: 16px;
+                    cursor: pointer;
+                    box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3);
+                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                    text-align: center;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 10px;
+                `;
+
+                btnRevisada.onmouseenter = () => {
+                    btnRevisada.style.transform = 'translateY(-2px)';
+                    btnRevisada.style.boxShadow = '0 8px 20px rgba(59, 130, 246, 0.4)';
+                };
+                btnRevisada.onmouseleave = () => {
+                    btnRevisada.style.transform = 'translateY(0)';
+                    btnRevisada.style.boxShadow = '0 6px 15px rgba(59, 130, 246, 0.3)';
+                };
+
+                btnRevisada.onclick = async () => {
+                    if (btnRevisada.disabled) return;
+                    btnRevisada.disabled = true;
+                    btnRevisada.innerHTML = '<span class="spinner-inline"></span> Guardando revisión...';
+
+                    try {
+                        const servicio = BITACORA_SERVICIO_ACTUAL;
+                        const res = await api('revisarBitacora', {
+                            fecha: servicio.fecha,
+                            correo_cliente: servicio.email || '',
+                            nombre_ninera: servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'] || ''
+                        });
+
+                        if (res && res.ok) {
+                            mostrarToast('✅ Bitácora marcada como revisada');
+                            // Animación de salida: desaparecer y remover
+                            btnRevisada.style.opacity = '0';
+                            btnRevisada.style.transform = 'scale(0.9)';
+                            setTimeout(() => btnRevisada.remove(), 400);
+
+                            // Actualizar el caché si existe
+                            const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}_${_norm(servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'])}`;
+                            if (BITACORA_CACHE[cacheKey]) {
+                                BITACORA_CACHE[cacheKey].Revisada = res.revisada;
+                            }
+
+                            // --- Actualizar el indicador visual en el panel de supervisión en segundo plano ---
+                            // --- Actualizar el indicador visual en el panel de supervisión en segundo plano ---
+                            const clienteId = (servicio.cliente || '').replace(/[^a-z0-9]/gi, '_');
+                            const nineraId = (servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'] || '').replace(/[^a-z0-9]/gi, '_');
+
+                            // Actualizar SOLO el indicador pertinente a esta semana/contexto
+                            const elPrefijo = servicio.prefijo || 'actual';
+                            const indicador = document.getElementById(`indicador-rev-${elPrefijo}-${clienteId}_${nineraId}`);
+
+                            if (indicador) {
+                                indicador.style.background = '#16a34a';
+                                indicador.title = 'Revisado';
+                            }
+                        }
+                    } catch (e) {
+                        btnRevisada.disabled = false;
+                        btnRevisada.innerHTML = '🎯 Marcar como Revisada';
+                        mostrarToast('❌ Error: ' + e.message);
+                    }
+                };
+
+                // Insertar ANTES del div de botones (Cancelar)
+                const divBotones = form.querySelector('div[style*="display: flex"][style*="gap"]');
+                if (divBotones) {
+                    form.insertBefore(btnRevisada, divBotones);
+                } else {
+                    form.appendChild(btnRevisada);
+                }
+            }
         }
     } else {
         backdrop.classList.remove('bitacora-solo-lectura');
@@ -1242,13 +1597,24 @@ async function abrirBitacora(servicio, soloLectura = false) {
     // Pre-llenar horas siempre (desde el servicio)
     _prellenarHorasServicio(servicio);
 
-    // Identificador único para el caché
-    const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}`;
+    // Identificador único para el caché (Candado: incluye niñera)
+    const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}_${_norm(servicio.nombre_ninera || servicio['Nombre de la niñera'])}`;
 
     // 1. Revisar Caché primero (Instantáneo)
     if (BITACORA_CACHE[cacheKey]) {
         console.log('Bitácora recuperada de caché local:', cacheKey);
-        _llenarFormularioBitacora(BITACORA_CACHE[cacheKey]);
+        const data = BITACORA_CACHE[cacheKey];
+        _llenarFormularioBitacora(data);
+        _actualizarEstadoBtnLeido(data);
+        _actualizarEstadoBtnRevisado(data);
+
+        // --- NUEVO: CANDADO DE SEGURIDAD ---
+        const yaAceptado = data['Acepta'] || data['acepta'];
+        const yaRevisada = data['Revisada'] || data['revisada'];
+        if ((yaAceptado || yaRevisada)) {
+            _bloquearFormularioBitacora('(Lectura)');
+        }
+
         ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
         return;
     }
@@ -1258,7 +1624,8 @@ async function abrirBitacora(servicio, soloLectura = false) {
         const bitacoraExistente = await api('obtenerBitacora', {
             correo_cliente: servicio.email || '',
             nombre_cliente: servicio.cliente || '',
-            fecha: servicio.fecha
+            fecha: servicio.fecha,
+            nombre_ninera: servicio.nombre_ninera || servicio['Nombre de la niñera'] || ''
         });
 
         if (bitacoraExistente) {
@@ -1266,6 +1633,16 @@ async function abrirBitacora(servicio, soloLectura = false) {
             // Guardar en caché para futuras aperturas
             BITACORA_CACHE[cacheKey] = bitacoraExistente;
             _llenarFormularioBitacora(bitacoraExistente);
+            _actualizarEstadoBtnLeido(bitacoraExistente);
+            _actualizarEstadoBtnRevisado(bitacoraExistente);
+
+            // --- NUEVO: CANDADO DE SEGURIDAD ---
+            const yaAceptado = bitacoraExistente['Acepta'] || bitacoraExistente['acepta'];
+            const yaRevisada = bitacoraExistente['Revisada'] || bitacoraExistente['revisada'];
+            if ((yaAceptado || yaRevisada)) {
+                _bloquearFormularioBitacora('(Lectura)');
+            }
+
             mostrarToast('📋 Bitácora cargada');
         }
     } catch (e) {
@@ -1273,6 +1650,60 @@ async function abrirBitacora(servicio, soloLectura = false) {
     } finally {
         // Ocultar preloader premium
         ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
+    }
+}
+
+/**
+ * Actualiza el estado del botón 'Leído y aceptado' según si la bitácora ya fue aceptada.
+ * Si el campo 'Acepta' tiene valor, pone el botón en verde y lo deshabilita.
+ */
+function _actualizarEstadoBtnLeido(datos) {
+    const btn = document.getElementById('btn-leido-aceptado');
+    if (!btn) return;
+    const valorAcepta = datos && (datos['Acepta'] || datos['acepta'] || '');
+    if (valorAcepta && String(valorAcepta).trim() !== '') {
+        btn.dataset.aceptado = 'true';
+        btn.disabled = true;
+        btn.innerHTML = '✅ ¡Aceptado!';
+        btn.style.background = '#dcfce7';
+        btn.style.color = '#166534';
+        btn.style.borderLeftColor = '#22c55e';
+        btn.style.boxShadow = '0 4px 12px rgba(34, 197, 94, 0.3)';
+        btn.style.cursor = 'default';
+    }
+}
+
+function _actualizarEstadoBtnRevisado(datos) {
+    const btn = document.getElementById('btn-revisada-supervision');
+    if (!btn) return;
+    const valorRevisada = datos && (datos['Revisada'] || datos['revisada'] || '');
+    if (valorRevisada && String(valorRevisada).trim() !== '') {
+        // Si ya fue revisada, quitamos el botón para no saturar
+        btn.remove();
+    }
+}
+
+/**
+ * Bloquea el formulario de bitácora para que sea de solo lectura.
+ */
+function _bloquearFormularioBitacora(estatusLectura = '(Lectura)') {
+    const backdrop = document.getElementById('bitacoraBackdrop');
+    const btnGuardar = document.querySelector('#formBitacora button[type="submit"]');
+    const titulo = document.getElementById('bit_titulo');
+    const form = document.getElementById('formBitacora');
+
+    if (backdrop) backdrop.classList.add('bitacora-solo-lectura');
+    if (btnGuardar) btnGuardar.style.display = 'none';
+
+    if (titulo && estatusLectura && !titulo.textContent.includes(estatusLectura)) {
+        titulo.textContent += ` ${estatusLectura}`;
+    }
+
+    if (form) {
+        form.querySelectorAll('input:not([type="hidden"]), textarea').forEach(el => {
+            el.readOnly = true;
+            el.disabled = true;
+        });
     }
 }
 
@@ -1309,6 +1740,32 @@ function _prellenarHorasServicio(servicio) {
 function _llenarFormularioBitacora(datos) {
     if (!datos) return;
 
+    // --- NUEVO: Mostrar fecha de guardado (creación) ---
+    const infoFechaCreacion = document.getElementById('bit_info_fecha_creacion');
+    if (infoFechaCreacion) {
+        let fechaRaw = datos['Fecha de creación'] || datos['fecha de creación'] || '';
+        if (fechaRaw) {
+            try {
+                const d = new Date(fechaRaw);
+                if (!isNaN(d.getTime())) {
+                    const dia = String(d.getDate()).padStart(2, '0');
+                    const mes = String(d.getMonth() + 1).padStart(2, '0');
+                    const anio = d.getFullYear();
+                    const horas = String(d.getHours()).padStart(2, '0');
+                    const mins = String(d.getMinutes()).padStart(2, '0');
+                    infoFechaCreacion.innerHTML = `💾 Guardado: ${dia}/${mes}/${anio} ${horas}:${mins}`;
+                } else {
+                    // Si no es un Date válido (tal vez ya sea un string formateado), mostrar tal cual
+                    infoFechaCreacion.innerHTML = `💾 Guardado: ${fechaRaw}`;
+                }
+            } catch (e) {
+                infoFechaCreacion.innerHTML = `💾 Guardado: ${fechaRaw}`;
+            }
+        } else {
+            infoFechaCreacion.innerHTML = '';
+        }
+    }
+
     // Mapeo de preguntas 1 a 24
     for (let i = 1; i <= 24; i++) {
         const fieldName = `Pregunta ${i}`;
@@ -1342,11 +1799,17 @@ function _llenarFormularioBitacora(datos) {
                         const parts = String(val).split(':');
                         input.value = parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
                     } else {
-                        input.value = val;
+                        // Si falla el formateo o no es válido, asignar solo si tiene formato correcto HH:mm
+                        // De lo contrario, dejar vacío para evitar warning
+                        if (/^\d{2}:\d{2}$/.test(val)) {
+                            input.value = val;
+                        } else {
+                            input.value = ''; // Limpiar si es inválido para evitar "The specified value..."
+                        }
                     }
                 } catch (e) {
                     console.error('Error al formatear tiempo para P' + i, e);
-                    input.value = val;
+                    input.value = '';
                 }
             } else {
                 input.value = val;
@@ -1393,6 +1856,155 @@ function cerrarBitacora() {
     if (form) form.reset();
 
     BITACORA_SERVICIO_ACTUAL = null;
+
+    // Limpiar info de servicio
+    const lblCliente = document.getElementById('bit_info_cliente');
+    const lblNinera = document.getElementById('bit_info_ninera');
+    const lblFechaCreacion = document.getElementById('bit_info_fecha_creacion');
+    if (lblCliente) lblCliente.innerHTML = '';
+    if (lblNinera) lblNinera.innerHTML = '';
+    if (lblFechaCreacion) lblFechaCreacion.innerHTML = '';
+
+    // Limpiar navegación
+    const nav = document.getElementById('nav-bitacora-supervision-container');
+    if (nav) nav.innerHTML = '';
+}
+
+/**
+ * Lógica de navegación y carga para supervisión (Bitácoras)
+ */
+async function abrirBitacorasClienteDesdeResumen(cliente, prefijo, tipoServicioResumen, nombreNineraResumen) {
+    BITACORA_SESSION_ID++;
+    BITACORA_CLIENTE = cliente;
+    const key = `${prefijo}|${cliente}|${nombreNineraResumen || ''}`;
+    const fechas = RESUMEN_BITACORAS_SUP[key] || [];
+
+    if (!fechas.length) {
+        alert('No hay bitácoras requeridas para este cliente en esta semana.');
+        return;
+    }
+
+    BITACORAS_FECHAS = fechas.slice().sort();
+    BITACORA_FUENTE = BITACORAS_FECHAS.map(f => ({
+        cliente,
+        fecha: f,
+        tipo_servicio: tipoServicioResumen || '',
+        nombre_ninera: nombreNineraResumen || '',
+        prefijo: prefijo || 'actual' // Contexto para saber qué indicador actualizar
+    }));
+
+    abrirBitacoraPorIndice();
+
+    // Precargar todas las bitácoras en paralelo (silencioso en segundo plano)
+    const sessionId = BITACORA_SESSION_ID;
+    Promise.all(BITACORA_FUENTE.map(async (s) => {
+        // Generar cacheKey igual que en abrirBitacora
+        // Nota: abrirBitacora usa _norm para nombre_ninera
+        const nNorm = typeof _norm === 'function' ? _norm(s.nombre_ninera || '') : (s.nombre_ninera || '').trim();
+        const cacheKey = `${s.fecha}_${s.email || s.cliente}_${nNorm}`;
+
+        if (BITACORA_CACHE[cacheKey]) return; // Ya está en caché
+
+        try {
+            const datos = await api('obtenerBitacora', {
+                correo_cliente: s.email || '',
+                nombre_cliente: s.cliente || '',
+                fecha: s.fecha,
+                nombre_ninera: s.nombre_ninera || ''
+            });
+
+            // Solo guardar si la sesión siguen siendo la misma (el usuario no cambió de cliente)
+            if (BITACORA_SESSION_ID === sessionId && datos) {
+                BITACORA_CACHE[cacheKey] = datos;
+                console.log('Precarga background OK:', s.fecha);
+
+                // --- ACTUALIZACIÓN VISUAL DEL INDICADOR ---
+                // Verificar si TODAS las bitácoras de este grupo (Cliente+Niñera) están ya en caché y revisadas.
+                const grupo = BITACORA_FUENTE.filter(f => f.cliente === s.cliente && f.nombre_ninera === s.nombre_ninera);
+                const todasListas = grupo.every(gItem => {
+                    const gNorm = typeof _norm === 'function' ? _norm(gItem.nombre_ninera || '') : (gItem.nombre_ninera || '').trim();
+                    const gKey = `${gItem.fecha}_${gItem.email || gItem.cliente}_${gNorm}`;
+                    const gData = BITACORA_CACHE[gKey];
+                    if (!gData) return false; // Aún no carga
+                    const rev = gData['Revisada'] || gData['revisada'] || '';
+                    const strRev = String(rev || '').trim().toLowerCase();
+                    return (rev === true || strRev === 'si' || strRev === 'sí' || strRev === 'yes' || strRev === 'true' || strRev === '1');
+                });
+
+                if (todasListas) {
+                    const cSafe = s.cliente.replace(/[^a-z0-9]/gi, '_');
+                    const nSafe = (s.nombre_ninera || '').replace(/[^a-z0-9]/gi, '_');
+
+                    // Usar el prefijo específico del servicio para no cruzar semanas
+                    const elPrefijo = s.prefijo || 'actual';
+                    const indicador = document.getElementById(`indicador-rev-${elPrefijo}-${cSafe}_${nSafe}`);
+
+                    if (indicador) {
+                        indicador.style.backgroundColor = '#16a34a'; // Verde
+                        indicador.title = 'Revisado';
+                    }
+                }
+            }
+        } catch (e) {
+            // Fallo silencioso, se reintentará al navegar individualmente
+            console.warn('Precarga background falló para', s.fecha);
+        }
+    }));
+}
+
+function abrirBitacoraPorIndice() {
+    const fecha = BITACORAS_FECHAS[BITACORA_INDEX];
+    const servicio = BITACORA_FUENTE.find(s => s.cliente === BITACORA_CLIENTE && s.fecha === fecha);
+
+    if (!servicio) {
+        alert('Servicio no encontrado');
+        return;
+    }
+
+    abrirBitacora(servicio, true);
+    actualizarNavegacionBitacora();
+}
+
+function bitacoraAnterior() {
+    if (BITACORA_INDEX > 0) {
+        BITACORA_INDEX--;
+        abrirBitacoraPorIndice();
+    }
+}
+
+function bitacoraSiguiente() {
+    if (BITACORA_INDEX < BITACORAS_FECHAS.length - 1) {
+        BITACORA_INDEX++;
+        abrirBitacoraPorIndice();
+    }
+}
+
+function actualizarNavegacionBitacora() {
+    const total = BITACORAS_FECHAS.length;
+    const actual = BITACORA_INDEX + 1;
+    const fechaISO = BITACORAS_FECHAS[BITACORA_INDEX];
+
+    // Parseo de fecha
+    const [y, m, d] = fechaISO.split('-');
+    const dateObj = new Date(y, m - 1, d);
+    const opciones = { weekday: 'long', day: 'numeric' };
+    const textoFecha = dateObj.toLocaleDateString('es-MX', opciones);
+    const labelFecha = textoFecha.charAt(0).toUpperCase() + textoFecha.slice(1);
+
+    const navCont = document.getElementById('nav-bitacora-supervision-container');
+    if (!navCont) return;
+
+    navCont.innerHTML = `
+        <div style="justify-self:start;">
+            <button class="btn-ghost" onclick="bitacoraAnterior()" ${BITACORA_INDEX === 0 ? 'style="visibility:hidden;"' : ''}>⬅️ Día anterior</button>
+        </div>
+        <span class="muted" style="font-weight:600; justify-self:center;">
+            ${labelFecha} · Día ${actual} de ${total}
+        </span>
+        <div style="justify-self:end;">
+            <button class="btn-ghost" onclick="bitacoraSiguiente()" ${BITACORA_INDEX === total - 1 ? 'style="visibility:hidden;"' : ''}>Día siguiente ➡️</button>
+        </div>
+    `;
 }
 
 /**
@@ -1441,7 +2053,7 @@ async function enviarBitacora(event) {
         p22: document.getElementById('bit_p22').value,
         p23: document.getElementById('bit_p23').value,
         p24: document.getElementById('bit_p24').value,
-        acepta: 'Sí' // Campo de aceptación por defecto
+        acepta: '' // Campo de aceptación vacío por defecto durante la creación
     };
 
     try {
@@ -1449,11 +2061,11 @@ async function enviarBitacora(event) {
         mostrarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper', 'Guardando bitácora...');
 
         // Enviar al backend
-        await api('guardarBitacora', datos);
+        const res = await api('guardarBitacora', datos);
 
         // Actualizar caché local para que la próxima apertura sea instantánea
         const cacheKey = `${BITACORA_SERVICIO_ACTUAL.fecha}_${BITACORA_SERVICIO_ACTUAL.email || BITACORA_SERVICIO_ACTUAL.cliente}`;
-        BITACORA_CACHE[cacheKey] = _mapPayloadToSheetFormat(datos);
+        BITACORA_CACHE[cacheKey] = _mapPayloadToSheetFormat(datos, res.fecha_creacion);
 
         // Cerrar modal y mostrar éxito
         cerrarBitacora();
@@ -1470,14 +2082,15 @@ async function enviarBitacora(event) {
  * Mapea el payload de envío al formato que devuelve el backend (nombres de columnas)
  * para mantener consistencia en la caché.
  */
-function _mapPayloadToSheetFormat(p) {
+function _mapPayloadToSheetFormat(p, fechaCreacion) {
     const mapeo = {
         'Fecha': p.fecha,
         'correo niñera': p.correo_ninera,
         'nombre niñera': p.nombre_ninera,
         'correo cliente': p.correo_cliente,
         'Nombre cliente': p.nombre_cliente,
-        'Acepta': p.acepta
+        'Acepta': p.acepta,
+        'Fecha de creación': fechaCreacion || ''
     };
 
     // Agregar preguntas 1 a 24
@@ -1530,8 +2143,12 @@ async function accionConfirmar(s) {
         //Actualizar localmente
         CAL_SERVICIOS.forEach(x => {
             if (x.sheet === s.sheet && x.row_base === s.row_base) {
-                x.estado = 'confirmado';
-                x.confirmado_en = res.confirmado_en;
+                // Solo actualizar si estaba pendiente o vacío
+                // para no pisar estados "en curso" o "completado"
+                if (!x.estado || x.estado === 'pendiente' || x.estado === '') {
+                    x.estado = 'confirmado';
+                    x.confirmado_en = res.confirmado_en;
+                }
             }
         });
         renderCalendario2Semanas();
@@ -2222,6 +2839,7 @@ function irVista(nombre, skipLogic = false) {
     if (nombre === 'supervision') {
         ocultarTodo();
         cargarResumenPlaneaciones();
+        cargarResumenBitacoras();
     }
 }
 
@@ -3888,6 +4506,12 @@ async function cargarServiciosCliente(force = false) {
     const msg = document.getElementById('msg-cal-cliente');
     if (!calActual || !calSig) return;
 
+    // --- FIX: Limpiar caché de bitácoras si es una recarga forzada (botón actualizar) ---
+    if (force) {
+        BITACORA_CACHE = {};
+        console.log('Caché de bitácoras limpiado por actualización forzada');
+    }
+
     if (!force && CACHE_CLIENTE.servicios) {
         renderServiciosCliente(CACHE_CLIENTE.servicios);
         if (msg) msg.textContent = '';
@@ -4069,7 +4693,9 @@ function renderCalendarioCliente(svcs) {
                     // --- NUEVO: PÍLDORA DE BITÁCORA (SOLO LECTURA PARA CLIENTE) ---
                     if (s.tiene_bitacora) {
                         const bitBtn = document.createElement('button');
-                        bitBtn.className = 'svc-pill-bitacora';
+                        const bitKey = `${s.fecha}|${_norm(s.nombre_ninera || s['Nombre de la niñera'])}`;
+                        bitBtn.className = 'svc-pill-bitacora' + (s.bitacora_aceptada ? ' aceptada' : '');
+                        bitBtn.dataset.bitKey = bitKey;
                         bitBtn.innerHTML = `
                             <div style="font-weight: 700; font-size: 11px;">📋 Bitácora</div>
                         `;
