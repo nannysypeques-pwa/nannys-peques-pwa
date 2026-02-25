@@ -457,6 +457,89 @@ const Convenios = {
                 imagen: "assets/img/convenios/lemus.jpg"
             },
 
+            {
+                id: 33,
+                ciudad: "Puebla",
+                categoria: "Psicología",
+                nombre: "PSIC. Daniel Moreno Hernández",
+                cedula: "7434021",
+                descripcion: "Psicólogo Hipnoterapeuta y Asesor de Agudeza Mental, enfocado a soluciones breves y a la medida de cada paciente",
+                beneficio: "20% de descuento a colaboradores y clientes, en cualquier servicio terapéutico que soliciten.<br>1. Entradas libres a los cursos que se estarán dando proximamente.",
+                maps: "https://maps.app.goo.gl/S5KeqKaWHZbNvfJL9",
+                whatsapp: "https://wa.me/522224652344",
+                telefono: "2224652344",
+                imagen: "assets/img/convenios/33.jpeg"
+            },
+
+            {
+                id: 34,
+                ciudad: "Puebla",
+                categoria: "Psicología",
+                nombre: "Psicóloga Patricia Flores Franco",
+                cedula: "13004861",
+                descripcion: "Trabajo desde la Terapia Gestalt con un enfoque centrado en la persona, integrando distintos modelos según cada caso para brindar atención personalizada. Tengo experiencia en neurodivergencias, trastornos emocionales y conductuales, atención a todas las edades y acompañamiento en crisis psicológicas.",
+                beneficio: "Primera sesión (60–90 min) para evaluación y objetivos; sesiones posteriores (50–60 min) de seguimiento. Costo: $500 por sesión o 4 por $1,800.<br>Talleres de sensibilización y psicoeducación con enfoque vivencial y práctico, brindando herramientas aplicables en lo personal y profesional. Se ofrece un ciclo de 3 talleres (uno por mes). Costo: $350 por sesión o paquete completo de 3 por $750.",
+                maps: "https://maps.app.goo.gl/ZD5rJxPW8KDJACRh8",
+                whatsapp: "https://wa.me/525544624310",
+                telefono: "5544624310",
+                imagen: "assets/img/convenios/34.png"
+            },
+
+            {
+                id: 35,
+                ciudad: "Puebla",
+                categoria: "Psicología",
+                nombre: "PSIC. ILIANA FLOR ORTIGOZA SILVA",
+                cedula: "9682296",
+                descripcion: "Especialistas en TCC y Gestalt. Te acompañamos en procesos de ansiedad, estrés, autoestima, relaciones y crecimiento personal.",
+                beneficio: "Tarifa preferencial de convenio: $400.00 MXN.",
+                maps: "https://maps.app.goo.gl/L7cXsVXdcP4UfsvM9",
+                whatsapp: "https://wa.me/522222750996",
+                telefono: "2222750996",
+                imagen: "assets/img/convenios/35.jpeg"
+            },
+
+            {
+                id: 36,
+                ciudad: "Puebla",
+                categoria: "Dentista",
+                nombre: "Dental Ahuactzin",
+                cedula: "8567146 - 6714344",
+                descripcion: "Brindamos solucion a los problemas dentales mas frecuentes, en especial el dolor dental y enfermedades propias de la boca.",
+                beneficio: "15 % de descuento en rehabilitación básica (resinas).<br>• 10% de descuento en Endodoncia. <br>• 50% de descuento en Limpieza Dental, todos los días. <br>• 30% de descuento en valoración de Odontología General. <br>• Además ponemos a su disposición nuestros tratamientos de especialidad, dentro de los cuáles destacan: Endodoncia, Cirugía Periapical, Ortodoncia, Periodoncia, Curetaje radicular, Regeneración titular, Guardas deportivas, Implantes, Prótesis fija y Prótesis removible.",
+                maps: "https://maps.app.goo.gl/QZ2znYMCDc2tnNLP6",
+                whatsapp: "https://wa.me/522224106154",
+                telefono: "2225835242",
+                imagen: "assets/img/convenios/36.jpg"
+            },
+
+            {
+                id: 37,
+                ciudad: "Xalapa",
+                categoria: "Dentista",
+                nombre: "Dental Más",
+                cedula: "6718983",
+                descripcion: "Dental Más + es una clínica dental que ofrece consulta general, limpiezas, ortodoncia, blanqueamiento, prótesis, endodoncia y atención para niños. Brinda tratamientos preventivos y estéticos con enfoque en atención integral para toda la familia.",
+                beneficio: "Limpieza Dental profunda $800 pesos<br>• Limpieza Basica $499<br>• Resina Estandar $599<br>• Resina Plus $999<br>• Resina Premium $1299<br>• Extraccion dental simple desde $499<br>• Cirugias simples desde $2000<br>• Pago inicial de Brackets: desde $499  INCLUYE APARATOLOGÍA ESTÁNDAR + RX PANORÁMICA + RX LATERAL DE CRANEO + PERSONALIZACIÓN DE LIGAS + 1RA COLOCACIÓN (SUPERIOR)<br>• 20% DE DESCUENO EN PROTESIS",
+                maps: "https://maps.app.goo.gl/JuNQsJm91ECaovuo6",
+                whatsapp: "https://wa.me/522282387961",
+                telefono: "2282387961",
+                imagen: "assets/img/convenios/37.jpg"
+            },
+
+            {
+                id: 38,
+                ciudad: "Xalapa",
+                categoria: "Dentista",
+                nombre: "General Dent",
+                cedula: "11106300",
+                descripcion: "General Dent es una clínica dental que brinda atención odontológica general y especializada. Ofrecen servicios como consultas de diagnóstico, limpiezas, tratamientos preventivos y estéticos (como blanqueamientos), además de procedimientos como extracciones, ortodoncia y otras intervenciones dentales para cuidar y mejorar la salud bucal de niños y adultos.",
+                beneficio: "Beneficios aplicables para Nannys y sus familiares directos.<br>•Consulta de valoración sin costo.<br>•3x2 en procedimientos asignados: amalgamas, resinas, profilaxis. (Por paciente)<br>•Blanqueamiento dental con limpieza dental con 25% de descuento.<br>Beneficios aplicables a Peques y familiares directos:<br>•Consulta de valoración sin costo<br>•Restaurativo: Resinas / amalgamas 20% de descuento <br>•Preventivo: Selladores de fosetas y fisuras<br>•Aplicación de fluor 20% de descuento",
+                maps: "https://maps.app.goo.gl/3jU3BLpM4Xjg1oxq8",
+                whatsapp: "https://wa.me/522281270496",
+                telefono: "2281270496",
+                imagen: "assets/img/convenios/38.jpg"
+            },
 
 
 

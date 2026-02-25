@@ -39,6 +39,46 @@ function _norm(s) {
 }
 window._norm = _norm;
 
+function normalizarTexto(v) {
+    return String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+window.normalizarTexto = normalizarTexto;
+
+/**
+ * Aplica una máscara de teléfono (222 222 2222) a un input
+ * de forma dinámica mientras el usuario escribe.
+ */
+function setupPhoneMask(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.addEventListener('input', function (e) {
+        // Solo dejar números
+        let val = e.target.value.replace(/\D/g, '');
+
+        // Limitar a 10 dígitos
+        if (val.length > 10) val = val.substring(0, 10);
+
+        // Formatear: XXX XXX XXXX
+        let formatted = '';
+        if (val.length > 0) formatted += val.substring(0, 3);
+        if (val.length > 3) formatted += ' ' + val.substring(3, 6);
+        if (val.length > 6) formatted += ' ' + val.substring(6, 10);
+
+        e.target.value = formatted;
+    });
+
+    // También limpiar si pegan algo con formato diferente
+    el.addEventListener('blur', function (e) {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 0 && val.length < 10) {
+            // Opcional: podrías mostrar un aviso aquí, 
+            // pero la validación al guardar se encargará.
+        }
+    });
+}
+window.setupPhoneMask = setupPhoneMask;
+
 /**
  * Muestra u oculta el overlay de carga global con un mensaje opcional
  */
@@ -2849,17 +2889,76 @@ function irVista(nombre, skipLogic = false) {
 
 
 /**
+ * Resalta un elemento con error de forma temporal (vuelve a la normalidad tras unos segundos).
+ */
+function resaltarErrorTemporal(el) {
+    if (!el) return;
+    el.classList.add('input-error', 'input-error-shake');
+    setTimeout(() => {
+        el.classList.remove('input-error', 'input-error-shake');
+    }, 4000); // 4 segundos de resaltado
+}
+
+/**
+ * Valida si un string es un link de Google Maps válido.
+ */
+function esGoogleMapsLink(url) {
+    if (!url) return false;
+    const s = String(url).trim().toLowerCase();
+    return s.includes('google.com/maps') || s.includes('maps.app.goo.gl') || s.includes('goo.gl/maps') || s.startsWith('https://maps.google.com');
+}
+
+/**
  * Verifica si a la niñera le faltan datos críticos.
  * Si faltan, abre el modal obligatorio y bloquea el uso de la app.
+ * @param {Object} p - El perfil
+ * @param {Boolean} mostrarErroresVisuales - Si se deben aplicar clases de error (bordes rojos)
  */
-function verificarDatosFaltantesNinera(p) {
+function verificarDatosFaltantesNinera(p, mostrarErroresVisuales = false) {
     if (!p || SESION.cliente || SESION.admin || SESION.supervision) return;
 
+    // Solo limpiar si vamos a mostrar errores nuevos
+    if (mostrarErroresVisuales) {
+        document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error', 'input-error-shake'));
+    }
+
     const faltantes = [];
-    if (!p.telefono || String(p.telefono).trim().length < 8) faltantes.push('Teléfono personal');
-    if (!p.direccion || String(p.direccion).trim().length < 8) faltantes.push('Dirección completa');
-    if (!p.emergencia || String(p.emergencia).trim().length < 8) faltantes.push('Teléfono de emergencia');
-    if (!p.ubicacion || !String(p.ubicacion).trim().startsWith('http')) faltantes.push('Link de Ubicación (Google Maps)');
+    let primerError = null;
+
+    const esTelValido = (v) => String(v || '').replace(/\D/g, '').length === 10;
+
+    if (!esTelValido(p.telefono)) {
+        faltantes.push('Teléfono personal (10 dígitos)');
+        const el = document.getElementById('reg_staff_telefono');
+        if (el && mostrarErroresVisuales) {
+            resaltarErrorTemporal(el);
+            if (!primerError) primerError = el;
+        }
+    }
+    if (!p.direccion || String(p.direccion).trim().length < 8) {
+        faltantes.push('Dirección completa');
+        const el = document.getElementById('reg_staff_direccion');
+        if (el && mostrarErroresVisuales) {
+            resaltarErrorTemporal(el);
+            if (!primerError) primerError = el;
+        }
+    }
+    if (!p.emergencia || !esTelValido(p.emergencia)) {
+        faltantes.push('Teléfono de emergencia (10 dígitos)');
+        const el = document.getElementById('reg_staff_emergencia');
+        if (el && mostrarErroresVisuales) {
+            resaltarErrorTemporal(el);
+            if (!primerError) primerError = el;
+        }
+    }
+    if (!p.ubicacion || !esGoogleMapsLink(p.ubicacion)) {
+        faltantes.push('Link de Ubicación (Google Maps)');
+        const el = document.getElementById('reg_staff_ubicacion');
+        if (el && mostrarErroresVisuales) {
+            resaltarErrorTemporal(el);
+            if (!primerError) primerError = el;
+        }
+    }
 
     const modal = document.getElementById('modalRegistroStaff');
     if (faltantes.length > 0) {
@@ -2869,6 +2968,15 @@ function verificarDatosFaltantesNinera(p) {
         if (document.getElementById('reg_staff_direccion')) document.getElementById('reg_staff_direccion').value = p.direccion || '';
         if (document.getElementById('reg_staff_emergencia')) document.getElementById('reg_staff_emergencia').value = p.emergencia || '';
         if (document.getElementById('reg_staff_ubicacion')) document.getElementById('reg_staff_ubicacion').value = p.ubicacion || '';
+
+        // Añadir efecto de shake y scroll al primer error dentro del modal
+        if (primerError) {
+            primerError.classList.add('input-error-shake');
+            setTimeout(() => {
+                primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (primerError.focus) primerError.focus();
+            }, 300);
+        }
     } else {
         if (modal) modal.style.display = 'none';
     }
@@ -2881,7 +2989,17 @@ async function guardarDatosStaff() {
     const ubi = document.getElementById('reg_staff_ubicacion').value.trim();
     const msg = document.getElementById('msgRegistroStaff');
 
-    if (tel.length < 8 || dir.length < 8 || eme.length < 8 || !ubi.startsWith('http')) {
+    const p = {
+        telefono: tel,
+        direccion: dir,
+        emergencia: eme,
+        ubicacion: ubi
+    };
+
+    // Usar la función de verificación centralizada con el flag de mostrar errores en TRUE
+    verificarDatosFaltantesNinera(p, true);
+
+    if (tel.length < 8 || dir.length < 8 || eme.length < 8 || !esGoogleMapsLink(ubi)) {
         msg.innerHTML = '<span class="err">Por favor, completa todos los campos correctamente.</span>';
         return;
     }
@@ -2899,6 +3017,7 @@ async function guardarDatosStaff() {
 
         if (res.ok) {
             msg.innerHTML = '<span class="ok">¡Información guardada! Cargando...</span>';
+            CACHE_CLIENTE.profile = null; // Limpiar caché para forzar recarga
             setTimeout(() => {
                 const modal = document.getElementById('modalRegistroStaff');
                 if (modal) modal.style.display = 'none';
@@ -3106,7 +3225,8 @@ async function reenviarPlaneacionCorregida() {
         }
 
         // SMART CACHE: Invalida esta fecha específica para que se recargue si se abre el modal
-        delete CACHE_PLANEACIONES[`${payload.cliente}|${payload.fecha}`];
+        const keyCache = `${payload.cliente}|${payload.fecha}|${normalizarTexto(payload.nombre_ninera || '')}`;
+        delete CACHE_PLANEACIONES[keyCache];
     } catch (err) {
         restaurarBoton(btn);
         mostrarToast('❌ Error al reenviar');
@@ -3166,7 +3286,14 @@ async function guardarPlaneacionNeuronanny() {
     const fn = PLANEACION_EXISTENTE ? 'editarPlaneacionNeuronanny' : 'guardarPlaneacionNeuronanny';
 
     try {
-        await api(fn, { ...payload, email: SESION.email });
+        const res = await api(fn, { ...payload, email: SESION.email });
+
+        // Actualizar estado local para que las siguientes pulsaciones (si no cierra el modal) 
+        // usen el ID correcto o sepan que ya existe.
+        if (res && res.fila) {
+            PLANEACION_EXISTENTE = { ...payload, fila: res.fila };
+        }
+
         // Actualización Reactiva: Refrescar resumen en segundo plano
         if (SESION.admin || SESION.supervision) {
             cargarResumenPlaneaciones(true, true);
@@ -3175,7 +3302,8 @@ async function guardarPlaneacionNeuronanny() {
         }
 
         // SMART CACHE: Invalida esta fecha específica para que se recargue si se abre el modal
-        delete CACHE_PLANEACIONES[`${payload.cliente}|${payload.fecha}`];
+        const keyCache = `${payload.cliente}|${payload.fecha}|${normalizarTexto(payload.nombre_ninera || '')}`;
+        delete CACHE_PLANEACIONES[keyCache];
 
         btn.textContent = 'Guardado ✓';
         setTimeout(() => {
@@ -3411,6 +3539,9 @@ window.addEventListener('load', async function () {
             }
         });
     }
+
+    // Inicializar máscaras de teléfono
+    ['reg_staff_telefono', 'reg_staff_emergencia', 'reg_tel', 'reg_emergencia'].forEach(setupPhoneMask);
 });
 
 /* =========================================
@@ -3916,27 +4047,39 @@ function cancelarFormularioCliente() {
 }
 window.cancelarFormularioCliente = cancelarFormularioCliente;
 
-function verificarDatosFaltantesCliente(p) {
+/**
+ * Verifica datos faltantes del cliente.
+ * @param {Object} p - El payload del perfil
+ * @param {Boolean} mostrarErroresVisuales - Si se deben resaltar los errores con rojo temporal
+ */
+function verificarDatosFaltantesCliente(p, mostrarErroresVisuales = false) {
     if (!p) return true; // Falta todo
 
+    // Solo limpiar errores si vamos a mostrar resaltados nuevos
+    if (mostrarErroresVisuales) {
+        document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error', 'input-error-shake'));
+    }
+
     const req = [
-        { keys: ['rol'], label: 'Rol (Mamá, Papá, Familiar)' },
-        { keys: ['nombre_completo', 'nombre'], label: 'Nombre completo' },
-        { keys: ['dirección', 'direccion'], label: 'Dirección' },
-        { keys: ['ubicación', 'ubicacion'], label: 'Ubicación' },
-        { keys: ['teléfono', 'telefono'], label: 'Teléfono' },
-        { keys: ['no._de_emergencia', 'No. de emergencia', 'no. de emergencia', 'emergencia'], label: 'Contacto de emergencia' }, // Added 'emergencia'
-        { keys: ['no._de_mascotas', 'no. de mascotas', 'mascotas'], label: 'No. de mascotas' },
-        { keys: ['nombre_del_peque', 'nombre del peque', 'peque_nombre'], label: 'Nombre del peque' }, // Added 'peque_nombre'
-        { keys: ['fecha_de_nacimiento', 'fecha de nacimiento', 'peque_nacimiento'], label: 'Fecha de nacimiento' }, // Added 'peque_nacimiento'
-        { keys: ['alergias'], label: 'Alergias' },
-        { keys: ['condición_médica_o_especificaciones_adicionales', 'condicion_medica', 'condicion'], label: 'Condición médica' },
-        { keys: ['estado_de_salud_actual', 'estado de salud', 'salud'], label: 'Estado de salud' },
-        { keys: ['preferencias_o_actividades_favoritas', 'preferencias'], label: 'Preferencias' },
-        { keys: ['políticas_de_contratación', 'politicas_de_contratacion', 'politicas', 'politicas_aceptadas'], label: 'Políticas de contratación' } // Added 'politicas_aceptadas'
+        { keys: ['rol'], id: 'reg_rol', label: 'Rol (Mamá, Papá, Familiar)' },
+        { keys: ['nombre_completo', 'nombre'], id: 'reg_nombre', label: 'Nombre completo' },
+        { keys: ['dirección', 'direccion'], id: 'reg_direccion', label: 'Dirección' },
+        { keys: ['ubicación', 'ubicacion'], id: 'reg_ubicacion', label: 'Ubicación (Google Maps)', validate: esGoogleMapsLink },
+        { keys: ['teléfono', 'telefono'], id: 'reg_tel', label: 'Teléfono (10 dígitos)', validate: (v) => String(v || '').replace(/\D/g, '').length === 10 },
+        { keys: ['no._de_emergencia', 'No. de emergencia', 'no. de emergencia', 'emergencia'], id: 'reg_emergencia', label: 'Contacto de emergencia (10 dígitos)', validate: (v) => String(v || '').replace(/\D/g, '').length === 10 },
+        { keys: ['no._de_mascotas', 'no. de mascotas', 'mascotas'], id: 'reg_mascotas', label: 'No. de mascotas' },
+        { keys: ['nombre_del_peque', 'nombre del peque', 'peque_nombre'], id: 'reg_peque_nombre', label: 'Nombre del peque' },
+        { keys: ['fecha_de_nacimiento', 'fecha de nacimiento', 'peque_nacimiento'], id: 'reg_peque_nac', label: 'Fecha de nacimiento' },
+        { keys: ['alergias'], id: 'reg_alergias', label: 'Alergias' },
+        { keys: ['condición_médica_o_especificaciones_adicionales', 'condicion_medica', 'condicion'], id: 'reg_condicion', label: 'Condición médica' },
+        { keys: ['estado_de_salud_actual', 'estado de salud', 'salud'], id: 'reg_salud', label: 'Estado de salud' },
+        { keys: ['preferencias_o_actividades_favoritas', 'preferencias'], id: 'reg_preferencias', label: 'Preferencias' },
+        { keys: ['políticas_de_contratación', 'politicas_de_contratacion', 'politicas', 'politicas_aceptadas'], id: 'reg_politicas_aceptadas', label: 'Políticas de contratación' }
     ];
 
     const faltantes = [];
+    let primerError = null;
+
     req.forEach(f => {
         let val = '';
         if (f.keys) {
@@ -3950,8 +4093,35 @@ function verificarDatosFaltantesCliente(p) {
             val = String(p[f.key] || '').trim();
         }
 
-        if (val.length < 1) faltantes.push(f.label);
+        const esInvalido = val.length < 1 || (f.validate && !f.validate(val));
+
+        if (esInvalido) {
+            faltantes.push(f.label);
+            const el = document.getElementById(f.id);
+            if (el) {
+                let targetHighlight = el;
+                // Manejo especial para campos ocultos o grupos
+                if (f.id === 'reg_rol') {
+                    targetHighlight = document.querySelector('.role-selection-group') || el;
+                } else if (f.id === 'reg_politicas_aceptadas') {
+                    targetHighlight = document.getElementById('btn_aceptar_politicas') || el;
+                }
+
+                if (mostrarErroresVisuales) {
+                    resaltarErrorTemporal(targetHighlight);
+                }
+
+                if (!primerError) primerError = targetHighlight;
+            }
+        }
     });
+
+    if (primerError && mostrarErroresVisuales) {
+        setTimeout(() => {
+            primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (primerError.focus && primerError.tagName !== 'DIV') primerError.focus();
+        }, 100);
+    }
 
     return faltantes.length > 0;
 }
@@ -4154,8 +4324,8 @@ async function guardarRegistroCompleto() {
     };
 
     // ---------------------------------------------------------
-    // CHANGE: Validate before sending
-    if (verificarDatosFaltantesCliente(payload)) {
+    // CHANGE: Validate before sending - AHORA CON EL FLAG PARA MOSTRAR ERRORES
+    if (verificarDatosFaltantesCliente(payload, true)) {
         if (btn) {
             btn.textContent = originalText;
             btn.disabled = false;
