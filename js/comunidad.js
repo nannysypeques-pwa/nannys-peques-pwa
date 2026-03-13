@@ -9575,10 +9575,10 @@ const Comunidad = {
             noticiasNinera: [
                 {
                     id: 1,
-                    titulo: "Capacitación: Control de esfínteres",
-                    content: "Acompaña a tu peque en este importante paso en su desarrollo",
-                    tipo: "Capacitación",
-                    fecha: "17 de Febrero 2026"
+                    titulo: "Capacitaciones todos los meses",
+                    content: "-",
+                    tipo: "-",
+                    fecha: "-"
                 },
 
             ]

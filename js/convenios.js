@@ -404,15 +404,15 @@ const Convenios = {
             {
                 id: 29,
                 ciudad: "Puebla",
-                categoria: "Ópticas",
-                nombre: "Grupo Optico AT - SAN MANUEL",
-                cedula: "6766636",
-                descripcion: "Prevenhealth es un clínica que ofrece principalmente servicios relacionados con atención física y mental, combinando elementos de fisioterapia y acompañamiento psicológico.",
-                beneficio: "20% de descuento en cualquier servicio, incluyendo: armazón oftálmico, micas graduadas, adaptación de lentes de contacto y lentes solares. <br> Además, se incluye tratamiento antirreflejante sin costo en todas las micas graduadas.",
-                maps: "https://maps.app.goo.gl/h723fnFM8kFLZDyV6",
-                whatsapp: "https://wa.me/522215868081",
-                telefono: "2215868081",
-                imagen: "assets/img/convenios/27.jpg"
+                categoria: "Fisioterapia",
+                nombre: "FISIOLIFE MONDRAGÓN",
+                cedula: "11218733",
+                descripcion: "Nos enfocamos al mejoramiento de la calidad de vida de los pacientes mediante la rehabilitación integral de sus discapacidades transitorias o permanentes, brindado servicios en rehabilitación deportiva, pos operatoria , geriátrica, osteopatia, estética.",
+                beneficio: "30% de descuento en las sesiones.",
+                maps: "https://maps.app.goo.gl/rYqRPUz5EYJs43kAA",
+                whatsapp: "https://wa.me/522224643233",
+                telefono: "2224643233",
+                imagen: "assets/img/convenios/29.jpg"
             },
 
             {
@@ -541,6 +541,118 @@ const Convenios = {
                 imagen: "assets/img/convenios/38.jpg"
             },
 
+            {
+                id: 39,
+                ciudad: "Puebla",
+                categoria: "Ópticas",
+                nombre: "Óptica Eliot",
+                cedula: "-",
+                descripcion: "Óptica Eliot es un negocio dedicado al cuidado de la visión que ofrece productos y servicios ópticos como exámenes visuales, venta de lentes graduados, lentes de sol, lentes de contacto y asesoría especializada para mejorar la salud visual de sus clientes.",
+                beneficio: "15% de descuento en todos nuestros servicios en micas, tratamientos y armazones.",
+                maps: "https://maps.app.goo.gl/G3Px1dhpHfkb1UeS7",
+                whatsapp: "https://wa.me/522229137105",
+                telefono: "2229137105",
+                imagen: "assets/img/convenios/39.png"
+            },
+
+            {
+                id: 40,
+                ciudad: "Puebla",
+                categoria: "Fitness",
+                nombre: "KAIROS",
+                descripcion: "Somos un centro integral de movimiento consciente, con la intención de empoderar a las personas mediante técnicas seguras que involucren cuerpo y mente para construir bienestar y confianza.",
+                beneficio: "15% De descuento en membresías superiores a 4 clases.<br>•10% De descuento en clases sueltas y clases privadas.<br>•Inscripción gratuita.<br>•Clase muestra gratis",
+                maps: "https://maps.app.goo.gl/PEAzkSugcTrNKjer9",
+                whatsapp: "https://wa.me/522211324029",
+                telefono: "2211324029",
+                imagen: "assets/img/convenios/40.jpeg"
+            },
+
+            {
+                id: 41,
+                ciudad: "Xalapa",
+                categoria: "Psicología",
+                nombre: "VITALIA PSICOLOGÍA Y SALUD INTEGRAL",
+                cedula: "1139645 - 15056469",
+                descripcion: "VITALIA es un espacio dedicado a brindar atención psicológica para mejorar la salud mental y emocional de las personas con un ambiente cálido, seguro y con perspectiva de género, donde las personas pueden recibir apoyo profesional para avanzar en su proceso personal.",
+                beneficio: "Sesión individual $250 y $400 sesiones de pareja. <br>•Servicios: Atención psicológica para niños, adolescentes, adultos y parejas. <br>•Enfoque: Cognitivo Conductual<br>•Atención para: Duelos, estrés laboral, depresión, ansiedad, dependencia, crianza y maternidad, violencia de género, gestión emocional, TDAH, problemas de conducta y autoestima",
+                maps: "https://maps.app.goo.gl/QfM5DssNbze1AwuX7",
+                whatsapp: "https://wa.me/522287533559",
+                telefono: "2287533559",
+                imagen: "assets/img/convenios/41.jpeg"
+            },
+
+            {
+                id: 42,
+                ciudad: "Xalapa",
+                categoria: "Psicología",
+                nombre: "Psic. Dahiana Iday Baradas García",
+                cedula: "13029467 - 15090009",
+                descripcion: "Dahiana Barradas es Licenciada en Psicología con especialización en Psicología Clínica y de la Salud, lo cual indica que ha estudiado la comprensión y atención de procesos emocionales y conductuales en diferentes etapas de la vida (niños, adolescentes, adultos) con un enfoque profesional terapéutico.",
+                beneficio: "20% de descuento en total de los honorarios para familias contratantes de Nannys y Peques<br>•30% de descuento en total de los honorarios para nannys",
+                maps: "https://maps.app.goo.gl/8kUrJv3zPb2ok3188",
+                whatsapp: "https://wa.me/522281440849",
+                telefono: "2281440849",
+                imagen: "assets/img/convenios/42.jpeg"
+            },
+
+            {
+                id: 43,
+                ciudad: "Xalapa",
+                categoria: "Psicología",
+                nombre: "Psic. Dahiana Iday Baradas García",
+                cedula: "13029467 - 15090009",
+                descripcion: "Dahiana Barradas es Licenciada en Psicología con especialización en Psicología Clínica y de la Salud, lo cual indica que ha estudiado la comprensión y atención de procesos emocionales y conductuales en diferentes etapas de la vida (niños, adolescentes, adultos) con un enfoque profesional terapéutico.",
+                beneficio: "20% de descuento en total de los honorarios para familias contratantes de Nannys y Peques<br>•30% de descuento en total de los honorarios para nannys",
+                maps: "https://maps.app.goo.gl/8kUrJv3zPb2ok3188",
+                whatsapp: "https://wa.me/522281440849",
+                telefono: "2281440849",
+                imagen: "assets/img/convenios/42.jpeg"
+            },
+
+            {
+                id: 44,
+                ciudad: "Xalapa",
+                categoria: "Psicología",
+                nombre: "PSIC. RAQUEL CAMARERO",
+                cedula: "14304560",
+                descripcion: "La Psicóloga Raquel Camarero es una profesional dedicada al acompañamiento psicológico y al desarrollo del bienestar emocional de sus pacientes. Su trabajo se centra en ayudar a las personas a mejorar su salud mental, fortalecer sus habilidades personales y alcanzar una vida más equilibrada y satisfactoria.",
+                beneficio: "20% de descuento en los servicios de atención psicológica",
+                maps: "https://maps.app.goo.gl/JeBqA4FnZJxxLK4K9",
+                whatsapp: "https://wa.me/522288376521",
+                telefono: "2288376521",
+                imagen: "assets/img/convenios/44.jpeg"
+            },
+
+            {
+                id: 45,
+                ciudad: "Xalapa",
+                categoria: "Ópticas",
+                nombre: "Opticas Tobo Xalapa",
+                cedula: "8697507",
+                descripcion: "Su objetivo principal es mejorar la calidad de vida de los clientes mediante soluciones visuales, combinando asesoría personalizada con la venta de productos ópticos de diferentes estilos y graduaciones. En este tipo de establecimientos también se brinda orientación sobre el cuidado de los ojos y el uso adecuado de lentes.",
+                beneficio: "60% de descuento en armazones, micas y tratamientos. <br>•30% de descuento en lentes de contacto.<br>•50% de descuento en recetas optométricas.",
+                maps: "https://maps.app.goo.gl/ANnihb1XXcnYMuoN8",
+                whatsapp: "https://wa.me/522281341268",
+                telefono: "2281341268",
+                imagen: "assets/img/convenios/45.jpeg"
+            },
+
+            {
+                id: 46,
+                ciudad: "Xalapa",
+                categoria: "Nutrición",
+                nombre: "Nutriólogo Miguel Heredia",
+                cedula: "12915021",
+                descripcion: "Dedicado a evaluar el estado nutricional de las personas y diseñar estrategias alimentarias adaptadas a sus necesidades individuales. Su enfoque considera que la alimentación influye directamente en la salud física, el bienestar emocional y el rendimiento diario.",
+                beneficio: "Descuento del 20% en el programa nutricional mensual que incluye:<br>•Plan de alimentación personalizado mensual.<br>•Análisis de composición corporal (InBody).<br>•Asesoría en suplementación (si es necesaria).<br>•Seguimiento para resolver dudas vía Whatsapp.",
+                maps: "https://maps.app.goo.gl/F9nHXyMVDB1fFrYy6",
+                whatsapp: "https://wa.me/522283588270",
+                telefono: "2283588270",
+                imagen: "assets/img/convenios/46.jpeg"
+            },
+
+
 
 
 
@@ -549,7 +661,7 @@ const Convenios = {
         ],
         ciudades: ["Puebla", "Xalapa", "Querétaro", "CDMX"],
         categorias: [
-            "Doctor", "Pediatra", "Dentista", "Psicología",
+            "Doctor", "Pediatra", "Dentista", "Psicología", "Fitness",
             "Fisioterapia", "Nutrición", "Ginecología", "Diversión", "Salud y belleza", "Ejercicio",
             "Restaurantes", "Tiendas de moda", "Ópticas", "Lactancia"
         ]
