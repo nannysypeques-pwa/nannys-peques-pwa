@@ -597,20 +597,6 @@ const Convenios = {
             },
 
             {
-                id: 43,
-                ciudad: "Xalapa",
-                categoria: "Psicología",
-                nombre: "Psic. Dahiana Iday Baradas García",
-                cedula: "13029467 - 15090009",
-                descripcion: "Dahiana Barradas es Licenciada en Psicología con especialización en Psicología Clínica y de la Salud, lo cual indica que ha estudiado la comprensión y atención de procesos emocionales y conductuales en diferentes etapas de la vida (niños, adolescentes, adultos) con un enfoque profesional terapéutico.",
-                beneficio: "20% de descuento en total de los honorarios para familias contratantes de Nannys y Peques<br>•30% de descuento en total de los honorarios para nannys",
-                maps: "https://maps.app.goo.gl/8kUrJv3zPb2ok3188",
-                whatsapp: "https://wa.me/522281440849",
-                telefono: "2281440849",
-                imagen: "assets/img/convenios/42.jpeg"
-            },
-
-            {
                 id: 44,
                 ciudad: "Xalapa",
                 categoria: "Psicología",
