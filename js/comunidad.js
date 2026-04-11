@@ -9559,17 +9559,17 @@ const Comunidad = {
             noticiasCliente: [
                 {
                     id: 1,
-                    titulo: "¡Regreso a Clases con Descuentos!",
-                    content: "Aprovecha nuestras promociones en servicios educativos durante todo el mes de agosto.",
+                    titulo: "¡Regreso de vacaciones!",
+                    content: "Aprovecha nuestras promociones en servicios eventuales de lunes a viernes con 10% desde servicios de 6 horas.",
                     tipo: "Promo",
-                    fecha: "Hoy"
+                    fecha: "Todo Abril"
                 },
                 {
                     id: 2,
-                    titulo: "Taller para Padres: Lactancia Materna",
-                    content: "Próximo sábado 22 de marzo. Charla informativa gratuita.",
+                    titulo: "¿Sabías que tenemos una escuela para padres?",
+                    content: "Conoce CRIANZA CON AMOR, un espacio creado para compartir toda nuestra experiencia con nuestras mamás y papás",
                     tipo: "Evento",
-                    fecha: "Pronto"
+                    fecha: "Capacitaciones para padres todos los meses, pide más información"
                 }
             ],
             noticiasNinera: [

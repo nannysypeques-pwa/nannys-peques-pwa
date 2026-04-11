@@ -638,6 +638,132 @@ const Convenios = {
                 imagen: "assets/img/convenios/46.jpeg"
             },
 
+            {
+                id: 47,
+                ciudad: "Puebla",
+                categoria: "Lactancia",
+                nombre: "Dra. Emma Diaz",
+                cedula: "14546873",
+                descripcion: "Está enfocada en brindar acompañamiento profesional y apoyo emocional en lactancia materna. A través de contenido educativo y asesorías personalizadas, ofrece guía a madres durante su proceso de lactancia, ayudándolas a vivir esta etapa con mayor seguridad, información y confianza.",
+                beneficio: "10% de descuento en talleres de asesoría de lactancia, prenatales, de aumento y formación de banco de leche y destete guiado y acompañado.",
+                maps: "https://maps.app.goo.gl/yUSaF2VNtTBh46Xy9",
+                whatsapp: "https://wa.me/522224463422",
+                telefono: "2224463422",
+                imagen: "assets/img/convenios/47.jpg"
+            },
+
+            {
+                id: 48,
+                ciudad: "Puebla",
+                categoria: "Pediatría",
+                nombre: "NEO PEDIAT PEDRIATRÍA/NEONATOLOGÍA",
+                cedula: "5607124 - 6167065",
+                descripcion: "Somos un equipo de alta especialidad en Pediatría, y nuestro mayor compromiso es preservar la Salud de nuestros niños desde el nacimiento. Conformamos un proyecto vanguardista, diferente y único en Puebla.",
+                beneficio: "20% de descuento en consultas pediátricas<br>•20% de descuentos en todos los tamices de recién nacido.",
+                maps: "https://maps.app.goo.gl/9MTLNv3rxwTNqT1P9",
+                whatsapp: "https://wa.me/522221615314",
+                telefono: "2221615314",
+                imagen: "assets/img/convenios/48.jpg"
+            },
+
+            {
+                id: 49,
+                ciudad: "Xalapa",
+                categoria: "Dentista",
+                nombre: "CEDEC Dental Center",
+                cedula: "7151020",
+                descripcion: "Somos un equipo de odontólogos especialistas, profesionales de la salud, al servicio de tu salud, preocupados por brindarte nuestro mejor servicio.",
+                beneficio: "Beneficios extensibles para toda la familia.<br>•25%de descuento en todos los procedimientos con pago de contado o transferencia.<br>•50% de descuento en consulta de Valoración.",
+                maps: "https://maps.app.goo.gl/xvAmK3LL9bfuJJKu5",
+                whatsapp: "https://wa.me/522281400910",
+                telefono: "2281400910",
+                imagen: "assets/img/convenios/49.jpg"
+            },
+
+            {
+                id: 50,
+                ciudad: "Xalapa",
+                categoria: "Dentista",
+                nombre: "ALPHA INTEGRA - Sucursal Escuela Normal Veracruzana",
+                cedula: "4448138",
+                descripcion: "Alpha Integra es una clínica odontológica que ofrece atención personalizada y tratamientos de alta calidad, combinando experiencia, innovación y un enfoque humano bajo la dirección de la Dra. Paula Ma. Sánchez.",
+                beneficio: "Sesiones informativas dirigidas a padres y cuidadores sobre prevención de caries infantil, técnica correcta de cepillado, hábitos alimenticios saludables y desarrollo dental infantil.<br>•Descuentos especiales en tratamientos extensibles a familiares de las colaboradoras y los peques de la comunidad.",
+                maps: "https://maps.app.goo.gl/ndb6RAPd7KYWbUfP7",
+                whatsapp: "https://wa.me/522281861313",
+                telefono: "2281861313",
+                imagen: "assets/img/convenios/50.jpg"
+            },
+
+            {
+                id: 51,
+                ciudad: "Xalapa",
+                categoria: "Dentista",
+                nombre: "ALPHA INTEGRA - Sucursal La Pradera",
+                cedula: "4448138",
+                descripcion: "Alpha Integra es una clínica odontológica que ofrece atención personalizada y tratamientos de alta calidad, combinando experiencia, innovación y un enfoque humano bajo la dirección de la Dra. Paula Ma. Sánchez.",
+                beneficio: "Sesiones informativas dirigidas a padres y cuidadores sobre prevención de caries infantil, técnica correcta de cepillado, hábitos alimenticios saludables y desarrollo dental infantil.<br>•Descuentos especiales en tratamientos extensibles a familiares de las colaboradoras y los peques de la comunidad.",
+                maps: "https://maps.app.goo.gl/DiVZgDGusDbuxrz36",
+                whatsapp: "https://wa.me/522281861313",
+                telefono: "2281861313",
+                imagen: "assets/img/convenios/50.jpg"
+            },
+
+            {
+                id: 52,
+                ciudad: "Xalapa",
+                categoria: "Ópticas",
+                nombre: "JARHIM OPTICOS",
+                cedula: "7533516",
+                descripcion: "JARHIM Ópticos ofrece exámenes optométricos completos y personalizados, adaptados a las necesidades de cada paciente. Además de brindar soluciones visuales efectivas, busca mantener precios accesibles sin comprometer la calidad, para que más personas puedan mejorar su visión.",
+                beneficio: "Examen optométrico profesional sin costo.<br>•Paquetes completos desde $350.<br>•Descuento del 15% a partir del paquete ANTIBLUE Básico.",
+                maps: "https://maps.app.goo.gl/NYjq5qGQu12KsuLa7",
+                whatsapp: "https://wa.me/522282133483",
+                telefono: "2282133483",
+                imagen: "assets/img/convenios/52.jpg"
+            },
+
+            {
+                id: 53,
+                ciudad: "Xalapa",
+                categoria: "Nutrición",
+                nombre: "Teotl Centro de Nutrición y Entrenamiento.",
+                cedula: "15496569",
+                descripcion: "“Teotl Nutrición y Entrenamiento” es un consultorio de asesoría en nutrición y acompañamiento fitness que ayuda a mejorar la alimentación, entrenar de forma efectiva y lograr cambios físicos reales, promoviendo hábitos que permiten mantener resultados a largo plazo.",
+                beneficio: "20% de descuento en todas sus consultas (primera vez y subsecuentes).<br>•Costo de mensualidad de gimnasio $200 el mes.",
+                maps: "https://maps.app.goo.gl/J1kZRpPfCC4o3rFm6",
+                whatsapp: "https://wa.me/522311012569",
+                telefono: "2311012569",
+                imagen: "assets/img/convenios/53.jpg"
+            },
+
+            {
+                id: 54,
+                ciudad: "Xalapa",
+                categoria: "Nutrición",
+                nombre: "Greens Fresco y Saludable",
+                cedula: "8857927",
+                descripcion: "En Greens, te cuidamos con cada bocado: alimentos saludables, llenos de sabor, nutrición y buena vibra para tu bienestar.",
+                beneficio: "1. Nutrición - 3 sesiones por $800 Incluye plan, asesoría, escaneo, app y rutina.<br>•2. Comidas preparadas - 20 días por $3300 Incluye 3 comidas + 2 colaciones, envío en Xalapa y seguimiento.<br>•3. Cafetería - 10% de descuento pagando en efectivo.",
+                maps: "https://maps.app.goo.gl/zPaqxtqymJKRtEGj7",
+                whatsapp: "https://wa.me/522282223872",
+                telefono: "2282223872",
+                imagen: "assets/img/convenios/54.jpg"
+            },
+
+            {
+                id: 55,
+                ciudad: "Xalapa",
+                categoria: "Fisioterapia",
+                nombre: "Fisiovel - Centro de rehabilitación física y estimulación temprana",
+                cedula: "15128169",
+                descripcion: "Somos un Centro de rehabilitación y estimulación temprana, enfocados en el desarrollo infantil de los peques de los 0 meses hasta los 6 años, déjanos acompañarte en este camino, sesiones grupales e individuales.",
+                beneficio: "Terapia física personalizada (para diversas lesiones o padecimientos), incluye ejercicios y aparatología. - Costo: $300 preferencial.<br>•Estimulación temprana (0–4 años) para desarrollo motriz, cognitivo y social, fortaleciendo el vínculo con padres. - Costo mensual: $400 preferencial",
+                maps: "https://maps.app.goo.gl/b4LDaZc46NKzD75Y9",
+                whatsapp: "https://wa.me/522281900496",
+                telefono: "2281900496",
+                imagen: "assets/img/convenios/55.jpg"
+            },
+
 
 
 
@@ -649,7 +775,7 @@ const Convenios = {
         categorias: [
             "Doctor", "Pediatra", "Dentista", "Psicología", "Fitness",
             "Fisioterapia", "Nutrición", "Ginecología", "Diversión", "Salud y belleza", "Ejercicio",
-            "Restaurantes", "Tiendas de moda", "Ópticas", "Lactancia"
+            "Restaurantes", "Tiendas de moda", "Ópticas", "Lactancia", "Pediatría"
         ]
     },
 

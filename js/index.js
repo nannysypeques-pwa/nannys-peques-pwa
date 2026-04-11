@@ -2723,25 +2723,345 @@ async function cargarListaNinerasAdmin() {
 }
 
 /* =========================================
+   COTIZADOR (ADMIN/VENTAS)
+   ========================================= */
+function initCotizador() {
+    const container = document.getElementById('cot_dias_container');
+    if (!container) return;
+
+    const hoy = new Date();
+    document.getElementById('prev_fecha').textContent = hoy.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
+
+    // Solo inyectar si está vacío (evitando contar comentarios HTML)
+    if (container.children.length === 0) {
+        const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        let html = '';
+        diasSemana.forEach(dia => {
+            html += `
+            <div style="display: grid; grid-template-columns: 85px 1fr 1fr; gap: 8px; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.03); padding-bottom: 4px;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; cursor: pointer; color: #4b5563;">
+                    <input type="checkbox" id="cot_chk_${dia}" onchange="updateCotizacion()" style="accent-color: var(--pink-main); width: 14px; height: 14px;">
+                    ${dia}
+                </label>
+                <input type="time" id="cot_ini_${dia}" oninput="updateCotizacion()" style="font-size: 12px; padding: 4px 6px; background: white; border: 1px solid #e5e7eb; border-radius: 4px;">
+                <input type="time" id="cot_fin_${dia}" oninput="updateCotizacion()" style="font-size: 12px; padding: 4px 6px; background: white; border: 1px solid #e5e7eb; border-radius: 4px;">
+            </div>
+            `;
+        });
+        container.innerHTML = html;
+    }
+
+    // Register drag events for all dynamic text overlays safely
+    const draggables = document.querySelectorAll('.cot-draggable');
+    draggables.forEach(elmnt => {
+        if (!elmnt.dataset.dragAttached) {
+            makeDraggable(elmnt);
+            elmnt.dataset.dragAttached = "true";
+        }
+    });
+}
+
+function makeDraggable(elmnt) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+    // Configurar listeners adecuados (passive:false en touch para evitar el scroll accidental)
+    elmnt.addEventListener('mousedown', dragMouseDown);
+    elmnt.addEventListener('touchstart', dragTouchStart, { passive: false });
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.addEventListener('mouseup', closeDragElement);
+        document.addEventListener('mousemove', elementDrag);
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+
+        const parent = elmnt.parentElement;
+        let newTop = elmnt.offsetTop - pos2;
+        let newLeft = elmnt.offsetLeft - pos1;
+
+        elmnt.style.top = (newTop / parent.clientHeight * 100) + "%";
+        elmnt.style.left = (newLeft / parent.clientWidth * 100) + "%";
+    }
+
+    function closeDragElement() {
+        document.removeEventListener('mouseup', closeDragElement);
+        document.removeEventListener('mousemove', elementDrag);
+    }
+
+    function dragTouchStart(e) {
+        if (!e.touches) return;
+        let touch = e.touches[0];
+        pos3 = touch.clientX;
+        pos4 = touch.clientY;
+        document.addEventListener('touchend', closeDragTouch);
+        document.addEventListener('touchmove', elementTouchDrag, { passive: false });
+    }
+
+    function elementTouchDrag(e) {
+        if (!e.touches) return;
+        e.preventDefault(); // IMPORTANTE: Previene el scroll del body mientras mueves el texto
+        let touch = e.touches[0];
+        pos1 = pos3 - touch.clientX;
+        pos2 = pos4 - touch.clientY;
+        pos3 = touch.clientX;
+        pos4 = touch.clientY;
+
+        const parent = elmnt.parentElement;
+        let newTop = elmnt.offsetTop - pos2;
+        let newLeft = elmnt.offsetLeft - pos1;
+
+        elmnt.style.top = (newTop / parent.clientHeight * 100) + "%";
+        elmnt.style.left = (newLeft / parent.clientWidth * 100) + "%";
+    }
+
+    function closeDragTouch() {
+        document.removeEventListener('touchend', closeDragTouch);
+        document.removeEventListener('touchmove', elementTouchDrag);
+    }
+}
+
+function updateCotizacion() {
+    document.getElementById('prev_nombre').textContent = document.getElementById('cot_nombre').value;
+    document.getElementById('prev_telefono').textContent = document.getElementById('cot_telefono').value;
+    document.getElementById('prev_edad').textContent = document.getElementById('cot_edad').value;
+    document.getElementById('prev_zona').textContent = document.getElementById('cot_zona').value;
+    document.getElementById('prev_precio').textContent = document.getElementById('cot_precio').value;
+
+    const notas = document.getElementById('cot_notas').value;
+    document.getElementById('prev_nota').innerHTML = notas.replace(/\n/g, '<br>');
+
+    generarResumenHorariosCotizador();
+}
+
+function generarResumenHorariosCotizador() {
+    const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    let grupos = {};
+
+    dias.forEach(dia => {
+        const chk = document.getElementById(`cot_chk_${dia}`);
+        if (chk && chk.checked) {
+            const ini = document.getElementById(`cot_ini_${dia}`).value;
+            const fin = document.getElementById(`cot_fin_${dia}`).value;
+            const horarioStr = (ini || '??') + ' a ' + (fin || '??') + ' hrs';
+
+            if (!grupos[horarioStr]) grupos[horarioStr] = [];
+            grupos[horarioStr].push(dia);
+        }
+    });
+
+    let resumen = [];
+    Object.keys(grupos).forEach(horario => {
+        const d = grupos[horario];
+        let dStr = '';
+        if (d.length === 1) dStr = d[0];
+        else if (d.length === 2) dStr = d[0] + ' y ' + d[1];
+        else if (d.length === 5 && d[0] === 'Lunes' && d[4] === 'Viernes') dStr = 'Lunes a Viernes';
+        else if (d.length === 6 && d[0] === 'Lunes' && d[5] === 'Sábado') dStr = 'Lunes a Sábado';
+        else if (d.length === 7) dStr = 'Toda la semana';
+        else dStr = d.join(', ');
+
+        resumen.push(`<b>${dStr}</b>: ${horario}`);
+    });
+    // Agregamos el texto manual al final (o si es el único)
+    const textoManual = document.getElementById('cot_horario_manual') ? document.getElementById('cot_horario_manual').value.trim() : '';
+    if (textoManual) {
+        resumen.push(`${textoManual}`);
+    }
+
+    document.getElementById('prev_horarios').innerHTML = resumen.join('<br>') || '<em style="opacity:0.6;">(Sin horarios)</em>';
+}
+
+function aplicarMismoHorarioCotizador() {
+    const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    let primerDiaBase = null;
+    for (let dia of dias) {
+        if (document.getElementById(`cot_chk_${dia}`).checked) {
+            primerDiaBase = dia;
+            break;
+        }
+    }
+
+    if (!primerDiaBase) {
+        alert("Por favor selecciona primero un día y su horario para copiarlo a los demás días seleccionados (o a todos si no hay más).");
+        return;
+    }
+
+    const baseIni = document.getElementById(`cot_ini_${primerDiaBase}`).value;
+    const baseFin = document.getElementById(`cot_fin_${primerDiaBase}`).value;
+
+    let copiados = 0;
+    dias.forEach(dia => {
+        const chk = document.getElementById(`cot_chk_${dia}`);
+        if (chk.checked && dia !== primerDiaBase) {
+            document.getElementById(`cot_ini_${dia}`).value = baseIni;
+            document.getElementById(`cot_fin_${dia}`).value = baseFin;
+            copiados++;
+        }
+    });
+
+    if (copiados === 0) {
+        alert("Selecciona la casilla (check) de otros días para que se les aplique este mismo horario.");
+    }
+
+    updateCotizacion();
+}
+
+function descargarCotizacion() {
+    const selector = document.getElementById('cot_ciudad_selector');
+    if (!selector || !selector.value) {
+        alert("🔒 Por favor, selecciona desde qué ciudad cotizas en la parte superior antes de descargar la imagen.");
+        return;
+    }
+
+    const btn = document.querySelector('.cotizador-preview-col .btn-pink');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Generando imagen...';
+    btn.disabled = true;
+
+    if (typeof html2canvas === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'js/html2canvas.min.js';
+        script.onload = () => captureCotizacionElement(btn, originalText);
+        script.onerror = () => {
+            alert('Error al cargar la librería de captura. Intenta de nuevo.');
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        document.head.appendChild(script);
+    } else {
+        captureCotizacionElement(btn, originalText);
+    }
+}
+
+function captureCotizacionElement(btn, originalText) {
+    const element = document.getElementById('cotizador-canvas');
+    // Scroll element into full view or temporal fixed position can sometimes help with canvas capture size
+    html2canvas(element, { backgroundColor: null, scale: 2, useCORS: true, logging: false }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `Cotizacion-${document.getElementById('cot_nombre').value || 'NannysPeques'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }).catch(err => {
+        alert('Error al generar la imagen: ' + err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+/* =========================================
+   CONTROLES EXTRAS (COTIZADOR)
+   ========================================= */
+function updateCotizacionCiudad() {
+    const selector = document.getElementById('cot_ciudad_selector');
+    const zonaInput = document.getElementById('cot_zona');
+    if (selector && zonaInput && selector.value) {
+        zonaInput.value = selector.value;
+        updateCotizacion();
+    }
+}
+
+function limpiarCotizacion() {
+    const inputsText = ['cot_nombre', 'cot_telefono', 'cot_edad', 'cot_zona', 'cot_precio', 'cot_notas', 'cot_horario_manual'];
+    inputsText.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    
+    const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    dias.forEach(dia => {
+        const chk = document.getElementById(`cot_chk_${dia}`);
+        const ini = document.getElementById(`cot_ini_${dia}`);
+        const fin = document.getElementById(`cot_fin_${dia}`);
+        if (chk) chk.checked = false;
+        if (ini) ini.value = '';
+        if (fin) fin.value = '';
+    });
+    
+    // Mantiene las configuraciones visuales (top, left arrastrados)
+    updateCotizacion();
+}
+
+function formatTelefono(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length > 10) value = value.substring(0, 10);
+    
+    let formatted = '';
+    if (value.length > 0) formatted += value.substring(0, 3);
+    if (value.length > 3) formatted += ' ' + value.substring(3, 6);
+    if (value.length > 6) formatted += ' ' + value.substring(6, 10);
+    
+    input.value = formatted;
+}
+
+// Init hook
+document.addEventListener('DOMContentLoaded', () => setTimeout(initCotizador, 1000));
+
+/* =========================================
    RUTEO /VISTAS
    ========================================= */
 function ocultarTodo() {
-    const ids = ['svcCard', 'puntosNineraCard', 'panel', 'tablaActualCard', 'tablaSiguienteCard', 'resumenCard', 'resumenCard2', 'adminCard', 'adminAgendaCard', 'adminPuntosCard', 'adminResumenDispCard'];
+    const ids = ['svcCard', 'puntosNineraCard', 'panel', 'tablaActualCard', 'tablaSiguienteCard', 'resumenCard', 'resumenCard2', 'adminCard', 'adminAgendaCard', 'adminPuntosCard', 'adminResumenDispCard', 'adminCotizadorCard'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 }
 
 function mostrarVistaAdmin() {
     ocultarTodo();
-    document.getElementById('adminCard').style.display = 'block';
-    document.getElementById('adminAgendaCard').style.display = 'block';
-    document.getElementById('adminPuntosCard').style.display = 'block';
-    document.getElementById('adminResumenDispCard').style.display = 'block';
+
+    // Ocultamos navs anteriores
+    const navDefault = document.querySelector('.bottom-nav:not(#nav-supervision):not(#nav-ventas)');
+    const navSuper = document.getElementById('nav-supervision');
+    const navVentas = document.getElementById('nav-ventas');
+    if (navDefault) navDefault.style.display = 'none';
+    if (navSuper) navSuper.style.display = 'none';
+    if (navVentas) navVentas.style.display = 'flex';
 
     const monday = startMonday(new Date());
     ADMIN_WEEK_START_ISO = toISO(monday);
+
+    // Iniciamos la vista por defecto
+    irVistaVentas('cotizador');
+
     cargarAgendaAdminSemana(ADMIN_WEEK_START_ISO);
     cargarResumenDisponibilidadAdmin();
     cargarListaNinerasAdmin();
+}
+
+function irVistaVentas(tab) {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    const ids = ['adminCotizadorCard', 'adminAgendaCard', 'adminResumenDispCard', 'adminCard', 'adminPuntosCard'];
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+
+    document.querySelectorAll('#nav-ventas button').forEach(b => b.classList.remove('activo'));
+    const btn = document.getElementById('vnav-' + tab);
+    if (btn) btn.classList.add('activo');
+
+    if (tab === 'cotizador') {
+        const el = document.getElementById('adminCotizadorCard');
+        if (el) el.style.display = 'block';
+    } else if (tab === 'servicios') {
+        const el = document.getElementById('adminAgendaCard');
+        if (el) el.style.display = 'block';
+    } else if (tab === 'disponibilidad') {
+        const el1 = document.getElementById('adminResumenDispCard');
+        const el2 = document.getElementById('adminCard');
+        if (el1) el1.style.display = 'block';
+        if (el2) el2.style.display = 'block';
+    } else if (tab === 'nannystar') {
+        const el = document.getElementById('adminPuntosCard');
+        if (el) el.style.display = 'block';
+    }
 }
 
 
@@ -2784,22 +3104,8 @@ function irVista(nombre, skipLogic = false) {
 
     // Inicializar módulos dinámicos
     if (target === 'comunidad') {
-        if (SESION.cliente) {
-            // Cliente: Mostrar mensaje de "Próximamente"
-            const container = document.getElementById('vista-comunidad');
-            if (container) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 40px 20px;">
-                        <div style="font-size: 40px; margin-bottom: 20px;">✨</div>
-                        <h2 style="color: var(--pink-main); margin-bottom: 15px;">¡Próximamente!</h2>
-                        <p style="color: var(--text-main); font-size: 16px; line-height: 1.5; max-width: 400px; margin: 0 auto;">
-                            Nuevas sorpresas para nuestra comunidad Nannys y Peques.
-                        </p>
-                    </div>
-                `;
-            }
-        } else if (window.Comunidad) {
-            // Staff/Admin: Cargar feed normal
+        if (window.Comunidad) {
+            // Staff/Admin/Cliente: Cargar feed normal
             Comunidad.init();
         }
     }
@@ -2807,8 +3113,25 @@ function irVista(nombre, skipLogic = false) {
         Convenios.init();
     }
 
+    const navSuper = document.getElementById('nav-supervision');
+    const navDefault = document.querySelector('.bottom-nav:not(#nav-supervision):not(#nav-ventas)');
+    const navVentas = document.getElementById('nav-ventas');
+
+    if (target === 'supervision' && SESION.supervision) {
+        if (navSuper) navSuper.style.display = 'flex';
+        if (navDefault) navDefault.style.display = 'none';
+        if (navVentas) navVentas.style.display = 'none';
+    } else {
+        if (navSuper) navSuper.style.display = 'none';
+        if (navDefault) navDefault.style.display = 'flex';
+        if (navVentas) navVentas.style.display = 'none';
+    }
+
     document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('activo'));
-    const btn = [...document.querySelectorAll('.bottom-nav button')].find(b => b.getAttribute('onclick')?.includes(nombre));
+    const btn = [...document.querySelectorAll('.bottom-nav button')].find(b => {
+        const onClick = b.getAttribute('onclick') || '';
+        return onClick.includes("'" + nombre + "'") || onClick.includes('"' + nombre + '"');
+    });
     if (btn) btn.classList.add('activo');
 
     //Lógica adicional por vista y rol
@@ -3311,7 +3634,11 @@ async function guardarPlaneacionNeuronanny() {
         }, 1500);
     } catch (err) {
         restaurarBoton(btn);
-        mostrarToast('❌ Error al guardar');
+        if (err.message && err.message.toLowerCase().includes('ya guardaste una planeación')) {
+            mostrarToast('✅ Ya tienes una planeación guardada, puedes continuar');
+        } else {
+            mostrarToast('❌ ' + (err.message || 'Error al guardar'));
+        }
         console.error(err);
     }
 }
@@ -4441,6 +4768,18 @@ async function cargarPerfil(force = false) {
                 if (containerCredencial) containerCredencial.style.display = 'flex';
                 const emailContainer = document.getElementById('perfil-email-container');
                 if (emailContainer) emailContainer.classList.remove('full');
+
+                // --- NUEVO: Cargar Estadísticas Nanny star ---
+                /* TEMPORALMENTE OCULTO
+                api('getNannyStarStats', { email: SESION.email }).then(horas => {
+                    const horasEl = document.getElementById('perfil_nanny_star_horas');
+                    const containerStar = document.getElementById('perfil-nanny-star-container');
+                    if (horasEl) horasEl.textContent = horas || 0;
+                    if (containerStar) containerStar.style.display = 'block';
+                }).catch(err => {
+                    console.error('Error al cargar Nanny star stats:', err);
+                });
+                */
             } else {
                 if (seccionPeques) seccionPeques.style.display = 'block';
                 if (itemMascotas) itemMascotas.style.display = 'block';
@@ -4451,11 +4790,11 @@ async function cargarPerfil(force = false) {
                 const btnEditar = document.querySelector('.profile-actions .btn-primary');
                 if (btnEditar) btnEditar.style.display = 'block';
 
-                // Ocultar botón de credencial
+                // Mostrar botón de credencial para familia
                 const containerCredencial = document.getElementById('perfil-nanny-credential-container');
-                if (containerCredencial) containerCredencial.style.display = 'none';
+                if (containerCredencial) containerCredencial.style.display = 'flex';
                 const emailContainer = document.getElementById('perfil-email-container');
-                if (emailContainer) emailContainer.classList.add('full');
+                if (emailContainer) emailContainer.classList.remove('full');
             }
 
             //Contacto
@@ -4557,6 +4896,124 @@ async function cargarPerfil(force = false) {
     }
 }
 window.cargarPerfil = cargarPerfil;
+
+/**
+ * Actualiza el acumulado de horas de la niñera en la sección "Nanny star"
+ */
+async function refreshNannyStar() {
+    const btn = document.getElementById('btnRefreshNannyStar');
+    const horasEl = document.getElementById('perfil_nanny_star_horas');
+    if (!btn || !horasEl) return;
+
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '🔄 Actualizando...';
+
+    try {
+        const horas = await api('getNannyStarStats', { email: SESION.email });
+        horasEl.textContent = horas || 0;
+        mostrarToast('⭐ Acumulado de horas actualizado.');
+    } catch (err) {
+        console.error(err);
+        mostrarToast('❌ Error al actualizar horas.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+window.refreshNannyStar = refreshNannyStar;
+
+/**
+ * Cambia sub-vistas dentro del panel de supervisión
+ */
+function irSubVistaSupervision(subvista) {
+    const vAct = document.getElementById('subvista-supervision-actividades');
+    const vStar = document.getElementById('subvista-supervision-nannystar');
+
+    if (subvista === 'actividades') {
+        if (vAct) vAct.style.display = 'block';
+        if (vStar) vStar.style.display = 'none';
+    } else if (subvista === 'nannystar') {
+        if (vAct) vAct.style.display = 'none';
+        if (vStar) vStar.style.display = 'block';
+    }
+
+    // Actualizar botones nav
+    document.querySelectorAll('#nav-supervision button').forEach(b => b.classList.remove('activo'));
+    const btn = document.getElementById('snav-' + subvista);
+    if (btn) btn.classList.add('activo');
+}
+window.irSubVistaSupervision = irSubVistaSupervision;
+
+/**
+ * Carga el leaderboard de Nanny Star para supervisores
+ */
+async function cargarLeaderboardSupervision() {
+    const btn = document.getElementById('btnRefreshLeaderboard');
+    const container = document.getElementById('leaderboard-container');
+    if (!btn || !container) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '✨ Cargando ranking...';
+
+    try {
+        const data = await api('getAllNanniesStarStats');
+        renderNannyStarLeaderboard(data);
+    } catch (err) {
+        console.error(err);
+        mostrarToast('❌ Error al cargar ranking.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '✨ Cargar información';
+    }
+}
+window.cargarLeaderboardSupervision = cargarLeaderboardSupervision;
+
+/**
+ * Renderiza el leaderboard con un diseño premium
+ */
+function renderNannyStarLeaderboard(data) {
+    const container = document.getElementById('leaderboard-container');
+    if (!container) return;
+
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div class="no-data">No hay datos acumulados actualmente.</div>';
+        return;
+    }
+
+    let html = '';
+    data.forEach((item, index) => {
+        const position = index + 1;
+        let medal = '';
+        if (position === 1) medal = '🥇';
+        else if (position === 2) medal = '🥈';
+        else if (position === 3) medal = '🥉';
+        else medal = `<span style="color: var(--text-muted); font-weight: 800;">#${position}</span>`;
+
+        // Colores dinámicos basados en la posición
+        const borderColor = position <= 3 ? 'var(--pink-main)' : 'rgba(0,0,0,0.05)';
+        const shadow = position <= 3 ? '0 4px 15px rgba(232, 76, 154, 0.15)' : 'none';
+
+        html += `
+            <div class="card" style="display: flex; align-items: center; padding: 15px 20px; margin-bottom: 5px; border-left: 5px solid ${borderColor}; box-shadow: ${shadow}; animation: fadeInPremium 0.4s ease-out forwards; animation-delay: ${index * 0.05}s;">
+                <div style="width: 40px; font-size: 20px; display: flex; justify-content: center; align-items: center; margin-right: 15px;">
+                    ${medal}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 700; color: var(--text-main); font-size: 16px;">${item.nombre}</div>
+                    <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Nanny Star</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 24px; font-weight: 800; color: var(--blue-main); line-height: 1;">${item.horas.toFixed(1)}</div>
+                    <div style="font-size: 10px; font-weight: 700; color: var(--text-muted);">HRS</div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+window.renderNannyStarLeaderboard = renderNannyStarLeaderboard;
 
 async function editarPerfilCliente() {
     // Primero cambiar a vista-cliente para acceder a los elementos
@@ -5256,6 +5713,12 @@ function abrirCredencialNanny() {
     if (!perf) return;
 
     document.getElementById('cred_nombre').textContent = perf.nombre || 'Nombre no disponible';
+
+    // Dinamizar el rol según el usuario
+    const roleEl = document.querySelector('.credential-role');
+    if (roleEl) {
+        roleEl.textContent = SESION.cliente ? 'Familia Activa' : 'Nanny Activa';
+    }
 
     // Manejar foto principal de la credencial
     const imgPrincipal = document.getElementById('cred_foto_principal');

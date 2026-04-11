@@ -709,6 +709,26 @@
 
 
 
+
+          <!-- Nueva sección: Nanny star (Solo para niñeras) -->
+          <div id="perfil-nanny-star-container" class="profile-section" style="display: none;">
+            <div class="section-title">Nanny star</div>
+            <div class="profile-grid">
+              <div class="profile-info-item full" style="text-align: center; padding: 15px 0;">
+                <div style="font-size: 32px; margin-bottom: 8px;">⭐</div>
+                <div class="label" style="font-size: 13px; color: var(--text-muted); margin-bottom: 4px;">Horas de
+                  servicio acumuladas (Año actual)</div>
+                <div id="perfil_nanny_star_horas" style="font-size: 36px; font-weight: 800; color: var(--pink-main);">0
+                </div>
+                <button id="btnRefreshNannyStar" class="btn-ghost" onclick="refreshNannyStar()"
+                  style="color: var(--pink-main); margin-top: 10px; font-weight: 600; font-size: 13px;">
+                  🔄 Actualizar acumulado
+                </button>
+              </div>
+            </div>
+          </div>
+
+
           <div class="profile-actions" style="margin-top:20px;">
             <button class="btn-primary" onclick="editarPerfilCliente()" style="background: var(--blue-main);">
               📝 Editar perfil
@@ -1203,51 +1223,70 @@
 
 
       <div id="vista-supervision" class="vista">
-        <!-- CARD SEMANA ACTUAL -->
-        <div class="supervision-card">
-          <div class="row" style="justify-content:space-between;align-items:center;">
-            <div class="supervision-title">
-              Resumen de planeaciones – semana actual
+        <div id="subvista-supervision-actividades">
+          <!-- CARD SEMANA ACTUAL -->
+          <div class="supervision-card">
+            <div class="row" style="justify-content:space-between;align-items:center;">
+              <div class="supervision-title">
+                Resumen de planeaciones – semana actual
+              </div>
+              <button id="btnRefreshSupervision" class="btn-ghost" onclick="actualizarPlaneacionesSupervision()">
+                🔄 Actualizar
+              </button>
             </div>
-            <button id="btnRefreshSupervision" class="btn-ghost" onclick="actualizarPlaneacionesSupervision()">
-              🔄 Actualizar
+            <div id="resumenPlaneacionesActual"></div>
+          </div>
+
+          <!-- CARD SEMANA SIGUIENTE -->
+          <div class="supervision-card">
+            <div class="supervision-title">
+              Resumen de planeaciones – semana siguiente
+            </div>
+            <div id="resumenPlaneacionesSiguiente"></div>
+          </div>
+          <!-- CARD BITÁCORAS -->
+          <div class="supervision-card">
+            <div class="row" style="justify-content:space-between;align-items:center;">
+              <div class="supervision-title">
+                Resumen de bitácoras – semana actual
+              </div>
+              <button class="btn-ghost" onclick="actualizarBitacorasSupervision(this)">
+                🔄 Actualizar
+              </button>
+            </div>
+            <div id="resumenBitacorasActual"></div>
+          </div>
+
+          <div class="supervision-card">
+            <div class="supervision-title">
+              Resumen de bitácoras – semana anterior
+            </div>
+            <div id="resumenBitacorasSiguiente"></div>
+          </div>
+        </div>
+
+        <!-- NUEVA SUB-VISTA: NANNY STAR LEADERBOARD -->
+        <div id="subvista-supervision-nannystar" style="display:none; padding-bottom: 80px;">
+          <div style="text-align: center; margin-bottom: 30px; animation: fadeInPremium 0.6s ease-out;">
+            <div style="font-size: 50px; margin-bottom: 10px;">🏆</div>
+            <h2
+              style="font-family: 'DM Serif Display', serif; color: var(--pink-main); font-size: 28px; margin-bottom: 5px;">
+              Ranking Nanny Star</h2>
+            <p style="color: var(--text-muted); font-size: 14px;">Inspirando excelencia en el cuidado.</p>
+          </div>
+
+          <div style="margin-bottom: 25px;">
+            <button id="btnRefreshLeaderboard" class="btn-pink" onclick="cargarLeaderboardSupervision()"
+              style="max-width: 250px; margin: 0 auto; display: block;">
+              ✨ Cargar información
             </button>
           </div>
-          <div id="resumenPlaneacionesActual"></div>
-        </div>
 
-
-
-
-
-
-
-
-        <!-- CARD SEMANA SIGUIENTE -->
-        <div class="supervision-card">
-          <div class="supervision-title">
-            Resumen de planeaciones – semana siguiente
+          <div id="leaderboard-container" class="leaderboard-list"
+            style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- El leaderboard se cargará aquí -->
+            <div class="no-data">Haz clic en "Cargar información" para ver el ranking.</div>
           </div>
-          <div id="resumenPlaneacionesSiguiente"></div>
-        </div>
-        <!-- CARD BITÁCORAS -->
-        <div class="supervision-card">
-          <div class="row" style="justify-content:space-between;align-items:center;">
-            <div class="supervision-title">
-              Resumen de bitácoras – semana actual
-            </div>
-            <button class="btn-ghost" onclick="actualizarBitacorasSupervision(this)">
-              🔄 Actualizar
-            </button>
-          </div>
-          <div id="resumenBitacorasActual"></div>
-        </div>
-
-        <div class="supervision-card">
-          <div class="supervision-title">
-            Resumen de bitácoras – semana anterior
-          </div>
-          <div id="resumenBitacorasSiguiente"></div>
         </div>
       </div>
 
@@ -1365,6 +1404,186 @@
 
 
 
+
+      <!-- ADMIN: Cotizador -->
+      <div id="adminCotizadorCard" class="card"
+        style="display:none; max-width: 1200px; margin: 0 auto 20px; overflow: hidden; padding: 0;">
+        <div class="cotizador-header"
+          style="background: linear-gradient(135deg, var(--pink-light), #fff); padding: 20px; border-bottom: 2px dashed rgba(232,76,154,0.2);">
+          <h3 style="margin:0; color: var(--pink-main); font-family: 'DM Serif Display', serif;">Cotizador Automático ✨
+          </h3>
+          <p class="muted" style="margin: 5px 0 0 0;">Genera una cotización en tiempo real.</p>
+        </div>
+
+        <div class="cotizador-grid" style="display: flex; flex-wrap: wrap; gap: 0; min-height: 500px;">
+
+          <!-- LEFT: Preview -->
+          <div class="cotizador-preview-col"
+            style="flex: 1 1 500px; background: #f8fafc; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid #e2e8f0;">
+
+            <div class="cotizador-controls"
+              style="display: flex; align-items: flex-end; gap: 10px; width: 100%; max-width: 550px; margin-bottom: 20px;">
+
+              <div class="form-group full" style="margin: 0; flex: 1;">
+                <label style="font-size: 13px; font-weight: 600; color: #4b5563; margin-bottom: 6px; display: block;">📍
+                  Selecciona de qué ciudad cotizas</label>
+                <select id="cot_ciudad_selector" onchange="updateCotizacionCiudad()"
+                  style="width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 14px; outline: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05); color: #4b5563; background: white; cursor: pointer;">
+                  <option value="" disabled selected>Elige una ciudad...</option>
+                  <option value="Puebla">Puebla</option>
+                  <option value="Xalapa">Xalapa</option>
+                  <option value="Querétaro">Querétaro</option>
+                  <option value="CDMX">CDMX</option>
+                </select>
+              </div>
+
+              <button onclick="limpiarCotizacion()" class="btn-ghost"
+                style="height: 45px; padding: 0 15px; border-radius: 8px; font-size: 13px; background: white; border: 1px solid #cbd5e1; color: #64748b; display: flex; align-items: center; justify-content: center; gap: 5px; cursor: pointer; transition: background 0.2s;">
+                🧹 Limpiar
+              </button>
+            </div>
+
+            <div id="cotizador-canvas"
+              style="position: relative; width: 100%; max-width: 550px; aspect-ratio: 0.77; box-shadow: 0 10px 25px rgba(0,0,0,0.1); overflow: hidden; background: white; margin: 0 auto;">
+              <!-- The Background Provided by the User -->
+              <img src="assets/img/bg_cotizacion.png" crossorigin="anonymous"
+                style="width: 100%; height: 100%; object-fit: contain; position: absolute; top:0; left:0; z-index: 1; pointer-events: none;">
+
+              <!-- Dynamic Absolute Texts (Draggable) -->
+              <div id="prev_fecha" class="cot-draggable"
+                style="position: absolute; top: 20%; left: 24%; width: 68%; font-family: 'Montserrat', sans-serif; font-size: 19px; font-weight: 500; color: #000000; z-index: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: move;">
+              </div>
+              <div id="prev_nombre" class="cot-draggable"
+                style="position: absolute; top: 26%; left: 26%; width: 66%; font-family: 'Montserrat', sans-serif; font-size: 19px; font-weight: 500; color: #000000; z-index: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: move;">
+              </div>
+              <div id="prev_telefono" class="cot-draggable"
+                style="position: absolute; top: 32%; left: 28%; width: 64%; font-family: 'Montserrat', sans-serif; font-size: 19px; font-weight: 500; color: #000000; z-index: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: move;">
+              </div>
+              <div id="prev_edad" class="cot-draggable"
+                style="position: absolute; top: 38.5%; left: 39%; width: 53%; font-family: 'Montserrat', sans-serif; font-size: 19px; font-weight: 500; color: #000000; z-index: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: move;">
+              </div>
+
+              <div id="prev_horarios" class="cot-draggable"
+                style="position: absolute; top: 45%; left: 26%; width: 66%; height: 10%; font-family: 'Montserrat', sans-serif; font-size: 19px; font-weight: 600; color: #00e1ff; z-index: 2; line-height: 1.3; overflow: hidden; cursor: move;">
+              </div>
+
+              <div id="prev_zona" class="cot-draggable"
+                style="position: absolute; top: 57.5%; left: 20%; width: 72%; font-family: 'Montserrat', sans-serif; font-size: 19px; font-weight: 500; color: #000000; z-index: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: move;">
+              </div>
+              <div id="prev_precio" class="cot-draggable"
+                style="position: absolute; top: 64%; left: 22%; width: 70%; font-family: 'Montserrat', sans-serif; font-size: 19px; font-weight: 700; color: #ff66c4; z-index: 2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: move;">
+              </div>
+
+              <div id="prev_nota" class="cot-draggable"
+                style="position: absolute; top: 70%; left: 20%; width: 72%; height: 12%; font-family: 'Montserrat', sans-serif; font-size: 19px; font-weight: 500; color: #000000; z-index: 2; line-height: 1.3; overflow: hidden; cursor: move;">
+              </div>
+
+              <style>
+                .cot-draggable {
+                  user-select: none;
+                  border: 1px solid transparent;
+                  transition: border 0.2s;
+                  min-height: 25px;
+                  min-width: 50px;
+                  touch-action: none !important;
+                }
+
+                .cot-draggable:empty::before {
+                  content: " ";
+                  white-space: pre;
+                }
+
+                .cot-draggable:hover {
+                  border: 1px dashed rgba(232, 76, 154, 0.5);
+                  background: rgba(232, 76, 154, 0.05);
+                  border-radius: 4px;
+                }
+
+                .form-group.pink-box {
+                  background: #fdf2f8;
+                  /* Soft pink matching image 2 */
+                  padding: 15px;
+                  border-radius: 12px;
+                  margin-top: 10px;
+                  border: 1px solid #fce7f3;
+                }
+
+                @media (max-width: 768px) {
+                  .cotizador-form-col {
+                    border-top: 1px dashed #cbd5e1;
+                  }
+                }
+              </style>
+            </div>
+
+            <button onclick="descargarCotizacion()" class="btn-pink"
+              style="margin-top: 25px; width: 100%; max-width: 400px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              📸 Descargar Cotización
+            </button>
+          </div>
+
+          <!-- RIGHT: Form -->
+          <div class="cotizador-form-col" style="flex: 1 1 400px; padding: 25px; background: white;">
+            <div class="form-grid">
+              <div class="form-group full">
+                <label>👤 Nombre del cliente</label>
+                <input type="text" id="cot_nombre" placeholder="Ej. Ana Pérez" oninput="updateCotizacion()">
+              </div>
+
+              <div class="form-group">
+                <label>📞 Teléfono</label>
+                <input type="text" id="cot_telefono" placeholder="Ej. 555 123 4567"
+                  oninput="formatTelefono(this); updateCotizacion()">
+              </div>
+
+              <div class="form-group">
+                <label>👶 Edad del peque</label>
+                <input type="text" id="cot_edad" placeholder="Ej. 3 años" oninput="updateCotizacion()">
+              </div>
+
+              <div class="form-group full pink-box">
+                <label
+                  style="margin-bottom: 12px; display: flex; align-items: center; gap: 6px; font-weight: 600; color: #374151;">
+                  <span>🗓️</span> Horarios de servicio
+                </label>
+
+                <div style="margin-bottom: 15px;">
+                  <label style="font-size: 13px; margin-bottom: 6px; display: block; font-weight: 500;">Texto libre para
+                    horarios (opcional):</label>
+                  <input type="text" id="cot_horario_manual" placeholder="Ej. Según disponibilidad"
+                    oninput="updateCotizacion()" style="font-size: 13px; padding: 10px; width: 100%;">
+                </div>
+
+                <button class="btn-ghost" onclick="aplicarMismoHorarioCotizador()"
+                  style="width: 100%; font-size: 12.5px; background: white; padding: 10px; margin-bottom: 15px; color: var(--pink-main); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                  ✨ Mismo horario para todos
+                </button>
+
+                <div id="cot_dias_container"
+                  style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;">
+                  <!-- JS injected days will go here -->
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>📍 Zona de servicio</label>
+                <input type="text" id="cot_zona" placeholder="Ej. Narvarte, CDMX" oninput="updateCotizacion()">
+              </div>
+
+              <div class="form-group">
+                <label>💰 Precio</label>
+                <input type="text" id="cot_precio" placeholder="Ej. $1,500 MXN Semanales" oninput="updateCotizacion()">
+              </div>
+
+              <div class="form-group full">
+                <label>📝 Notas adicionales</label>
+                <textarea id="cot_notas" rows="3" placeholder="Detalles de viáticos extras, requerimientos, etc."
+                  oninput="updateCotizacion()"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- ADMIN: Sugeridor -->
       <div id="adminCard" class="card" style="display:none;">
@@ -1485,6 +1704,32 @@
         </button>
         <button id="nav-comunidad" onclick="irVista('comunidad')">
           💬<span>Comunidad</span>
+        </button>
+      </nav>
+
+      <!-- Nueva navegación flotante exclusiva para supervisores -->
+      <nav id="nav-supervision" class="bottom-nav" style="display:none;">
+        <button id="snav-actividades" onclick="irSubVistaSupervision('actividades')" class="activo">
+          📋<span>Actividades</span>
+        </button>
+        <button id="snav-nannystar" onclick="irSubVistaSupervision('nannystar')">
+          ⭐<span>Nanny Star</span>
+        </button>
+      </nav>
+
+      <!-- Nueva navegación flotante exclusiva para ventas/admin -->
+      <nav id="nav-ventas" class="bottom-nav" style="display:none;">
+        <button id="vnav-cotizador" onclick="irVistaVentas('cotizador')" class="activo">
+          🧮<span>Cotizador</span>
+        </button>
+        <button id="vnav-servicios" onclick="irVistaVentas('servicios')">
+          🏠<span>Servicios</span>
+        </button>
+        <button id="vnav-disponibilidad" onclick="irVistaVentas('disponibilidad')">
+          📅<span>Disponibilidad</span>
+        </button>
+        <button id="vnav-nannystar" onclick="irVistaVentas('nannystar')">
+          ⭐<span>Nanny Star</span>
         </button>
       </nav>
     </div>
