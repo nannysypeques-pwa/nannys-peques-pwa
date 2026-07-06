@@ -187,7 +187,24 @@ document.onclick = reiniciarTemporizadorInactividad;
 //Inicializar sesión desde localStorage si existe
 try {
     const s = localStorage.getItem('nyp_sesion');
-    if (s) SESION = JSON.parse(s);
+    if (s) {
+        SESION = JSON.parse(s);
+        // Autenticar de forma silenciosa de inmediato si ya tiene el token guardado
+        if (SESION.firebaseToken) {
+            (async () => {
+                try {
+                    const firebaseAppModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+                    const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                    const { db } = await import('./firebase-config.js');
+                    const auth = firebaseAuthModule.getAuth(db.app);
+                    await firebaseAuthModule.signInWithCustomToken(auth, SESION.firebaseToken);
+                    console.log("✅ [Inicio] Firebase Auth OK para:", SESION.email);
+                } catch (fbErr) {
+                    console.warn("⚠️ [Inicio] Firebase Auth silencioso falló:", fbErr.message);
+                }
+            })();
+        }
+    }
 } catch (e) { console.error(e); }
 
 // EXPOSICIÓN GLOBAL EXPLÍCITA
@@ -326,6 +343,7 @@ async function login(rol) {
         SESION.admin = !!res.admin;
         SESION.supervision = !!res.supervision;
         SESION.cliente = !!res.cliente;
+        SESION.firebaseToken = res.firebaseToken || null; // 🔐 Guardamos el token en la sesión persistente
 
         document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente');
         if (SESION.admin) document.body.classList.add('admin');
@@ -337,6 +355,20 @@ async function login(rol) {
         localStorage.setItem('nyp_sesion', JSON.stringify(SESION));
         // Guardar persistencia para retorno por inactividad
         localStorage.setItem(LAST_LOGIN_KEY, JSON.stringify({ email: SESION.email, cliente: SESION.cliente }));
+
+        // 🔐 Autenticación silenciosa con Firebase (para reglas de Firestore seguras)
+        if (res.firebaseToken) {
+            try {
+                const firebaseAppModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
+                const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                const { db } = await import('./firebase-config.js');
+                const auth = firebaseAuthModule.getAuth(db.app);
+                await firebaseAuthModule.signInWithCustomToken(auth, res.firebaseToken);
+                console.log("✅ Firebase Auth OK para:", email);
+            } catch (fbErr) {
+                console.warn("⚠️ Firebase Auth silenciosa falló (no crítico):", fbErr.message);
+            }
+        }
 
 
         // --- INICIO CAMBIO PRELOADER ---
@@ -2916,12 +2948,6 @@ function aplicarMismoHorarioCotizador() {
 }
 
 function descargarCotizacion() {
-    const selector = document.getElementById('cot_ciudad_selector');
-    if (!selector || !selector.value) {
-        alert("🔒 Por favor, selecciona desde qué ciudad cotizas en la parte superior antes de descargar la imagen.");
-        return;
-    }
-
     const btn = document.querySelector('.cotizador-preview-col .btn-pink');
     const originalText = btn.innerHTML;
     btn.innerHTML = '⏳ Generando imagen...';
@@ -2978,7 +3004,7 @@ function limpiarCotizacion() {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
-    
+
     const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     dias.forEach(dia => {
         const chk = document.getElementById(`cot_chk_${dia}`);
@@ -2988,21 +3014,9 @@ function limpiarCotizacion() {
         if (ini) ini.value = '';
         if (fin) fin.value = '';
     });
-    
+
     // Mantiene las configuraciones visuales (top, left arrastrados)
     updateCotizacion();
-}
-
-function formatTelefono(input) {
-    let value = input.value.replace(/\D/g, '');
-    if (value.length > 10) value = value.substring(0, 10);
-    
-    let formatted = '';
-    if (value.length > 0) formatted += value.substring(0, 3);
-    if (value.length > 3) formatted += ' ' + value.substring(3, 6);
-    if (value.length > 6) formatted += ' ' + value.substring(6, 10);
-    
-    input.value = formatted;
 }
 
 // Init hook
@@ -3105,10 +3119,16 @@ function irVista(nombre, skipLogic = false) {
     // Inicializar módulos dinámicos
     if (target === 'comunidad') {
         if (window.Comunidad) {
-            // Staff/Admin/Cliente: Cargar feed normal
             Comunidad.init();
         }
     }
+
+    if (target === 'estimulacion') {
+        if (typeof window.initEstimulacion === 'function') {
+            window.initEstimulacion();
+        }
+    }
+
     if (target === 'convenios' && window.Convenios) {
         Convenios.init();
     }
@@ -3634,11 +3654,7 @@ async function guardarPlaneacionNeuronanny() {
         }, 1500);
     } catch (err) {
         restaurarBoton(btn);
-        if (err.message && err.message.toLowerCase().includes('ya guardaste una planeación')) {
-            mostrarToast('✅ Ya tienes una planeación guardada, puedes continuar');
-        } else {
-            mostrarToast('❌ ' + (err.message || 'Error al guardar'));
-        }
+        mostrarToast('❌ Error al guardar');
         console.error(err);
     }
 }
@@ -4769,17 +4785,14 @@ async function cargarPerfil(force = false) {
                 const emailContainer = document.getElementById('perfil-email-container');
                 if (emailContainer) emailContainer.classList.remove('full');
 
-                // --- NUEVO: Cargar Estadísticas Nanny star ---
-                /* TEMPORALMENTE OCULTO
-                api('getNannyStarStats', { email: SESION.email }).then(horas => {
-                    const horasEl = document.getElementById('perfil_nanny_star_horas');
-                    const containerStar = document.getElementById('perfil-nanny-star-container');
-                    if (horasEl) horasEl.textContent = horas || 0;
-                    if (containerStar) containerStar.style.display = 'block';
-                }).catch(err => {
-                    console.error('Error al cargar Nanny star stats:', err);
-                });
-                */
+                // --- NUEVO: Cargar Estadísticas Nanny Star Premium (Ocultado temporalmente) ---
+                const containerStar = document.getElementById('perfil-nanny-star-container');
+                if (containerStar) {
+                    containerStar.style.display = 'none';
+                    // if (typeof initNannyStarPerfil === 'function') {
+                    //     initNannyStarPerfil();
+                    // }
+                }
             } else {
                 if (seccionPeques) seccionPeques.style.display = 'block';
                 if (itemMascotas) itemMascotas.style.display = 'block';
@@ -4790,9 +4803,10 @@ async function cargarPerfil(force = false) {
                 const btnEditar = document.querySelector('.profile-actions .btn-primary');
                 if (btnEditar) btnEditar.style.display = 'block';
 
-                // Mostrar botón de credencial para familia
+                // Mostrar botón de credencial para clientes (Familia Activa)
                 const containerCredencial = document.getElementById('perfil-nanny-credential-container');
                 if (containerCredencial) containerCredencial.style.display = 'flex';
+                
                 const emailContainer = document.getElementById('perfil-email-container');
                 if (emailContainer) emailContainer.classList.remove('full');
             }
@@ -4910,7 +4924,8 @@ async function refreshNannyStar() {
     btn.innerHTML = '🔄 Actualizando...';
 
     try {
-        const horas = await api('getNannyStarStats', { email: SESION.email });
+        const res = await api('getNannyStarStats', { email: SESION.email });
+        const horas = (res && typeof res === 'object') ? res.totalHoras : res;
         horasEl.textContent = horas || 0;
         mostrarToast('⭐ Acumulado de horas actualizado.');
     } catch (err) {
@@ -4923,19 +4938,42 @@ async function refreshNannyStar() {
 }
 window.refreshNannyStar = refreshNannyStar;
 
+
 /**
  * Cambia sub-vistas dentro del panel de supervisión
  */
 function irSubVistaSupervision(subvista) {
     const vAct = document.getElementById('subvista-supervision-actividades');
     const vStar = document.getElementById('subvista-supervision-nannystar');
+    const vPlan = document.getElementById('subvista-supervision-plantilla');
+    const vPts = document.getElementById('subvista-supervision-puntosstar');
+    const vAvanceEst = document.getElementById('subvista-supervision-avance-estimulacion');
+
+    if (vAct) vAct.style.display = 'none';
+    if (vStar) vStar.style.display = 'none';
+    if (vPlan) vPlan.style.display = 'none';
+    if (vPts) vPts.style.display = 'none';
+    if (vAvanceEst) vAvanceEst.style.display = 'none';
 
     if (subvista === 'actividades') {
         if (vAct) vAct.style.display = 'block';
-        if (vStar) vStar.style.display = 'none';
     } else if (subvista === 'nannystar') {
-        if (vAct) vAct.style.display = 'none';
         if (vStar) vStar.style.display = 'block';
+    } else if (subvista === 'plantilla') {
+        if (vPlan) vPlan.style.display = 'block';
+        if (typeof cargarPlantillaSupervision === 'function') {
+            cargarPlantillaSupervision();
+        }
+    } else if (subvista === 'puntosstar') {
+        if (vPts) vPts.style.display = 'block';
+        if (typeof inicializarPuntosStar === 'function') {
+            inicializarPuntosStar();
+        }
+    } else if (subvista === 'avance-estimulacion') {
+        if (vAvanceEst) vAvanceEst.style.display = 'block';
+        if (typeof cargarAvanceEstimulacionSupervision === 'function') {
+            cargarAvanceEstimulacionSupervision();
+        }
     }
 
     // Actualizar botones nav
@@ -4956,8 +4994,11 @@ async function cargarLeaderboardSupervision() {
     btn.disabled = true;
     btn.innerHTML = '✨ Cargando ranking...';
 
+    const desde = document.getElementById('nannystar-desde')?.value || '';
+    const hasta = document.getElementById('nannystar-hasta')?.value || '';
+
     try {
-        const data = await api('getAllNanniesStarStats');
+        const data = await api('getAllNanniesStarStats', { desde, hasta });
         renderNannyStarLeaderboard(data);
     } catch (err) {
         console.error(err);
@@ -4978,11 +5019,23 @@ function renderNannyStarLeaderboard(data) {
 
     if (!data || data.length === 0) {
         container.innerHTML = '<div class="no-data">No hay datos acumulados actualmente.</div>';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '15px';
         return;
     }
 
-    let html = '';
-    data.forEach((item, index) => {
+    // Limpiar comportamiento flex del contenedor padre para que las columnas manejen el layout
+    container.style.display = 'block';
+
+    // 1) Ordenar por Horas (Columna Izquierda)
+    const porHoras = [...data].sort((a, b) => b.horas - a.horas);
+
+    // 2) Ordenar por Servicios Totales (Columna Derecha)
+    const porServicios = [...data].sort((a, b) => b.totalServicios - a.totalServicios);
+
+    let htmlHoras = '';
+    porHoras.forEach((item, index) => {
         const position = index + 1;
         let medal = '';
         if (position === 1) medal = '🥇';
@@ -4990,28 +5043,79 @@ function renderNannyStarLeaderboard(data) {
         else if (position === 3) medal = '🥉';
         else medal = `<span style="color: var(--text-muted); font-weight: 800;">#${position}</span>`;
 
-        // Colores dinámicos basados en la posición
         const borderColor = position <= 3 ? 'var(--pink-main)' : 'rgba(0,0,0,0.05)';
-        const shadow = position <= 3 ? '0 4px 15px rgba(232, 76, 154, 0.15)' : 'none';
+        const shadow = position <= 3 ? '0 4px 12px rgba(232, 76, 154, 0.12)' : 'none';
 
-        html += `
-            <div class="card" style="display: flex; align-items: center; padding: 15px 20px; margin-bottom: 5px; border-left: 5px solid ${borderColor}; box-shadow: ${shadow}; animation: fadeInPremium 0.4s ease-out forwards; animation-delay: ${index * 0.05}s;">
-                <div style="width: 40px; font-size: 20px; display: flex; justify-content: center; align-items: center; margin-right: 15px;">
+        htmlHoras += `
+            <div class="card" style="display: flex; align-items: center; padding: 12px 15px; border-left: 5px solid ${borderColor}; box-shadow: ${shadow}; animation: fadeInPremium 0.4s ease-out forwards; animation-delay: ${index * 0.03}s;">
+                <div style="width: 30px; font-size: 16px; display: flex; justify-content: center; align-items: center; margin-right: 10px;">
                     ${medal}
                 </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 700; color: var(--text-main); font-size: 16px;">${item.nombre}</div>
-                    <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Nanny Star</div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; color: var(--text-main); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.nombre}</div>
+                    <div style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Nanny Star</div>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 24px; font-weight: 800; color: var(--blue-main); line-height: 1;">${item.horas.toFixed(1)}</div>
-                    <div style="font-size: 10px; font-weight: 700; color: var(--text-muted);">HRS</div>
+                <div style="text-align: right; margin-left: 10px;">
+                    <div style="font-size: 20px; font-weight: 800; color: var(--blue-main); line-height: 1;">${item.horas.toFixed(1)}</div>
+                    <div style="font-size: 9px; font-weight: 700; color: var(--text-muted);">HRS</div>
                 </div>
             </div>
         `;
     });
 
-    container.innerHTML = html;
+    let htmlServicios = '';
+    porServicios.forEach((item, index) => {
+        const position = index + 1;
+        let medal = '';
+        if (position === 1) medal = '🥇';
+        else if (position === 2) medal = '🥈';
+        else if (position === 3) medal = '🥉';
+        else medal = `<span style="color: var(--text-muted); font-weight: 800;">#${position}</span>`;
+
+        const borderColor = position <= 3 ? 'var(--blue-main)' : 'rgba(0,0,0,0.05)';
+        const shadow = position <= 3 ? '0 4px 12px rgba(29, 78, 216, 0.12)' : 'none';
+
+        htmlServicios += `
+            <div class="card" style="display: flex; align-items: center; padding: 12px 15px; border-left: 5px solid ${borderColor}; box-shadow: ${shadow}; animation: fadeInPremium 0.4s ease-out forwards; animation-delay: ${index * 0.03}s;">
+                <div style="width: 30px; font-size: 16px; display: flex; justify-content: center; align-items: center; margin-right: 10px;">
+                    ${medal}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 700; color: var(--text-main); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${item.nombre}</div>
+                    <div style="font-size: 11px; color: var(--text-muted); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${item.fijos} fijos, ${item.eventuales} eventuales
+                    </div>
+                </div>
+                <div style="text-align: right; margin-left: 10px;">
+                    <div style="font-size: 20px; font-weight: 800; color: var(--pink-main); line-height: 1;">${item.totalServicios}</div>
+                    <div style="font-size: 9px; font-weight: 700; color: var(--text-muted);">SERV</div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = `
+        <div class="leaderboard-columns" style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <!-- Columna Izquierda: Horas -->
+            <div class="leaderboard-column" style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 8px;">
+                <h4 style="font-family: 'DM Serif Display', serif; color: var(--pink-main); font-size: 16px; margin: 0 0 10px 0; border-bottom: 2px dashed rgba(232, 76, 154, 0.15); padding-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span>⏱️</span> Top Horas de Servicio
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    ${htmlHoras}
+                </div>
+            </div>
+            <!-- Columna Derecha: Servicios -->
+            <div class="leaderboard-column" style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 8px;">
+                <h4 style="font-family: 'DM Serif Display', serif; color: var(--blue-main); font-size: 16px; margin: 0 0 10px 0; border-bottom: 2px dashed rgba(29, 78, 216, 0.15); padding-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span>💼</span> Top Servicios Tomados
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    ${htmlServicios}
+                </div>
+            </div>
+        </div>
+    `;
 }
 window.renderNannyStarLeaderboard = renderNannyStarLeaderboard;
 
@@ -5212,7 +5316,12 @@ function renderSaldoCliente(data) {
     const montoEl = document.getElementById('saldo-cliente-monto');
     if (!container || !montoEl) return;
 
-    if (data && data.saldo > 0 && data.ver !== false) {
+    // Se muestra solo si 'ver' es explícitamente verdadero (soporta Ver/ver y strings TRUE/VERDADERO)
+    const valVer = data ? ((data.ver !== undefined) ? data.ver : data.Ver) : undefined;
+    const vStr = String(valVer || '').trim().toUpperCase();
+    const verVerdadero = data && (valVer === true || vStr === 'TRUE' || vStr === 'VERDADERO');
+
+    if (data && data.saldo > 0 && verVerdadero) {
         montoEl.textContent = new Intl.NumberFormat('es-MX', {
             style: 'currency',
             currency: 'MXN'
@@ -5712,19 +5821,19 @@ function abrirCredencialNanny() {
     const perf = CACHE_CLIENTE.profile;
     if (!perf) return;
 
+    const esNanny = !!perf.isNanny;
+    const labelRol = document.getElementById('cred_rol_label');
+    
     document.getElementById('cred_nombre').textContent = perf.nombre || 'Nombre no disponible';
-
-    // Dinamizar el rol según el usuario
-    const roleEl = document.querySelector('.credential-role');
-    if (roleEl) {
-        roleEl.textContent = SESION.cliente ? 'Familia Activa' : 'Nanny Activa';
+    
+    if (labelRol) {
+        labelRol.textContent = esNanny ? 'Nanny Activa' : 'Familia Activa';
+        labelRol.style.color = esNanny ? '#3BB6C4' : '#E84C9A';
     }
 
-    // Manejar foto principal de la credencial
+    // Manejar foto principal
     const imgPrincipal = document.getElementById('cred_foto_principal');
     const uploadUI = document.getElementById('cred_upload_ui');
-
-    // Priorizar 'foto' (nueva columna) luego 'imagen' (avatar anterior)
     const fotoUrl = perf.foto || perf.imagen;
 
     if (fotoUrl && fotoUrl.startsWith('http')) {
@@ -5736,15 +5845,14 @@ function abrirCredencialNanny() {
         if (uploadUI) uploadUI.style.display = 'block';
     }
 
-    // Manejar avatar circular (header)
+    // Manejar avatar circular
     const credAvatar = document.getElementById('cred_avatar');
     if (perf.imagen && perf.imagen.startsWith('http')) {
         credAvatar.innerHTML = `<img src="${perf.imagen}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
     } else {
-        credAvatar.textContent = '🍼';
+        credAvatar.textContent = esNanny ? '🍼' : '👨‍👩‍👧‍👦';
     }
 
-    // Iniciar reloj en tiempo real
     const updateTime = () => {
         const ahora = new Date();
         const timeStr = ahora.toLocaleTimeString('es-MX', { hour12: false });

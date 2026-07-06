@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nannys-pwa-v18'; // Increment version to v18
+const CACHE_NAME = 'nannys-pwa-v19'; // Increment version to v19
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -36,6 +36,21 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
+
+  // No interceptar peticiones externas (Firebase, Google APIs, Drive, etc.)
+  const externalHosts = [
+    'firestore.googleapis.com',
+    'firebase.googleapis.com',
+    'identitytoolkit.googleapis.com',
+    'securetoken.googleapis.com',
+    'www.googleapis.com',
+    'drive.google.com',
+    'lh3.googleusercontent.com',
+    'script.google.com',
+    'gstatic.com',
+    'onesignal.com',
+  ];
+  if (externalHosts.some(host => url.hostname.includes(host))) return;
 
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname === '/') {
     event.respondWith(

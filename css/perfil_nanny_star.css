@@ -1,0 +1,614 @@
+/* ====================================================
+   ESTILOS PREMIUM - SECCIÓN NANNY STAR
+   ==================================================== */
+
+:root {
+  --star-gold: #FFB020;
+  --star-silver: #94A3B8;
+  --star-bronze: #D97706;
+  --star-purple: #8B5CF6;
+}
+
+/* Contenedor Principal */
+.nanny-star-premium {
+  font-family: 'Plus Jakarta Sans', 'Nunito Sans', sans-serif !important;
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(232, 76, 154, 0.06);
+  margin-top: 15px;
+  animation: floatIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Título de Sección */
+.nanny-star-premium .section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--pink-main);
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--pink-light);
+  padding-bottom: 8px;
+}
+
+/* Área del Círculo de Progreso */
+.nanny-star-progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  margin-bottom: 24px;
+}
+
+.nanny-star-circle-container {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nanny-star-circle-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.nanny-star-circle-bg {
+  fill: none;
+  stroke: rgba(232, 76, 154, 0.08);
+  stroke-width: 14;
+}
+
+.nanny-star-circle-progress {
+  fill: none;
+  stroke: url(#nannyStarGradient);
+  stroke-width: 14;
+  stroke-linecap: round;
+  stroke-dasharray: 440;
+  stroke-dashoffset: 440; /* Modificado dinámicamente por JS */
+  transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nanny-star-circle-content {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.nanny-star-points-val {
+  font-family: 'DM Serif Display', serif !important;
+  font-size: 42px;
+  font-weight: bold;
+  line-height: 1;
+  color: var(--pink-main);
+  margin-bottom: 2px;
+}
+
+.nanny-star-points-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.nanny-star-level-badge {
+  background: var(--pink-light);
+  color: var(--pink-main);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-top: 6px;
+  border: 1px solid rgba(232, 76, 154, 0.2);
+}
+
+/* Indicador de Tendencia */
+.nanny-star-trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #10B981; /* Verde esmeralda */
+  background: rgba(16, 185, 129, 0.1);
+  padding: 4px 10px;
+  border-radius: 12px;
+  margin-top: 12px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.05);
+}
+
+/* Tarjeta del Próximo Hito */
+.nanny-star-milestone-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+.nanny-star-milestone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.nanny-star-milestone-title {
+  color: var(--text-main);
+  font-weight: 800;
+}
+
+.nanny-star-bar-bg {
+  background: rgba(0, 0, 0, 0.05);
+  height: 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.nanny-star-bar-fill {
+  background: linear-gradient(90deg, var(--pink-main), var(--blue-main));
+  height: 100%;
+  border-radius: 10px;
+  width: 0%; /* JS */
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nanny-star-milestone-footer {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Bento Grid */
+.nanny-star-bento-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.nanny-star-bento-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.nanny-star-bento-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(232, 76, 154, 0.3);
+}
+
+.nanny-star-bento-icon {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+
+.nanny-star-bento-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.nanny-star-bento-val {
+  font-family: 'DM Serif Display', serif !important;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--text-main);
+}
+
+/* Carrusel de Logros */
+.nanny-star-carousel-section {
+  margin-bottom: 24px;
+}
+
+.nanny-star-carousel-title {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nanny-star-carousel-wrapper {
+  overflow-x: auto;
+  display: flex;
+  gap: 12px;
+  padding: 4px 4px 12px 4px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+}
+
+.nanny-star-carousel-wrapper::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.nanny-star-carousel-card {
+  flex: 0 0 160px;
+  scroll-snap-align: start;
+  background: white;
+  border: 1px solid rgba(232, 76, 154, 0.1);
+  border-radius: var(--radius-lg);
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(232, 76, 154, 0.03);
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nanny-star-carousel-card:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 16px rgba(232, 76, 154, 0.08);
+}
+
+.nanny-star-card-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+  display: inline-block;
+}
+
+.nanny-star-card-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nanny-star-card-points {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pink-main);
+  margin-bottom: 6px;
+  background: var(--pink-light);
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.nanny-star-card-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Botón de Ayuda Principal */
+.nanny-star-btn-help {
+  background: linear-gradient(135deg, var(--pink-main), var(--pink-hover)) !important;
+  color: white;
+  padding: 14px 20px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 14px;
+  width: 100%;
+  box-shadow: 0 4px 15px rgba(232, 76, 154, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.1s ease, box-shadow 0.2s;
+}
+
+.nanny-star-btn-help:hover {
+  box-shadow: 0 6px 20px rgba(232, 76, 154, 0.35);
+}
+
+/* ====================================================
+   MODAL PREMIUM DE REGLAS (DETALLE DE PUNTOS)
+   ==================================================== */
+.nanny-star-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nanny-star-modal-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nanny-star-modal-card {
+  background: white;
+  width: 100%;
+  max-width: 520px;
+  border-radius: 28px;
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(20px) scale(0.96);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nanny-star-modal-backdrop.show .nanny-star-modal-card {
+  transform: translateY(0) scale(1);
+}
+
+.nanny-star-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+
+.nanny-star-modal-title {
+  font-family: 'DM Serif Display', serif !important;
+  font-size: 20px;
+  color: var(--pink-main);
+  margin: 0;
+}
+
+.nanny-star-modal-close {
+  background: #f1f5f9;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.nanny-star-modal-close:hover {
+  background: var(--pink-light);
+  color: var(--pink-main);
+}
+
+.nanny-star-modal-body {
+  overflow-y: auto;
+  padding-right: 4px;
+  flex: 1;
+}
+
+/* Scrollbar personalizado para el modal */
+.nanny-star-modal-body::-webkit-scrollbar {
+  width: 5px;
+}
+.nanny-star-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nanny-star-modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.nanny-star-modal-subtitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin: 16px 0 8px 0;
+  letter-spacing: 0.5px;
+  border-left: 3px solid var(--blue-main);
+  padding-left: 8px;
+}
+
+.nanny-star-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nanny-star-rule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  color: var(--text-main);
+  border: 1px solid #f1f5f9;
+}
+
+.nanny-star-rule-name {
+  font-weight: 600;
+  flex: 1;
+  padding-right: 12px;
+}
+
+.nanny-star-rule-points {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.nanny-star-rule-points.positive {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.nanny-star-rule-points.negative {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+/* Estilos de Métricas con Progreso Circular y Completado Emocional */
+.nanny-star-bento-card.metric-card {
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 12px;
+}
+
+.nanny-star-bento-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.nanny-star-bento-progress {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mini-progress-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.mini-circle-bg {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.05);
+  stroke-width: 4;
+}
+
+.mini-circle-progress {
+  fill: none;
+  stroke: url(#nannyStarGradient);
+  stroke-width: 4;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s ease;
+}
+
+.mini-progress-text {
+  position: absolute;
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.metric-completed-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  background: #e6fdf4;
+  border: 1px solid #a7f3d0;
+  color: #059669;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 900;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.metric-completed-text {
+  color: #059669 !important;
+  font-weight: 800 !important;
+  font-size: 20px !important;
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  animation: pulseSuccess 2s infinite alternate;
+}
+
+@keyframes pulseSuccess {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.03); filter: brightness(1.05); }
+}
+
+/* Responsividad para pantallas móviles compactas */
+@media (max-width: 480px) {
+  .nanny-star-bento-card.metric-card {
+    padding: 10px 8px !important;
+    gap: 6px !important;
+  }
+  .nanny-star-bento-icon {
+    font-size: 16px !important;
+    margin-bottom: 2px !important;
+  }
+  .nanny-star-bento-label {
+    font-size: 9px !important;
+    letter-spacing: 0.1px !important;
+  }
+  .nanny-star-bento-val {
+    font-size: 16px !important;
+  }
+  .nanny-star-bento-progress {
+    width: 36px !important;
+    height: 36px !important;
+  }
+  .mini-progress-text {
+    font-size: 8px !important;
+  }
+  .metric-completed-badge {
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 14px !important;
+    box-shadow: 0 2px 6px rgba(16, 185, 129, 0.15) !important;
+  }
+  .metric-completed-text {
+    font-size: 13px !important;
+  }
+}
