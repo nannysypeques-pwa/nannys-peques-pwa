@@ -408,7 +408,7 @@ function renderTarjetasAvance(servicios) {
     });
 
     // Orden predefinido de ciudades
-    const ordenCiudades = ['CDMX', 'Puebla', 'Xalapa', 'Querétaro'];
+    const ordenCiudades = ['Puebla', 'Xalapa', 'Querétaro', 'CDMX'];
     
     // Obtener todas las ciudades agrupadas y ordenarlas
     const ciudadesOrdenadas = Object.keys(gruposPorCiudad).sort((a, b) => {
@@ -426,13 +426,16 @@ function renderTarjetasAvance(servicios) {
 
     ciudadesOrdenadas.forEach(ciudad => {
         const serviciosDeCiudad = gruposPorCiudad[ciudad];
+        const ciudadId = ciudad.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-");
         
         html += `
             <div class="ciudad-seccion" style="margin-bottom: 20px; animation: fadeIn 0.4s ease-out;">
-                <h3 style="font-family: 'DM Serif Display', serif; font-size: 15.5px; color: var(--pink-main); margin: 18px 0 8px 0; border-left: 4px solid var(--pink-main); padding-left: 8px; display: flex; align-items: center; gap: 6px; font-weight: 700;">
-                    📍 ${ciudad} <span style="font-size: 11px; font-family: 'Outfit', sans-serif; font-weight: 500; color: var(--text-muted); background: rgba(232, 76, 154, 0.06); padding: 1px 6px; border-radius: 8px;">${serviciosDeCiudad.length} peques</span>
+                <h3 onclick="toggleSeccionCiudad('${ciudadId}')" style="cursor: pointer; user-select: none; font-family: 'DM Serif Display', serif; font-size: 15.5px; color: var(--pink-main); margin: 18px 0 8px 0; border-left: 4px solid var(--pink-main); padding-left: 8px; display: flex; align-items: center; gap: 8px; font-weight: 700;">
+                    <span>📍 ${ciudad}</span>
+                    <span style="font-size: 11px; font-family: 'Outfit', sans-serif; font-weight: 500; color: var(--text-muted); background: rgba(232, 76, 154, 0.06); padding: 1px 6px; border-radius: 8px;">${serviciosDeCiudad.length} peques</span>
+                    <span id="arrow-${ciudadId}" style="font-size: 12px; color: var(--text-muted); transition: transform 0.2s ease; margin-left: 4px;">▼</span>
                 </h3>
-                <div class="supervision-table-wrapper" style="background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(232, 76, 154, 0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.01); overflow-x: auto; width: 100%;">
+                <div id="table-wrapper-${ciudadId}" class="supervision-table-wrapper" style="background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(232, 76, 154, 0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.01); overflow-x: auto; width: 100%;">
                     <table style="width: 100%; border-collapse: collapse; min-width: 700px; font-size: 13px; text-align: left;">
                         <thead>
                             <tr style="background: rgba(232, 76, 154, 0.03); border-bottom: 1px solid rgba(232, 76, 154, 0.08); color: var(--text-main); font-weight: 700; font-family: 'Outfit', sans-serif;">
@@ -578,3 +581,18 @@ if (!document.getElementById("style-avance-estimulacion")) {
     `;
     document.head.appendChild(style);
 }
+
+// Función global para colapsar/ocultar secciones de ciudades
+window.toggleSeccionCiudad = function(ciudadId) {
+    const wrapper = document.getElementById(`table-wrapper-${ciudadId}`);
+    const arrow = document.getElementById(`arrow-${ciudadId}`);
+    if (!wrapper || !arrow) return;
+
+    if (wrapper.style.display === 'none') {
+        wrapper.style.display = 'block';
+        arrow.textContent = '▼';
+    } else {
+        wrapper.style.display = 'none';
+        arrow.textContent = '▶';
+    }
+};
