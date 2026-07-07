@@ -227,7 +227,7 @@ async function selectPequeEstimulacion(nombre, nacimiento) {
         await cargarFirebaseEstimulacion();
         if (CATALOGO_ACTIVIDADES.length === 0) await cargarCatalogoActividades();
 
-        const docId = btoa(`${email}_${nombre}`).replace(/=/g, "");
+        const docId = btoa(`${email}_${nombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
 
         if (_unsubEstPeques) _unsubEstPeques();
         if (_unsubProgresoPeque) _unsubProgresoPeque();
@@ -683,7 +683,7 @@ function actualizarEtapaVista(etapaId) {
 
 async function verOEditarEvaluacion(etapaId, isReadOnly = false) {
     const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-    const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "");
+    const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
     mostrarCargandoEstimulacion(true);
     try {
         const docSnap = await fb_getDoc(fb_doc(_db, "estimulacion_peques", docId));
@@ -794,7 +794,7 @@ async function guardarEvaluacionInicial() {
 
     try {
         const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "");
+        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
 
         const updateData = {
             email, peque: currentPequeId,
@@ -913,7 +913,7 @@ async function verResultadosEvaluacion() {
         await verOEditarEvaluacion(activeEtapaId, isReadOnly);
     } else {
         const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "");
+        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
         mostrarCargandoEstimulacion(true);
         try {
             const docSnap = await fb_getDoc(fb_doc(_db, "estimulacion_peques", docId));
@@ -1353,7 +1353,7 @@ async function renderActividadesDelDia() {
         }
 
         const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "");
+        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
 
         const nacimiento = document.getElementById("dropdown-peque").dataset.nacimiento;
         const etapaId = activeEtapaId || obtenerEtapaId(calcularMeses(nacimiento));
@@ -1720,7 +1720,7 @@ async function toggleMaterialListo(m) {
     if (!currentPequeId) return;
     try {
         const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "");
+        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
         const ref = fb_doc(_db, "progreso_peque", docId);
 
         const data = _dataProgresoPeque || {};
@@ -1816,7 +1816,7 @@ async function marcarEstadoActividad(status) {
 
     const act = _actividadAbierta;
     const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-    const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "");
+    const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
     const hoy = _fechaSeleccionadaEst;
 
     try {

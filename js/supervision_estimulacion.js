@@ -293,7 +293,7 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
             const peques = s.peques_lista || [];
             peques.forEach(peque => {
                 const key = `${s.email || 'sin_email'}|${peque.nombre}`;
-                const docId = btoa(`${s.email}_${peque.nombre}`).replace(/=/g, "");
+                const docId = btoa(`${s.email}_${peque.nombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
 
                 // Inicializar caché si no existe
                 if (!window._CACHE_FB_SUPERVISION[key]) {
