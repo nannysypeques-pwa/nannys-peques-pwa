@@ -540,6 +540,236 @@ const PLANTILLA_DATA = {
         }
       ]
     }
+  },
+  "18 a 24 meses": {
+    "Motricidad": {
+      "Fina": [
+        { titulo: "Mete y saca semillas de un frasco", objetivo: "Favorecer el desarrollo de la motricidad fina, la coordinación ojo-mano y la concentración mediante actividades que permitan al peque meter y sacar semillas de un frasco, fortaleciendo la precisión de los movimientos de los dedos, el control del agarre, la coordinación bilateral, la resolución de problemas y la autonomía durante el juego.", actividades: [] },
+        { titulo: "Ayuda a vestirse y desvestirse", objetivo: "Favorecer el desarrollo de la autonomía, la motricidad fina y gruesa, y la comprensión de rutinas cotidianas mediante actividades que permitan al peque participar activamente en el proceso de vestirse y desvestirse, fortaleciendo la coordinación motora, la independencia, la confianza en sí mismo y los hábitos de autocuidado.", actividades: [] },
+        { titulo: "Copia una línea en cualquier dirección", objetivo: "Favorecer el desarrollo de la motricidad fina, la coordinación ojo-mano y las habilidades preescritoras mediante actividades que permitan al peque copiar una línea en diferentes direcciones, fortaleciendo el control del trazo, la precisión de los movimientos de la mano, la atención, la percepción visual y la coordinación necesaria para futuros aprendizajes gráficos.", actividades: [] },
+        { titulo: "Ensambla objetos y juguetes de varias piezas", objetivo: "Favorecer el desarrollo cognitivo, la motricidad fina y la coordinación ojo-mano mediante actividades que permitan al peque ensamblar objetos y juguetes de varias piezas, fortaleciendo la resolución de problemas, la percepción espacial, la concentración, la precisión de los movimientos y la capacidad para seguir secuencias simples.", actividades: [] },
+        { titulo: "Construye una torre de bloques", objetivo: "Favorecer el desarrollo de la motricidad fina, la coordinación ojo-mano y las habilidades cognitivas mediante actividades que permitan al peque construir una torre de bloques, fortaleciendo la precisión de los movimientos, el equilibrio, la planificación motora, la concentración, la resolución de problemas y la comprensión de relaciones espaciales.", actividades: [] },
+        { titulo: "Desenvuelve los dulces o plátanos que va a consumir", objetivo: "Favorecer el desarrollo de la motricidad fina, la coordinación ojo-mano y la autonomía mediante actividades que permitan al peque desenvolver dulces, plátanos u otros alimentos sencillos que va a consumir, fortaleciendo la fuerza y destreza de los dedos, la coordinación bilateral, la resolución de problemas y las habilidades de autocuidado.", actividades: [] },
+        { titulo: "Es capaz de agarrar objetos pequeños haciendo pinza es decir, unir el dedo índice con el gordo", objetivo: "Favorecer el desarrollo de la motricidad fina mediante actividades que estimulen al peque a agarrar objetos pequeños utilizando la pinza fina (unión del dedo índice y pulgar), fortaleciendo la precisión de los movimientos, la coordinación ojo-mano, el control de los dedos, la autonomía y las habilidades necesarias para futuras tareas como dibujar, abotonar, manipular objetos y alimentarse de forma independiente.", actividades: [] }
+      ],
+      "Gruesa": [
+        { titulo: "Da algunos pasos solo", objetivo: "Favorecer el desarrollo de la motricidad gruesa mediante actividades que estimulen al peque a dar algunos pasos de manera independiente, fortaleciendo el equilibrio, la coordinación, la fuerza muscular de piernas y tronco, la estabilidad postural, la orientación espacial y la confianza en sí mismo para desplazarse de forma autónoma.", actividades: [] },
+        { titulo: "Camina un poco hacia atrás", objetivo: "Favorecer el desarrollo de la motricidad gruesa mediante actividades que estimulen al peque a caminar hacia atrás de forma segura, fortaleciendo el equilibrio, la coordinación motora, la conciencia corporal, la orientación espacial, el control postural y la planificación de movimientos.", actividades: [] },
+        { titulo: "Aprende a montar el triciclo", objetivo: "Favorecer el desarrollo de la motricidad gruesa mediante actividades que estimulen al peque a aprender a montar un triciclo, fortaleciendo la coordinación de piernas y pies, el equilibrio, la fuerza muscular, la orientación espacial, la planificación motora y la confianza en sus capacidades para desplazarse de manera autónoma.", actividades: [] },
+        { titulo: "Aprende a subir las escaleras", objetivo: "Favorecer el desarrollo de la motricidad gruesa mediante actividades que estimulen al peque a subir escaleras de forma segura, fortaleciendo la fuerza muscular de piernas, el equilibrio, la coordinación bilateral, la planificación motora, la orientación espacial y la confianza en sus habilidades de desplazamiento.", actividades: [] },
+        { titulo: "Camina bien", objetivo: "Favorecer el desarrollo de la motricidad gruesa mediante actividades que estimulen al peque a caminar con mayor seguridad y estabilidad, fortaleciendo el equilibrio, la coordinación, la fuerza muscular, la orientación espacial, el control postural y la confianza para desplazarse de manera autónoma y eficiente en diferentes entornos.", actividades: [] },
+        { titulo: "Se sube a una silla de adulto para obtener algo", objetivo: "Favorecer el desarrollo de la motricidad gruesa, la coordinación motora y la resolución de problemas mediante actividades que permitan al peque trepar de forma segura a superficies adecuadas para alcanzar objetos, fortaleciendo la fuerza muscular, el equilibrio, la planificación motora, la percepción espacial y la autonomía.", actividades: [] }
+      ]
+    },
+    "Cognitivo": {
+      "Cognitiva": [
+        { titulo: "Ensaya actividades nuevas y resuelve problemas (prueba y error)", objetivo: "Favorecer el desarrollo cognitivo, la autonomía y la capacidad de resolución de problemas mediante actividades de exploración, ensayo y error que permitan al niño experimentar, probar diferentes estrategias y encontrar soluciones de manera independiente en situaciones cotidianas y de juego, fortaleciendo su curiosidad, atención y confianza en sí mismo.", actividades: [] },
+        { titulo: "Varía sus acciones para ver sus resultados, p ej. avienta una pelota de diferentes maneras", objetivo: "Favorecer el desarrollo cognitivo y la comprensión de causa-efecto mediante actividades de exploración y prueba-error que permitan al niño variar sus acciones, observar resultados y descubrir nuevas formas de interactuar con los objetos y su entorno.", actividades: [] },
+        { titulo: "Puede identificar en una imagen objetos conocidos", objetivo: "Favorecer el desarrollo del lenguaje receptivo, la atención visual y la memoria mediante actividades que permitan al niño identificar y reconocer objetos conocidos en imágenes, fortaleciendo la asociación entre palabras, objetos y representaciones visuales.", actividades: [] },
+        { titulo: "Aún no distingue entre lo real y lo imaginario", objetivo: "Favorecer el desarrollo del juego simbólico, la imaginación, el lenguaje y la interacción social mediante actividades que permitan al niño representar acciones, objetos y situaciones imaginarias, fortaleciendo su creatividad, comprensión del entorno y expresión emocional.", actividades: [] },
+        { titulo: "Reconoce nombres de algunas letras o números, pero no conoce realmente su significado", objetivo: "Favorecer el reconocimiento visual y auditivo de algunas letras y números mediante actividades lúdicas y repetitivas que permitan al niño familiarizarse con sus formas y nombres, fortaleciendo la atención, memoria, lenguaje y exploración temprana de símbolos.", actividades: [] },
+        { titulo: "Puede hacer rompecabezas de 5 a 10 piezas", objetivo: "Favorecer el desarrollo cognitivo, la atención, la coordinación visomotora y la resolución de problemas mediante actividades de rompecabezas sencillos que permitan al niño identificar formas, colores, tamaños y relaciones espaciales, fortaleciendo la motricidad fina y la perseverancia.", actividades: [] }
+      ]
+    },
+    "Lenguaje": {
+      "Lenguaje": [
+        { titulo: "Dice mamá, papá o más de tres palabras", objetivo: "Identificar si el peque utiliza de manera espontánea al menos tres palabras con significado, incluyendo nombres de personas cercanas como mamá y papá, durante actividades de juego e interacción cotidiana para comunicarse, nombrar personas u objetos y expresar necesidades o intereses.", actividades: [] },
+        { titulo: "Empieza a decir cosas con cambios de tonos y parece que está platicando con él mismo", objetivo: "Evaluar si el peque utiliza vocalizaciones, balbuceos avanzados o palabras acompañadas de cambios de entonación, ritmo y volumen que simulan una conversación, mostrando intención comunicativa durante el juego y las interacciones cotidianas.", actividades: [] },
+        { titulo: "Usa verbos y adjetivos", objetivo: "Favorecer el desarrollo del lenguaje expresivo mediante actividades lúdicas que permitan al peque comprender y comenzar a utilizar verbos y adjetivos para describir acciones, objetos, personas y situaciones, fortaleciendo la comunicación, comprensión verbal y ampliación de vocabulario.", actividades: [] },
+        { titulo: "Se llama por su nombre o nene/nena", objetivo: "Favorecer el desarrollo de la identidad, autoconocimiento y lenguaje expresivo mediante actividades que ayuden al peque a reconocer y comenzar a nombrarse a sí mismo usando su nombre o palabras como “nene”, fortaleciendo la comunicación, interacción social y reconocimiento personal.", actividades: [] },
+        { titulo: "Va perfeccionando su lenguaje, pero puede tener problemas con algunos fonemas e incluso tartamudear", objetivo: "Favorecer el desarrollo del lenguaje expresivo y la comunicación mediante actividades que estimulen al peque a ampliar su vocabulario, mejorar la pronunciación y expresarse con mayor claridad y confianza, respetando su etapa de desarrollo y fortaleciendo la intención comunicativa, la comprensión verbal y la interacción social.", actividades: [] },
+        { titulo: "Establece un diálogo corto y sigue instrucciones de dos pasos", objetivo: "Favorecer el desarrollo del lenguaje receptivo y expresivo mediante actividades que estimulen al peque a participar en diálogos cortos y comprender instrucciones de dos pasos, fortaleciendo la atención, la memoria, la comprensión verbal, la capacidad de comunicación y la interacción social.", actividades: [] },
+        { titulo: "Busca objetos o personas aunque no estén presentes", objetivo: "Favorecer el desarrollo cognitivo, la memoria y el lenguaje mediante actividades que estimulen al peque a buscar y reconocer objetos o personas aunque no estén presentes en ese momento, fortaleciendo la permanencia del objeto, la memoria representacional, la comprensión verbal, la atención y la capacidad de evocación.", actividades: [] }
+      ]
+    },
+    "Socioemocional": {
+      "Socioemocional": [
+        { titulo: "Son más frecuentes las rabietas", objetivo: "Apoyar la regulación emocional y la expresión sana de frustración con empatía y contención afectiva.", actividades: [] },
+        { titulo: "Se aleja gradualmente de su persona de confianza para realizar otras actividades", objetivo: "Fomentar la independencia, autonomía y la seguridad emocional del peque explorando su entorno.", actividades: [] }
+      ]
+    }
+  },
+  "2 a 3 años": {
+    "Motricidad": {
+      "Fina": [
+        { titulo: "Dibuja círculos y líneas", objetivo: "Favorecer la motricidad fina, coordinación ojo-mano y control del trazo mediante el dibujo de círculos y líneas.", actividades: [] },
+        { titulo: "Garabatea", objetivo: "Fomentar el agarre del instrumento de escritura, la expresión libre y la coordinación viso-motora a través del garabato libre.", actividades: [] },
+        { titulo: "Empieza a usar las tijeras", objetivo: "Estimular la fuerza de la mano, la coordinación bilateral y el control del corte con tijeras de seguridad.", actividades: [] },
+        { titulo: "Copia figuras simples", objetivo: "Favorecer la percepción visual, la memoria y el control grafomotriz al copiar formas sencillas.", actividades: [] },
+        { titulo: "Toma los cubiertos de forma correcta", objetivo: "Fomentar la autonomía, la motricidad fina y la coordinación durante la alimentación con cubiertos.", actividades: [] }
+      ],
+      "Gruesa": [
+        { titulo: "Corre", objetivo: "Desarrollar el equilibrio, la fuerza muscular, la agilidad y la coordinación de movimientos gruesos al correr libremente.", actividades: [] },
+        { titulo: "Patea la pelota", objetivo: "Favorecer el equilibrio dinámico, la fuerza en miembros inferiores y la coordinación ojo-pie.", actividades: [] },
+        { titulo: "Aprende a montar el triciclo", objetivo: "Estimular la coordinación bilateral de piernas, el pedaleo, la dirección y la fuerza general.", actividades: [] },
+        { titulo: "Brinca con los dos pies juntos", objetivo: "Desarrollar la fuerza de salto, el impulso coordinado de ambos pies y el equilibrio al caer.", actividades: [] },
+        { titulo: "Se mueve por debajo, encima y a través de los obstáculos", objetivo: "Favorecer la conciencia corporal, la orientación espacial, la flexibilidad y la resolución de retos físicos.", actividades: [] }
+      ]
+    },
+    "Cognitivo": {
+      "Cognitiva": [
+        { titulo: "Son capaces de conocer el círculo, cuadrado y triángulo", objetivo: "Promover el reconocimiento e identificación visual y táctil de las formas geométricas básicas.", actividades: [] },
+        { titulo: "Dibuja figuras con cabeza y cuerpo", objetivo: "Estimular el esquema corporal, la representación gráfica y la imaginación al dibujar monigotes sencillos.", actividades: [] },
+        { titulo: "Puede distinguir entre tamaños", objetivo: "Desarrollar la discriminación visual y la capacidad de comparar tamaños (grande, mediano, pequeño).", actividades: [] },
+        { titulo: "Sabe su nombre, edad y sexo", objetivo: "Favorecer la identidad personal, el autoconocimiento y el lenguaje expresivo al responder datos básicos de sí mismo.", actividades: [] },
+        { titulo: "Tienen más conocimiento de reglas sociales", objetivo: "Fomentar la comprensión y cumplimiento de normas sociales básicas, la convivencia y los límites cotidianos.", actividades: [] },
+        { titulo: "Pueden recordar algunas letras", objetivo: "Estimular la discriminación visual y la memoria de símbolos al asociar y recordar letras comunes.", actividades: [] },
+        { titulo: "Usa su imaginación al jugar", objetivo: "Potenciar el juego simbólico, la creatividad y la representación de roles o escenarios imaginarios.", actividades: [] }
+      ]
+    },
+    "Lenguaje": {
+      "Lenguaje": [
+        { titulo: "Sabe el nombre de por lo menos 15 objetos", objetivo: "Ampliar el vocabulario receptivo y expresivo mediante la identificación y nominación de diversos objetos cotidianos.", actividades: [] },
+        { titulo: "Cambia constantemente de tema, pueden tener problemas para adquirir turnos en la conversación", objetivo: "Fomentar la intención comunicativa, la estructuración del lenguaje y, gradualmente, la toma de turnos en diálogos sencillos.", actividades: [] },
+        { titulo: "Cuenta una historia simple, aunque a veces se centra en una sola parte", objetivo: "Estimular la narrativa oral, la secuencia lógica básica y la expresión estructurada de sucesos sencillos.", actividades: [] }
+      ]
+    },
+    "Socioemocional": {
+      "Socioemocional": [
+        { titulo: "Se da la época del “¿por qué?”", objetivo: "Acompañar y estimular la curiosidad innata, la exploración cognitiva y la comprensión del entorno a través de la formulación de preguntas.", actividades: [] },
+        { titulo: "No saben cómo expresar sus emociones y se dan más los berrinches", objetivo: "Apoyar la regulación emocional, el etiquetado de sentimientos básicos y brindar herramientas de contención segura durante las rabietas.", actividades: [] }
+      ]
+    }
+  },
+  "3 a 4 años": {
+    "Motricidad": {
+      "Fina": [
+        { titulo: "Escribe algunas letras", objetivo: "Estimular el desarrollo de la motricidad fina, el agarre del lápiz y la coordinación ojo-mano para la iniciación en la escritura de letras.", actividades: [] },
+        { titulo: "Colorea sin salirse de la línea", objetivo: "Favorecer la precisión del trazo, la coordinación visomotriz y el control de límites espaciales en actividades gráficas.", actividades: [] },
+        { titulo: "Copia su nombre con algunos errores", objetivo: "Desarrollar la memoria de símbolos, la coordinación mano-ojo y el reconocimiento del propio nombre escrito.", actividades: [] }
+      ],
+      "Gruesa": [
+        { titulo: "Mantiene el equilibrio en un pie", objetivo: "Favorecer la motricidad gruesa, el equilibrio estático y la fuerza muscular de los miembros inferiores.", actividades: [] },
+        { titulo: "Sube y baja las escaleras alternando los pies", objetivo: "Desarrollar la coordinación bilateral, la fuerza muscular y la seguridad en el desplazamiento en escaleras.", actividades: [] },
+        { titulo: "Salta en un sitio", objetivo: "Estimular la fuerza de salto, el impulso coordinado de las piernas y el equilibrio dinámico.", actividades: [] },
+        { titulo: "Empieza a reconocer las nociones espaciales más básicas (encima-debajo, delante-detrás, dentro-fuera, arriba-abajo, cerca-lejos, izquierda-derecha)", objetivo: "Promover la conciencia corporal, la orientación en el espacio y la comprensión de nociones de dirección.", actividades: [] }
+      ]
+    },
+    "Cognitivo": {
+      "Cognitiva": [
+        { titulo: "Cuenta e identifica del 1 al 10", objetivo: "Favorecer el pensamiento matemático temprano, el conteo uno a uno y la asociación número-cantidad.", actividades: [] },
+        { titulo: "Conoce el círculo, triángulo y cuadrado", objetivo: "Facilitar la discriminación visual y el reconocimiento de las formas geométricas básicas.", actividades: [] },
+        { titulo: "Presta más interés por el dibujo", objetivo: "Fomentar la autoexpresión, la atención sostenida y la coordinación fina a través de la actividad artística.", actividades: [] },
+        { titulo: "Puede utilizar una combinación de objetos con una secuencia coherente p ej., verde, amarillo, verde, amarillo", objetivo: "Desarrollar el razonamiento lógico-matemático, el seguimiento de patrones y secuencias visuales.", actividades: [] },
+        { titulo: "Clasifica y separa objetos de acuerdo con sus características", objetivo: "Estimular las funciones ejecutivas de categorización, comparación y selección por color, forma o tamaño.", actividades: [] },
+        { titulo: "Usa adecuadamente objetos caseros", objetivo: "Fomentar la autonomía, la comprensión funcional y el uso correcto de utensilios y herramientas de casa.", actividades: [] },
+        { titulo: "Al jugar actúa situaciones o representa roles", objetivo: "Potenciar el juego de rol y el desarrollo cognitivo-social mediante la representación de situaciones cotidianas.", actividades: [] }
+      ]
+    },
+    "Lenguaje": {
+      "Lenguaje": [
+        { titulo: "Reconoce las vocales", objetivo: "Estimular la discriminación auditiva y visual de las vocales, sentando las bases para el aprendizaje de la lectoescritura.", actividades: [] },
+        { titulo: "Conoce y usa entre 900 y 1000 palabras", objetivo: "Expandir el vocabulario expresivo y receptivo y fomentar la estructuración gramatical de oraciones complejas.", actividades: [] }
+      ]
+    },
+    "Socioemocional": {
+      "Socioemocional": [
+        { titulo: "Se despide y saluda con amabilidad", objetivo: "Fomentar las habilidades sociales, la cortesía y la adaptación social en situaciones cotidianas de encuentro.", actividades: [] },
+        { titulo: "Expresa libremente sobre sí mismo, las cosas que le gustan, escuela, amigos, etc.", objetivo: "Promover el desarrollo de la identidad personal, la autoestima y la comunicación asertiva de sus gustos y experiencias.", actividades: [] },
+        { titulo: "Toma en cuenta a los demás", objetivo: "Favorecer la empatía, el juego cooperativo y la consideración de los deseos y necesidades de los otros.", actividades: [] },
+        { titulo: "Empieza a respetar turnos", objetivo: "Desarrollar la tolerancia a la frustración, el control de impulsos y las habilidades de interacción grupal.", actividades: [] }
+      ]
+    }
+  },
+  "4 a 5 años": {
+    "Motricidad": {
+      "Fina": [
+        { titulo: "Copia figuras complejas con ángulos", objetivo: "Desarrollar la motricidad fina, la precisión del trazo y la percepción espacial al copiar formas geométricas o dibujos complejos.", actividades: [] },
+        { titulo: "Puede realizar juegos o actividades que requieren mayor precisión como manejar una cometa o un coche teledirigido, hacer determinadas manualidades como construcciones con plastilina, arena, cartón, figuras de origami", objetivo: "Fomentar la coordinación viso-motriz fina de alta precisión, la paciencia, el control de fuerza y destrezas manuales complejas.", actividades: [] },
+        { titulo: "Combina colores para obtener nuevos colores y tonalidades", objetivo: "Estimular la exploración sensorial y artística, la creatividad y la comprensión de conceptos de mezcla de color y tonos.", actividades: [] }
+      ],
+      "Gruesa": [
+        { titulo: "Baila", objetivo: "Favorecer la coordinación general, el ritmo, el equilibrio corporal y la expresión corporal mediante el baile estructurado y libre.", actividades: [] },
+        { titulo: "Corre evadiendo obstáculos", objetivo: "Desarrollar la agilidad, los reflejos rápidos, la fuerza de piernas y el control direccional al correr sorteando obstáculos.", actividades: [] },
+        { titulo: "Brinca en su lugar, hacia enfrente y en un pie", objetivo: "Fomentar la fuerza de salto, el control del equilibrio dinámico y la coordinación de movimientos gruesos en diferentes planos.", actividades: [] }
+      ]
+    },
+    "Cognitivo": {
+      "Cognitiva": [
+        { titulo: "Cuenta e identifica del 1 al 20", objetivo: "Fortalecer el pensamiento matemático, el conteo de elementos y el reconocimiento simbólico de números mayores.", actividades: [] },
+        { titulo: "Conoce el círculo, triángulo, cuadrado, rectángulo, óvalo y rombo", objetivo: "Desarrollar la percepción geométrica y el reconocimiento visual de formas básicas y complejas.", actividades: [] },
+        { titulo: "Perfecciona sus dibujos", objetivo: "Fomentar la motricidad fina, la representación visual y el detalle en el dibujo expresivo.", actividades: [] },
+        { titulo: "Comienza escribir algunos números y letras", objetivo: "Estimular las destrezas de preescritura y el trazo correcto de símbolos numéricos y alfabéticos comunes.", actividades: [] },
+        { titulo: "Puede identificar al menos 20 letras del abecedario", objetivo: "Promover el reconocimiento del alfabeto y la memoria visual de símbolos de lectoescritura.", actividades: [] },
+        { titulo: "Puede comparar tamaños y pesos de algunos objetos", objetivo: "Desarrollar habilidades cognitivas de medición, estimación y comparación física de los objetos.", actividades: [] },
+        { titulo: "Puede asociar letras y sonidos para escribir palabras", objetivo: "Favorecer la conciencia fonológica y la asociación grafema-fonema inicial para la escritura de palabras sencillas.", actividades: [] }
+      ]
+    },
+    "Lenguaje": {
+      "Lenguaje": [
+        { titulo: "Identifica vocales y más 5 consonantes", objetivo: "Facilitar el reconocimiento alfabético y auditivo básico de vocales y consonantes comunes.", actividades: [] },
+        { titulo: "Es capaz de expresar algunas emociones y pensamientos", objetivo: "Estimular el lenguaje expresivo emocional y la asertividad al comunicar verbalmente sentimientos e ideas.", actividades: [] },
+        { titulo: "Usa la frase “yo puedo” cuando relata algo", objetivo: "Fomentar la seguridad personal, la autoestima y la confianza lingüística al expresarse sobre sus capacidades.", actividades: [] },
+        { titulo: "Usa el lenguaje para resolver dudas", objetivo: "Promover la curiosidad cognitiva y el diálogo para buscar explicaciones y resolver dudas sobre el entorno.", actividades: [] },
+        { titulo: "Puede escuchar cuentos más largos", objetivo: "Desarrollar la atención sostenida, la comprensión auditiva y la imaginación mediante la lectura de historias extensas.", actividades: [] },
+        { titulo: "Establece y mantienen una conversación con otra persona", objetivo: "Favorecer las habilidades comunicativas bilaterales, la retroalimentación conversacional y la socialización verbal.", actividades: [] },
+        { titulo: "Realiza preguntas cambiando la entonación", objetivo: "Estimular la modulación vocal, la prosodia del habla y la intención interrogativa correcta en la comunicación.", actividades: [] }
+      ]
+    },
+    "Socioemocional": {
+      "Socioemocional": [
+        { titulo: "Muestra empatía hacia los demás", objetivo: "Fomentar la empatía, el reconocimiento de emociones ajenas y la conducta prosocial de ayuda.", actividades: [] },
+        { titulo: "Disfruta los juegos que incluyen a varias personas", objetivo: "Promover la socialización grupal, el juego compartido y la integración interactiva con pares.", actividades: [] },
+        { titulo: "Tiene mayor autocontrol", objetivo: "Desarrollar la autorregulación emocional, el control de impulsos y la tolerancia ante diversas situaciones cotidianas.", actividades: [] },
+        { titulo: "Se involucra en actividades de grupo", objetivo: "Fomentar el sentido de pertenencia, la colaboración y la cooperación activa en dinámicas y juegos grupales.", actividades: [] },
+        { titulo: "Respeta las diferencias entre las personas", objetivo: "Promover el respeto, la tolerancia y el aprecio por la diversidad física y de comportamiento en su entorno social.", actividades: [] },
+        { titulo: "Empieza a aceptar cuando pierde o gana", objetivo: "Fomentar la tolerancia a la frustración y la deportividad en juegos competitivos simples.", actividades: [] }
+      ]
+    }
+  },
+  "5 a 6 años": {
+    "Motricidad": {
+      "Fina": [
+        { titulo: "Recorta figuras con líneas curvas", objetivo: "Desarrollar la coordinación visomotora fina, el control del corte y la destreza manual al recortar formas no lineales.", actividades: [] },
+        { titulo: "Puede hacer dibujos de personas más definidas", objetivo: "Fomentar el esquema corporal, el detalle representativo y el control del trazo al dibujar la figura humana.", actividades: [] },
+        { titulo: "Puede cepillar sus dientes y cabello solo, desabrochar la ropa, lavarse cara y manos", objetivo: "Consolidar los hábitos de higiene personal, el cuidado propio y la autonomía en actividades de la vida diaria.", actividades: [] },
+        { titulo: "Utiliza herramientas, instrumentos y materiales en actividades que requieren de control y precisión en sus movimientos", objetivo: "Promover el control muscular fino, la precisión ojo-mano y el uso correcto de utensilios y herramientas de arte o juego.", actividades: [] },
+        { titulo: "Cacha la pelota", objetivo: "Desarrollar el cálculo visual-espacial, la coordinación ojo-mano y los reflejos para atrapar objetos en movimiento.", actividades: [] },
+        { titulo: "Puede vaciar líquidos de un contenedor a otro", objetivo: "Estimular el control manual, la estimación espacial y la precisión física al realizar trasvases de líquidos.", actividades: [] },
+        { titulo: "Usa recursos de las artes visuales en creaciones propias", objetivo: "Fomentar la creatividad, la expresión artística y la experimentación libre con distintas técnicas y materiales plásticos.", actividades: [] }
+      ],
+      "Gruesa": [
+        { titulo: "Puede saltar tras tomar impulso", objetivo: "Desarrollar la fuerza pliométrica, la coordinación corporal general, el equilibrio y la agilidad en el salto con carrera previa.", actividades: [] },
+        { titulo: "Produce sonidos al ritmo de la música con distintas partes del cuerpo, instrumentos y otros objetos", objetivo: "Estimular la conciencia rítmica, la coordinación bilateral y el sentido del tiempo musical mediante percusión corporal.", actividades: [] },
+        { titulo: "Crea y reproduce secuencias de movimientos, gestos y posturas corporales con y sin música, individualmente y en coordinación con otros", objetivo: "Fomentar la planificación motora, la memoria secuencial de movimientos y el juego motor cooperativo.", actividades: [] },
+        { titulo: "Corre y se detiene con mayor control", objetivo: "Fortalecer la estabilidad, el equilibrio dinámico, el frenado y el control del movimiento al correr a distintas velocidades.", actividades: [] }
+      ]
+    },
+    "Cognitivo": {
+      "Cognitiva": [
+        { titulo: "Cuenta e identifica del 1 al 100", objetivo: "Fomentar el razonamiento lógico-matemático, el conteo estructurado y el reconocimiento de la secuencia numérica hasta el 100.", actividades: [] },
+        { titulo: "Conoce todas las figuras en 2D Y 3D", objetivo: "Promover la comprensión del espacio tridimensional y el reconocimiento e identificación de formas y cuerpos geométricos planos y volumétricos.", actividades: [] },
+        { titulo: "Reproduce modelos con formas, figuras y cuerpos geométricos", objetivo: "Desarrollar la percepción espacial, la capacidad de réplica constructiva y la resolución de problemas visuales.", actividades: [] },
+        { titulo: "Desea asumir más responsabilidades", objetivo: "Fortalecer la autonomía, la iniciativa, la autoconfianza y el sentido de cooperación al realizar tareas sencillas en casa.", actividades: [] },
+        { titulo: "Es capaz de resolver conflictos solo (con ayuda de las palabras)", objetivo: "Promover la resolución asertiva de problemas sociales, la negociación, el diálogo y el control de impulsos.", actividades: [] },
+        { titulo: "Identifica algunas relaciones de equivalencia entre monedas de $1, $2, $5 y $10 en situaciones reales o ficticias de compra y venta", objetivo: "Desarrollar el razonamiento matemático aplicado al uso de dinero básico y dinámicas de comercio simbólico.", actividades: [] },
+        { titulo: "Reproduce esculturas y pinturas que haya observado", objetivo: "Estimular la apreciación artística, la memoria visual y la creatividad al recrear obras plásticas de su entorno.", actividades: [] }
+      ]
+    },
+    "Lenguaje": {
+      "Lenguaje": [
+        { titulo: "Conoce todo el abecedario", objetivo: "Estimular el reconocimiento visual y auditivo de todas las letras del alfabeto, apoyando la iniciación lectora.", actividades: [] },
+        { titulo: "Cuenta con un vocabulario expresivo de 2600 palabras y entiende más de 20 000", objetivo: "Enriquecer la semántica del lenguaje, la comprensión verbal compleja y la estructuración correcta de discursos largos.", actividades: [] },
+        { titulo: "Dice rimas, canciones, trabalenguas, adivinanzas y otros juegos del lenguaje", objetivo: "Favorecer la fluidez verbal, la memoria auditiva, la articulación de fonemas y el disfrute lúdico de la palabra.", actividades: [] },
+        { titulo: "Tiene mayor interés por el lenguaje escrito y hablado", objetivo: "Fomentar la curiosidad intelectual, la motivación por la lectura temprana y la comunicación de historias de su interés.", actividades: [] },
+        { titulo: "Disfruta inventar sus propias historias", objetivo: "Potenciar la narrativa oral, la imaginación y la creatividad al estructurar cuentos o relatos propios.", actividades: [] },
+        { titulo: "Lee constantemente las palabras que se encuentra, muestra mucha curiosidad ante la lectura", objetivo: "Fomentar el hábito lector, la lectura de palabras familiares en el entorno y el interés activo por los libros.", actividades: [] }
+      ]
+    },
+    "Socioemocional": {
+      "Socioemocional": [
+        { titulo: "Empieza a hacerse responsable de sus actos", objetivo: "Favorecer la responsabilidad personal, la comprensión de las consecuencias de sus decisiones y la honestidad en el actuar.", actividades: [] },
+        { titulo: "Muestra una actitud cooperativa", objetivo: "Fomentar las conductas de ayuda mutua, la solidaridad y la disposición para colaborar activamente en grupos.", actividades: [] },
+        { titulo: "Desempeña diferentes roles y genera vínculos con otros niños", objetivo: "Fomentar la socialización, la empatía y la amistad a través de la representación simbólica de roles y juegos interactivos.", actividades: [] },
+        { titulo: "Comunica emociones mediante la expresión corporal", objetivo: "Estimular la conciencia de su propio cuerpo y el uso de gestos y posturas para canalizar y expresar estados emocionales.", actividades: [] },
+        { titulo: "Representa la imagen que tiene de sí mismo y expresa ideas mediante modelado, dibujo y pintura", objetivo: "Favorecer el autoconcepto, la autoestima y la libre expresión artística al plasmar su propia imagen y pensamientos.", actividades: [] },
+        { titulo: "Reconoce y nombra situaciones que le generan alegría, tristeza, miedo o enojo, y expresa lo que siente", objetivo: "Consolidar el autoconocimiento emocional, el etiquetado afectivo y la comunicación asertiva de sus sentimientos ante distintas situaciones.", actividades: [] },
+        { titulo: "Dialoga para solucionar conflictos y ponerse de acuerdo para realizar actividades en equipo", objetivo: "Desarrollar la capacidad de negociación, la resolución asertiva de problemas grupales y la toma de decisiones cooperativa.", actividades: [] },
+        { titulo: "Realiza por sí mismo acciones de cuidado personal, se hace cargo de sus pertenencias y respeta las de los demás", objetivo: "Fomentar la responsabilidad, el cuidado y mantenimiento de sus pertenencias, la autonomía personal y el respeto por los objetos de los otros.", actividades: [] },
+        { titulo: "Reconoce cuando alguien necesita ayuda y la proporciona", objetivo: "Estimular la conducta prosocial, el sentido de solidaridad y la capacidad de ofrecer asistencia empática a quienes lo necesitan.", actividades: [] },
+        { titulo: "Habla de sus conductas y las de otros. Explica las consecuencias de algunas de ellas para relacionarse con otros", objetivo: "Desarrollar la metacognición sobre su comportamiento, la empatía y el entendimiento de causa-efecto en las relaciones interpersonales.", actividades: [] }
+      ]
+    }
   }
 };
 
