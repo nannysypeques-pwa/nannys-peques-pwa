@@ -571,6 +571,25 @@ function obtenerUltimaEvaluacionRealizada(data, currentEtapaId) {
     return currentEtapaId;
 }
 
+function esEtapaAl100(etapaId, dataHitos) {
+    const etapa = CATALOGO_HITOS[etapaId];
+    if (!etapa || !etapa.areas) return false;
+    let totalHitos = 0;
+    let logrados = 0;
+    Object.keys(etapa.areas).forEach(a => {
+        const area = etapa.areas[a];
+        if (area && area.hitos) {
+            area.hitos.forEach(h => {
+                totalHitos++;
+                if (dataHitos && dataHitos[h.id] === 10) {
+                    logrados++;
+                }
+            });
+        }
+    });
+    return totalHitos > 0 && logrados === totalHitos;
+}
+
 function obtenerEtapasPermitidas() {
     const etapas = ["0-3m", "4-6m", "7-9m", "10-12m", "13-18m", "19-24m", "25-36m", "3-4a", "4-5a", "5-6a"];
     const nacimiento = document.getElementById("dropdown-peque").dataset.nacimiento;
@@ -581,9 +600,33 @@ function obtenerEtapasPermitidas() {
     const isTrans = esMesDeTransicion(meses, currentEtapaId);
     const nextEtapaId = isTrans ? obtenerSiguienteEtapa(currentEtapaId) : null;
 
-    const maxEtapaId = nextEtapaId || currentEtapaId;
-    const maxIdx = etapas.indexOf(maxEtapaId);
+    let maxEtapaId = nextEtapaId || currentEtapaId;
+    const data = window._activePequeData;
+    const historial = data?.historial_evaluaciones || {};
 
+    let checkEtapaId = maxEtapaId;
+    while (checkEtapaId) {
+        let evalData = null;
+        if (historial[checkEtapaId]) {
+            evalData = historial[checkEtapaId].hitos_detalle || {};
+        } else if (data?.etapa_actual === checkEtapaId) {
+            evalData = data.hitos_detalle || {};
+        }
+
+        if (evalData && Object.keys(evalData).length > 0 && esEtapaAl100(checkEtapaId, evalData)) {
+            const next = obtenerSiguienteEtapa(checkEtapaId);
+            if (next) {
+                maxEtapaId = next;
+                checkEtapaId = next;
+            } else {
+                break;
+            }
+        } else {
+            break;
+        }
+    }
+
+    const maxIdx = etapas.indexOf(maxEtapaId);
     if (maxIdx === -1) return etapas;
     return etapas.slice(0, maxIdx + 1);
 }
@@ -1436,6 +1479,51 @@ async function renderActividadesDelDia() {
         const hoy = _fechaSeleccionadaEst;
         const resultadosHoy = (progData.seguimiento_diario && progData.seguimiento_diario[hoy]) ? progData.seguimiento_diario[hoy] : {};
 
+        // 3.5. Banner de Etapa al 100%
+        let bannerEtapa100Html = "";
+        const activeEvalData = (data?.historial_evaluaciones && data.historial_evaluaciones[activeEtapaId]) 
+            ? data.historial_evaluaciones[activeEtapaId].hitos_detalle 
+            : (data?.etapa_actual === activeEtapaId ? data.hitos_detalle : null);
+        
+        if (activeEvalData && Object.keys(activeEvalData).length > 0 && esEtapaAl100(activeEtapaId, activeEvalData)) {
+            const nextEtapaId = obtenerSiguienteEtapa(activeEtapaId);
+            if (nextEtapaId) {
+                const nombreSiguiente = obtenerNombreEtapaHumano(nextEtapaId);
+                if (SESION.cliente) {
+                    bannerEtapa100Html = `
+                        <div class="est-alert-modern" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 16px 20px; border-radius: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2); width: 100%; box-sizing: border-box;">
+                            <span class="material-symbols-outlined" style="font-size: 32px; color: white;">verified</span>
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: white;">¡Etapa de desarrollo completada al 100%! 🎉</h4>
+                                <p style="margin: 2px 0 0 0; font-size: 12px; opacity: 0.9;">Tu peque ha logrado todos los hitos de esta etapa. Pronto su nanny podrá iniciar la evaluación de la siguiente etapa: <b>${nombreSiguiente}</b>.</p>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    bannerEtapa100Html = `
+                        <div class="est-alert-modern" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 16px 20px; border-radius: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2); width: 100%; box-sizing: border-box;">
+                            <span class="material-symbols-outlined" style="font-size: 32px; color: white;">verified</span>
+                            <div style="flex: 1;">
+                                <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: white;">¡Etapa de desarrollo completada al 100%! 🎉</h4>
+                                <p style="margin: 2px 0 0 0; font-size: 12px; opacity: 0.9;">El peque ha logrado todos los hitos de esta etapa. Te sugerimos iniciar la evaluación de la siguiente etapa: <b>${nombreSiguiente}</b> para no dejarlo sin actividades nuevas.</p>
+                            </div>
+                            <button onclick="abrirEvaluacionInicial(false, null, false, '${nextEtapaId}')" style="background: white; color: #059669; border: none; padding: 8px 15px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; flex-shrink: 0; transition: transform 0.2s;">Evaluar 🚀</button>
+                        </div>
+                    `;
+                }
+            } else {
+                bannerEtapa100Html = `
+                    <div class="est-alert-modern" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 16px 20px; border-radius: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2); width: 100%; box-sizing: border-box;">
+                        <span class="material-symbols-outlined" style="font-size: 32px; color: white;">verified</span>
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: white;">¡Felicidades! Ruta completada 🌟</h4>
+                            <p style="margin: 2px 0 0 0; font-size: 12px; opacity: 0.9;">El peque ha completado con éxito todas las etapas del desarrollo infantil de la aplicación.</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         // Generar ficha "Próxima Evaluación" si aplica (15 días antes del cambio de etapa o si está pendiente de cierre o inicial)
         let cardProximaEvalHtml = "";
         if (nacimiento && !SESION.cliente && data) { // Solo Nannies
@@ -1528,6 +1616,12 @@ async function renderActividadesDelDia() {
 
         // 4. Renderizar Listado Compacto
         container.innerHTML = "";
+
+        if (bannerEtapa100Html) {
+            const tempDiv = document.createElement("div");
+            tempDiv.innerHTML = bannerEtapa100Html.trim();
+            container.appendChild(tempDiv.firstElementChild);
+        }
 
         if (sugeridas.length === 0) {
             const numHitos = Object.keys(respuestasHitosParaActividades).length;
