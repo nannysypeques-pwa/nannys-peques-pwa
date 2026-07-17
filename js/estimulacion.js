@@ -293,6 +293,21 @@ async function selectPequeEstimulacion(nombre, nacimiento) {
                 renderEvaluationButtons();
                 actualizarControlesNavegacionEtapa();
             }
+        }, (err) => {
+            // Error silencioso: ocurre cuando el documento aún no existe para un peque nuevo
+            console.warn(`[Estimulación] Sin acceso a evaluación de ${nombre}:`, err.code || err.message);
+            window._activePequeData = null;
+            activeEtapaId = obtenerEtapaId(calcularMeses(nacimiento));
+            progresoActual = {};
+            respuestasHitos = {};
+            respuestasHitosInicial = {};
+            nivelesTeoricos = {};
+            nivelesFinales = null;
+            renderRadarChart();
+            renderDashboard();
+            renderPromptEvaluacion(nombre);
+            renderEvaluationButtons();
+            actualizarControlesNavegacionEtapa();
         });
 
         _unsubProgresoPeque = fb_onSnapshot(fb_doc(_db, "progreso_peque", docId), (snap) => {
@@ -323,6 +338,10 @@ async function selectPequeEstimulacion(nombre, nacimiento) {
                     else if (status === "pendiente") btnPending.classList.add("active");
                 }
             }
+        }, (err) => {
+            // Error silencioso: ocurre cuando el documento aún no existe para un peque nuevo
+            console.warn(`[Estimulación] Sin acceso a progreso de ${nombre}:`, err.code || err.message);
+            _dataProgresoPeque = { hitos: {}, seguimiento_diario: {} };
         });
     } catch (e) {
         console.error(e);

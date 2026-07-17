@@ -592,8 +592,8 @@ const PLANTILLA_DATA = {
   "2 a 3 años": {
     "Motricidad": {
       "Fina": [
-        { titulo: "Dibuja círculos y líneas", objetivo: "Favorecer la motricidad fina, coordinación ojo-mano y control del trazo mediante el dibujo de círculos y líneas.", actividades: [] },
-        { titulo: "Garabatea", objetivo: "Fomentar el agarre del instrumento de escritura, la expresión libre y la coordinación viso-motora a través del garabato libre.", actividades: [] },
+        { titulo: "Dibuja círculos y líneas", objetivo: "Favorecer el desarrollo de la motricidad fina, la coordinación ojo-mano y las habilidades preescritoras mediante actividades que estimulen al peque a dibujar y realizar círculos, fortaleciendo el control del crayón, la precisión de los movimientos, la creatividad, la percepción visual y la expresión gráfica en niños de 2 a 3 años.", actividades: [] },
+        { titulo: "Garabatea", objetivo: "Favorecer el desarrollo de la motricidad fina, la coordinación ojo-mano y la expresión creativa mediante actividades de garabateo, permitiendo que el peque explore diferentes movimientos, materiales y trazos. Estas actividades fortalecen el control de la mano, la fuerza de los dedos, la atención, la imaginación, la comunicación y las habilidades preescritoras en niños de 2 a 3 años.", actividades: [] },
         { titulo: "Empieza a usar las tijeras", objetivo: "Estimular la fuerza de la mano, la coordinación bilateral y el control del corte con tijeras de seguridad.", actividades: [] },
         { titulo: "Copia figuras simples", objetivo: "Favorecer la percepción visual, la memoria y el control grafomotriz al copiar formas sencillas.", actividades: [] },
         { titulo: "Toma los cubiertos de forma correcta", objetivo: "Fomentar la autonomía, la motricidad fina y la coordinación durante la alimentación con cubiertos.", actividades: [] }
