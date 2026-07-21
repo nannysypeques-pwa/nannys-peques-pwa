@@ -82,7 +82,7 @@ async function cargarFirebaseEstimulacion() {
         // 🔐 Asegurar que Firebase Auth esté autenticado antes de consultar Firestore
         const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
         const auth = firebaseAuthModule.getAuth(_db.app);
-        
+
         if (!auth.currentUser && window.SESION && window.SESION.firebaseToken) {
             console.log("⏳ Autenticando Firebase en Estimulación...");
             await firebaseAuthModule.signInWithCustomToken(auth, window.SESION.firebaseToken);
@@ -424,11 +424,11 @@ function abrirEvaluacionInicial(isReadOnly = false, prefillData = null, esCierre
     modal.dataset.etapaId = etapaId;
     labelEtapa.textContent = (esSegundaEvaluacion ? "Evaluación de Cierre - " : "Evaluación Inicial - ") + etapa.nombre;
     container.innerHTML = "";
-    
+
     // Si es cierre, empezamos con las respuestas actuales (teóricas) como base o vacías?
     // El usuario quiere confirmar avances, así que mejor vacío para que evalúen de nuevo,
     // pero mostrando el indicador del anterior.
-    respuestasHitos = prefillData?.hitos_detalle || {}; 
+    respuestasHitos = prefillData?.hitos_detalle || {};
     if (esSegundaEvaluacion) respuestasHitos = {}; // Reiniciar para la nueva evaluación
 
     // Reset progreso
@@ -500,14 +500,14 @@ function abrirEvaluacionInicial(isReadOnly = false, prefillData = null, esCierre
 function parsearFecha(f) {
     if (!f) return null;
     if (f instanceof Date) return f;
-    
+
     // Si f es un string de formato YYYY-MM-DD o similar, evitemos el desfase de zona horaria
     if (typeof f === 'string') {
         const matchYMD = f.match(/^(\d{4})-(\d{2})-(\d{2})/);
         if (matchYMD) {
             return new Date(parseInt(matchYMD[1], 10), parseInt(matchYMD[2], 10) - 1, parseInt(matchYMD[3], 10));
         }
-        
+
         const matchDMY = f.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
         if (matchDMY) {
             return new Date(parseInt(matchDMY[3], 10), parseInt(matchDMY[2], 10) - 1, parseInt(matchDMY[1], 10));
@@ -570,16 +570,16 @@ function obtenerUltimaEvaluacionRealizada(data, currentEtapaId) {
     if (!data) return currentEtapaId;
     const etapas = ["0-3m", "4-6m", "7-9m", "10-12m", "13-18m", "19-24m", "25-36m", "3-4a", "4-5a", "5-6a"];
     const historial = data.historial_evaluaciones || {};
-    
+
     const startIdx = etapas.indexOf(currentEtapaId);
     if (startIdx === -1) return currentEtapaId;
-    
+
     const nextEtapaId = obtenerSiguienteEtapa(currentEtapaId);
     if (nextEtapaId) {
         const hasNext = historial[nextEtapaId] || (data.etapa_actual === nextEtapaId && data.niveles);
         if (hasNext) return nextEtapaId;
     }
-    
+
     for (let i = startIdx; i >= 0; i--) {
         const eId = etapas[i];
         const hasEval = historial[eId] || (data.etapa_actual === eId && data.niveles);
@@ -767,7 +767,7 @@ async function verOEditarEvaluacion(etapaId, isReadOnly = false) {
                 };
             }
         }
-        
+
         if (!evalData && isReadOnly) {
             mostrarToast("No hay evaluación registrada para esta etapa.");
         } else {
@@ -797,7 +797,7 @@ function renderEvaluationButtons() {
     const btn = document.createElement("button");
     btn.className = "btn-eval-modern-outline";
     btn.style.width = "100%";
-    
+
     const label = currentName.replace("Peques de ", "");
     if (hasEval) {
         btn.innerHTML = `<span>👁️ Ver Resultados (${label})</span>`;
@@ -952,7 +952,7 @@ async function guardarEvaluacionInicial() {
         modal.classList.remove("active");
         mostrarToast("¡Evaluación guardada! ✨");
         renderRadarChart();
-        renderDashboard(); 
+        renderDashboard();
         renderActividadesDelDia();
 
         if (proximaEtapaId) {
@@ -1011,7 +1011,7 @@ function renderRadarChart() {
     ];
 
     const labels = configGrupos.map(g => g.label);
-    
+
     // Dataset 1: Evaluación Inicial
     const dataInicial = configGrupos.map(g => {
         const niveles = g.areas.map(id => progresoActual[id] || 0);
@@ -1218,7 +1218,7 @@ function _obtenerInicioDia(d) {
 }
 
 // Function to calculate suggestions for a hito on a specific date
-function obtenerActividadesSugeridasParaHito(hId, targetDateStr) {
+function obtenerActividadesSugeridasParaHito(hId, targetDateStr, offset = 0) {
     const nacimiento = document.getElementById("dropdown-peque").dataset.nacimiento;
     const etapaId = activeEtapaId || obtenerEtapaId(calcularMeses(nacimiento));
 
@@ -1300,7 +1300,7 @@ function obtenerActividadesSugeridasParaHito(hId, targetDateStr) {
     function getBaseScheduledIndexForDate(d) {
         const diffMs = d.getTime() - dBase.getTime();
         const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-        return Math.max(0, diffDays);
+        return Math.max(0, diffDays) + offset;
     }
 
     // 7. Calculate window scheduled activities
@@ -1348,8 +1348,8 @@ function obtenerActividadesSugeridasParaHito(hId, targetDateStr) {
     // Build the list of future available activities:
     // 1. Uncompleted past activities (Catch-Up)
     // 2. Uncompleted activities in the catalog that are not scheduled in the current window
-    const catalogIncompletasNoVentana = actsHito.filter(act => 
-        !completadas.has(act.firebaseId) && 
+    const catalogIncompletasNoVentana = actsHito.filter(act =>
+        !completadas.has(act.firebaseId) &&
         !actividadesEnVentana.has(act.firebaseId) &&
         !pasadasPendientesIds.has(act.firebaseId)
     );
@@ -1440,7 +1440,7 @@ async function renderActividadesDelDia() {
         const data = window._activePequeData;
         const meses = calcularMeses(nacimiento);
         const currentEtapaId = obtenerEtapaId(meses);
-        
+
         let respuestasHitosParaActividades = { ...respuestasHitos };
         let etapaIdParaActividades = etapaId;
 
@@ -1475,19 +1475,43 @@ async function renderActividadesDelDia() {
         hitosAmarillos.sort();
         hitosVerdes.sort();
 
-        // 2. Selección de Hitos (Mínimo 2, Máximo 5)
+        // 2. Selección de Hitos (Exactamente 5)
         let slots = [];
-        hitosRojos.forEach(h => { if (slots.length < 5) slots.push(h); });
-        hitosAmarillos.forEach(h => { if (slots.length < 5) slots.push(h); });
-        if (slots.length < 2) {
-            hitosVerdes.forEach(h => { if (slots.length < 5) slots.push(h); });
+        hitosRojos.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+        hitosAmarillos.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+
+        if (slots.length < 5 && (hitosRojos.length > 0 || hitosAmarillos.length > 0)) {
+            const prioritarios = [...hitosRojos, ...hitosAmarillos];
+            let repeticiones = 0;
+            while (slots.length < 5 && repeticiones < prioritarios.length) {
+                slots.push(prioritarios[repeticiones % prioritarios.length]);
+                repeticiones++;
+            }
+            if (slots.length < 5) {
+                hitosVerdes.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+            }
+        } else if (slots.length < 5) {
+            hitosVerdes.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+            let idx = 0;
+            while (slots.length < 5 && hitosVerdes.length > 0) {
+                slots.push(hitosVerdes[idx % hitosVerdes.length]);
+                idx++;
+            }
         }
 
         const sugeridas = [];
         const etapaFirebase = mapEtapaFirebase[etapaIdParaActividades] || "0 a 3 meses";
+        const hitoOffsets = {};
 
         for (const hId of slots) {
-            const hitoSugs = obtenerActividadesSugeridasParaHito(hId, _fechaSeleccionadaEst);
+            let offset = 0;
+            if (hitoOffsets[hId] === undefined) {
+                hitoOffsets[hId] = 0;
+            } else {
+                hitoOffsets[hId]++;
+                offset = hitoOffsets[hId];
+            }
+            const hitoSugs = obtenerActividadesSugeridasParaHito(hId, _fechaSeleccionadaEst, offset);
             if (hitoSugs.length > 0) {
                 sugeridas.push(hitoSugs[0]);
             }
@@ -1500,10 +1524,10 @@ async function renderActividadesDelDia() {
 
         // 3.5. Banner de Etapa al 100%
         let bannerEtapa100Html = "";
-        const activeEvalData = (data?.historial_evaluaciones && data.historial_evaluaciones[activeEtapaId]) 
-            ? data.historial_evaluaciones[activeEtapaId].hitos_detalle 
+        const activeEvalData = (data?.historial_evaluaciones && data.historial_evaluaciones[activeEtapaId])
+            ? data.historial_evaluaciones[activeEtapaId].hitos_detalle
             : (data?.etapa_actual === activeEtapaId ? data.hitos_detalle : null);
-        
+
         if (activeEvalData && Object.keys(activeEvalData).length > 0 && esEtapaAl100(activeEtapaId, activeEvalData)) {
             const nextEtapaId = obtenerSiguienteEtapa(activeEtapaId);
             if (nextEtapaId) {
@@ -1547,27 +1571,27 @@ async function renderActividadesDelDia() {
         let cardProximaEvalHtml = "";
         if (nacimiento && !SESION.cliente && data) { // Solo Nannies
             const historial = data.historial_evaluaciones || {};
-            
+
             // 1. Encontrar la última etapa evaluada
             const ultimaEtapaEvaluada = obtenerUltimaEvaluacionRealizada(data, currentEtapaId);
-            
+
             // Obtener datos de esa última evaluación
             const evalDataUltima = historial[ultimaEtapaEvaluada] || (data.etapa_actual === ultimaEtapaEvaluada ? data : null);
             const tieneCierre = evalDataUltima && (evalDataUltima.niveles_finales || evalDataUltima.hitos_final_detalle || evalDataUltima.fecha_evaluacion_final);
-            
+
             // Calcular días restantes para el cambio de etapa de la última etapa evaluada
             const diasRestantesUltima = obtenerDiasRestantesCambioEtapa(nacimiento, ultimaEtapaEvaluada);
-            
+
             const nextEtapaId = obtenerSiguienteEtapa(ultimaEtapaEvaluada);
             const hasNextEval = nextEtapaId && (historial[nextEtapaId] || data.etapa_actual === nextEtapaId);
 
             if (diasRestantesUltima !== null && diasRestantesUltima <= 15 && !tieneCierre) {
                 // Caso 1: Toca evaluación de cierre de la etapa actual (se muestra de manera persistente)
                 const clickAction = `abrirEvaluacionInicial(false, null, true, '${ultimaEtapaEvaluada}')`;
-                const textoDias = diasRestantesUltima > 0 
+                const textoDias = diasRestantesUltima > 0
                     ? `Faltan ${diasRestantesUltima} días para el cambio de etapa`
                     : `¡Cambio de etapa vencido hace ${Math.abs(diasRestantesUltima)} días!`;
-                
+
                 if (!document.getElementById("style-proxima-eval")) {
                     const style = document.createElement("style");
                     style.id = "style-proxima-eval";
@@ -1600,7 +1624,7 @@ async function renderActividadesDelDia() {
             } else if (tieneCierre && nextEtapaId && !hasNextEval) {
                 // Caso 2: Ya se hizo el cierre, toca la inicial de la siguiente etapa
                 const clickAction = `abrirEvaluacionInicial(false, null, false, '${nextEtapaId}')`;
-                
+
                 if (!document.getElementById("style-proxima-eval")) {
                     const style = document.createElement("style");
                     style.id = "style-proxima-eval";
@@ -1773,10 +1797,26 @@ function renderMaterialesSemanales() {
         hitosVerdes.sort();
 
         let slots = [];
-        hitosRojos.forEach(h => { if (slots.length < 5) slots.push(h); });
-        hitosAmarillos.forEach(h => { if (slots.length < 5) slots.push(h); });
-        if (slots.length < 2) {
-            hitosVerdes.forEach(h => { if (slots.length < 5) slots.push(h); });
+        hitosRojos.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+        hitosAmarillos.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+
+        if (slots.length < 5 && (hitosRojos.length > 0 || hitosAmarillos.length > 0)) {
+            const prioritarios = [...hitosRojos, ...hitosAmarillos];
+            let repeticiones = 0;
+            while (slots.length < 5 && repeticiones < prioritarios.length) {
+                slots.push(prioritarios[repeticiones % prioritarios.length]);
+                repeticiones++;
+            }
+            if (slots.length < 5) {
+                hitosVerdes.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+            }
+        } else if (slots.length < 5) {
+            hitosVerdes.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+            let idx = 0;
+            while (slots.length < 5 && hitosVerdes.length > 0) {
+                slots.push(hitosVerdes[idx % hitosVerdes.length]);
+                idx++;
+            }
         }
 
         // 2. Proyectar materiales para los próximos 7 días
@@ -1784,13 +1824,21 @@ function renderMaterialesSemanales() {
         for (let dayOffset = 0; dayOffset < 7; dayOffset++) {
             const targetDate = new Date(dHoy.getTime() + dayOffset * 24 * 60 * 60 * 1000);
             const targetDateStr = _obtenerFechaLocalISO(targetDate);
+            const hitoOffsets = {};
             for (const hId of slots) {
-                const hitoSugs = obtenerActividadesSugeridasParaHito(hId, targetDateStr);
+                let offset = 0;
+                if (hitoOffsets[hId] === undefined) {
+                    hitoOffsets[hId] = 0;
+                } else {
+                    hitoOffsets[hId]++;
+                    offset = hitoOffsets[hId];
+                }
+                const hitoSugs = obtenerActividadesSugeridasParaHito(hId, targetDateStr, offset);
                 if (hitoSugs.length > 0) {
                     const act = hitoSugs[0];
                     const matStr = (act.material || "").trim().toLowerCase();
                     const ignorados = ["n/a", "na", "ninguno", "ninguno.", "n/a.", "-"];
-                    
+
                     if (matStr && !ignorados.includes(matStr)) {
                         act.material.split(/[,;]/).forEach(p => {
                             let m = p.trim();
@@ -1951,8 +1999,16 @@ async function marcarEstadoActividad(status) {
 
         if (status === "pendiente") {
             delete data.seguimiento_diario[hoy][act.firebaseId];
+            if (data.seguimiento_diario_metadata && data.seguimiento_diario_metadata[hoy]) {
+                delete data.seguimiento_diario_metadata[hoy][act.firebaseId];
+            }
         } else {
             data.seguimiento_diario[hoy][act.firebaseId] = valorAGuardar;
+            if (!data.seguimiento_diario_metadata) data.seguimiento_diario_metadata = {};
+            if (!data.seguimiento_diario_metadata[hoy]) data.seguimiento_diario_metadata[hoy] = {};
+            data.seguimiento_diario_metadata[hoy][act.firebaseId] = {
+                fecha_registro: new Date().toISOString()
+            };
         }
 
         // Si es realizada, avanzar el progreso técnico (ciclos/índices)
@@ -2090,15 +2146,15 @@ function verificarAlertaCambioEtapa() {
 
     const meses = calcularMeses(nacimiento);
     const etapaId = obtenerEtapaId(meses);
-    
+
     const limites = {
         "0-3m": 3, "4-6m": 6, "7-9m": 9, "10-12m": 12,
         "13-18m": 18, "19-24m": 24, "25-36m": 36, "3-4a": 48, "4-5a": 60
     };
-    
+
     const maxMeses = limites[etapaId] || 3;
     const alertaContainer = document.getElementById("alerta-cambio-etapa");
-    
+
     const isTrans = esMesDeTransicion(meses, etapaId);
     const nextEtapaId = isTrans ? obtenerSiguienteEtapa(etapaId) : null;
     const historial = window._activePequeData?.historial_evaluaciones || {};

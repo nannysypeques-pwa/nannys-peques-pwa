@@ -31,6 +31,7 @@ function obtenerNombreEtapaHumano(etapaId) {
 
 function calcularAvances(serviciosEstimulacion, diasSemanaISO) {
     const serviciosAvance = [];
+    const lunesISO = diasSemanaISO[0];
     serviciosEstimulacion.forEach(s => {
         const peques = s.peques_lista || [];
         if (peques.length === 0) {
@@ -38,6 +39,8 @@ function calcularAvances(serviciosEstimulacion, diasSemanaISO) {
                 cliente: s.cliente,
                 nanny: s.nombre_ninera || s.ninera || 'Sin asignar',
                 pequeNombre: 'Sin registrar',
+                nacimiento: '',
+                email: s.email || 'sin_email',
                 evaluado: false,
                 totalPlaneadas: 0,
                 totalCompletadas: 0,
@@ -50,7 +53,9 @@ function calcularAvances(serviciosEstimulacion, diasSemanaISO) {
                     planeadas: 0
                 })),
                 ciudad: s.ciudad || 'Otra',
-                evalData: null
+                evalData: null,
+                lunesISO: lunesISO,
+                revisionSemana: null
             });
             return;
         }
@@ -97,7 +102,7 @@ function calcularAvances(serviciosEstimulacion, diasSemanaISO) {
                 const esDiaServicio = (s.dias || []).includes(fecha);
                 let estado = 'sin_servicio';
                 let completadas = 0;
-                let planeadas = esDiaServicio ? slotsCount : 0;
+                let planeadas = 0;
 
                 if (esDiaServicio) {
                     if (!evaluado) {
@@ -107,39 +112,22 @@ function calcularAvances(serviciosEstimulacion, diasSemanaISO) {
                             ? progData.seguimiento_diario[fecha] 
                             : {};
                         
-                        let completadasHoy = Object.keys(segHoy).filter(actId => {
-                            const val = segHoy[actId];
-                            return val === 'realizada_ninera' || val === 'realizada';
+                        const planeadasDia = obtenerActividadesPlaneadasParaDia(evalData, fecha, peque.nacimiento);
+                        let completadasHoy = planeadasDia.filter(act => {
+                            const val = segHoy[act.firebaseId];
+                            return val === 'realizada_ninera' || val === 'realizada' || val === 'realizada_familia';
                         }).length;
 
-                        if (completadasHoy === 0) {
-                            const sigDia = new Date(fecha + 'T12:00:00');
-                            sigDia.setDate(sigDia.getDate() + 1);
-                            const sigFecha = `${sigDia.getFullYear()}-${String(sigDia.getMonth() + 1).padStart(2, '0')}-${String(sigDia.getDate()).padStart(2, '0')}`;
-                            
-                            const esDiaServicioSig = (s.dias || []).includes(sigFecha);
-                            if (!esDiaServicioSig) {
-                                const segSig = (progData && progData.seguimiento_diario && progData.seguimiento_diario[sigFecha]) 
-                                    ? progData.seguimiento_diario[sigFecha] 
-                                    : {};
-                                const completadasSig = Object.keys(segSig).filter(actId => {
-                                    const val = segSig[actId];
-                                    return val === 'realizada_ninera' || val === 'realizada';
-                                }).length;
-                                if (completadasSig > 0) {
-                                    completadasHoy = completadasSig;
-                                    segHoy = segSig;
-                                }
-                            }
-                        }
-
                         completadas = completadasHoy;
+                        planeadas = planeadasDia.length;
                         totalPlaneadas += planeadas;
                         totalCompletadas += completadas;
 
-                        if (completadas === 0) {
+                        if (planeadas === 0) {
+                            estado = 'sin_evaluacion';
+                        } else if (completadas === 0) {
                             estado = 'rojo';
-                        } else if (completadas === planeadas && planeadas > 0) {
+                        } else if (completadas === planeadas) {
                             estado = 'azul';
                         } else if (completadas >= 2 && completadas <= 4) {
                             estado = 'verde';
@@ -161,18 +149,24 @@ function calcularAvances(serviciosEstimulacion, diasSemanaISO) {
             });
 
             const porcentaje = totalPlaneadas > 0 ? Math.round((totalCompletadas / totalPlaneadas) * 100) : 0;
+            const revisiones = (progData && progData.revisiones_supervision) ? progData.revisiones_supervision : {};
+            const revisionSemana = revisiones[lunesISO] || null;
 
             serviciosAvance.push({
                 cliente: s.cliente,
                 nanny: s.nombre_ninera || s.ninera || 'Sin asignar',
                 pequeNombre: peque.nombre,
+                nacimiento: peque.nacimiento || '',
+                email: s.email || 'sin_email',
                 evaluado,
                 totalPlaneadas,
                 totalCompletadas,
                 porcentaje,
                 diasDetalle,
                 ciudad: s.ciudad || 'Otra',
-                evalData: evalData
+                evalData: evalData,
+                lunesISO: lunesISO,
+                revisionSemana: revisionSemana
             });
         });
     });
@@ -181,24 +175,33 @@ function calcularAvances(serviciosEstimulacion, diasSemanaISO) {
 
 async function cargarAvanceEstimulacionSupervision(force = false) {
     const container = document.getElementById("lista-avance-estimulacion");
+    const containerAnterior = document.getElementById("lista-avance-estimulacion-anterior");
     if (!container) return;
 
-    // Mostrar loader estético
-    container.innerHTML = `
+    const loaderHtml = `
         <div style="text-align: center; padding: 40px; animation: fadeInPremium 0.6s ease-out;">
             <div class="loader-spinner" style="margin: 0 auto 15px; width: 40px; height: 40px; border: 4px solid rgba(232, 76, 154, 0.1); border-left-color: var(--pink-main); border-radius: 50%; animation: spin 1s linear infinite;"></div>
             <p style="color: var(--text-muted); font-size: 14px; font-weight: 600;">Cargando servicios y consultando avances en Firebase...</p>
         </div>
     `;
 
+    // Mostrar loader estético en ambos
+    container.innerHTML = loaderHtml;
+    if (containerAnterior) {
+        containerAnterior.innerHTML = loaderHtml;
+    }
+
     try {
-        // 1. Obtener planeaciones consolidado de las 2 semanas
+        // 1. Obtener planeaciones consolidado de las semanas
         let data = null;
         if (!force) {
             const cached = localStorage.getItem('CACHE_PLANEACIONES_SUP_' + SESION.email);
             if (cached) {
                 try {
-                    data = JSON.parse(cached);
+                    const parsed = JSON.parse(cached);
+                    if (parsed && parsed.anterior) {
+                        data = parsed;
+                    }
                 } catch (e) {
                     console.error("Error al parsear caché de planeaciones en avance", e);
                 }
@@ -212,33 +215,55 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
             }
         }
 
-        if (!data || !data.actual || Object.keys(data.actual).length === 0) {
-            container.innerHTML = `<div class="no-data">No hay servicios programados para esta semana.</div>`;
+        if (!data || ((!data.actual || Object.keys(data.actual).length === 0) && (!data.anterior || Object.keys(data.anterior).length === 0))) {
+            container.innerHTML = `<div class="no-data">No hay servicios programados para esta semana ni para la anterior.</div>`;
+            if (containerAnterior) {
+                containerAnterior.innerHTML = `<div class="no-data">No hay servicios programados para la semana anterior.</div>`;
+            }
             return;
         }
 
         // 2. Filtrar servicios de estimulación / neuronanny / nanny educativa
         const serviciosEstimulacion = [];
+        const serviciosEstimulacionAnterior = [];
         const tiposEstimulacion = ['neuronanny', 'nanny educativa', 'miss nanny', 'estimulacion'];
 
-        Object.keys(data.actual).forEach(ciudad => {
-            data.actual[ciudad].forEach(s => {
-                const tipoNorm = (s.tipo_servicio || '').toLowerCase();
-                const esEstimulacion = tiposEstimulacion.some(t => tipoNorm.includes(t));
-                if (esEstimulacion) {
-                    s.ciudad = ciudad;
-                    serviciosEstimulacion.push(s);
-                }
+        if (data.actual) {
+            Object.keys(data.actual).forEach(ciudad => {
+                data.actual[ciudad].forEach(s => {
+                    const tipoNorm = (s.tipo_servicio || '').toLowerCase();
+                    const esEstimulacion = tiposEstimulacion.some(t => tipoNorm.includes(t));
+                    if (esEstimulacion) {
+                        s.ciudad = ciudad;
+                        serviciosEstimulacion.push(s);
+                    }
+                });
             });
-        });
+        }
 
-        if (serviciosEstimulacion.length === 0) {
+        if (data.anterior) {
+            Object.keys(data.anterior).forEach(ciudad => {
+                data.anterior[ciudad].forEach(s => {
+                    const tipoNorm = (s.tipo_servicio || '').toLowerCase();
+                    const esEstimulacion = tiposEstimulacion.some(t => tipoNorm.includes(t));
+                    if (esEstimulacion) {
+                        s.ciudad = ciudad;
+                        serviciosEstimulacionAnterior.push(s);
+                    }
+                });
+            });
+        }
+
+        if (serviciosEstimulacion.length === 0 && serviciosEstimulacionAnterior.length === 0) {
             container.innerHTML = `
                 <div class="no-data" style="text-align: center; padding: 40px;">
                     <div style="font-size: 40px; margin-bottom: 10px;">🧸</div>
-                    <p style="color: var(--text-muted); font-size: 14px;">No se encontraron servicios de Neuronanny o Nanny Educativa programados para esta semana.</p>
+                    <p style="color: var(--text-muted); font-size: 14px;">No se encontraron servicios de Neuronanny o Nanny Educativa programados.</p>
                 </div>
             `;
+            if (containerAnterior) {
+                containerAnterior.innerHTML = `<div class="no-data">No hay datos de avance para mostrar.</div>`;
+            }
             return;
         }
 
@@ -267,6 +292,19 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
             diasSemanaISO.push(`${yyyy}-${mm}-${dd}`);
         }
 
+        // Generar las 7 fechas ISO de la semana anterior (Lunes a Domingo)
+        const lunesAnterior = new Date(lunesActual);
+        lunesAnterior.setDate(lunesActual.getDate() - 7);
+        const diasSemanaAnteriorISO = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(lunesAnterior);
+            d.setDate(lunesAnterior.getDate() + i);
+            const yyyy = d.getFullYear();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            diasSemanaAnteriorISO.push(`${yyyy}-${mm}-${dd}`);
+        }
+
         // Limpiar listeners si force es true
         if (force) {
             if (window._UNSUBS_SUPERVISION_ESTIMULACION) {
@@ -278,21 +316,30 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
             window._ACTIVE_LISTENERS_SUPERVISION = {};
         }
 
-        // 4. Consultar Firebase en tiempo real para los peques de los servicios filtrados
+        // 4. Consultar Firebase en tiempo real para los peques de los servicios filtrados de ambas semanas
         const promises = [];
         let debounceTimer = null;
         const debouncedRecalcularYRenderizar = () => {
             if (debounceTimer) clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const serviciosAvance = calcularAvances(serviciosEstimulacion, diasSemanaISO);
-                renderTarjetasAvance(serviciosAvance);
+                renderTarjetasAvance(serviciosAvance, "lista-avance-estimulacion", "actual");
+
+                const serviciosAvanceAnterior = calcularAvances(serviciosEstimulacionAnterior, diasSemanaAnteriorISO);
+                renderTarjetasAvance(serviciosAvanceAnterior, "lista-avance-estimulacion-anterior", "anterior");
             }, 100);
         };
 
-        serviciosEstimulacion.forEach(s => {
+        const todosServicios = [...serviciosEstimulacion, ...serviciosEstimulacionAnterior];
+        const pequesSuscritos = new Set();
+
+        todosServicios.forEach(s => {
             const peques = s.peques_lista || [];
             peques.forEach(peque => {
                 const key = `${s.email || 'sin_email'}|${peque.nombre}`;
+                if (pequesSuscritos.has(key)) return;
+                pequesSuscritos.add(key);
+
                 const docId = btoa(`${s.email}_${peque.nombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
 
                 // Inicializar caché si no existe
@@ -362,7 +409,10 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
         }
 
         const serviciosAvance = calcularAvances(serviciosEstimulacion, diasSemanaISO);
-        renderTarjetasAvance(serviciosAvance);
+        renderTarjetasAvance(serviciosAvance, "lista-avance-estimulacion", "actual");
+
+        const serviciosAvanceAnterior = calcularAvances(serviciosEstimulacionAnterior, diasSemanaAnteriorISO);
+        renderTarjetasAvance(serviciosAvanceAnterior, "lista-avance-estimulacion-anterior", "anterior");
 
     } catch (error) {
         console.error("Error al cargar control de avance de estimulación:", error);
@@ -377,8 +427,8 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
     }
 }
 
-function renderTarjetasAvance(servicios) {
-    const container = document.getElementById("lista-avance-estimulacion");
+function renderTarjetasAvance(servicios, containerId, prefix) {
+    const container = document.getElementById(containerId);
     if (!container) return;
 
     if (servicios.length === 0) {
@@ -426,24 +476,45 @@ function renderTarjetasAvance(servicios) {
 
     ciudadesOrdenadas.forEach(ciudad => {
         const serviciosDeCiudad = gruposPorCiudad[ciudad];
-        const ciudadId = ciudad.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-");
         
+        // Ordenar servicios por nombre de cliente de la A a la Z (y por peque si coinciden)
+        serviciosDeCiudad.sort((a, b) => {
+            const clienteA = (a.cliente || '').trim().toLowerCase();
+            const clienteB = (b.cliente || '').trim().toLowerCase();
+            const comp = clienteA.localeCompare(clienteB, 'es', { sensitivity: 'base' });
+            if (comp !== 0) return comp;
+            const pequeA = (a.pequeNombre || '').trim().toLowerCase();
+            const pequeB = (b.pequeNombre || '').trim().toLowerCase();
+            return pequeA.localeCompare(pequeB, 'es', { sensitivity: 'base' });
+        });
+
+        const ciudadId = ciudad.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-");
+        const fullCiudadId = `${prefix}-${ciudadId}`;
+        
+        if (!window._EXPANDED_SECCIONES_SUPERVISION) {
+            window._EXPANDED_SECCIONES_SUPERVISION = new Set();
+        }
+        const estaExpandido = window._EXPANDED_SECCIONES_SUPERVISION.has(fullCiudadId);
+        const displayStyle = estaExpandido ? 'display: block;' : 'display: none;';
+        const arrowChar = estaExpandido ? '▼' : '▶';
+
         html += `
-            <div class="ciudad-seccion" style="margin-bottom: 20px; animation: fadeIn 0.4s ease-out;">
-                <h3 onclick="toggleSeccionCiudad('${ciudadId}')" style="cursor: pointer; user-select: none; font-family: 'DM Serif Display', serif; font-size: 15.5px; color: var(--pink-main); margin: 18px 0 8px 0; border-left: 4px solid var(--pink-main); padding-left: 8px; display: flex; align-items: center; gap: 8px; font-weight: 700;">
+            <div class="ciudad-seccion" style="margin-bottom: 8px; animation: fadeIn 0.4s ease-out;">
+                <h3 onclick="toggleSeccionCiudad('${fullCiudadId}')" style="cursor: pointer; user-select: none; font-family: 'DM Serif Display', serif; font-size: 15.5px; color: var(--pink-main); margin: 8px 0 4px 0; border-left: 4px solid var(--pink-main); padding-left: 8px; display: flex; align-items: center; gap: 8px; font-weight: 700;">
                     <span>📍 ${ciudad}</span>
                     <span style="font-size: 11px; font-family: 'Outfit', sans-serif; font-weight: 500; color: var(--text-muted); background: rgba(232, 76, 154, 0.06); padding: 1px 6px; border-radius: 8px;">${serviciosDeCiudad.length} peques</span>
-                    <span id="arrow-${ciudadId}" style="font-size: 12px; color: var(--text-muted); transition: transform 0.2s ease; margin-left: 4px;">▼</span>
+                    <span id="arrow-${fullCiudadId}" style="font-size: 12px; color: var(--text-muted); transition: transform 0.2s ease; margin-left: 4px;">${arrowChar}</span>
                 </h3>
-                <div id="table-wrapper-${ciudadId}" class="supervision-table-wrapper" style="background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(232, 76, 154, 0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.01); overflow-x: auto; width: 100%;">
+                <div id="table-wrapper-${fullCiudadId}" class="supervision-table-wrapper" style="${displayStyle} background: rgba(255, 255, 255, 0.75); backdrop-filter: blur(10px); border-radius: 12px; border: 1px solid rgba(232, 76, 154, 0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.01); overflow-x: auto; width: 100%;">
                     <table style="width: 100%; border-collapse: collapse; min-width: 700px; font-size: 13px; text-align: left;">
                         <thead>
                             <tr style="background: rgba(232, 76, 154, 0.03); border-bottom: 1px solid rgba(232, 76, 154, 0.08); color: var(--text-main); font-weight: 700; font-family: 'Outfit', sans-serif;">
-                                <th style="padding: 10px 12px; width: 26%;">Peque / Familia</th>
-                                <th style="padding: 10px 12px; width: 22%;">Niñera</th>
+                                <th style="padding: 10px 12px; width: 22%;">Familia / Peque</th>
+                                <th style="padding: 10px 12px; width: 18%;">Niñera</th>
                                 <th style="padding: 10px 12px; width: 12%; text-align: center;">Estatus</th>
-                                <th style="padding: 10px 12px; width: 18%;">Progreso Semanal</th>
-                                <th style="padding: 10px 12px; width: 22%; text-align: center;">Avance Diario</th>
+                                <th style="padding: 10px 12px; width: 16%;">Progreso Semanal</th>
+                                <th style="padding: 10px 12px; width: 20%; text-align: center;">Avance Diario</th>
+                                <th style="padding: 10px 12px; width: 12%; text-align: center;">Supervisión</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -510,21 +581,29 @@ function renderTarjetasAvance(servicios) {
                     dotStyle = 'background: #cbd5e1; color: #475569; border: 1px solid #94a3b8; font-weight: 800; cursor: help;';
                     titleAttr = `${diaCompleto}: Día de servicio (Evaluación inicial pendiente)`;
                 } else if (d.estado === 'azul') {
-                    dotStyle = 'background: #e0f2fe; color: #0369a1; border: 1px solid #0ea5e9; font-weight: 800; cursor: help;';
-                    titleAttr = `${diaCompleto}: Todas completadas por la niñera (${d.completadas}/${d.planeadas} actividades)`;
+                    dotStyle = 'background: #e0f2fe; color: #0369a1; border: 1px solid #0ea5e9; font-weight: 800; cursor: pointer;';
+                    titleAttr = `${diaCompleto}: Todas completadas por la niñera (${d.completadas}/${d.planeadas} actividades). Haz clic para ver detalles.`;
                 } else if (d.estado === 'verde') {
-                    dotStyle = 'background: #d1fae5; color: #065f46; border: 1px solid #10b981; font-weight: 800; cursor: help;';
-                    titleAttr = `${diaCompleto}: Realizadas 2 a 4 por la niñera (${d.completadas}/${d.planeadas} actividades)`;
+                    dotStyle = 'background: #d1fae5; color: #065f46; border: 1px solid #10b981; font-weight: 800; cursor: pointer;';
+                    titleAttr = `${diaCompleto}: Realizadas 2 a 4 por la niñera (${d.completadas}/${d.planeadas} actividades). Haz clic para ver detalles.`;
                 } else if (d.estado === 'amarillo') {
-                    dotStyle = 'background: #fef3c7; color: #d97706; border: 1px solid #f59e0b; font-weight: 800; cursor: help;';
-                    titleAttr = `${diaCompleto}: Realizada 1 por la niñera (${d.completadas}/${d.planeadas} actividades)`;
+                    dotStyle = 'background: #fef3c7; color: #d97706; border: 1px solid #f59e0b; font-weight: 800; cursor: pointer;';
+                    titleAttr = `${diaCompleto}: Realizada 1 por la niñera (${d.completadas}/${d.planeadas} actividades). Haz clic para ver detalles.`;
                 } else if (d.estado === 'rojo') {
-                    dotStyle = 'background: #fee2e2; color: #b91c1c; border: 1px solid #ef4444; font-weight: 800; cursor: help;';
-                    titleAttr = `${diaCompleto}: Pendiente por la niñera (0/${d.planeadas} actividades)`;
+                    dotStyle = 'background: #fee2e2; color: #b91c1c; border: 1px solid #ef4444; font-weight: 800; cursor: pointer;';
+                    titleAttr = `${diaCompleto}: Pendiente por la niñera (0/${d.planeadas} actividades). Haz clic para ver detalles.`;
+                }
+
+                let onclickAttr = '';
+                if (d.esDiaServicio && s.evaluado) {
+                    const nameEsc = (s.pequeNombre || '').replace(/'/g, "\\'");
+                    const emailEsc = (s.email || '').replace(/'/g, "\\'");
+                    const nacimientoEsc = (s.nacimiento || '').replace(/'/g, "\\'");
+                    onclickAttr = `onclick="abrirModalDetalleDiaAvance('${nameEsc}', '${emailEsc}', '${d.fecha}', '${nacimientoEsc}')"`;
                 }
 
                 timelineHtml += `
-                    <div title="${titleAttr}" style="width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 800; font-family: 'Outfit', sans-serif; ${dotStyle}">
+                    <div ${onclickAttr} title="${titleAttr}" style="width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 800; font-family: 'Outfit', sans-serif; ${dotStyle}">
                         ${diaLetter}
                     </div>
                 `;
@@ -532,14 +611,44 @@ function renderTarjetasAvance(servicios) {
 
             timelineHtml += `</div>`;
 
+            const rev = s.revisionSemana || {};
+            const isChecked = !!rev.revisado;
+            
+            let tooltipText = "Sin revisar";
+            if (isChecked) {
+                let fechaFormateada = "";
+                if (rev.fecha_revision) {
+                    try {
+                        const dRev = new Date(rev.fecha_revision);
+                        fechaFormateada = dRev.toLocaleString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' hs';
+                    } catch(e) {
+                        fechaFormateada = rev.fecha_revision;
+                    }
+                }
+                tooltipText = `Revisado por: ${rev.usuario || 'Supervisor'}\nFecha: ${fechaFormateada}`;
+            }
+
+            const nameEsc = (s.pequeNombre || '').replace(/'/g, "\\'");
+            const emailEsc = (s.email || '').replace(/'/g, "\\'");
+            const lunesEsc = (s.lunesISO || '').replace(/'/g, "\\'");
+
+            const checkboxHtml = `
+                <td style="padding: 6px 12px; vertical-align: middle; text-align: center;">
+                    <label class="custom-checkbox-container" title="${tooltipText}" style="display: inline-block; position: relative; cursor: pointer; user-select: none; width: 20px; height: 20px; vertical-align: middle;">
+                        <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSupervisionRevision('${nameEsc}', '${emailEsc}', '${lunesEsc}', this.checked)" style="position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0;">
+                        <span class="custom-checkmark" style="position: absolute; top: 0; left: 0; height: 20px; width: 20px; background-color: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 6px; transition: all 0.2s ease;"></span>
+                    </label>
+                </td>
+            `;
+
             html += `
                 <tr style="${rowBg} ${borderStyle} transition: background-color 0.15s;" onmouseover="this.style.backgroundColor='rgba(232, 76, 154, 0.02)';" onmouseout="this.style.backgroundColor='';">
                     <td style="padding: 6px 12px; vertical-align: middle;">
-                        <div style="font-weight: 700; color: var(--text-main); font-family: 'Outfit', sans-serif; display: flex; align-items: center; gap: 4px;">
-                            👶 ${s.pequeNombre}
+                        <div style="font-weight: 700; color: var(--text-main); font-family: 'Outfit', sans-serif; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;" title="${s.cliente}">
+                            Familia: ${s.cliente || 'Sin registrar'}
                         </div>
-                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;" title="${s.cliente}">
-                            Familia: ${s.cliente}
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;" title="${s.pequeNombre}">
+                            👶 Peque: ${s.pequeNombre || 'Sin registrar'}
                         </div>
                     </td>
                     <td style="padding: 6px 12px; vertical-align: middle; font-weight: 600; color: var(--text-main); font-family: 'Outfit', sans-serif;">
@@ -554,6 +663,7 @@ function renderTarjetasAvance(servicios) {
                     <td style="padding: 6px 12px; vertical-align: middle; text-align: center;">
                         ${timelineHtml}
                     </td>
+                    ${checkboxHtml}
                 </tr>
             `;
         });
@@ -588,11 +698,343 @@ window.toggleSeccionCiudad = function(ciudadId) {
     const arrow = document.getElementById(`arrow-${ciudadId}`);
     if (!wrapper || !arrow) return;
 
+    if (!window._EXPANDED_SECCIONES_SUPERVISION) {
+        window._EXPANDED_SECCIONES_SUPERVISION = new Set();
+    }
+
     if (wrapper.style.display === 'none') {
         wrapper.style.display = 'block';
         arrow.textContent = '▼';
+        window._EXPANDED_SECCIONES_SUPERVISION.add(ciudadId);
     } else {
         wrapper.style.display = 'none';
         arrow.textContent = '▶';
+        window._EXPANDED_SECCIONES_SUPERVISION.delete(ciudadId);
     }
 };
+
+function obtenerActividadesPlaneadasParaDia(evalData, dateStr, nacimiento) {
+    if (!evalData || !evalData.hitos_detalle || Object.keys(evalData.hitos_detalle).length === 0) {
+        return [];
+    }
+
+    const etapaId = evalData.etapa_actual;
+    const etapaFirebase = obtenerNombreEtapaHumano(etapaId);
+
+    const respuestasHitos = evalData.hitos_detalle || {};
+    const hitosRojos = [];
+    const hitosAmarillos = [];
+    const hitosVerdes = [];
+
+    Object.keys(respuestasHitos).forEach(id => {
+        const score = respuestasHitos[id];
+        if (score === 1) hitosRojos.push(id);
+        else if (score <= 7) hitosAmarillos.push(id);
+        else hitosVerdes.push(id);
+    });
+
+    hitosRojos.sort();
+    hitosAmarillos.sort();
+    hitosVerdes.sort();
+
+    // 2. Selección de Hitos (Exactamente 5)
+    const slots = [];
+    hitosRojos.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+    hitosAmarillos.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+
+    if (slots.length < 5 && (hitosRojos.length > 0 || hitosAmarillos.length > 0)) {
+        const prioritarios = [...hitosRojos, ...hitosAmarillos];
+        let repeticiones = 0;
+        while (slots.length < 5 && repeticiones < prioritarios.length) {
+            slots.push(prioritarios[repeticiones % prioritarios.length]);
+            repeticiones++;
+        }
+        if (slots.length < 5) {
+            hitosVerdes.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+        }
+    } else if (slots.length < 5) {
+        hitosVerdes.forEach(h => { if (slots.length < 5 && !slots.includes(h)) slots.push(h); });
+        let idx = 0;
+        while (slots.length < 5 && hitosVerdes.length > 0) {
+            slots.push(hitosVerdes[idx % hitosVerdes.length]);
+            idx++;
+        }
+    }
+
+    let dBase = null;
+    const historial = evalData.historial_evaluaciones || {};
+    const fechaEval = historial[etapaId]?.fecha_evaluacion || evalData.fecha_evaluacion;
+    if (fechaEval) {
+        dBase = (typeof fechaEval.toDate === 'function') ? fechaEval.toDate() : new Date(fechaEval);
+    }
+    if (!dBase || isNaN(dBase.getTime())) {
+        if (nacimiento) {
+            dBase = new Date(nacimiento + "T12:00:00");
+        }
+    }
+    if (!dBase || isNaN(dBase.getTime())) {
+        dBase = new Date();
+        dBase.setDate(dBase.getDate() - 7);
+    }
+    dBase.setHours(0, 0, 0, 0);
+
+    const dSel = new Date(dateStr + "T12:00:00");
+    dSel.setHours(0, 0, 0, 0);
+
+    const diffMs = dSel.getTime() - dBase.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    const dayIndex = Math.max(0, diffDays);
+
+    const list = [];
+    const hitoOffsets = {};
+
+    slots.forEach(hId => {
+        let offset = 0;
+        if (hitoOffsets[hId] === undefined) {
+            hitoOffsets[hId] = 0;
+        } else {
+            hitoOffsets[hId]++;
+            offset = hitoOffsets[hId];
+        }
+
+        let hitoTexto = "";
+        if (typeof CATALOGO_HITOS !== 'undefined') {
+            Object.keys(CATALOGO_HITOS).forEach(e => {
+                if (CATALOGO_HITOS[e].areas) {
+                    Object.keys(CATALOGO_HITOS[e].areas).forEach(a => {
+                        const found = CATALOGO_HITOS[e].areas[a].hitos.find(h => h.id === hId);
+                        if (found) hitoTexto = found.texto;
+                    });
+                }
+            });
+        }
+
+        let actsHito = CATALOGO_ACTIVIDADES.filter(a =>
+            (a.etapa || "").trim().toLowerCase() === etapaFirebase.toLowerCase() &&
+            (a.hitoTitulo || "").trim().toLowerCase() === hitoTexto.toLowerCase()
+        );
+
+        if (actsHito.length > 0) {
+            actsHito.sort((a, b) => (a.ordenSecuencia || 0) - (b.ordenSecuencia || 0));
+            const act = actsHito[(dayIndex + offset) % actsHito.length];
+            if (act) {
+                list.push({
+                    firebaseId: act.firebaseId,
+                    titulo: act.titulo || act.actividad || "Sin título",
+                    hitoId: hId,
+                    hitoTexto: hitoTexto
+                });
+            }
+        }
+    });
+
+    return list;
+}
+
+window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimiento) {
+    const key = `${email}|${pequeNombre}`;
+    const fbData = window._CACHE_FB_SUPERVISION[key] || { eval: null, prog: null };
+    const evalData = fbData.eval;
+    const progData = fbData.prog;
+
+    if (!evalData) {
+        alert("No se encontró la información de evaluación para este peque.");
+        return;
+    }
+
+    const actividadesPlaneadas = obtenerActividadesPlaneadasParaDia(evalData, dateStr, nacimiento);
+    const segHoy = (progData && progData.seguimiento_diario && progData.seguimiento_diario[dateStr]) 
+        ? progData.seguimiento_diario[dateStr] 
+        : {};
+
+    const parts = dateStr.split('-');
+    const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+    const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const fechaHumana = dateObj.toLocaleDateString('es-ES', opciones);
+
+    // Asegurar animación scaleUp para el modal
+    if (!document.getElementById("style-modal-scaleup")) {
+        const style = document.createElement("style");
+        style.id = "style-modal-scaleup";
+        style.textContent = `
+            @keyframes scaleUp {
+                0% { transform: scale(0.95); opacity: 0; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const modalId = "modal-detalle-dia-avance";
+    let modal = document.getElementById(modalId);
+    if (!modal) {
+        modal = document.createElement("div");
+        modal.id = modalId;
+        modal.className = "modal-backdrop";
+        modal.style.background = "rgba(0,0,0,0.7)";
+        modal.style.backdropFilter = "blur(8px)";
+        modal.style.zIndex = "99999";
+        document.body.appendChild(modal);
+    }
+
+    let listHtml = "";
+    if (actividadesPlaneadas.length === 0) {
+        listHtml = `<div class="no-data" style="padding: 20px; text-align: center; color: var(--text-muted);">No hay actividades planeadas para este día.</div>`;
+    } else {
+        listHtml = `<div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">`;
+        actividadesPlaneadas.forEach(act => {
+            const status = segHoy[act.firebaseId];
+            const realizada = status && status.startsWith("realizada");
+            
+            let statusText = "Pendiente";
+            let statusColor = "var(--error-text)";
+            let statusBg = "var(--error-bg)";
+            let semaforoColor = "#ef4444";
+            
+            if (realizada) {
+                statusText = "Realizada";
+                statusColor = "var(--success-text)";
+                statusBg = "var(--success-bg)";
+                semaforoColor = "#10b981";
+            }
+
+            const meta = (progData && progData.seguimiento_diario_metadata && progData.seguimiento_diario_metadata[dateStr] && progData.seguimiento_diario_metadata[dateStr][act.firebaseId])
+                ? progData.seguimiento_diario_metadata[dateStr][act.firebaseId]
+                : null;
+            
+            let fechaRegistroText = fechaHumana;
+            if (realizada && meta && meta.fecha_registro) {
+                try {
+                    const regDate = new Date(meta.fecha_registro);
+                    const opcionesLoc = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+                    fechaRegistroText = regDate.toLocaleString('es-ES', opcionesLoc) + ' hs';
+                } catch(e) {
+                    fechaRegistroText = fechaHumana;
+                }
+            }
+
+            listHtml += `
+                <div style="background: rgba(232, 76, 154, 0.02); border: 1px solid rgba(232, 76, 154, 0.08); border-radius: 12px; padding: 14px; display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: ${semaforoColor}; flex-shrink: 0; margin-top: 5px; box-shadow: 0 0 8px ${semaforoColor}4d;"></div>
+                    <div style="flex-grow: 1;">
+                        <h4 style="margin: 0 0 6px 0; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; color: var(--text-main); line-height: 1.4;">
+                            ${act.titulo}
+                        </h4>
+                        <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 500; margin-bottom: 6px;">
+                            Área: ${act.hitoTexto}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span style="background: ${statusBg}; color: ${statusColor}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase;">
+                                ${statusText}
+                            </span>
+                            ${realizada ? `
+                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                                    📅 Registrado el: ${fechaRegistroText}
+                                </span>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        listHtml += `</div>`;
+    }
+
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width: 480px; padding: 25px; border-radius: 24px; animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 20px 50px rgba(232, 76, 154, 0.15); border: 1px solid rgba(232, 76, 154, 0.15);">
+            <button onclick="cerrarModalDetalleDiaAvance()" style="position: absolute; top: 18px; right: 18px; background: #f1f5f9; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); font-weight: 700; font-size: 14px; transition: background 0.2s;">
+                ✕
+            </button>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-size: 32px; margin-bottom: 6px;">👶</div>
+                <h3 style="font-family: 'DM Serif Display', serif; color: var(--pink-main); font-size: 20px; margin: 0 0 4px 0;">
+                    Actividades de ${pequeNombre}
+                </h3>
+                <p style="color: var(--text-muted); font-size: 13px; margin: 0; font-weight: 500; text-transform: capitalize;">
+                    ${fechaHumana}
+                </p>
+            </div>
+            
+            <div style="max-height: 50vh; overflow-y: auto; padding-right: 4px;">
+                ${listHtml}
+            </div>
+            
+            <div style="margin-top: 25px; text-align: center;">
+                <button class="btn-pink" onclick="cerrarModalDetalleDiaAvance()" style="width: 100%; padding: 12px 20px; font-weight: 700; border-radius: 12px; font-size: 14px; margin: 0;">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    `;
+
+    modal.style.display = "flex";
+};
+
+window.cerrarModalDetalleDiaAvance = function() {
+    const modal = document.getElementById("modal-detalle-dia-avance");
+    if (modal) {
+        modal.style.display = "none";
+    }
+};
+
+window.toggleSupervisionRevision = async function(pequeNombre, email, lunesISO, checked) {
+    const docId = btoa(`${email}_${pequeNombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+    
+    try {
+        const docRef = fb_doc(_db, "progreso_peque", docId);
+        const snap = await fb_getDoc(docRef);
+        let data = snap.exists() ? snap.data() : { hitos: {}, seguimiento_diario: {} };
+        
+        if (!data.revisiones_supervision) {
+            data.revisiones_supervision = {};
+        }
+        
+        if (checked) {
+            data.revisiones_supervision[lunesISO] = {
+                revisado: true,
+                usuario: window.SESION?.nombre || window.SESION?.email || "Supervisor",
+                fecha_revision: new Date().toISOString()
+            };
+        } else {
+            delete data.revisiones_supervision[lunesISO];
+        }
+        
+        await fb_setDoc(docRef, data);
+        mostrarToast(checked ? "Avance marcado como revisado ✓" : "Revisión cancelada");
+    } catch(e) {
+        console.error("Error al guardar revisión de supervisión:", e);
+        mostrarToast("Error al guardar la revisión.");
+    }
+};
+
+// Asegurar estilos del checkbox personalizado de supervisión
+if (!document.getElementById("style-supervision-checkbox")) {
+    const style = document.createElement("style");
+    style.id = "style-supervision-checkbox";
+    style.textContent = `
+        .custom-checkbox-container input:checked ~ .custom-checkmark {
+            background-color: var(--pink-main) !important;
+            border-color: var(--pink-main) !important;
+        }
+        .custom-checkbox-container input:checked ~ .custom-checkmark:after {
+            display: block;
+        }
+        .custom-checkbox-container .custom-checkmark:after {
+            content: "";
+            position: absolute;
+            display: none;
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .custom-checkbox-container:hover .custom-checkmark {
+            border-color: var(--pink-main);
+            box-shadow: 0 0 5px rgba(232, 76, 154, 0.25);
+        }
+    `;
+    document.head.appendChild(style);
+}

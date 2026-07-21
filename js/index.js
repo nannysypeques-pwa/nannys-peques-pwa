@@ -4806,7 +4806,7 @@ async function cargarPerfil(force = false) {
                 // Mostrar botón de credencial para clientes (Familia Activa)
                 const containerCredencial = document.getElementById('perfil-nanny-credential-container');
                 if (containerCredencial) containerCredencial.style.display = 'flex';
-                
+
                 const emailContainer = document.getElementById('perfil-email-container');
                 if (emailContainer) emailContainer.classList.remove('full');
             }
@@ -5823,9 +5823,9 @@ function abrirCredencialNanny() {
 
     const esNanny = !!perf.isNanny;
     const labelRol = document.getElementById('cred_rol_label');
-    
+
     document.getElementById('cred_nombre').textContent = perf.nombre || 'Nombre no disponible';
-    
+
     if (labelRol) {
         labelRol.textContent = esNanny ? 'Nanny Activa' : 'Familia Activa';
         labelRol.style.color = esNanny ? '#3BB6C4' : '#E84C9A';
