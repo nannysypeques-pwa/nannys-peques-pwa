@@ -340,7 +340,8 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
                 if (pequesSuscritos.has(key)) return;
                 pequesSuscritos.add(key);
 
-                const docId = btoa(`${s.email}_${peque.nombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+                const emailNorm = s.email || 'sin_email';
+                const docId = btoa(`${emailNorm}_${peque.nombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
 
                 // Inicializar caché si no existe
                 if (!window._CACHE_FB_SUPERVISION[key]) {
@@ -978,7 +979,32 @@ window.cerrarModalDetalleDiaAvance = function() {
 };
 
 window.toggleSupervisionRevision = async function(pequeNombre, email, lunesISO, checked) {
-    const docId = btoa(`${email}_${pequeNombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+    const emailNorm = email || 'sin_email';
+    const docId = btoa(`${emailNorm}_${pequeNombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+    const key = `${emailNorm}|${pequeNombre}`;
+    
+    const infoRevision = {
+        revisado: !!checked,
+        usuario: window.SESION?.nombre || window.SESION?.email || "Supervisor",
+        fecha_revision: new Date().toISOString()
+    };
+
+    // Actualización local inmediata en caché
+    if (!window._CACHE_FB_SUPERVISION[key]) {
+        window._CACHE_FB_SUPERVISION[key] = { eval: null, prog: null };
+    }
+    if (!window._CACHE_FB_SUPERVISION[key].prog) {
+        window._CACHE_FB_SUPERVISION[key].prog = { hitos: {}, seguimiento_diario: {}, revisiones_supervision: {} };
+    }
+    if (!window._CACHE_FB_SUPERVISION[key].prog.revisiones_supervision) {
+        window._CACHE_FB_SUPERVISION[key].prog.revisiones_supervision = {};
+    }
+
+    if (checked) {
+        window._CACHE_FB_SUPERVISION[key].prog.revisiones_supervision[lunesISO] = infoRevision;
+    } else {
+        delete window._CACHE_FB_SUPERVISION[key].prog.revisiones_supervision[lunesISO];
+    }
     
     try {
         const docRef = fb_doc(_db, "progreso_peque", docId);
@@ -990,11 +1016,7 @@ window.toggleSupervisionRevision = async function(pequeNombre, email, lunesISO, 
         }
         
         if (checked) {
-            data.revisiones_supervision[lunesISO] = {
-                revisado: true,
-                usuario: window.SESION?.nombre || window.SESION?.email || "Supervisor",
-                fecha_revision: new Date().toISOString()
-            };
+            data.revisiones_supervision[lunesISO] = infoRevision;
         } else {
             delete data.revisiones_supervision[lunesISO];
         }
