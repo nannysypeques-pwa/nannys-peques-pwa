@@ -4,7 +4,7 @@
  */
 
 // Referencias a Firebase que se cargarán dinámicamente
-let fb_doc, fb_getDoc, fb_setDoc, fb_updateDoc, fb_serverTimestamp, _db, fb_collection, fb_getDocs, fb_onSnapshot;
+let fb_doc, fb_getDoc, fb_setDoc, fb_updateDoc, fb_serverTimestamp, _db, fb_collection, fb_getDocs, fb_onSnapshot, fb_query, fb_where;
 
 // Listeners en tiempo real
 let _unsubEstPeques = null;
@@ -78,6 +78,8 @@ async function cargarFirebaseEstimulacion() {
         fb_collection = firestore.collection;
         fb_getDocs = firestore.getDocs;
         fb_onSnapshot = firestore.onSnapshot;
+        fb_query = firestore.query;
+        fb_where = firestore.where;
 
         // 🔐 Asegurar que Firebase Auth esté autenticado antes de consultar Firestore
         const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
@@ -986,15 +988,67 @@ async function verResultadosEvaluacion() {
     }
 }
 
-async function cargarCatalogoActividades() {
+async function cargarCatalogoActividades(force = false, etapa = null) {
+    const CACHE_KEY = 'CACHE_CATALOGO_ACTIVIDADES_V1';
+    const CACHE_TIME_KEY = 'CACHE_CATALOGO_ACTIVIDADES_TIME';
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+
+    // 1. Recuperar del caché local de localStorage si existe
+    if ((!CATALOGO_ACTIVIDADES || CATALOGO_ACTIVIDADES.length === 0) && !force) {
+        const cached = localStorage.getItem(CACHE_KEY);
+        const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+        if (cached && cachedTime && (Date.now() - parseInt(cachedTime, 10) < ONE_DAY)) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    CATALOGO_ACTIVIDADES = parsed;
+                    console.log("⚡ Catálogo cargado desde caché local:", CATALOGO_ACTIVIDADES.length, "actividades (0 lecturas Firebase).");
+                }
+            } catch (e) {
+                console.warn("Error al parsear caché local de catálogo:", e);
+            }
+        }
+    }
+
+    // 2. Si ya hay catálogo cargado y contiene la etapa solicitada (o no se especificó etapa), usar memoria
+    if (!force && CATALOGO_ACTIVIDADES && CATALOGO_ACTIVIDADES.length > 0) {
+        if (!etapa) return CATALOGO_ACTIVIDADES;
+        const yaTieneEtapa = CATALOGO_ACTIVIDADES.some(a => a.etapa === etapa);
+        if (yaTieneEtapa) return CATALOGO_ACTIVIDADES;
+    }
+
     try {
-        console.log("Cargando catálogo desde plantilla_actividades...");
-        const snap = await fb_getDocs(fb_collection(_db, "plantilla_actividades"));
-        CATALOGO_ACTIVIDADES = snap.docs.map(d => ({ ...d.data(), firebaseId: d.id }));
-        console.log("Catálogo cargado:", CATALOGO_ACTIVIDADES.length, "actividades.");
+        await cargarFirebaseEstimulacion();
+        let queryRef;
+        if (etapa && typeof fb_query === 'function' && typeof fb_where === 'function') {
+            console.log(`📥 Consultando actividades de etapa "${etapa}" en Firebase...`);
+            queryRef = fb_query(fb_collection(_db, "plantilla_actividades"), fb_where("etapa", "==", etapa));
+        } else {
+            console.log("📥 Consultando catálogo completo desde plantilla_actividades en Firebase...");
+            queryRef = fb_collection(_db, "plantilla_actividades");
+        }
+
+        const snap = await fb_getDocs(queryRef);
+        const nuevasActs = snap.docs.map(d => ({ ...d.data(), firebaseId: d.id }));
+
+        if (!CATALOGO_ACTIVIDADES) CATALOGO_ACTIVIDADES = [];
+
+        const idsExistentes = new Set(CATALOGO_ACTIVIDADES.map(a => a.firebaseId));
+        nuevasActs.forEach(act => {
+            if (!idsExistentes.has(act.firebaseId)) {
+                CATALOGO_ACTIVIDADES.push(act);
+            }
+        });
+
+        if (CATALOGO_ACTIVIDADES.length > 0) {
+            localStorage.setItem(CACHE_KEY, JSON.stringify(CATALOGO_ACTIVIDADES));
+            localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+        }
+        console.log("✅ Catálogo actualizado de Firebase:", nuevasActs.length, "nuevas actividades cargadas.");
     } catch (e) {
         console.error("Error al cargar catálogo plantilla_actividades:", e);
     }
+    return CATALOGO_ACTIVIDADES;
 }
 
 function renderRadarChart() {

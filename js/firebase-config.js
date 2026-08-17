@@ -3,7 +3,7 @@
  */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, enableIndexedDbPersistence } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB7eALMmiPj7mbWexnve2QSwAQZtbro_GI",
@@ -16,6 +16,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+enableIndexedDbPersistence(db).catch(() => {});
 
 // 2) Segundo Proyecto (Puntos Star)
 const firebasePuntosConfig = {
@@ -29,6 +30,7 @@ const firebasePuntosConfig = {
 
 const appPuntos = initializeApp(firebasePuntosConfig, "puntosApp");
 const dbPuntos = getFirestore(appPuntos);
+enableIndexedDbPersistence(dbPuntos).catch(() => {});
 
 // 3) Configuración de Autenticación para Puntos Star (Opción A)
 const puntosAuthConfig = {

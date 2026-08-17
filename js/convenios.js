@@ -764,6 +764,105 @@ const Convenios = {
                 imagen: "assets/img/convenios/55.jpg"
             },
 
+            {
+                id: 56,
+                ciudad: "Puebla",
+                categoria: "Colegio",
+                nombre: "Colegio Británico Wisdom",
+                descripcion: "Colegio Británico Wisdom, es una institución educativa donde la excelencia se combina con valores arraigados en el humanismo y la responsabilidad  social.  En  CBW, nos  enorgullece  ofrecer un  modelo educativo integral que busca formar seres humanos íntegros, capaces de enfrentar los desafíos de la vida con respeto, tolerancia y empatía.",
+                beneficio: "50% de descuento exclusivo en INCRIPCIÓN y un 15% de descuento en COLEGIATURAS",
+                maps: "https://maps.app.goo.gl/PV7MrZiSKMwhsc5r7",
+                whatsapp: "https://wa.me/2222288088",
+                telefono: "2222288088",
+                imagen: "assets/img/convenios/56.jpg"
+            },
+
+            {
+                id: 57,
+                ciudad: "Querétaro",
+                categoria: "Dentista",
+                nombre: "Dra Stephany Lazcano Montes",
+                cedula: "11737463",
+                descripcion: "Especialista en Prostodoncia. Atención profesional en rehabilitación oral, puentes fijos, implantes dentales y soluciones protésicas de alta calidad. Teatamientos dentales para toda la familia (ortodoncia, endodoncia, cirugía, pediatría etc).",
+                beneficio: "Revisión 1a vez de $500 a $300 <br>• Limpieza con ultrasonido incluye Pulido dental de $600 a $450 <br>• Resina (la 4ta al 50%) costo regular $800 c/u <br>• Guarda oclusal de $1200 a $800.",
+                maps: "https://maps.app.goo.gl/AVynrPuYhmWRQdmc7",
+                whatsapp: "https://wa.me/4424605622",
+                telefono: "4424605622",
+                imagen: "assets/img/convenios/57.jpeg"
+            },
+
+            {
+                id: 58,
+                ciudad: "Querétaro",
+                categoria: "Dentista",
+                nombre: "DEXIDENT - La Loma",
+                cedula: "12526239",
+                descripcion: "Somos una clínica dental interesada en ti y tu salud. Queremos cambiar tu forma de ver al dentista.",
+                beneficio: "Precios preferenciales en tratamientos como: limpiezas dentales, resinas, extracciones, coronas, etc. <br>• Beneficios extensibles con familiares directos de colaboradoras y clientes de la agencia.",
+                maps: "https://maps.app.goo.gl/raauhXqDqcLRkCRC9",
+                whatsapp: "https://wa.me/4421317300",
+                telefono: "4421317300",
+                imagen: "assets/img/convenios/58.jpeg"
+            },
+
+            {
+                id: 59,
+                ciudad: "Querétaro",
+                categoria: "Dentista",
+                nombre: "DEXIDENT - Centro",
+                cedula: "12526239",
+                descripcion: "Somos una clínica dental interesada en ti y tu salud. Queremos cambiar tu forma de ver al dentista.",
+                beneficio: "Precios preferenciales en tratamientos como: limpiezas dentales, resinas, extracciones, coronas, etc. <br>• Beneficios extensibles con familiares directos de colaboradoras y clientes de la agencia.",
+                maps: "https://maps.app.goo.gl/raauhXqDqcLRkCRC9",
+                whatsapp: "https://wa.me/4421317300",
+                telefono: "4421317300",
+                imagen: "assets/img/convenios/58.jpeg"
+            },
+
+            {
+                id: 60,
+                ciudad: "Querétaro",
+                categoria: "Psicología",
+                nombre: "SISÜ Clínica Psicológica",
+                cedula: "15218647",
+                descripcion: "En Sisu Clínica Psicológica nos dedicamos a brindar atención psicológica profesional, ética y accesible. Enfocada en el acompañamiento y cuidado de la salud mental. ",
+                beneficio: "20% de descuento - En sesiones individuales. (presencial y virtual). <br>• 10% de descuento a recomendaciones (familiares y amigos) - En sesiones individuales. (presencial y virtual). <br>• Descuentos preferenciales en futuros talleres.",
+                maps: "https://maps.app.goo.gl/yFoQpfN7DzLwat2WA",
+                whatsapp: "https://wa.me/4421264085",
+                telefono: "4421264085",
+                imagen: "assets/img/convenios/60.jpeg"
+            },
+
+            {
+                id: 61,
+                ciudad: "Querétaro",
+                categoria: "Nutrición",
+                nombre: "Nutrióloga Pame Ramírez",
+                cedula: "13979432",
+                descripcion: "Nutrióloga enfocada en promover hábitos saludables, ofreciendo consejos prácticos de alimentación, bienestar y mejora del estilo de vida a través de contenido en redes sociales.",
+                beneficio: "20% de descuento. <br>• Consultas personalizadas (presenciales o en línea). <br>•  Análisis de composición corporal (consulta presencial). <br>•  App de seguimiento. <br>•  Material descargable (menús, listas de súper, recetas). <br>•  Educación en Diabetes (Material descargable de bolsillo, taller de conteo de HC).",
+                maps: "https://maps.app.goo.gl/qdCg69t8cEb2tTNk7",
+                whatsapp: "https://wa.me/4427909843",
+                telefono: "4427909843",
+                imagen: "assets/img/convenios/61.jpeg"
+            },
+
+            {
+                id: 62,
+                ciudad: "Querétaro",
+                categoria: "Fisioterapia",
+                nombre: "Rhabilitare Fisioterapia",
+                cedula: "10153426",
+                descripcion: "RHABILITARE es un espacio especializado en el manejo del dolor y recuperación de lesiones deportivas, para nosotros es muy importante entender el motivo de tu dolor, lo que tu cuerpo necesita y encontrar el tratamiento que nos ayude a lograr tu bienestar.",
+                beneficio: "1. Valoración inicial gratuita (una por persona). <br>•  2. Precio preferencial en masajes relajantes: $450 / Paquete 4 sesiones $1,499. <br>•  3 Tarifas especiales en tratamientos de fisioterapia: $399 / Paquete 4 sesiones de fisioterapia: $1,520.",
+                maps: "https://maps.app.goo.gl/Ta2rY98P4NT78WiTA",
+                whatsapp: "https://wa.me/4151141683",
+                telefono: "4151141683",
+                imagen: "assets/img/convenios/62.jpg"
+            },
+
+
+
 
 
 

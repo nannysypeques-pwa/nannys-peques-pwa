@@ -209,9 +209,27 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
         }
 
         if (!data) {
-            data = await api('getResumenPlaneacionesDosSemanas', { email: SESION.email });
-            if (data) {
-                localStorage.setItem('CACHE_PLANEACIONES_SUP_' + SESION.email, JSON.stringify(data));
+            try {
+                data = await api('getResumenPlaneacionesDosSemanas', { email: SESION.email });
+                if (data) {
+                    localStorage.setItem('CACHE_PLANEACIONES_SUP_' + SESION.email, JSON.stringify(data));
+                }
+            } catch (netErr) {
+                console.warn("⚠️ Fallo temporal de red en consulta de planeaciones, reintentando...", netErr);
+                try {
+                    await new Promise(r => setTimeout(r, 800));
+                    data = await api('getResumenPlaneacionesDosSemanas', { email: SESION.email });
+                    if (data) {
+                        localStorage.setItem('CACHE_PLANEACIONES_SUP_' + SESION.email, JSON.stringify(data));
+                    }
+                } catch (retryErr) {
+                    console.warn("⚠️ Reintento de red falló, usando datos en caché de respaldo...", retryErr);
+                    const backupCached = localStorage.getItem('CACHE_PLANEACIONES_SUP_' + SESION.email);
+                    if (backupCached) {
+                        try { data = JSON.parse(backupCached); } catch (e) {}
+                    }
+                    if (!data) throw retryErr;
+                }
             }
         }
 
