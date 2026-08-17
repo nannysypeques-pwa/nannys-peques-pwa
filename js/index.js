@@ -4834,6 +4834,41 @@ async function cargarPerfil(force = false) {
                 }
             }
 
+            // Generar y actualizar el QR de recomendación (usando qrcode.js local)
+            const qrContainer = document.getElementById('perfil-qr-container');
+            if (qrContainer) {
+                qrContainer.innerHTML = ''; // Limpiar previo
+                const nombreUsuario = (perf.nombre || '').trim();
+                let msg = '';
+                if (esNanny) {
+                    msg = `Hola. La niñera ${nombreUsuario} me recomendó sus servicios y quisiera saber más al respecto`;
+                } else {
+                    msg = `Hola. La familia ${nombreUsuario} me recomendó sus servicios y quisiera saber más al respecto`;
+                }
+                const phone = '522224021886'; // WhatsApp de la empresa (México: +52 2224021886)
+                const waLink = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+                
+                try {
+                    new QRCode(qrContainer, {
+                        text: waLink,
+                        width: 150,
+                        height: 150,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                } catch (err) {
+                    console.error("Error al generar el QR local:", err);
+                    // Fallback a API si falla la librería local por alguna razón
+                    const fallbackImg = document.createElement('img');
+                    fallbackImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(waLink)}`;
+                    fallbackImg.style.width = '150px';
+                    fallbackImg.style.height = '150px';
+                    fallbackImg.style.display = 'block';
+                    qrContainer.appendChild(fallbackImg);
+                }
+            }
+
             if (esNanny && !SESION.admin && !SESION.supervision) {
                 verificarDatosFaltantesNinera(perf);
                 return;

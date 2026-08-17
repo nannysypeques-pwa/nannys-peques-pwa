@@ -191,11 +191,12 @@
       transition: all 0.2s;
       width: 100%;
     }
+
     .btn-eval-transition-current:hover {
       background: rgba(25, 28, 30, 0.08);
       transform: translateY(-1px);
     }
-    
+
     .btn-eval-transition-next {
       background: linear-gradient(135deg, var(--est-primary), #FF5E62);
       color: white;
@@ -213,6 +214,7 @@
       width: 100%;
       box-shadow: 0 4px 12px rgba(232, 76, 154, 0.2);
     }
+
     .btn-eval-transition-next:hover {
       opacity: 0.95;
       transform: translateY(-1px);
@@ -970,6 +972,7 @@
         opacity: 0.35;
         transform: scale(0.985) translateY(1px);
       }
+
       100% {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -987,6 +990,7 @@
         align-items: flex-start !important;
         gap: 10px !important;
       }
+
       .stage-nav-container {
         width: fit-content !important;
         align-self: flex-start !important;
@@ -2091,6 +2095,24 @@
 
 
 
+          <!-- Nueva sección: Código QR de Recomendación -->
+          <div id="perfil-qr-section" class="profile-section"
+            style="border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center;">
+            <div class="section-title" style="text-align: left;">Recomendar Nannys & Peques</div>
+            <div
+              style="background: var(--glass-bg, rgba(255, 255, 255, 0.8)); border: 1px solid rgba(232, 76, 154, 0.2); border-radius: var(--radius-lg, 16px); padding: 20px; box-shadow: var(--glass-shadow); display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 10px;">
+              <p style="font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.5; max-width: 280px;">
+                Muestra este código QR a tus recomendados. Al escanearlo, nos contactarán por WhatsApp con tu
+                recomendación.
+              </p>
+
+              <div id="perfil-qr-container"
+                style="background: white; padding: 12px; border-radius: var(--radius-lg, 16px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); display: inline-flex; align-items: center; justify-content: center; transition: transform 0.2s ease;"
+                onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1.0)'">
+              </div>
+            </div>
+          </div>
+
           <div class="profile-actions" style="margin-top:20px;">
             <button class="btn-primary" onclick="editarPerfilCliente()" style="background: var(--blue-main);">
               📝 Editar perfil
@@ -2625,8 +2647,7 @@
               <canvas id="estRadarChart"></canvas>
             </div>
             <div id="eval-buttons-container" style="margin-top: 15px; width: 100%;">
-              <button class="btn-eval-modern-outline" onclick="verResultadosEvaluacion()"
-                style="width: 100%;">
+              <button class="btn-eval-modern-outline" onclick="verResultadosEvaluacion()" style="width: 100%;">
                 👁️ Ver Evaluación Detallada
               </button>
             </div>
@@ -2881,30 +2902,39 @@
         </div>
 
         <!-- NUEVA SUB-VISTA: AVANCE SUGERIDOR -->
-        <div id="subvista-supervision-avance-estimulacion" style="display:none; padding-bottom: 80px; animation: fadeInPremium 0.6s ease-out;">
+        <div id="subvista-supervision-avance-estimulacion"
+          style="display:none; padding-bottom: 80px; animation: fadeInPremium 0.6s ease-out;">
           <div style="text-align: center; margin-bottom: 25px; animation: fadeInPremium 0.6s ease-out;">
             <div style="font-size: 50px; margin-bottom: 10px;">📈</div>
-            <h2 style="font-family: 'DM Serif Display', serif; color: var(--pink-main); font-size: 28px; margin-bottom: 5px;">
+            <h2
+              style="font-family: 'DM Serif Display', serif; color: var(--pink-main); font-size: 28px; margin-bottom: 5px;">
               Avance del Sugeridor
             </h2>
-            <p style="color: var(--text-muted); font-size: 14px;">Control de cumplimiento de actividades de estimulación temprana.</p>
+            <p style="color: var(--text-muted); font-size: 14px;">Control de cumplimiento de actividades de estimulación
+              temprana.</p>
           </div>
-          
-          <div class="row" style="justify-content:space-between; align-items:center; margin-bottom: 10px; padding: 0 10px;">
+
+          <div class="row"
+            style="justify-content:space-between; align-items:center; margin-bottom: 10px; padding: 0 10px;">
             <span class="muted" style="font-weight:700; font-size: 14px; color: var(--text-main);">Semana Actual</span>
-            <button id="btnRefreshAvanceEstimulacion" class="btn-ghost" onclick="cargarAvanceEstimulacionSupervision(true)" style="padding: 8px 16px; font-size: 14px; display: flex; align-items: center; gap: 5px;">
+            <button id="btnRefreshAvanceEstimulacion" class="btn-ghost"
+              onclick="cargarAvanceEstimulacionSupervision(true)"
+              style="padding: 8px 16px; font-size: 14px; display: flex; align-items: center; gap: 5px;">
               🔄 Actualizar
             </button>
           </div>
 
-          <div id="lista-avance-estimulacion" style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
+          <div id="lista-avance-estimulacion"
+            style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 15px;">
             <!-- Se inyecta dinámicamente -->
           </div>
 
           <hr style="border: 0; border-top: 1px solid rgba(232, 76, 154, 0.15); margin: 20px 0;">
 
-          <div class="row" style="justify-content:space-between; align-items:center; margin-bottom: 10px; padding: 0 10px;">
-            <span class="muted" style="font-weight:700; font-size: 14px; color: var(--text-main);">Semana Anterior</span>
+          <div class="row"
+            style="justify-content:space-between; align-items:center; margin-bottom: 10px; padding: 0 10px;">
+            <span class="muted" style="font-weight:700; font-size: 14px; color: var(--text-main);">Semana
+              Anterior</span>
           </div>
 
           <div id="lista-avance-estimulacion-anterior" style="display: flex; flex-direction: column; gap: 15px;">
@@ -3994,6 +4024,7 @@
   <script src="js/preloader-modal.js"></script>
   <script src="js/supervision_plantilla.js"></script>
   <script src="js/supervision_estimulacion.js"></script>
+  <script src="js/qrcode.min.js"></script>
   <script src="js/index.js"></script>
   <script src="js/puntos_star.js"></script>
   <script src="js/perfil_nanny_star.js"></script>
