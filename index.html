@@ -1260,6 +1260,16 @@
       box-shadow: 0 0 12px rgba(16, 185, 129, 0.4), 0 0 0 1px rgba(16, 185, 129, 0.2);
     }
 
+    .act-status-indicator.realizada-familia {
+      background: var(--est-secondary-light);
+      box-shadow: 0 0 12px rgba(80, 217, 254, 0.4), 0 0 0 1px rgba(80, 217, 254, 0.2);
+    }
+
+    .act-status-indicator.realizada-nanny {
+      background: var(--est-primary);
+      box-shadow: 0 0 12px rgba(232, 76, 154, 0.4), 0 0 0 1px rgba(232, 76, 154, 0.2);
+    }
+
     .act-status-indicator.no-realizada {
       background: #ef4444;
       box-shadow: 0 0 12px rgba(239, 68, 68, 0.4), 0 0 0 1px rgba(239, 68, 68, 0.2);
@@ -1549,6 +1559,18 @@
       border: 2px solid #047857;
     }
 
+    .btn-action-done.active.done-familia {
+      background: var(--est-secondary-light) !important;
+      border: 2px solid #3bb6c4 !important;
+      box-shadow: 0 4px 10px rgba(80, 217, 254, 0.3) !important;
+    }
+
+    .btn-action-done.active.done-nanny {
+      background: var(--est-primary) !important;
+      border: 2px solid #d03780 !important;
+      box-shadow: 0 4px 10px rgba(232, 76, 154, 0.3) !important;
+    }
+
     .btn-action-fail.active {
       background: #ef4444 !important;
       color: white;
@@ -1587,6 +1609,116 @@
         position: absolute;
         bottom: 0;
       }
+    }
+
+    /* --- ESTILOS DE EVIDENCIA DE ACTIVIDAD --- */
+    .btn-evidencia {
+      width: 100%;
+      height: 50px;
+      border-radius: 16px;
+      border: none;
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      background: #0284c7;
+      color: white;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
+      margin-top: 10px;
+      font-family: 'Outfit', sans-serif;
+    }
+    .btn-evidencia:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(2, 132, 199, 0.3);
+      background: #0369a1;
+    }
+    .btn-evidencia:active {
+      transform: scale(0.98);
+    }
+    .evidencia-gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .evidencia-thumb-container {
+      position: relative;
+      width: calc(33.333% - 8px);
+      aspect-ratio: 1 / 1;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: transform 0.2s;
+    }
+    .evidencia-thumb-container:hover {
+      transform: scale(1.03);
+    }
+    .evidencia-thumb-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      cursor: zoom-in;
+    }
+    .evidencia-delete-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(239, 68, 68, 0.9);
+      border: none;
+      border-radius: 50%;
+      color: white;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      transition: background 0.2s;
+      z-index: 5;
+    }
+    .evidencia-delete-btn:hover {
+      background: #dc2626;
+    }
+    .fullscreen-viewer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 999999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+    .fullscreen-viewer-overlay img {
+      max-width: 90%;
+      max-height: 90%;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .close-viewer-btn {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      color: #fff;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
   </style>
 
@@ -4822,6 +4954,16 @@
           style="font-size:14px; font-weight:700; color:#475569; padding:10px 15px; background:#fff; border-radius:16px; border:1px solid #f1f5f9; margin-bottom: 20px;"
           id="detail-hito">...</div>
 
+        <!-- Sección de Evidencias -->
+        <div class="detail-section-title" id="title-evidencia-seccion">
+          <span class="material-symbols-outlined" style="font-size:18px; color:#0284c7;">image</span>
+          Evidencias de la Actividad
+        </div>
+        <div id="container-evidencia-seccion" style="margin-bottom: 20px;">
+          <!-- Aquí se cargan dinámicamente el botón o carrete de miniaturas -->
+        </div>
+        <input type="file" id="input-evidencia-file" accept="image/*" style="display: none;" onchange="procesarYSubirEvidencia(event)">
+
         <div class="detail-footer-actions">
           <button class="btn-action-fail" id="btn-status-fail" onclick="marcarEstadoActividad('no_realizada')">
             <span class="material-symbols-outlined" style="font-size:20px;">close</span>
@@ -4878,6 +5020,11 @@
         </button>
       </div>
     </div>
+  </div>
+  <!-- Contenedor del visualizador a pantalla completa -->
+  <div id="fullscreenViewer" class="fullscreen-viewer-overlay" style="display:none;" onclick="cerrarVisualizador()">
+    <span class="close-viewer-btn" onclick="cerrarVisualizador()">&times;</span>
+    <img id="fullscreenViewerImg" src="" alt="Evidencia Ampliada">
   </div>
 
 </body>

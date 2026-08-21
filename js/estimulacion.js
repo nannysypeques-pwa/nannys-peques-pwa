@@ -339,6 +339,11 @@ async function selectPequeEstimulacion(nombre, nacimiento) {
                     else if (status === "no_realizada") btnFail.classList.add("active");
                     else if (status === "pendiente") btnPending.classList.add("active");
                 }
+
+                // Renderizar también la sección de evidencias en tiempo real
+                if (typeof renderEvidenciaSeccion === 'function') {
+                    renderEvidenciaSeccion();
+                }
             }
         }, (err) => {
             // Error silencioso: ocurre cuando el documento aún no existe para un peque nuevo
@@ -1783,7 +1788,9 @@ async function renderActividadesDelDia() {
             item.onclick = () => abrirDetalleActividad(act.firebaseId);
 
             let statusClass = "";
-            if (status && status.startsWith("realizada")) statusClass = "realizada";
+            if (status === "realizada_familia") statusClass = "realizada-familia";
+            else if (status === "realizada_ninera") statusClass = "realizada-nanny";
+            else if (status === "realizada") statusClass = "realizada";
             else if (status === "no_realizada") statusClass = "no-realizada";
 
             item.innerHTML = `
@@ -2010,13 +2017,26 @@ async function abrirDetalleActividad(id) {
     const resultadosHoy = (progData.seguimiento_diario && progData.seguimiento_diario[hoy]) ? progData.seguimiento_diario[hoy] : {};
     const status = resultadosHoy[id] || "pendiente";
 
-    document.getElementById("btn-status-done").classList.remove("active");
+    document.getElementById("btn-status-done").classList.remove("active", "done-familia", "done-nanny");
     document.getElementById("btn-status-fail").classList.remove("active");
     document.getElementById("btn-status-pending").classList.remove("active");
 
-    if (status && status.startsWith("realizada")) document.getElementById("btn-status-done").classList.add("active");
+    if (status && status.startsWith("realizada")) {
+        const btnDone = document.getElementById("btn-status-done");
+        btnDone.classList.add("active");
+        if (status === "realizada_familia") {
+            btnDone.classList.add("done-familia");
+        } else if (status === "realizada_ninera") {
+            btnDone.classList.add("done-nanny");
+        }
+    }
     else if (status === "no_realizada") document.getElementById("btn-status-fail").classList.add("active");
     else if (status === "pendiente") document.getElementById("btn-status-pending").classList.add("active");
+
+    // Renderizar sección de evidencias
+    if (typeof renderEvidenciaSeccion === 'function') {
+        renderEvidenciaSeccion();
+    }
 
     // Mostrar modal
     document.getElementById("modalDetalleActividad").style.display = "flex";
@@ -2040,6 +2060,18 @@ async function marcarEstadoActividad(status) {
 
         if (!data.seguimiento_diario) data.seguimiento_diario = {};
         if (!data.seguimiento_diario[hoy]) data.seguimiento_diario[hoy] = {};
+
+        const statusPrevio = data.seguimiento_diario[hoy][act.firebaseId];
+        const esCliente = typeof SESION !== 'undefined' && SESION.cliente;
+
+        if (esCliente && (statusPrevio === "realizada_ninera" || statusPrevio === "realizada")) {
+            mostrarToast("Esta actividad fue completada por la niñera 👩‍🏫");
+            return;
+        }
+        if (!esCliente && statusPrevio === "realizada_familia") {
+            mostrarToast("Esta actividad fue completada por la familia 🏠");
+            return;
+        }
 
         // Guardar el estado
         let valorAGuardar = status;
@@ -2233,6 +2265,288 @@ function verificarAlertaCambioEtapa() {
     }
 }
 
+window.cambiarEtapaVista = cambiarEtapaVista;
+window.actualizarEtapaVista = actualizarEtapaVista;
+
+
+/**
+ * Renderiza la sección de evidencias dentro del modal de detalle de actividad.
+ * Soporta hasta 3 imágenes y compatibilidad hacia atrás con registros antiguos de una sola imagen.
+ */
+function renderEvidenciaSeccion() {
+    const container = document.getElementById("container-evidencia-seccion");
+    if (!container) return;
+
+    if (!_actividadAbierta) {
+        container.innerHTML = "";
+        return;
+    }
+
+    const id = _actividadAbierta.firebaseId;
+    const progData = _dataProgresoPeque || {};
+    const hoy = _fechaSeleccionadaEst;
+    const meta = (progData.seguimiento_diario_metadata && progData.seguimiento_diario_metadata[hoy] && progData.seguimiento_diario_metadata[hoy][id]) 
+        ? progData.seguimiento_diario_metadata[hoy][id] 
+        : null;
+
+    let evidencias = [];
+    if (meta) {
+        if (Array.isArray(meta.evidencias)) {
+            evidencias = meta.evidencias;
+        } else if (typeof meta.evidencia === 'string' && meta.evidencia.trim() !== '') {
+            // Compatibilidad hacia atrás: convertir el campo único en arreglo
+            evidencias = [meta.evidencia];
+        }
+    }
+
+    let html = "";
+
+    if (evidencias.length > 0) {
+        html += `<div class="evidencia-gallery">`;
+        evidencias.forEach((url, idx) => {
+            html += `
+                <div class="evidencia-thumb-container">
+                    <img src="${url}" alt="Evidencia ${idx + 1}" onclick="abrirVisualizador('${url}')">
+                    <button class="evidencia-delete-btn" onclick="eliminarEvidenciaActividad(${idx}, event)">
+                        <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
+                    </button>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+
+    // Mostrar el botón de agregar si hay menos de 3 evidencias
+    if (evidencias.length < 3) {
+        html += `
+            <button class="btn-evidencia" onclick="document.getElementById('input-evidencia-file').click()">
+                <span class="material-symbols-outlined">add_a_photo</span>
+                Evidencia
+            </button>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+/**
+ * Procesa la imagen seleccionada, la redimensiona y la sube al backend (Drive)
+ */
+async function procesarYSubirEvidencia(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validar formato básico de imagen
+    if (!file.type.startsWith('image/')) {
+        mostrarToast("Por favor, selecciona un archivo de imagen válido.");
+        return;
+    }
+
+    const container = document.getElementById("container-evidencia-seccion");
+    if (container) {
+        container.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 10px;">
+                <div style="width: 30px; height: 30px; border: 3px solid rgba(2, 132, 199, 0.1); border-top-color: #0284c7; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">Subiendo evidencia a Drive...</span>
+            </div>
+        `;
+    }
+
+    try {
+        // 1. Redimensionar imagen para evitar excesos de tamaño en Drive API (GAS)
+        const base64 = await _redimensionarImagen(file, 1024);
+
+        // 2. Subir imagen a Drive mediante la API de Google Apps Script
+        const nombreArchivo = `evidencia_${_actividadAbierta.firebaseId}_${Date.now()}.jpg`;
+        const driveUrl = await api('guardarEvidenciaDrive', { base64: base64, nombreArchivo: nombreArchivo });
+
+        if (!driveUrl) {
+            throw new Error("No se pudo obtener el enlace público del archivo.");
+        }
+
+        // 3. Guardar URL en Firestore
+        const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
+        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+        const hoy = _fechaSeleccionadaEst;
+
+        const snap = await fb_getDoc(fb_doc(_db, "progreso_peque", docId));
+        let data = snap.exists() ? snap.data() : { hitos: {}, seguimiento_diario: {} };
+
+        if (!data.seguimiento_diario) data.seguimiento_diario = {};
+        if (!data.seguimiento_diario[hoy]) data.seguimiento_diario[hoy] = {};
+        if (!data.seguimiento_diario_metadata) data.seguimiento_diario_metadata = {};
+        if (!data.seguimiento_diario_metadata[hoy]) data.seguimiento_diario_metadata[hoy] = {};
+
+        // Auto-marcar como realizada si no lo estaba
+        const currentStatus = data.seguimiento_diario[hoy][_actividadAbierta.firebaseId];
+        if (!currentStatus || !currentStatus.startsWith("realizada")) {
+            const valorAGuardar = (typeof SESION !== 'undefined' && SESION.cliente) ? "realizada_familia" : "realizada_ninera";
+            data.seguimiento_diario[hoy][_actividadAbierta.firebaseId] = valorAGuardar;
+            
+            // Avanzar hito correspondiente
+            if (_actividadAbierta.hitoRelacionado) {
+                if (!data.hitos) data.hitos = {};
+                data.hitos[_actividadAbierta.hitoRelacionado] = {
+                    ultimoIndice: _actividadAbierta.indiceEnHito || 0,
+                    cicloActual: _actividadAbierta.cicloActual || 1,
+                    ultimaFecha: hoy
+                };
+            }
+        }
+
+        // Recuperar y actualizar el listado de evidencias
+        const meta = data.seguimiento_diario_metadata[hoy][_actividadAbierta.firebaseId] || {};
+        let evidencias = [];
+        if (Array.isArray(meta.evidencias)) {
+            evidencias = [...meta.evidencias];
+        } else if (typeof meta.evidencia === 'string' && meta.evidencia.trim() !== '') {
+            evidencias = [meta.evidencia];
+        }
+
+        evidencias.push(driveUrl);
+
+        // Guardar estructura limpia
+        data.seguimiento_diario_metadata[hoy][_actividadAbierta.firebaseId] = {
+            ...meta,
+            fecha_registro: meta.fecha_registro || new Date().toISOString(),
+            evidencias: evidencias
+        };
+        // También borrar propiedad legacy para mantener la consistencia
+        if (data.seguimiento_diario_metadata[hoy][_actividadAbierta.firebaseId].evidencia) {
+            delete data.seguimiento_diario_metadata[hoy][_actividadAbierta.firebaseId].evidencia;
+        }
+
+        await fb_setDoc(fb_doc(_db, "progreso_peque", docId), data);
+        mostrarToast("¡Evidencia cargada con éxito! 🌟");
+    } catch (e) {
+        console.error("Error en procesarYSubirEvidencia:", e);
+        mostrarToast("Error al subir evidencia: " + e.message);
+        renderEvidenciaSeccion();
+    } finally {
+        event.target.value = "";
+    }
+}
+
+/**
+ * Redimensiona y comprime una imagen local a través de Canvas
+ */
+function _redimensionarImagen(file, maxDimension) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > maxDimension) {
+                        height *= maxDimension / width;
+                        width = maxDimension;
+                    }
+                } else {
+                    if (height > maxDimension) {
+                        width *= maxDimension / height;
+                        height = maxDimension;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                resolve(canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+/**
+ * Elimina una imagen de evidencia específica del arreglo
+ */
+async function eliminarEvidenciaActividad(index, event) {
+    if (event) event.stopPropagation();
+
+    if (!confirm("¿Estás seguro de que deseas eliminar esta imagen de evidencia?")) {
+        return;
+    }
+
+    const container = document.getElementById("container-evidencia-seccion");
+    if (container) {
+        container.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 10px;">
+                <div style="width: 30px; height: 30px; border: 3px solid rgba(239, 68, 68, 0.1); border-top-color: #ef4444; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">Eliminando imagen...</span>
+            </div>
+        `;
+    }
+
+    try {
+        const id = _actividadAbierta.firebaseId;
+        const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
+        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+        const hoy = _fechaSeleccionadaEst;
+
+        const snap = await fb_getDoc(fb_doc(_db, "progreso_peque", docId));
+        if (snap.exists()) {
+            let data = snap.data();
+            const meta = data.seguimiento_diario_metadata?.[hoy]?.[id];
+            if (meta) {
+                let evidencias = [];
+                if (Array.isArray(meta.evidencias)) {
+                    evidencias = [...meta.evidencias];
+                } else if (typeof meta.evidencia === 'string' && meta.evidencia.trim() !== '') {
+                    evidencias = [meta.evidencia];
+                }
+
+                // Quitar elemento por índice
+                evidencias.splice(index, 1);
+
+                // Actualizar o eliminar la propiedad completa de metadatos si queda vacía
+                data.seguimiento_diario_metadata[hoy][id].evidencias = evidencias;
+                if (data.seguimiento_diario_metadata[hoy][id].evidencia) {
+                    delete data.seguimiento_diario_metadata[hoy][id].evidencia;
+                }
+
+                await fb_setDoc(fb_doc(_db, "progreso_peque", docId), data);
+                mostrarToast("Evidencia eliminada.");
+            }
+        }
+    } catch (e) {
+        console.error("Error al eliminar evidencia:", e);
+        mostrarToast("Error al eliminar la imagen de evidencia.");
+        renderEvidenciaSeccion();
+    }
+}
+
+/**
+ * Abre el visualizador a pantalla completa para una imagen
+ */
+function abrirVisualizador(url) {
+    const viewer = document.getElementById("fullscreenViewer");
+    const viewerImg = document.getElementById("fullscreenViewerImg");
+    if (viewer && viewerImg) {
+        viewerImg.src = url;
+        viewer.style.display = "flex";
+    }
+}
+
+/**
+ * Cierra el visualizador a pantalla completa
+ */
+function cerrarVisualizador() {
+    const viewer = document.getElementById("fullscreenViewer");
+    if (viewer) {
+        viewer.style.display = "none";
+    }
+}
+
 window.initEstimulacion = initEstimulacion;
 window.selectPequeEstimulacion = selectPequeEstimulacion;
 window.guardarEvaluacionInicial = guardarEvaluacionInicial;
@@ -2247,5 +2561,8 @@ window.abrirEvaluacionInicial = abrirEvaluacionInicial;
 window.selectHitoScore = selectHitoScore;
 window.verOEditarEvaluacion = verOEditarEvaluacion;
 window.renderEvaluationButtons = renderEvaluationButtons;
-window.cambiarEtapaVista = cambiarEtapaVista;
-window.actualizarEtapaVista = actualizarEtapaVista;
+window.renderEvidenciaSeccion = renderEvidenciaSeccion;
+window.procesarYSubirEvidencia = procesarYSubirEvidencia;
+window.eliminarEvidenciaActividad = eliminarEvidenciaActividad;
+window.abrirVisualizador = abrirVisualizador;
+window.cerrarVisualizador = cerrarVisualizador;

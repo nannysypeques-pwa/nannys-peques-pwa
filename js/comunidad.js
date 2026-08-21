@@ -9560,9 +9560,9 @@ const Comunidad = {
                 {
                     id: 1,
                     titulo: "¡Regreso de vacaciones!",
-                    content: "Aprovecha nuestras promociones en servicios eventuales de lunes a viernes con 10% desde servicios de 6 horas.",
+                    content: "Aprovecha nuestras promociones en servicios de lunes a viernes con 10% desde servicios de 6 horas.",
                     tipo: "Promo",
-                    fecha: "Todo Abril"
+                    fecha: "Todo Septiembre"
                 },
                 {
                     id: 2,

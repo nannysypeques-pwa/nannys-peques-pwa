@@ -12,20 +12,24 @@ function _guardarImagenDrive(base64, nombreArchivo) {
     }
 
 
-    // 2. Buscar o crear carpeta (Mantenemos la carpeta PRIVADA para mayor seguridad)
+    // 2. Buscar por ID de carpeta específica o crear/buscar por nombre (fallback)
+    var folderId = "1EOCEKEundqGB9ASqxmytGCwMFiV12Hgp";
     var folderName = "NannysPeques_Imagenes_Planeacion";
     var folder;
 
-
     try {
-      var folders = DriveApp.getFoldersByName(folderName);
-      if (folders.hasNext()) {
-        folder = folders.next();
-      } else {
-        folder = DriveApp.createFolder(folderName);
-      }
+      folder = DriveApp.getFolderById(folderId);
     } catch (e) {
-      throw new Error("Error específico de permisos al acceder a carpetas: " + e.message);
+      try {
+        var folders = DriveApp.getFoldersByName(folderName);
+        if (folders.hasNext()) {
+          folder = folders.next();
+        } else {
+          folder = DriveApp.createFolder(folderName);
+        }
+      } catch (errInner) {
+        throw new Error("Error específico de permisos al acceder a carpetas: " + errInner.message);
+      }
     }
 
 

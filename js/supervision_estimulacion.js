@@ -115,7 +115,7 @@ function calcularAvances(serviciosEstimulacion, diasSemanaISO) {
                         const planeadasDia = obtenerActividadesPlaneadasParaDia(evalData, fecha, peque.nacimiento);
                         let completadasHoy = planeadasDia.filter(act => {
                             const val = segHoy[act.firebaseId];
-                            return val === 'realizada_ninera' || val === 'realizada' || val === 'realizada_familia';
+                            return val === 'realizada_ninera' || val === 'realizada';
                         }).length;
 
                         completadas = completadasHoy;
@@ -866,6 +866,18 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
         ? progData.seguimiento_diario[dateStr] 
         : {};
 
+    // Contabilizar actividades realizadas por rol
+    let countNinera = 0;
+    let countFamilia = 0;
+    actividadesPlaneadas.forEach(act => {
+        const status = segHoy[act.firebaseId];
+        if (status === "realizada_ninera" || status === "realizada") {
+            countNinera++;
+        } else if (status === "realizada_familia") {
+            countFamilia++;
+        }
+    });
+
     const parts = dateStr.split('-');
     const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
     const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -911,10 +923,22 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
             let semaforoColor = "#ef4444";
             
             if (realizada) {
-                statusText = "Realizada";
-                statusColor = "var(--success-text)";
-                statusBg = "var(--success-bg)";
-                semaforoColor = "#10b981";
+                if (status === "realizada_familia") {
+                    statusText = "Realizada por Familia";
+                    statusColor = "#0369a1";
+                    statusBg = "#e0f2fe";
+                    semaforoColor = "#0ea5e9";
+                } else if (status === "realizada_ninera") {
+                    statusText = "Realizada por Niñera";
+                    statusColor = "#9d174d";
+                    statusBg = "#fce7f3";
+                    semaforoColor = "#e84c9a";
+                } else {
+                    statusText = "Realizada";
+                    statusColor = "var(--success-text)";
+                    statusBg = "var(--success-bg)";
+                    semaforoColor = "#10b981";
+                }
             }
 
             const meta = (progData && progData.seguimiento_diario_metadata && progData.seguimiento_diario_metadata[dateStr] && progData.seguimiento_diario_metadata[dateStr][act.firebaseId])
@@ -932,6 +956,15 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
                 }
             }
 
+            let evidencias = [];
+            if (meta) {
+                if (Array.isArray(meta.evidencias)) {
+                    evidencias = meta.evidencias;
+                } else if (typeof meta.evidencia === 'string' && meta.evidencia.trim() !== '') {
+                    evidencias = [meta.evidencia];
+                }
+            }
+
             listHtml += `
                 <div style="background: rgba(232, 76, 154, 0.02); border: 1px solid rgba(232, 76, 154, 0.08); border-radius: 12px; padding: 14px; display: flex; align-items: flex-start; gap: 12px;">
                     <div style="width: 12px; height: 12px; border-radius: 50%; background: ${semaforoColor}; flex-shrink: 0; margin-top: 5px; box-shadow: 0 0 8px ${semaforoColor}4d;"></div>
@@ -942,7 +975,7 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
                         <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 500; margin-bottom: 6px;">
                             Área: ${act.hitoTexto}
                         </div>
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
                             <span style="background: ${statusBg}; color: ${statusColor}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase;">
                                 ${statusText}
                             </span>
@@ -952,6 +985,18 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
                                 </span>
                             ` : ''}
                         </div>
+                        ${realizada && evidencias.length > 0 ? `
+                            <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                                ${evidencias.map((url, idx) => `
+                                    <div style="position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); cursor: zoom-in; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;" 
+                                         onclick="abrirVisualizador('${url}')"
+                                         onmouseover="this.style.transform='scale(1.05)'"
+                                         onmouseout="this.style.transform='scale(1)'">
+                                        <img src="${url}" alt="Evidencia ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -969,9 +1014,17 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
                 <h3 style="font-family: 'DM Serif Display', serif; color: var(--pink-main); font-size: 20px; margin: 0 0 4px 0;">
                     Actividades de ${pequeNombre}
                 </h3>
-                <p style="color: var(--text-muted); font-size: 13px; margin: 0; font-weight: 500; text-transform: capitalize;">
+                <p style="color: var(--text-muted); font-size: 13px; margin: 0 0 10px 0; font-weight: 500; text-transform: capitalize;">
                     ${fechaHumana}
                 </p>
+                <div style="display: flex; justify-content: center; gap: 12px; margin-top: 8px; font-size: 11px; font-weight: 700;">
+                    <span style="background: #fce7f3; color: #9d174d; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(232, 76, 154, 0.15); display: flex; align-items: center; gap: 4px;">
+                        👩‍🏫 Niñera: ${countNinera}
+                    </span>
+                    <span style="background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(14, 165, 233, 0.15); display: flex; align-items: center; gap: 4px;">
+                        🏠 Familia: ${countFamilia}
+                    </span>
+                </div>
             </div>
             
             <div style="max-height: 50vh; overflow-y: auto; padding-right: 4px;">

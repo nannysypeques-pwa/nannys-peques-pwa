@@ -335,6 +335,10 @@ async function login(rol) {
     msg.textContent = 'Validando...';
 
     try {
+        // 🧹 Limpiar sesión/token anterior para que api() no inyecte un token expirado
+        SESION.token = null;
+        localStorage.removeItem('nyp_sesion');
+
         const res = await api('login', { email, contrasena: pass, rol: rol });
 
         SESION.email = email;
@@ -407,6 +411,13 @@ async function login(rol) {
         const tiempoRestante = Math.max(0, 6000 - tiempoTranscurrido);
 
         setTimeout(() => {
+            // 🛡️ Verificar que la sesión sigue activa (puede haber sido invalidada por logout() durante la carga)
+            if (!SESION.token) {
+                const preloader = document.getElementById('login-preloader');
+                if (preloader) preloader.style.display = 'none';
+                return; // Sesión inválida, el logout() ya manejó la UI
+            }
+
             const preloader = document.getElementById('login-preloader');
             if (preloader) {
                 preloader.style.transition = 'opacity 0.8s ease';
