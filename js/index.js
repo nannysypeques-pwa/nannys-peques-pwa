@@ -6,6 +6,7 @@ let SESION = {
     nombre: '',
     admin: false,
     supervision: false,
+    rh: false,
     cliente: false,
     token: null
 };
@@ -197,8 +198,19 @@ try {
                     const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
                     const { db } = await import('./firebase-config.js');
                     const auth = firebaseAuthModule.getAuth(db.app);
-                    await firebaseAuthModule.signInWithCustomToken(auth, SESION.firebaseToken);
-                    console.log("✅ [Inicio] Firebase Auth OK para:", SESION.email);
+                    
+                    // Esperar a que Firebase intente restaurar la sesión persistente de IndexedDB
+                    if (typeof auth.authStateReady === 'function') {
+                        await auth.authStateReady();
+                    }
+                    
+                    if (auth.currentUser) {
+                        console.log("✅ [Inicio] Firebase Auth (Sesión Restaurada) para:", SESION.email);
+                    } else {
+                        // Si no hay una sesión activa persistida en Firebase, intentar con el token guardado
+                        await firebaseAuthModule.signInWithCustomToken(auth, SESION.firebaseToken);
+                        console.log("✅ [Inicio] Firebase Auth OK para:", SESION.email);
+                    }
                 } catch (fbErr) {
                     console.warn("⚠️ [Inicio] Firebase Auth silencioso falló:", fbErr.message);
                 }
@@ -346,12 +358,14 @@ async function login(rol) {
         SESION.nombre = res.nombre || '';
         SESION.admin = !!res.admin;
         SESION.supervision = !!res.supervision;
+        SESION.rh = !!res.rh;
         SESION.cliente = !!res.cliente;
         SESION.firebaseToken = res.firebaseToken || null; // 🔐 Guardamos el token en la sesión persistente
 
-        document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente');
+        document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente', 'rh');
         if (SESION.admin) document.body.classList.add('admin');
         else if (SESION.supervision) document.body.classList.add('supervision');
+        else if (SESION.rh) document.body.classList.add('rh');
         else if (SESION.cliente) document.body.classList.add('cliente');
         else document.body.classList.add('ninera');
 
@@ -391,6 +405,8 @@ async function login(rol) {
                     // ...
                 } else if (SESION.supervision) {
                     await Promise.all([cargarPerfil(), actualizarPlaneacionesSupervision()]);
+                } else if (SESION.rh) {
+                    await cargarPerfil();
                 } else if (SESION.cliente) {
                     await mostrarVistaCliente(false, true);
                 } else {
@@ -430,19 +446,24 @@ async function login(rol) {
 
             // 🕒 DETERMINAR VISTA ANTES DE MOSTRAR APP
             const headerAdmin = document.getElementById('header-admin');
-            if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
+            if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision || SESION.rh) ? 'block' : 'none';
+
+            // Ocultar todos los navs primero
+            document.querySelectorAll('.bottom-nav').forEach(n => n.style.display = 'none');
 
             if (SESION.admin) {
-                document.querySelector('.bottom-nav').style.display = 'none';
                 mostrarVistaAdmin();
             } else if (SESION.supervision) {
-                document.querySelector('.bottom-nav').style.display = 'none';
                 irVista('supervision');
+            } else if (SESION.rh) {
+                irVista('rh');
             } else if (SESION.cliente) {
-                document.querySelector('.bottom-nav').style.display = 'flex';
+                const navDefault = document.querySelector('.bottom-nav:not(#nav-supervision):not(#nav-ventas):not(#nav-rh)');
+                if (navDefault) navDefault.style.display = 'flex';
                 irVista('servicios');
             } else {
-                document.querySelector('.bottom-nav').style.display = 'flex';
+                const navDefault = document.querySelector('.bottom-nav:not(#nav-supervision):not(#nav-ventas):not(#nav-rh)');
+                if (navDefault) navDefault.style.display = 'flex';
                 irVista('servicios');
             }
 
@@ -503,11 +524,11 @@ function logout(isTimeout = false) {
     // Así que lo mantenemos en LAST_LOGIN_KEY siempre que se loguee con éxito.
 
     localStorage.removeItem('nyp_sesion');
-    SESION = { email: null, nombre: '', admin: false, supervision: false, cliente: false, token: null };
+    SESION = { email: null, nombre: '', admin: false, supervision: false, rh: false, cliente: false, token: null };
 
     document.getElementById('app').style.display = 'none';
     document.getElementById('auth').style.display = 'flex';
-    document.querySelector('.bottom-nav').style.display = 'none';
+    document.querySelectorAll('.bottom-nav').forEach(n => n.style.display = 'none');
 
     // Limpiar campos por seguridad, pero los rellenaremos si es necesario
     const emailField = document.getElementById('email');
@@ -3089,6 +3110,31 @@ function irVistaVentas(tab) {
     }
 }
 
+function irVistaRH(tab) {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    document.querySelectorAll('#nav-rh button').forEach(b => b.classList.remove('activo'));
+    const btn = document.getElementById('rnav-' + tab);
+    if (btn) btn.classList.add('activo');
+
+    const subviewCalendario = document.getElementById('rh-subvista-calendario');
+    const subviewCapacitaciones = document.getElementById('rh-subvista-capacitaciones');
+
+    if (tab === 'calendario') {
+        if (subviewCalendario) subviewCalendario.style.display = 'block';
+        if (subviewCapacitaciones) subviewCapacitaciones.style.display = 'none';
+        if (window.RHPanel) {
+            window.RHPanel.renderCalendar();
+        }
+    } else if (tab === 'capacitaciones') {
+        if (subviewCalendario) subviewCalendario.style.display = 'none';
+        if (subviewCapacitaciones) subviewCapacitaciones.style.display = 'block';
+        if (window.RHPanel) {
+            window.RHPanel.renderCapacitacionesDB();
+        }
+    }
+}
+window.irVistaRH = irVistaRH;
+
 
 async function mostrarVistaNinera() {
     ocultarTodo();
@@ -3124,6 +3170,10 @@ function irVista(nombre, skipLogic = false) {
         if (nombre === 'disponibilidad') target = 'actividades-cliente';
     }
 
+    if (target === 'rh' || SESION.rh) {
+        ocultarTodo();
+    }
+
     const vista = document.getElementById('vista-' + target);
     if (vista) vista.classList.add('activa');
 
@@ -3131,6 +3181,12 @@ function irVista(nombre, skipLogic = false) {
     if (target === 'comunidad') {
         if (window.Comunidad) {
             Comunidad.init();
+        }
+    }
+
+    if (target === 'rh') {
+        if (window.RHPanel) {
+            window.RHPanel.init();
         }
     }
 
@@ -3145,17 +3201,26 @@ function irVista(nombre, skipLogic = false) {
     }
 
     const navSuper = document.getElementById('nav-supervision');
-    const navDefault = document.querySelector('.bottom-nav:not(#nav-supervision):not(#nav-ventas)');
+    const navDefault = document.querySelector('.bottom-nav:not(#nav-supervision):not(#nav-ventas):not(#nav-rh)');
     const navVentas = document.getElementById('nav-ventas');
+    const navRH = document.getElementById('nav-rh');
 
-    if (target === 'supervision' && SESION.supervision) {
+    if (SESION.rh) {
+        if (navSuper) navSuper.style.display = 'none';
+        if (navDefault) navDefault.style.display = 'none';
+        if (navVentas) navVentas.style.display = 'none';
+        if (navRH) navRH.style.display = 'flex';
+        irVistaRH('calendario'); // Inicializar subvista por defecto en Calendario
+    } else if (target === 'supervision' && SESION.supervision) {
         if (navSuper) navSuper.style.display = 'flex';
         if (navDefault) navDefault.style.display = 'none';
         if (navVentas) navVentas.style.display = 'none';
+        if (navRH) navRH.style.display = 'none';
     } else {
         if (navSuper) navSuper.style.display = 'none';
         if (navDefault) navDefault.style.display = 'flex';
         if (navVentas) navVentas.style.display = 'none';
+        if (navRH) navRH.style.display = 'none';
     }
 
     document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('activo'));
@@ -3803,9 +3868,10 @@ window.addEventListener('load', async function () {
 
     //Inicializar UI según sesión
     if (SESION.email) {
-        document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente');
+        document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente', 'rh');
         if (SESION.admin) document.body.classList.add('admin');
         else if (SESION.supervision) document.body.classList.add('supervision');
+        else if (SESION.rh) document.body.classList.add('rh');
         else if (SESION.cliente) document.body.classList.add('cliente');
         else document.body.classList.add('ninera');
 
@@ -3813,7 +3879,7 @@ window.addEventListener('load', async function () {
         if (saludo) saludo.innerHTML = `<b>¡Hola!</b> `;
 
         const headerAdmin = document.getElementById('header-admin');
-        if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision) ? 'block' : 'none';
+        if (headerAdmin) headerAdmin.style.display = (SESION.admin || SESION.supervision || SESION.rh) ? 'block' : 'none';
 
         // 🔥 DETERMINAR VISTA ANTES DE MOSTRAR APP
         const preDeterminarVista = () => {
@@ -3823,6 +3889,9 @@ window.addEventListener('load', async function () {
             } else if (SESION.supervision) {
                 document.querySelector('.bottom-nav').style.display = 'none';
                 irVista('supervision');
+            } else if (SESION.rh) {
+                document.querySelector('.bottom-nav').style.display = 'none';
+                irVista('rh');
             } else if (SESION.cliente) {
                 document.querySelector('.bottom-nav').style.display = 'flex';
                 irVista('servicios');
@@ -3842,6 +3911,8 @@ window.addEventListener('load', async function () {
             try {
                 if (SESION.cliente) {
                     await mostrarVistaCliente(false, false);
+                } else if (SESION.rh) {
+                    await cargarPerfil();
                 } else if (!SESION.admin && !SESION.supervision) {
                     await mostrarVistaNinera();
                 }

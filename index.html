@@ -2838,6 +2838,10 @@
       <div id="vista-articulo" class="vista">
       </div>
 
+      <!-- VISTA RH (NUEVO) -->
+      <div id="vista-rh" class="vista">
+      </div>
+
 
 
 
@@ -3523,6 +3527,16 @@
           ⭐<span>Nanny Star</span>
         </button>
       </nav>
+
+      <!-- Nueva navegación flotante exclusiva para Recursos Humanos -->
+      <nav id="nav-rh" class="bottom-nav" style="display:none;">
+        <button id="rnav-calendario" onclick="irVistaRH('calendario')" class="activo">
+          📅<span>Calendario</span>
+        </button>
+        <button id="rnav-capacitaciones" onclick="irVistaRH('capacitaciones')">
+          👩‍🏫<span>Capacitaciones</span>
+        </button>
+      </nav>
     </div>
   </div>
 
@@ -4160,6 +4174,7 @@
   <script src="js/index.js"></script>
   <script src="js/puntos_star.js"></script>
   <script src="js/perfil_nanny_star.js"></script>
+  <script src="js/rh.js"></script>
 
 
   <script>

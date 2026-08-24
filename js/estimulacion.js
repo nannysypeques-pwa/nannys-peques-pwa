@@ -58,6 +58,9 @@ async function cargarFirebaseEstimulacion() {
         try {
             const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
             const auth = firebaseAuthModule.getAuth(_db.app);
+            if (typeof auth.authStateReady === 'function') {
+                await auth.authStateReady();
+            }
             if (!auth.currentUser && window.SESION && window.SESION.firebaseToken) {
                 await firebaseAuthModule.signInWithCustomToken(auth, window.SESION.firebaseToken);
             }
@@ -85,10 +88,18 @@ async function cargarFirebaseEstimulacion() {
         const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
         const auth = firebaseAuthModule.getAuth(_db.app);
 
+        if (typeof auth.authStateReady === 'function') {
+            await auth.authStateReady();
+        }
+
         if (!auth.currentUser && window.SESION && window.SESION.firebaseToken) {
             console.log("⏳ Autenticando Firebase en Estimulación...");
-            await firebaseAuthModule.signInWithCustomToken(auth, window.SESION.firebaseToken);
-            console.log("✅ Firebase autenticado en Estimulación.");
+            try {
+                await firebaseAuthModule.signInWithCustomToken(auth, window.SESION.firebaseToken);
+                console.log("✅ Firebase autenticado en Estimulación.");
+            } catch (authErr) {
+                console.warn("⚠️ Error en signInWithCustomToken en Estimulación:", authErr.message);
+            }
         }
 
         return _db;

@@ -9,6 +9,8 @@ const Comunidad = {
     estado: {
         inicializado: false,
         categoriaSeleccionada: null,
+        capacitacionesDb: [],
+        inscripcionesDb: [],
         datos: {
             articulos: [
                 {
@@ -9589,12 +9591,420 @@ const Comunidad = {
      * Inicializa el módulo la primera vez que se accede a la vista de Comunidad.
      */
     init: async function () {
-        if (this.estado.inicializado) return;
-
         console.log("Comunidad.init(): Inicializando módulo de comunidad premium...");
         this.inyectarEstilos();
+
+        window.inscribirseCapacitacion = (id) => this.inscribirseCapacitacion(id);
+        window.abrirModalAsistencia = (id, code) => this.abrirModalAsistencia(id, code);
+        window.descargarConstancia = (id) => this.descargarConstancia(id);
+
+        if (this.estado.inicializado) {
+            // Renderizar inmediatamente con los datos en caché
+            this.render();
+            // Actualizar silenciosamente de fondo
+            this.cargarCapacitaciones().then(() => this.render()).catch(console.error);
+            return;
+        }
+
         this.estado.inicializado = true;
+
+        try {
+            await this.cargarCapacitaciones();
+        } catch (e) {
+            console.error("Error al cargar capacitaciones en Comunidad.init():", e);
+        }
+
         this.render();
+    },
+
+    cargarCapacitaciones: async function() {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const { db } = await import('./firebase-config.js');
+                const { collection, query, orderBy, where, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                
+                // Cancelar listeners previos si existen
+                if (this.estado.unsubCapacitaciones) this.estado.unsubCapacitaciones();
+                if (this.estado.unsubInscripciones) this.estado.unsubInscripciones();
+
+                let resolvedCap = false;
+                let resolvedInsc = false;
+
+                const checkResolve = () => {
+                    if (resolvedCap && resolvedInsc) {
+                        resolve();
+                    }
+                };
+
+                // 1. Escuchar capacitaciones en tiempo real
+                const qCap = query(collection(db, 'capacitaciones'), orderBy('fecha', 'asc'));
+                this.estado.unsubCapacitaciones = onSnapshot(qCap, (snapCap) => {
+                    const caps = [];
+                    snapCap.forEach(doc => {
+                        caps.push({ id: doc.id, ...doc.data() });
+                    });
+                    this.estado.capacitacionesDb = caps;
+                    
+                    // Si ya está inicializado, re-renderizar ante cambios
+                    if (this.estado.inicializado) {
+                        this.render();
+                    }
+                    resolvedCap = true;
+                    checkResolve();
+                }, (err) => {
+                    console.error("Error en tiempo real (comunidad/capacitaciones):", err);
+                    resolvedCap = true;
+                    checkResolve();
+                });
+
+                // 2. Escuchar inscripciones en tiempo real para la niñera actual
+                if (window.SESION && window.SESION.email) {
+                    const qInsc = query(collection(db, 'inscripciones_capacitaciones'), where('nannyEmail', '==', window.SESION.email));
+                    this.estado.unsubInscripciones = onSnapshot(qInsc, (snapInsc) => {
+                        const inscs = [];
+                        const inscsMap = {};
+                        snapInsc.forEach(doc => {
+                            const data = doc.data();
+                            inscs.push(data.capacitacionId);
+                            inscsMap[data.capacitacionId] = data;
+                        });
+                        this.estado.inscripcionesDb = inscs;
+                        this.estado.inscripcionesDataMap = inscsMap;
+
+                        // Si ya está inicializado, re-renderizar ante cambios
+                        if (this.estado.inicializado) {
+                            this.render();
+                        }
+                        resolvedInsc = true;
+                        checkResolve();
+                    }, (err) => {
+                        console.error("Error en tiempo real (comunidad/inscripciones):", err);
+                        resolvedInsc = true;
+                        checkResolve();
+                    });
+                } else {
+                    this.estado.inscripcionesDb = [];
+                    resolvedInsc = true;
+                    checkResolve();
+                }
+
+            } catch (e) {
+                console.error("Error cargando capacitaciones de Firestore:", e);
+                this.estado.capacitacionesDb = [];
+                this.estado.inscripcionesDb = [];
+                reject(e);
+            }
+        });
+    },
+
+    inscribirseCapacitacion: async function(capacitacionId) {
+        if (!window.SESION || !window.SESION.email) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Inicia sesión',
+                text: 'Debes iniciar sesión para inscribirte.'
+            });
+            return;
+        }
+
+        const nannyEmail = window.SESION.email;
+        const nannyNombre = window.SESION.nombre || 'Niñera';
+
+        Swal.fire({
+            title: 'Inscribiendo...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        try {
+            const { db } = await import('./firebase-config.js');
+            const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+
+            let nannyCiudad = '—';
+            if (window.CACHE_CLIENTE && window.CACHE_CLIENTE.profile) {
+                nannyCiudad = window.CACHE_CLIENTE.profile.ciudad || window.CACHE_CLIENTE.profile.sucursal || window.CACHE_CLIENTE.profile.ciudad_sucursal || '—';
+            }
+
+            const docId = `${capacitacionId}_${nannyEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            await setDoc(doc(db, 'inscripciones_capacitaciones', docId), {
+                capacitacionId: capacitacionId,
+                nannyEmail: nannyEmail,
+                nannyNombre: nannyNombre,
+                nannyCiudad: nannyCiudad,
+                fecha_inscripcion: new Date().toISOString()
+            });
+
+            Swal.fire({
+                icon: 'success',
+                title: '¡Inscrita con éxito!',
+                text: 'Te has inscrito a la capacitación correctamente.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            await this.cargarCapacitaciones();
+            this.render();
+        } catch (e) {
+            console.error(e);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Hubo un error al inscribirte: ' + e.message
+            });
+        }
+    },
+
+    abrirModalAsistencia: async function(capacitacionId, codigoCorrecto) {
+        const { value: code } = await Swal.fire({
+            title: 'Pase de Lista 📝',
+            html: `
+                <div style="text-align: center; font-family: 'Plus Jakarta Sans', sans-serif;">
+                    <p style="font-size: 14px; color: #475569; margin-bottom: 15px;">
+                        El capacitador proyectará un <b>código de 4 dígitos</b>. Ingrésalo a continuación para marcar tu asistencia:
+                    </p>
+                    <div style="font-size: 28px; margin-bottom: 10px;">🔑</div>
+                </div>
+            `,
+            input: 'text',
+            inputPlaceholder: 'Código de 4 dígitos',
+            inputAttributes: {
+                maxlength: 4,
+                autocapitalize: 'off',
+                autocorrect: 'off',
+                style: 'text-align: center; font-size: 22px; font-weight: 800; letter-spacing: 6px; border-radius: 12px; border: 2px solid #cbd5e1; max-width: 200px; margin: 0 auto;'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Confirmar Asistencia ✅',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3BB6C4',
+            cancelButtonColor: '#475569',
+            customClass: {
+                container: 'swal-attendance-zindex'
+            },
+            didOpen: () => {
+                const swalContainer = document.querySelector('.swal-attendance-zindex');
+                if (swalContainer) {
+                    swalContainer.style.zIndex = '1200';
+                }
+            },
+            preConfirm: (val) => {
+                if (!val || val.trim().length !== 4) {
+                    Swal.showValidationMessage('El código debe ser de 4 dígitos');
+                    return false;
+                }
+                if (val.trim() !== String(codigoCorrecto)) {
+                    Swal.showValidationMessage('Código incorrecto. Verifica con tu capacitador.');
+                    return false;
+                }
+                return val.trim();
+            }
+        });
+
+        if (code) {
+            Swal.fire({
+                title: 'Registrando asistencia...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                const { db } = await import('./firebase-config.js');
+                const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                
+                const nannyEmail = window.SESION.email;
+                const docId = `${capacitacionId}_${nannyEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                const docRef = doc(db, 'inscripciones_capacitaciones', docId);
+                
+                await updateDoc(docRef, {
+                    asistio: true,
+                    fecha_asistencia: new Date().toISOString()
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Asistencia Registrada!',
+                    text: 'Tu asistencia a la capacitación ha sido marcada con éxito.',
+                    timer: 3000,
+                    showConfirmButton: false
+                });
+            } catch (err) {
+                console.error("Error al registrar asistencia:", err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo registrar la asistencia: ' + err.message
+                });
+            }
+        }
+    },
+
+    descargarConstancia: async function(capacitacionId) {
+        const cap = this.estado.capacitacionesDb.find(c => c.id === capacitacionId);
+        if (!cap) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'No se encontró la capacitación seleccionada.'
+            });
+            return;
+        }
+
+        let constanciaBase = cap.constancia_base || '';
+        let posNombreX = cap.pos_nombre_x || '50';
+        let posNombreY = cap.pos_nombre_y || '45';
+        let posDateX = cap.pos_date_x || '50';
+        let posDateY = cap.pos_date_y || '70';
+        let fontNombre = cap.font_nombre || '20';
+        let fontFecha = cap.font_fecha || '16';
+
+        // Si no tiene cargada la constancia en el evento (por ejemplo, si fue programado antes de diseñar la constancia),
+        // intentar resolverlo buscando en la colección de plantillas (capacitaciones_db) por coincidencia de título.
+        if (!constanciaBase) {
+            Swal.fire({
+                title: 'Buscando formato...',
+                text: 'Buscando el diseño de la constancia...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            try {
+                const { db } = await import('./firebase-config.js');
+                const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                const snap = await getDocs(collection(db, 'capacitaciones_db'));
+                const templates = [];
+                snap.forEach(d => templates.push({ id: d.id, ...d.data() }));
+
+                const targetTitle = cap.titulo.toLowerCase().trim();
+                const matchingTemplate = templates.find(t => {
+                    const tempTitle = (t.titulo || '').toLowerCase().trim();
+                    return tempTitle === targetTitle || tempTitle.includes(targetTitle) || targetTitle.includes(tempTitle);
+                });
+
+                if (matchingTemplate && matchingTemplate.constancia_base) {
+                    constanciaBase = matchingTemplate.constancia_base;
+                    posNombreX = matchingTemplate.pos_nombre_x || '50';
+                    posNombreY = matchingTemplate.pos_nombre_y || '45';
+                    posDateX = matchingTemplate.pos_date_x || '50';
+                    posDateY = matchingTemplate.pos_date_y || '70';
+                    fontNombre = matchingTemplate.font_nombre || '20';
+                    fontFecha = matchingTemplate.font_fecha || '16';
+                }
+            } catch (err) {
+                console.error("Error al buscar constancia en plantillas:", err);
+            }
+        }
+
+        if (!constanciaBase) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No disponible',
+                text: 'Esta capacitación no tiene un diseño de constancia configurado. Contacta a Recursos Humanos.'
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Generando constancia...',
+            text: 'Por favor espera un momento.',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        try {
+            const nannyNombre = window.SESION?.nombre || 'Niñera';
+            const fechaCap = cap.fecha || '';
+            
+            let fechaFormateada = '';
+            if (fechaCap) {
+                const [y, m, d] = fechaCap.split('-');
+                const dateObj = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+                fechaFormateada = dateObj.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' });
+            }
+
+            const imgBase = new Image();
+            imgBase.crossOrigin = 'anonymous';
+            imgBase.src = constanciaBase;
+            
+            imgBase.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = imgBase.width;
+                canvas.height = imgBase.height;
+                const ctx = canvas.getContext('2d');
+                
+                // Dibujar fondo
+                ctx.drawImage(imgBase, 0, 0);
+                
+                // Escala relativa comparada con el contenedor del diseñador (650px de ancho)
+                const scale = canvas.width / 650;
+                
+                // 1. Dibujar Nombre de la Niñera
+                const nameSize = parseFloat(fontNombre) * scale;
+                ctx.font = `bold ${nameSize}px 'Georgia', 'Times New Roman', serif`;
+                ctx.fillStyle = '#0f766e';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                const nameX = (parseFloat(posNombreX) / 100) * canvas.width;
+                const nameY = (parseFloat(posNombreY) / 100) * canvas.height;
+                ctx.fillText(nannyNombre, nameX, nameY);
+                
+                // 2. Dibujar Fecha de la Capacitación
+                if (fechaFormateada) {
+                    const dateSize = parseFloat(fontFecha) * scale;
+                    ctx.font = `bold ${dateSize}px 'Arial', 'Helvetica', sans-serif`;
+                    ctx.fillStyle = '#9f1239';
+                    
+                    const dateX = (parseFloat(posDateX) / 100) * canvas.width;
+                    const dateY = (parseFloat(posDateY) / 100) * canvas.height;
+                    ctx.fillText(fechaFormateada, dateX, dateY);
+                }
+                
+                // Exportar y descargar
+                try {
+                    const dataURL = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = `Constancia_${nannyNombre.replace(/[^a-zA-Z0-9]/g, '_')}_${cap.titulo.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+                    link.href = dataURL;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Constancia Descargada! 🎉',
+                        text: 'Tu constancia se ha generado y descargado correctamente.',
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+                } catch (err) {
+                    console.error("Error al exportar canvas:", err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error de exportación',
+                        text: 'No se pudo generar el archivo de imagen. Contacta al soporte.'
+                    });
+                }
+            };
+
+            imgBase.onerror = (err) => {
+                console.error("Error al cargar la imagen base de la constancia:", err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de formato',
+                    text: 'No se pudo cargar la imagen base del certificado.'
+                });
+            };
+            
+        } catch (e) {
+            console.error("Error al descargar constancia:", e);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Hubo un error inesperado al procesar la constancia: ' + e.message
+            });
+        }
     },
 
     /**
@@ -9861,6 +10271,103 @@ const Comunidad = {
             .btn-category.active {
                 background: var(--blue-main); color: white;
             }
+
+            /* --- ESTILOS CAPACITACIONES DINÁMICAS (RH) --- */
+            .capacitaciones-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 20px;
+                margin-top: 15px;
+                margin-bottom: 35px;
+            }
+            .capacitacion-card {
+                background: white;
+                border-radius: var(--radius-lg);
+                box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+                border: 1px solid rgba(232, 76, 154, 0.15);
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+            }
+            .capacitacion-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 15px 35px rgba(232, 76, 154, 0.15);
+            }
+            .capacitacion-img {
+                width: 100%;
+                height: 150px;
+                object-fit: cover;
+            }
+            .capacitacion-body {
+                padding: 15px;
+                display: flex;
+                flex-direction: column;
+                flex-grow: 1;
+            }
+            .capacitacion-tag {
+                font-size: 11px;
+                font-weight: 800;
+                color: #166534;
+                background: #DCFCE7;
+                padding: 3px 8px;
+                border-radius: var(--radius-full);
+                width: fit-content;
+                margin-bottom: 10px;
+                text-transform: uppercase;
+            }
+            .capacitacion-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: var(--text-main);
+                margin: 0 0 8px 0;
+                font-family: 'DM Serif Display', serif;
+            }
+            .capacitacion-desc {
+                font-size: 13px;
+                color: var(--text-muted);
+                line-height: 1.4;
+                margin-bottom: 12px;
+                flex-grow: 1;
+            }
+            .capacitacion-details {
+                font-size: 12px;
+                color: var(--text-muted);
+                margin-bottom: 15px;
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+            }
+            .capacitacion-details span {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+            .btn-inscribir {
+                width: 100%;
+                padding: 10px;
+                border-radius: 10px;
+                font-weight: 700;
+                font-size: 13px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                text-align: center;
+            }
+            .btn-inscribir.disponible {
+                background: var(--pink-main);
+                color: white;
+                box-shadow: 0 4px 10px rgba(232, 76, 154, 0.2);
+            }
+            .btn-inscribir.disponible:hover {
+                background: var(--pink-hover);
+                transform: scale(1.02);
+            }
+            .btn-inscribir.inscrita {
+                background: #e2e8f0;
+                color: #64748b;
+                cursor: not-allowed;
+            }
         `;
         document.head.appendChild(style);
     },
@@ -9911,6 +10418,73 @@ const Comunidad = {
             ? todosLosArticulos.filter(a => a.categoria === this.estado.categoriaSeleccionada)
             : todosLosArticulos;
 
+        let dynamicTrainingsHTML = '';
+        if (!esCliente && this.estado.capacitacionesDb && this.estado.capacitacionesDb.length > 0) {
+            dynamicTrainingsHTML = `
+                <div class="comunidad-section-header" style="margin-top: 30px;">
+                    <h3 class="comunidad-section-title">Capacitaciones Disponibles</h3>
+                </div>
+                <div class="capacitaciones-grid">
+                    ${this.estado.capacitacionesDb.map(cap => {
+                        const isInscrita = this.estado.inscripcionesDb && this.estado.inscripcionesDb.includes(cap.id);
+                        const inscData = this.estado.inscripcionesDataMap && this.estado.inscripcionesDataMap[cap.id];
+                        const asistio = inscData && inscData.asistio === true;
+                        const ameritaConstancia = inscData && inscData.amerita_constancia === true;
+
+                        let buttonHTML = '';
+                        if (ameritaConstancia) {
+                            buttonHTML = `
+                                <button class="btn-inscribir" style="background: var(--pink-main); color: white; border: none; cursor: pointer; font-weight: bold; border-radius: 20px; padding: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px; transition: all 0.2s; box-shadow: 0 4px 10px rgba(232, 76, 154, 0.2);" onclick="window.descargarConstancia('${cap.id}')">
+                                    🎓 Descargar Constancia
+                                </button>
+                            `;
+                        } else if (asistio) {
+                            buttonHTML = `
+                                <button class="btn-inscribir" style="background: #22c55e; color: white; border: none; cursor: default; font-weight: bold; border-radius: 20px; padding: 10px; width: 100%; display: flex; align-items: center; justify-content: center; gap: 5px;" disabled>
+                                    Asistencia Registrada ✅
+                                </button>
+                            `;
+                        } else if (isInscrita) {
+                            buttonHTML = `
+                                <button class="btn-inscribir" style="background: #3bb6c4; color: white; border: none; font-weight: bold; border-radius: 20px; padding: 10px; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; transition: background 0.2s;" onclick="window.abrirModalAsistencia('${cap.id}', '${escapeHtml(cap.codigo_asistencia || '')}')">
+                                    📝 Pase de Lista
+                                </button>
+                            `;
+                        } else {
+                            buttonHTML = `
+                                <button class="btn-inscribir disponible" onclick="window.inscribirseCapacitacion('${cap.id}')">
+                                    Inscribirme
+                                </button>
+                            `;
+                        }
+                        
+                        const fallbackImg = 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=500&q=80';
+                        const imgSrc = (cap.imagen && (cap.imagen.startsWith('http') || cap.imagen.startsWith('data:image'))) ? cap.imagen : fallbackImg;
+                        
+                        return `
+                            <div class="capacitacion-card">
+                                <img src="${imgSrc}" class="capacitacion-img" alt="${escapeHtml(cap.titulo)}">
+                                <div class="capacitacion-body">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                        <span class="capacitacion-tag">Capacitación</span>
+                                        ${isInscrita ? `<span style="background: #dcfce7; color: #166534; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;">Inscrita ✅</span>` : ''}
+                                    </div>
+                                    <h4 class="capacitacion-title">${escapeHtml(cap.titulo)}</h4>
+                                    <p class="capacitacion-desc">${escapeHtml(cap.descripcion || 'Sin descripción.')}</p>
+                                    <div class="capacitacion-details">
+                                        <span>📅 <b>Fecha:</b> ${escapeHtml(cap.fecha)}</span>
+                                        <span>⏰ <b>Horario:</b> ${escapeHtml(cap.horario || 'Por definir')}</span>
+                                        <span>💰 <b>Costo:</b> ${escapeHtml(cap.costo ? ('$' + cap.costo) : 'Gratuito')}</span>
+                                    </div>
+                                    ${buttonHTML}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
         container.innerHTML = `
             <div class="comunidad-header">
                 <h2 class="comunidad-title">Nannys y Peques Comunidad</h2>
@@ -9933,6 +10507,8 @@ const Comunidad = {
                     </div>
                 `).join('')}
             </div>
+
+            ${dynamicTrainingsHTML}
 
             <div class="discounts-banner">
                 <div class="discounts-content">
