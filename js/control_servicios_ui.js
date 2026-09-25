@@ -5232,10 +5232,10 @@ let _matrizLiveSyncTimer = null;
 let _isMatrizSyncing = false;
 
 /**
- * Consulta Supabase en segundo plano de manera ligera para verificar si hubo confirmaciones
- * de asistencia de niñeras en la semana actual y pintar en vivo la matriz sin refrescar.
+ * Consulta Supabase en segundo plano y sincroniza en vivo filas, textos, orden y asistencia
+ * para que múltiples administradores vean exactamente la misma información en tiempo real.
  */
-async function sincronizarAsistenciaMatrizEnVivo() {
+async function sincronizarAsistenciaMatrizEnVivo(forceFullRender = false) {
   if (_isMatrizSyncing) return;
   const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
   if (!client) return;
@@ -5250,61 +5250,126 @@ async function sincronizarAsistenciaMatrizEnVivo() {
     const { data: rows, error } = await client
       .from('control_servicios')
       .select('*')
-      .eq('semana_iso', semanaIso);
+      .eq('semana_iso', semanaIso)
+      .order('orden', { ascending: true })
+      .order('id', { ascending: true });
 
     if (error || !Array.isArray(rows)) {
       _isMatrizSyncing = false;
       return;
     }
 
-    const activeEl = document.activeElement;
+    const rowsDecoded = rows.map(r => decodificarServicioSupabase(r));
+    _cacheServiciosSemanaCompleta = rowsDecoded;
+    actualizarSelectorCiudadUI();
 
-    rows.forEach(rowRecord => {
+    const ciudadActualNorm = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(_currentCiudadMatriz || 'Puebla') : (_currentCiudadMatriz || 'Puebla').toLowerCase();
+    const rowsCiudad = rowsDecoded.filter(r => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(r.ciudad || 'Puebla') : (r.ciudad || 'Puebla').toLowerCase()) === ciudadActualNorm);
+    const existingRows = tableBody.querySelectorAll('tr.cs-row-item');
+
+    const activeEl = document.activeElement;
+    const isUserEditing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA') && activeEl.closest('#csTableBody');
+
+    // Detectar si el conteo de filas o el orden de IDs cambió en la ciudad activa
+    let needsFullRender = forceFullRender || (existingRows.length !== rowsCiudad.length);
+    if (!needsFullRender) {
+      for (let i = 0; i < existingRows.length; i++) {
+        const trId = existingRows[i].getAttribute('data-id');
+        if (trId !== rowsCiudad[i]?.id) {
+          needsFullRender = true;
+          break;
+        }
+      }
+    }
+
+    // Si hubo filas agregadas, eliminadas o reordenadas y el usuario no está tecleando activamente
+    if (needsFullRender && !isUserEditing) {
+      renderizarMatrizServicios(rowsDecoded);
+      _isMatrizSyncing = false;
+      return;
+    }
+
+    // Actualización granular de celdas existentes en vivo
+    rowsDecoded.forEach(rowRecord => {
       const tr = tableBody.querySelector(`tr[data-id="${rowRecord.id}"]`);
       if (!tr) return;
 
+      // Actualizar campos de texto si no están bajo edición activa local
+      const textFields = [
+        'cliente_nombre', 'cliente_email', 'zona', 'nanny_nombre',
+        'tarifa_cliente', 'tarifa_nanny', 'saldo_cliente', 'pago_nanny',
+        'alerta',
+        'lun_inicio', 'lun_fin', 'mar_inicio', 'mar_fin', 'mie_inicio', 'mie_fin',
+        'jue_inicio', 'jue_fin', 'vie_inicio', 'vie_fin', 'sab_inicio', 'sab_fin',
+        'dom_inicio', 'dom_fin'
+      ];
+
+      textFields.forEach(f => {
+        const inp = tr.querySelector(`[data-field="${f}"]`);
+        if (inp && inp !== activeEl) {
+          let newVal = rowRecord[f] || '';
+          if (f.endsWith('_inicio') || f.endsWith('_fin')) {
+            newVal = typeof formatearHora12 === 'function' ? formatearHora12(newVal) : newVal;
+            if (inp.value !== newVal) {
+              inp.value = newVal;
+              if (typeof handleTimeInput === 'function') handleTimeInput(inp);
+            }
+          } else {
+            if (inp.value !== newVal) {
+              inp.value = newVal;
+            }
+          }
+        }
+      });
+
+      // Actualizar selector de tipo de servicio
+      const svcSelect = tr.querySelector('[data-field="tipo_servicio"]');
+      if (svcSelect && svcSelect !== activeEl) {
+        const newSvc = rowRecord.tipo_servicio || '';
+        if (svcSelect.value !== newSvc) {
+          svcSelect.value = newSvc;
+          if (typeof getServiceClass === 'function') {
+            svcSelect.className = 'cs-service-select ' + getServiceClass(newSvc);
+          }
+        }
+      }
+
+      // Actualizar checkboxes de OK cliente y OK niñera
+      const okCli = tr.querySelector('[data-field="ok_cliente"]');
+      if (okCli && okCli !== activeEl) {
+        okCli.checked = !!rowRecord.ok_cliente;
+      }
+      const okNan = tr.querySelector('[data-field="ok_nanny"]');
+      if (okNan && okNan !== activeEl) {
+        okNan.checked = !!rowRecord.ok_nanny;
+      }
+
+      // Actualizar observaciones y tags
+      const inpObs = tr.querySelector('[data-field="observaciones"]');
+      if (inpObs && inpObs !== activeEl) {
+        const { textoLimpio } = typeof extraerColoresDeObservaciones === 'function' ? extraerColoresDeObservaciones(rowRecord.observaciones || '') : { textoLimpio: rowRecord.observaciones || '' };
+        if (inpObs.value !== textoLimpio) {
+          inpObs.value = textoLimpio;
+        }
+      }
+
+      // Sincronizar estado visual de confirmación de niñera
       const tdNanny = tr.querySelector('td.col-nanny');
       const nannyInput = tr.querySelector('[data-field="nanny_nombre"]');
-      if (!tdNanny) return;
+      if (tdNanny) {
+        const datosFila = typeof extraeDatosFila === 'function' ? (extraeDatosFila(tr) || {}) : {};
+        const servicioCompleto = {
+          ...datosFila,
+          ...rowRecord,
+          nanny_nombre: rowRecord.nanny_nombre || datosFila.nanny_nombre || (nannyInput ? nannyInput.value : '') || '',
+          observaciones: rowRecord.observaciones !== undefined ? rowRecord.observaciones : (datosFila.observaciones || ''),
+          asistencia_nanny: rowRecord.asistencia_nanny !== undefined ? rowRecord.asistencia_nanny : (datosFila.asistencia_nanny || {})
+        };
 
-      const datosFila = typeof extraeDatosFila === 'function' ? (extraeDatosFila(tr) || {}) : {};
-      const servicioCompleto = {
-        ...datosFila,
-        ...rowRecord,
-        nanny_nombre: rowRecord.nanny_nombre || datosFila.nanny_nombre || (nannyInput ? nannyInput.value : '') || '',
-        observaciones: rowRecord.observaciones !== undefined ? rowRecord.observaciones : (datosFila.observaciones || ''),
-        asistencia_nanny: rowRecord.asistencia_nanny !== undefined ? rowRecord.asistencia_nanny : (datosFila.asistencia_nanny || {})
-      };
+        const asistCompleta = typeof verificarAsistenciaNannyCompleta === 'function' ? verificarAsistenciaNannyCompleta(servicioCompleto) : false;
+        const yaMarcada = tdNanny.classList.contains('cs-nanny-confirmed');
 
-      const asistCompleta = verificarAsistenciaNannyCompleta(servicioCompleto);
-      const yaMarcada = tdNanny.classList.contains('cs-nanny-confirmed');
-
-      if (asistCompleta) {
-        // Resguardar SIEMPRE el tag de asistencia actualizado en atributos del DOM y en caché de memoria
-        const mAsist = (rowRecord.observaciones || '').match(/<!--asistencia_nanny:.*?-->/);
-        let tagAsistStr = mAsist ? mAsist[0] : '';
-        if (!tagAsistStr && rowRecord.asistencia_nanny && typeof rowRecord.asistencia_nanny === 'object' && Object.keys(rowRecord.asistencia_nanny).length > 0) {
-          tagAsistStr = `<!--asistencia_nanny:${JSON.stringify(rowRecord.asistencia_nanny)}-->`;
-        }
-        if (tagAsistStr) {
-          const inputObs = tr.querySelector('[data-field="observaciones"]');
-          if (inputObs) {
-            inputObs.setAttribute('data-asistencia-tag', encodeURIComponent(tagAsistStr));
-            inputObs.setAttribute('data-asistencia-backup', encodeURIComponent(tagAsistStr));
-          }
-          tr.setAttribute('data-asistencia-tag', encodeURIComponent(tagAsistStr));
-          tr.setAttribute('data-asistencia-backup', encodeURIComponent(tagAsistStr));
-          tdNanny.setAttribute('data-asistencia-backup', encodeURIComponent(tagAsistStr));
-          if (rowRecord.id) {
-            window._cacheAsistenciaServicios = window._cacheAsistenciaServicios || {};
-            try {
-              const parsed = tagAsistStr.includes('<!--asistencia_nanny:') ? JSON.parse(tagAsistStr.match(/<!--asistencia_nanny:(.*?)-->/)[1]) : rowRecord.asistencia_nanny;
-              window._cacheAsistenciaServicios[rowRecord.id] = parsed;
-            } catch (_) { }
-          }
-        }
-
-        if (!yaMarcada) {
+        if (asistCompleta && !yaMarcada) {
           tdNanny.classList.add('cs-nanny-confirmed');
           tdNanny.setAttribute('title', '✓ Asistencia confirmada por la niñera para todos los servicios de la semana');
           tdNanny.setAttribute('data-nanny-confirmada', servicioCompleto.nanny_nombre || '');
@@ -5312,54 +5377,27 @@ async function sincronizarAsistenciaMatrizEnVivo() {
           tdNanny.style.setProperty('--custom-border', '#DCFCE7');
           tdNanny.style.setProperty('background-color', '#DCFCE7', 'important');
           tdNanny.style.setProperty('border-color', '#86EFAC', 'important');
-
           if (nannyInput && nannyInput !== activeEl) {
             nannyInput.style.setProperty('--custom-bg', '#DCFCE7');
             nannyInput.style.setProperty('--custom-border', '#DCFCE7');
             nannyInput.style.setProperty('background-color', '#DCFCE7', 'important');
             nannyInput.style.setProperty('border-color', '#DCFCE7', 'important');
             nannyInput.style.setProperty('color', '#15803D', 'important');
-            nannyInput.setAttribute('data-nanny-asignada', servicioCompleto.nanny_nombre || '');
-            if (!nannyInput.value && servicioCompleto.nanny_nombre) {
-              nannyInput.value = servicioCompleto.nanny_nombre;
-            }
           }
-
-          // Animación suave de confirmación
-          tdNanny.style.transition = 'transform 0.25s ease, background-color 0.4s ease';
-          tdNanny.style.transform = 'scale(1.02)';
-          setTimeout(() => { if (tdNanny) tdNanny.style.transform = ''; }, 300);
-        }
-      } else {
-        if (yaMarcada) {
+        } else if (!asistCompleta && yaMarcada) {
           tdNanny.classList.remove('cs-nanny-confirmed');
           tdNanny.removeAttribute('title');
           tdNanny.removeAttribute('data-nanny-confirmada');
-
-          const customBg = tdNanny.getAttribute('data-custom-bg');
-          if (customBg && customBg !== '#DBEAFE' && customBg !== '#DCFCE7') {
-            tdNanny.style.setProperty('--custom-bg', customBg);
-            tdNanny.style.setProperty('--custom-border', customBg);
-            tdNanny.style.setProperty('background-color', customBg, 'important');
-            tdNanny.style.setProperty('border-color', customBg, 'important');
-            if (nannyInput && nannyInput !== activeEl) {
-              nannyInput.style.setProperty('--custom-bg', customBg);
-              nannyInput.style.setProperty('--custom-border', customBg);
-              nannyInput.style.setProperty('background-color', customBg, 'important');
-              nannyInput.style.setProperty('border-color', customBg, 'important');
-            }
-          } else {
-            tdNanny.style.removeProperty('--custom-bg');
-            tdNanny.style.removeProperty('--custom-border');
-            tdNanny.style.backgroundColor = '';
-            tdNanny.style.borderColor = '';
-            if (nannyInput && nannyInput !== activeEl) {
-              nannyInput.style.removeProperty('--custom-bg');
-              nannyInput.style.removeProperty('--custom-border');
-              nannyInput.style.backgroundColor = '';
-              nannyInput.style.borderColor = '';
-              nannyInput.style.color = '';
-            }
+          tdNanny.style.removeProperty('--custom-bg');
+          tdNanny.style.removeProperty('--custom-border');
+          tdNanny.style.backgroundColor = '';
+          tdNanny.style.borderColor = '';
+          if (nannyInput && nannyInput !== activeEl) {
+            nannyInput.style.removeProperty('--custom-bg');
+            nannyInput.style.removeProperty('--custom-border');
+            nannyInput.style.backgroundColor = '';
+            nannyInput.style.borderColor = '';
+            nannyInput.style.color = '';
           }
         }
       }
@@ -5438,7 +5476,13 @@ function suscribirRealtimeMatrizServicios(semanaIso) {
             obtenerPlantillaServiciosBase().then(rows => renderizarTablaServiciosBase(rows));
           }
         }
+      } else {
+        // Notificación de cambio o guardado masivo en la matriz de servicios
+        sincronizarAsistenciaMatrizEnVivo();
       }
+    })
+    .on('broadcast', { event: 'control_servicios_update' }, () => {
+      sincronizarAsistenciaMatrizEnVivo();
     })
     .subscribe((status) => {
       console.log(`⚡ [Realtime Control Servicios] Canal matriz suscrito: ${status}`);
