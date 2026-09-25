@@ -34,14 +34,19 @@ function getCorsHeaders(request) {
     origin === "https://nannysypeques.com" ||
     origin === "https://www.nannysypeques.com" ||
     origin.endsWith(".nannysypeques.com") ||
+    origin === "https://nannysypeques.com.mx" ||
+    origin === "https://www.nannysypeques.com.mx" ||
+    origin === "https://app.nannysypeques.com.mx" ||
+    origin.endsWith(".nannysypeques.com.mx") ||
     origin === "https://nannys-peques-pwa.pages.dev" ||
+    origin.endsWith(".pages.dev") ||
     origin.startsWith("http://localhost:") ||
     origin === "http://localhost" ||
     origin.startsWith("http://127.0.0.1:") ||
     origin === "http://127.0.0.1"
   );
 
-  const allowedOriginHeader = isAllowedOrigin ? origin : "https://nannysypeques.com";
+  const allowedOriginHeader = isAllowedOrigin ? origin : "https://app.nannysypeques.com.mx";
 
   return {
     "Access-Control-Allow-Origin": allowedOriginHeader,

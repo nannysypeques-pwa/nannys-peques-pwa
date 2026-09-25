@@ -16,7 +16,7 @@ describe('Nannys Push & Auth Worker', () => {
 		const request = new Request('http://example.com/api/auth/firebase-token', {
 			method: 'OPTIONS',
 			headers: {
-				'Origin': 'https://nannysypeques.com',
+				'Origin': 'https://app.nannysypeques.com.mx',
 				'Access-Control-Request-Method': 'POST'
 			}
 		});
@@ -24,7 +24,7 @@ describe('Nannys Push & Auth Worker', () => {
 		const response = await worker.fetch(request, env, ctx);
 		await waitOnExecutionContext(ctx);
 		expect(response.status).toBe(204);
-		expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+		expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://app.nannysypeques.com.mx');
 	});
 
 	it('rejects unauthenticated requests to /api/auth/firebase-token', async () => {
