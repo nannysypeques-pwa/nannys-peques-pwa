@@ -46,6 +46,7 @@ function cambiarCiudadMatriz(ciudad) {
   const ciudadLimpia = String(ciudad).trim();
   _currentCiudadMatriz = ciudadLimpia;
   try {
+    sessionStorage.setItem('nyp_admin_manual_ciudad_selected', 'true');
     localStorage.setItem('nyp_admin_current_ciudad', ciudadLimpia);
   } catch (e) { }
 
@@ -64,19 +65,54 @@ function cambiarCiudadMatriz(ciudad) {
 window.cambiarCiudadMatriz = cambiarCiudadMatriz;
 
 /**
- * Actualiza el estado visual (.active) de los botones/pastillas del selector de ciudad
+ * Actualiza el estado visual (.active) y los contadores en vivo de los botones del selector de ciudad
  */
 function actualizarSelectorCiudadUI() {
   const ciudadActual = (_currentCiudadMatriz || 'Puebla').trim().toLowerCase();
   const pills = document.querySelectorAll('.cs-city-pill');
+
+  // Conteo de servicios con datos en cada ciudad para la semana activa
+  const conteoPorCiudad = {};
+  if (Array.isArray(_cacheServiciosSemanaCompleta)) {
+    _cacheServiciosSemanaCompleta.forEach(s => {
+      if (s && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(s))) {
+        const cNorm = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(s.ciudad || 'Puebla') : (s.ciudad || 'Puebla').toLowerCase();
+        conteoPorCiudad[cNorm] = (conteoPorCiudad[cNorm] || 0) + 1;
+      }
+    });
+  }
+
   pills.forEach(p => {
-    const pCiudad = (p.getAttribute('data-ciudad') || '').trim().toLowerCase();
+    const rawCiudad = p.getAttribute('data-ciudad') || '';
+    const pCiudad = rawCiudad.trim().toLowerCase();
+    const pCiudadNorm = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(rawCiudad) : pCiudad;
+    const count = conteoPorCiudad[pCiudadNorm] || 0;
+
     if (pCiudad === ciudadActual) {
       p.classList.add('active');
       p.setAttribute('aria-selected', 'true');
     } else {
       p.classList.remove('active');
       p.setAttribute('aria-selected', 'false');
+    }
+
+    // Badge numérico con los servicios activos en esa ciudad
+    let badge = p.querySelector('.cs-city-count-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'cs-city-count-badge';
+      badge.style.marginLeft = '4px';
+      badge.style.fontSize = '11px';
+      badge.style.fontWeight = '700';
+      badge.style.opacity = '0.9';
+      p.appendChild(badge);
+    }
+    if (count > 0) {
+      badge.textContent = ` (${count})`;
+      badge.style.display = 'inline';
+    } else {
+      badge.textContent = '';
+      badge.style.display = 'none';
     }
   });
 }
@@ -1694,6 +1730,7 @@ function renderizarMatrizServicios(servicios) {
 
   const serviciosList = Array.isArray(servicios) ? servicios : [];
   _cacheServiciosSemanaCompleta = serviciosList;
+  actualizarSelectorCiudadUI();
 
   // Filtrar exclusivamente por la ciudad activa seleccionada en la matriz
   const ciudadFiltroNorm = normalizarTextoCS(_currentCiudadMatriz || 'Puebla');
@@ -6274,22 +6311,34 @@ async function cargarMatrizServiciosSupabase(semanaIso) {
     // Decodificar metadatos, bloques, colores, saldos y pagos
     rows = rows.map(s => decodificarServicioSupabase(s));
 
-    // Si Supabase devuelve 0 filas, verificar si existía respaldo en LocalStorage para esta misma semana
-    // para evitar que un refresco borre cambios locales recientes que no se alcanzaron a subir
-    if (rows.length === 0) {
-      try {
-        const localKey = 'nyp_admin_servicios_matriz_' + semanaIso;
-        const localStr = localStorage.getItem(localKey);
-        if (localStr) {
-          const cachedRows = JSON.parse(localStr);
-          if (Array.isArray(cachedRows) && cachedRows.length > 0) {
+    // Sincronización bidireccional inteligente:
+    // Si LocalStorage tiene filas locales que no existen en Supabase (o si Supabase devolvió 0 filas),
+    // subirlas automáticamente a Supabase para que todos los demás dispositivos y administradores las vean
+    try {
+      const localKey = 'nyp_admin_servicios_matriz_' + semanaIso;
+      const localStr = localStorage.getItem(localKey);
+      if (localStr) {
+        const cachedRows = JSON.parse(localStr);
+        if (Array.isArray(cachedRows) && cachedRows.length > 0) {
+          if (rows.length === 0) {
             console.log(`🔄 [Respaldo Local] Sincronizando ${cachedRows.length} servicios de LocalStorage hacia Supabase para ${semanaIso}...`);
             rows = cachedRows.map(s => decodificarServicioSupabase(s));
             await ejecutarUpsertControlServicios(client, rows);
+          } else {
+            const idsEnSupabase = new Set(rows.map(r => r.id));
+            const filasFaltantes = cachedRows
+              .filter(cr => cr && cr.id && !idsEnSupabase.has(cr.id))
+              .map(cr => decodificarServicioSupabase(cr));
+
+            if (filasFaltantes.length > 0) {
+              console.log(`🔄 [Sincronización Local -> Supabase] Subiendo ${filasFaltantes.length} filas locales faltantes a Supabase para ${semanaIso}...`);
+              filasFaltantes.forEach(f => rows.push(f));
+              await ejecutarUpsertControlServicios(client, filasFaltantes);
+            }
           }
         }
-      } catch (eCache) { }
-    }
+      }
+    } catch (eCache) { }
 
     // Si la semana está completamente nueva (0 servicios en Supabase y 0 en LocalStorage),
     // hereda los bloques persistentes únicamente desde el lunes inmediatamente anterior
@@ -6344,6 +6393,26 @@ async function cargarMatrizServiciosSupabase(semanaIso) {
     try {
       localStorage.setItem('nyp_admin_servicios_matriz_' + semanaIso, JSON.stringify(rows));
     } catch (e) { }
+
+    // Auto-selección inteligente: Si la ciudad activa por defecto (Puebla) tiene 0 servicios,
+    // pero otra ciudad (ej. Xalapa) sí tiene servicios registrados en esta semana cargada desde Supabase,
+    // y el admin NO ha hecho una selección manual forzada en esta sesión, auto-enfocar la ciudad con datos.
+    if (rows.length > 0 && typeof sessionStorage !== 'undefined' && !sessionStorage.getItem('nyp_admin_manual_ciudad_selected')) {
+      const cNormActual = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(_currentCiudadMatriz || 'Puebla') : (_currentCiudadMatriz || 'Puebla').toLowerCase();
+      const serviciosEnCiudadActual = rows.filter(r => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(r.ciudad || 'Puebla') : (r.ciudad || 'Puebla').toLowerCase()) === cNormActual && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(r))).length;
+      if (serviciosEnCiudadActual === 0) {
+        const ciudades = ['Xalapa', 'Puebla', 'Querétaro', 'CDMX'];
+        const ciudadConServicios = ciudades.find(c => {
+          const cn = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(c) : c.toLowerCase();
+          return rows.some(r => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(r.ciudad || 'Puebla') : (r.ciudad || 'Puebla').toLowerCase()) === cn && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(r)));
+        });
+        if (ciudadConServicios) {
+          console.log(`🏙️ [Control de Servicios] Auto-enfocando ciudad con datos activos (${ciudadConServicios})`);
+          _currentCiudadMatriz = ciudadConServicios;
+          try { localStorage.setItem('nyp_admin_current_ciudad', ciudadConServicios); } catch (_) {}
+        }
+      }
+    }
 
     renderizarMatrizServicios(rows);
     suscribirRealtimeMatrizServicios(semanaIso);

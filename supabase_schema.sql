@@ -49,8 +49,14 @@ BEGIN
         RETURN FALSE;
     END IF;
 
-    -- 1. Validar rol seguro en app_metadata (sólo asignable vía backend/service_role)
-    app_role := LOWER(COALESCE(auth.jwt()->'app_metadata'->>'role', ''));
+    -- 1. Validar rol seguro en app_metadata o user_metadata (JWT)
+    app_role := LOWER(COALESCE(
+        auth.jwt()->'app_metadata'->>'role',
+        auth.jwt()->'user_metadata'->>'role',
+        auth.jwt()->'user_metadata'->>'rol',
+        auth.jwt()->>'role',
+        ''
+    ));
     IF app_role IN ('staff', 'admin', 'supervision', 'coordinacion') THEN
         RETURN TRUE;
     END IF;
