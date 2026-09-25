@@ -1,0 +1,392 @@
+/* ==========================================================================
+   VISTA ACTIVIDADES CLIENTE (PLANEACIONES PEDAGÓGICAS) - NANNYS Y PEQUES
+   Diseño UI/UX contemporáneo integrado al ecosistema mobile del cliente
+   ========================================================================== */
+
+#vista-actividades-cliente {
+  background: transparent !important;
+  min-height: 100vh;
+  padding: 10px 14px 110px 14px;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0F172A;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Encabezado principal */
+.act-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-top: 6px;
+  margin-bottom: 16px;
+}
+
+.act-header-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+
+.act-header-subtitle {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #64748B;
+  margin: 4px 0 0 0;
+  line-height: 1.35;
+}
+
+.act-refresh-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #E84C9A;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.act-refresh-btn:active {
+  transform: scale(0.92) rotate(45deg);
+}
+
+/* Selector de Semanas (Tabs Segmentados) */
+.act-tabs-container {
+  display: flex;
+  background: #F1F5F9;
+  padding: 4px;
+  border-radius: 14px;
+  margin-bottom: 18px;
+  gap: 4px;
+}
+
+.act-tab-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  outline: none;
+}
+
+.act-tab-btn.active {
+  background: #FFFFFF;
+  color: #0F172A;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.act-tab-badge {
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(232, 76, 154, 0.12);
+  color: #E84C9A;
+  font-weight: 800;
+}
+
+.act-tab-btn.active .act-tab-badge {
+  background: #E84C9A;
+  color: #FFFFFF;
+}
+
+/* Tarjeta de Resumen o Info */
+.act-info-banner {
+  background: linear-gradient(135deg, #FFF0F6 0%, #F0F9FF 100%);
+  border: 1px solid rgba(232, 76, 154, 0.15);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.act-info-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.act-info-text {
+  font-size: 12.5px;
+  color: #334155;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.act-info-text strong {
+  color: #0F172A;
+}
+
+/* Listado de Actividades / Planeaciones */
+.act-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Tarjeta individual de Actividad */
+.act-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  border: 1px solid #F1F5F9;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  padding: 18px 18px 16px 18px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.act-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #E84C9A, #00B4D8);
+  border-radius: 4px 0 0 4px;
+}
+
+.act-card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.act-day-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: #FFF1F2;
+  color: #E11D48;
+}
+
+.act-area-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #F1F5F9;
+  color: #475569;
+}
+
+.act-area-pill.motriz { background: #EFF6FF; color: #1D4ED8; }
+.act-area-pill.cognitivo { background: #FAF5FF; color: #6D28D9; }
+.act-area-pill.lenguaje { background: #FDF2F8; color: #BE185D; }
+.act-area-pill.socioemocional { background: #ECFDF5; color: #047857; }
+.act-area-pill.sensorial { background: #FFFBEB; color: #B45309; }
+
+.act-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+}
+
+.act-objective-box {
+  background: #F8FAFC;
+  border-left: 3px solid #00B4D8;
+  border-radius: 0 10px 10px 0;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.act-objective-box b {
+  color: #0F172A;
+}
+
+.act-details-toggle {
+  background: transparent;
+  border: none;
+  color: #00B4D8;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  outline: none;
+}
+
+.act-expanded-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #E2E8F0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.act-desc-block {
+  margin-bottom: 10px;
+}
+
+.act-desc-block strong {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #64748B;
+  margin-bottom: 3px;
+}
+
+.act-materials-block {
+  margin-bottom: 12px;
+  background: #F8FAFC;
+  padding: 8px 12px;
+  border-radius: 10px;
+}
+
+.act-materials-block strong {
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #64748B;
+  margin-bottom: 3px;
+}
+
+.act-gallery {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.act-img {
+  width: 100%;
+  max-width: 220px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid #E2E8F0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.act-img:hover {
+  transform: scale(1.02);
+}
+
+.act-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid #F1F5F9;
+  font-size: 11.5px;
+  color: #64748B;
+}
+
+.act-nanny-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+
+.act-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.act-status-badge.revisada {
+  background: #ECFDF5;
+  color: #047857;
+}
+
+.act-status-badge.pendiente {
+  background: #FFFBEB;
+  color: #B45309;
+}
+
+/* Estado Vacío (Empty State) */
+.act-empty-state {
+  background: #FFFFFF;
+  border: 2px dashed #E2E8F0;
+  border-radius: 20px;
+  padding: 36px 20px;
+  text-align: center;
+  margin: 10px 0;
+}
+
+.act-empty-icon {
+  font-size: 44px;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+
+.act-empty-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 6px 0;
+}
+
+.act-empty-desc {
+  font-size: 13px;
+  color: #64748B;
+  max-width: 320px;
+  margin: 0 auto 16px auto;
+  line-height: 1.45;
+}
+
+.act-empty-action-btn {
+  background: #FFF0F6;
+  color: #E84C9A;
+  border: 1px solid rgba(232, 76, 154, 0.2);
+  padding: 8px 18px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.act-empty-action-btn:active {
+  transform: scale(0.95);
+}

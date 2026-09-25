@@ -1,0 +1,650 @@
+/* =========================================================================
+   NANNYS Y PEQUES - MODAL DE BITÁCORA CONTEMPORÁNEO (REDiseño UI)
+   Inspirado en estética mobile-first de alto impacto
+   ========================================================================= */
+
+/* Bloqueo de scroll global y ocultar barra de navegación cuando el modal de bitácora está abierto */
+body.bitacora-modal-open {
+  overflow: hidden !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y;
+}
+
+body.bitacora-modal-open .bottom-nav,
+body.bitacora-modal-open #nav-supervision,
+body.bitacora-modal-open #nav-ventas,
+body.bitacora-modal-open #nav-rh {
+  display: none !important;
+}
+
+html.bitacora-modal-open {
+  overflow: hidden !important;
+}
+
+#bitacoraBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1000005 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.bit-modal-card {
+  width: 100%;
+  max-width: 580px;
+  max-height: 92vh;
+  background: #fcfbfa;
+  border-radius: 32px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  animation: bitModalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes bitModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Header superior del modal */
+.bit-header-bar {
+  padding: 20px 24px 14px 24px;
+  background: #fcfbfa;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid rgba(241, 245, 249, 0.8);
+  position: relative;
+  z-index: 10;
+}
+
+.bit-back-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #fee2e2;
+  color: #ec4899;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.08);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.bit-back-btn:hover {
+  background: #fff1f5;
+  transform: scale(1.05);
+}
+
+.bit-header-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.bit-main-title {
+  margin: 0;
+  font-family: 'DM Sans', 'Nunito Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: -0.4px;
+  line-height: 1.2;
+}
+
+.bit-sub-title {
+  margin: 3px 0 0 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* Estado de auto-guardado en la esquina */
+.bit-save-badge {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  margin-top: 4px;
+  width: fit-content;
+}
+
+.bit-save-badge.saving {
+  color: #ec4899;
+  background: #fff1f5;
+  border-color: #fce7f3;
+}
+
+.bit-save-badge.saved {
+  color: #059669;
+  background: #ecfdf5;
+  border-color: #d1fae5;
+}
+
+.bit-save-badge.error {
+  color: #dc2626;
+  background: #fef2f2;
+  border-color: #fee2e2;
+}
+
+.bit-save-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ec4899;
+  animation: bitPulse 1s infinite alternate ease-in-out;
+}
+
+@keyframes bitPulse {
+  from {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+/* Contenedor scrolleable del contenido */
+.bit-scroll-body {
+  padding: 16px 22px 24px 22px;
+  overflow-y: auto;
+  flex: 1;
+  box-sizing: border-box;
+}
+
+/* Tarjeta Resumen del Servicio (Fiel al Mockup Oficial) */
+.bit-summary-card {
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 52%, #fff1f6 100%);
+  border-radius: 24px;
+  padding: 16px 16px 16px 18px;
+  border: 1px solid #fce7f3;
+  box-shadow: 0 6px 22px rgba(236, 72, 153, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  position: relative;
+  overflow: hidden;
+}
+
+.bit-summary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  z-index: 2;
+}
+
+.bit-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bit-info-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff1f5;
+  border: 1px solid #fce7f3;
+  color: #ec4899;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bit-info-text-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.bit-info-primary {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.bit-info-secondary {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+/* Columna de la ilustración oficial */
+.bit-summary-art {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  margin-left: 6px;
+  margin-right: -8px;
+  z-index: 2;
+  overflow: visible;
+}
+
+.bit-art-official-img {
+  width: auto;
+  height: auto;
+  max-width: 195px;
+  max-height: 148px;
+  object-fit: contain;
+  object-position: right center;
+  display: block;
+  mix-blend-mode: multiply;
+  filter: drop-shadow(0 4px 14px rgba(236, 72, 153, 0.12));
+  transform: scale(1.18);
+  transform-origin: right center;
+}
+
+/* Barra de progreso de secciones */
+.bit-progress-box {
+  margin-bottom: 22px;
+}
+
+.bit-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bit-section-title-label {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.bit-percentage-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.bit-progress-track {
+  width: 100%;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.bit-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f43f5e 0%, #ec4899 100%);
+  border-radius: 999px;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 33%;
+}
+
+/* Tarjetas de Sección Temáticas */
+.bit-section-card {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 22px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.025);
+  margin-bottom: 20px;
+}
+
+.bit-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.bit-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  flex-shrink: 0;
+}
+
+/* Variantes de colores para los iconos temáticos */
+.bit-card-icon.pink {
+  background: #fce7f3;
+  color: #ec4899;
+}
+
+.bit-card-icon.green {
+  background: #dcfce7;
+  color: #10b981;
+}
+
+.bit-card-icon.blue {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.bit-card-icon.purple {
+  background: #f3e8ff;
+  color: #9333ea;
+}
+
+.bit-card-icon.amber {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.bit-card-icon.rose {
+  background: #ffe4e6;
+  color: #e11d48;
+}
+
+.bit-card-title {
+  margin: 0;
+  font-size: 16.5px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.bit-card-sub {
+  margin: 3px 0 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748b;
+}
+
+/* Grupos de Preguntas */
+.bit-form-group {
+  margin-bottom: 22px;
+}
+
+.bit-form-group:last-child {
+  margin-bottom: 4px;
+}
+
+.bit-question-label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 10px;
+  line-height: 1.45;
+}
+
+/* Opciones de Respuesta en Botones */
+.bit-options-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bit-option-pill {
+  flex: 1;
+  min-width: 60px;
+  padding: 11px 12px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  font-family: 'Nunito Sans', sans-serif;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.bit-option-pill:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+/* ESTADO ACTIVO / SELECCIONADO (Rosa vibrante con check como en mockup) */
+.bit-option-pill.active {
+  background: #fff5f8 !important;
+  border-color: #ec4899 !important;
+  color: #be185d !important;
+  box-shadow: 0 4px 14px rgba(236, 72, 153, 0.16) !important;
+  font-weight: 800 !important;
+  transform: translateY(-1px);
+}
+
+.bit-check-icon {
+  display: none;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: #ec4899;
+  color: #ffffff;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.bit-option-pill.active .bit-check-icon {
+  display: inline-flex;
+}
+
+/* Inputs y Textareas */
+.bit-input-field {
+  width: 100%;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: 'Nunito Sans', sans-serif;
+  color: #1e293b;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.bit-input-field:focus {
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3.5px rgba(236, 72, 153, 0.12);
+}
+
+.bit-input-field::placeholder {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+textarea.bit-input-field {
+  resize: vertical;
+  min-height: 75px;
+  line-height: 1.45;
+}
+
+/* Barra inferior fija de navegación y acciones */
+.bit-action-bar {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 14px 22px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 20;
+  border-radius: 0 0 32px 32px;
+  box-sizing: border-box;
+}
+
+.bit-btn-draft {
+  flex: 1;
+  background: #ffffff;
+  border: 1.5px solid #f43f5e;
+  color: #e11d48;
+  border-radius: 999px;
+  padding: 13px 18px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all 0.2s ease;
+  font-family: 'Nunito Sans', sans-serif;
+}
+
+.bit-btn-draft:hover {
+  background: #fff1f2;
+  transform: translateY(-1px);
+}
+
+.bit-btn-continue {
+  flex: 1.3;
+  background: linear-gradient(135deg, #f43f5e 0%, #ec4899 100%);
+  border: none;
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 14px 22px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(236, 72, 153, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Nunito Sans', sans-serif;
+}
+
+.bit-btn-continue:hover {
+  box-shadow: 0 6px 20px rgba(236, 72, 153, 0.45);
+  transform: translateY(-1px);
+}
+
+.bit-btn-prev {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  border-radius: 999px;
+  padding: 13px 16px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: none;
+  /* Se activa en sección 2 y 3 */
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.bit-btn-prev:hover {
+  background: #e2e8f0;
+}
+
+/* Modo Solo Lectura (Cliente / Supervisión) */
+.bitacora-solo-lectura .bit-btn-draft,
+.bitacora-solo-lectura #bit_btn_finalizar {
+  display: none !important;
+}
+
+.bitacora-solo-lectura .bit-option-pill {
+  pointer-events: none;
+  cursor: default;
+}
+
+.bitacora-solo-lectura .bit-input-field {
+  background: #f8fafc !important;
+  cursor: not-allowed;
+}
+
+/* Adaptabilidad Mobile */
+@media (max-width: 640px) {
+  #bitacoraBackdrop {
+    padding: 0;
+    background: rgba(15, 23, 42, 0.7);
+    align-items: stretch;
+    justify-content: stretch;
+    z-index: 1000005 !important;
+  }
+
+  .bit-modal-card {
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%;
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bit-header-bar {
+    padding: 14px 18px 12px 18px;
+    flex-shrink: 0;
+  }
+
+  .bit-scroll-body {
+    padding: 14px 16px 36px 16px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .bit-action-bar {
+    border-radius: 0;
+    padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px)) 16px;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.08);
+    border-top: 1px solid #f1f5f9;
+    flex-shrink: 0;
+  }
+
+  .bit-summary-art {
+    margin-right: -10px;
+    margin-left: 4px;
+  }
+
+  .bit-art-official-img {
+    width: auto;
+    max-width: 170px;
+    max-height: 135px;
+    transform: scale(1.22);
+    transform-origin: right center;
+  }
+}

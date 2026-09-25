@@ -1,4 +1,4 @@
-﻿/* =========================
+/* =========================
    MODAL PREMIUM DESIGN
    ========================= */
 .service-premium-modal.modal-card {
@@ -12,18 +12,19 @@
 
 
 .modal-header-gradient {
-    background: linear-gradient(135deg, var(--pink-main), var(--pink-hover));
-    padding: 24px 20px;
-    text-align: center;
-    color: white;
-    position: relative;
+    background: #fff;
+    padding: 20px 24px 10px 24px;
+    text-align: left;
+    border-bottom: none;
+    flex-shrink: 0;
 }
 
 
 .modal-header-gradient h3 {
-    color: white;
+    color: var(--blue-main);
     margin: 0;
     font-size: 20px;
+    font-family: 'DM Serif Display', serif;
     font-weight: 700;
 }
 
@@ -31,8 +32,9 @@
 .modal-subtitle {
     display: block;
     margin-top: 4px;
-    opacity: 0.9;
+    color: var(--text-muted);
     font-size: 14px;
+    font-weight: 600;
 }
 
 
@@ -157,10 +159,54 @@
 
 
 /* Footer Actions */
-.modal-footer {
-    padding: 16px 20px;
-    background: #fff;
-    border-top: 1px solid #f3f4f6;
+.modal-footer,
+#modalBackdrop .actions.modal-footer {
+    padding: 14px 20px 18px 20px !important;
+    background: #ffffff !important;
+    border-top: 1px solid #f1f5f9 !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    overflow: visible !important;
+}
+
+#modalBackdrop .actions button,
+.modal-footer .btn-primary,
+.modal-footer .btn-ghost {
+    width: 100% !important;
+    padding: 12px 18px !important;
+    min-height: 44px !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    border-radius: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 8px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+}
+
+#modalBackdrop .actions button.btn-ghost,
+.modal-footer .btn-ghost {
+    min-height: 38px !important;
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+    color: #64748b !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+#modalBackdrop .actions button.btn-ghost:hover,
+.modal-footer .btn-ghost:hover {
+    color: #0f172a !important;
+    background: #f8fafc !important;
 }
 
 
@@ -173,4 +219,69 @@
 
 #mNotas {
     white-space: pre-wrap;
+}
+
+/* Modal Compacto para Pase de Lista y Alertas */
+.cd-swal-compact-popup {
+    border-radius: 20px !important;
+    padding: 16px 18px 18px !important;
+    max-width: 330px !important;
+    width: 90% !important;
+    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.2) !important;
+}
+
+.cd-swal-compact-popup .swal2-html-container {
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+}
+
+.cd-swal-compact-popup .swal2-actions {
+    margin: 10px 0 0 0 !important;
+    gap: 8px !important;
+    width: 100% !important;
+    justify-content: center !important;
+}
+
+.cd-swal-compact-popup .swal2-confirm,
+.cd-swal-compact-popup .swal2-cancel {
+    margin: 0 !important;
+    padding: 8px 14px !important;
+    font-size: 12.5px !important;
+    border-radius: 10px !important;
+    font-weight: 700 !important;
+}
+
+/* Botón X de Cierre para Modales de Información de Servicio */
+.modal-close-icon-btn {
+    position: absolute !important;
+    top: 16px !important;
+    right: 16px !important;
+    background: #f8fafc !important;
+    color: #64748b !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 50% !important;
+    width: 34px !important;
+    height: 34px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+    z-index: 50 !important;
+    padding: 0 !important;
+    outline: none !important;
+}
+
+.modal-close-icon-btn:hover {
+    background: #fce7f3 !important;
+    color: #e11d48 !important;
+    border-color: #fbcfe8 !important;
+    transform: scale(1.08) rotate(90deg) !important;
+    box-shadow: 0 4px 12px rgba(225, 29, 72, 0.16) !important;
+}
+
+.modal-close-icon-btn:active {
+    transform: scale(0.92) !important;
 }

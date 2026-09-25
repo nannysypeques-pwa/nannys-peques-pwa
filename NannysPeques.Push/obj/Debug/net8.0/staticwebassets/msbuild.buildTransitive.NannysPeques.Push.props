@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\NannysPeques.Push.props" />
-</Project>

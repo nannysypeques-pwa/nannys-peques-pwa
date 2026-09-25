@@ -1,0 +1,993 @@
+/* ==========================================================================
+   VISTA SERVICIOS (MODERNO / CLIENTE) - NANNYS Y PEQUES
+   Réplica 100% del diseño UI/UX mobile
+   ========================================================================== */
+
+body:has(#vista-cliente-servicios.activa),
+html:has(#vista-cliente-servicios.activa),
+body.en-servicios,
+html.en-servicios {
+  background: #E0F7FA !important;
+  background-color: #E0F7FA !important;
+  background-image: none !important;
+}
+
+#vista-cliente-servicios {
+  background: #E0F7FA !important;
+  min-height: 100vh;
+  padding: 10px 14px 100px 14px;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', 'Nunito Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #0F172A;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Skeleton Loader elegante para evitar flash de datos */
+.cs-service-skeleton {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 14px 16px;
+  border: 1px solid #F1F5F9;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.02);
+  animation: csSkeletonPulse 1.4s ease-in-out infinite;
+}
+
+.cs-skeleton-badge {
+  width: 52px;
+  height: 58px;
+  border-radius: 14px;
+  background: #F1F5F9;
+  flex-shrink: 0;
+}
+
+.cs-skeleton-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-skeleton-line {
+  height: 14px;
+  background: #F1F5F9;
+  border-radius: 6px;
+}
+
+.cs-skeleton-line.short {
+  width: 38%;
+}
+
+.cs-skeleton-line.long {
+  width: 72%;
+}
+
+@keyframes csSkeletonPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+
+
+/* Encabezado Principal */
+.cs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-top: 6px;
+  margin-bottom: 18px;
+}
+
+.cs-header-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+
+.cs-header-subtitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748B;
+  margin: 4px 0 0 0;
+}
+
+.cs-header-calendar-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #FFFFFF;
+  border: 1px solid #FFE4E6;
+  box-shadow: 0 4px 12px rgba(232, 76, 154, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #E84C9A;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.cs-header-calendar-btn:active {
+  transform: scale(0.94);
+  background: #FFF0F5;
+}
+
+/* 3 Tarjetas de Métricas Superiores */
+.cs-metrics-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.cs-metric-card {
+  flex: 1;
+  background: #FFFFFF;
+  border-radius: 18px;
+  padding: 12px 10px;
+  border: 1px solid #F1F5F9;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.cs-metric-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cs-metric-icon-box.pink {
+  background: #FFF1F5;
+  color: #F43F5E;
+}
+
+.cs-metric-icon-box.cyan {
+  background: #ECFEFF;
+  color: #06B6D4;
+}
+
+.cs-metric-icon-box.amber {
+  background: #FFFBEB;
+  color: #F59E0B;
+}
+
+.cs-metric-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.cs-metric-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.1;
+  letter-spacing: -0.3px;
+}
+
+.cs-metric-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+/* Switcher / Segment Píldora (Programados / Bitácora) */
+.cs-switcher-container {
+  background: #FFFFFF;
+  border-radius: 30px;
+  padding: 4px;
+  display: flex;
+  border: 1px solid #FFE4E6;
+  box-shadow: 0 2px 10px rgba(232, 76, 154, 0.04);
+  margin-bottom: 18px;
+}
+
+.cs-switcher-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748B;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: center;
+}
+
+.cs-switcher-btn.active {
+  background: #E84C9A;
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(232, 76, 154, 0.3);
+}
+
+/* Strip de Calendario por Semanas */
+.cs-calendar-strip-card {
+  background: #FFFFFF;
+  border-radius: 22px;
+  padding: 12px 14px 14px 14px;
+  border: 1px solid #F1F5F9;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+}
+
+/* Cabecera de la Semana con Botones y Fechas */
+.cs-week-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 2px 4px 2px;
+}
+
+.cs-week-nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 1px solid #F1F5F9;
+  background: #F8FAFC;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.cs-week-nav-btn:hover {
+  background: #FFF0F5;
+  color: #E84C9A;
+  border-color: #FFE4E6;
+}
+
+.cs-week-nav-btn:active {
+  transform: scale(0.92);
+}
+
+.cs-week-title-wrap {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.cs-week-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.2px;
+}
+
+.cs-week-dates {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94A3B8;
+}
+
+/* Contenedor Scroll Horizontal de Semanas */
+.cs-weeks-scroll {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 14px;
+  width: 100%;
+}
+
+.cs-weeks-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Diapositiva de una semana (7 días exactos de Lunes a Domingo) */
+.cs-week-slide {
+  flex: 0 0 100%;
+  min-width: 100%;
+  scroll-snap-align: center;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+/* Columna de día */
+.cs-cal-day-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 2px 7px 2px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
+  background: #F8FAFC;
+  border: 1.5px solid transparent;
+  position: relative;
+}
+
+.cs-cal-day-col:hover {
+  background: #F1F5F9;
+}
+
+.cs-cal-day-name {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: -0.2px;
+  line-height: 1;
+}
+
+.cs-cal-day-num {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1E293B;
+  margin-top: 4px;
+  line-height: 1.1;
+}
+
+.cs-cal-dots-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 6px;
+  margin-top: 4px;
+}
+
+.cs-cal-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.cs-cal-dot.pink {
+  background-color: #E84C9A;
+}
+
+.cs-cal-dot.green {
+  background-color: #10B981;
+}
+
+.cs-cal-dot.cyan {
+  background-color: #0EA5E9;
+}
+
+.cs-cal-dot.grey {
+  background-color: #94A3B8;
+}
+
+.cs-cal-dot.amber {
+  background-color: #F59E0B;
+}
+
+/* DÍA DE HOY RESALTADO */
+.cs-cal-day-col.is-today {
+  border-color: #E84C9A;
+  background: #FFF5F9;
+}
+
+.cs-cal-day-col.is-today .cs-cal-day-name {
+  color: #E84C9A;
+  font-weight: 800;
+}
+
+.cs-cal-day-col.is-today .cs-cal-day-num {
+  color: #E84C9A;
+  font-weight: 800;
+}
+
+/* Día Seleccionado / Activo en el calendario */
+.cs-cal-day-col.active {
+  background: linear-gradient(135deg, #E84C9A, #F43F5E) !important;
+  color: #FFFFFF !important;
+  border-color: transparent !important;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(232, 76, 154, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+.cs-cal-day-col.active .cs-cal-day-name,
+.cs-cal-day-col.active .cs-cal-day-num {
+  color: #FFFFFF !important;
+}
+
+.cs-cal-day-col.active .cs-cal-dot {
+  background-color: #FFFFFF !important;
+}
+
+/* Puntos de paginación de semanas */
+.cs-week-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.cs-week-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #E2E8F0;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.cs-week-dot.active {
+  width: 16px;
+  border-radius: 4px;
+  background: #E84C9A;
+}
+
+/* Encabezados de Sección */
+.cs-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cs-section-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.cs-section-link {
+  font-size: 13px;
+  font-weight: 700;
+  color: #E84C9A;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.cs-section-link:hover {
+  opacity: 0.8;
+}
+
+/* Lista y Tarjetas de Próximos Servicios */
+.cs-services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.cs-service-item {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 14px 16px;
+  border: 1px solid #F1F5F9;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.cs-service-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+/* Badge Fecha del Servicio (Izquierda) */
+.cs-date-badge {
+  border-radius: 14px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.cs-date-badge.pink {
+  background: #FFF1F5;
+}
+
+.cs-date-badge.pink .cs-date-day {
+  color: #E84C9A;
+}
+
+.cs-date-badge.blue {
+  background: #F0F9FF;
+}
+
+.cs-date-badge.blue .cs-date-day {
+  color: #0284C7;
+}
+
+.cs-date-badge.cyan {
+  background: #ECFEFF;
+}
+
+.cs-date-badge.cyan .cs-date-day {
+  color: #0891B2;
+}
+
+.cs-date-badge.green {
+  background: #F0FDF4;
+}
+
+.cs-date-badge.green .cs-date-day {
+  color: #059669;
+}
+
+.cs-date-badge.amber,
+.cs-date-badge.yellow {
+  background: #FFFBEB;
+}
+
+.cs-date-badge.amber .cs-date-day,
+.cs-date-badge.yellow .cs-date-day {
+  color: #D97706;
+}
+
+.cs-date-badge.purple {
+  background: #FAF5FF;
+}
+
+.cs-date-badge.purple .cs-date-day {
+  color: #9333EA;
+}
+
+.cs-date-day {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.cs-date-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.1;
+  margin: 3px 0 1px 0;
+}
+
+.cs-date-month {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94A3B8;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* Información Central del Servicio */
+.cs-service-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cs-service-time {
+  font-size: 15px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.2;
+}
+
+.cs-service-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #64748B;
+  margin: 3px 0 6px 0;
+}
+
+
+
+/* Pills de Estado */
+.cs-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  width: fit-content;
+}
+.cs-status-pill.confirmed { background: #DCFCE7 !important; color: #15803D !important; border: 1px solid #BBF7D0 !important; }
+.cs-status-pill.in-progress,
+.cs-status-pill.iniciado { background: #E0F2FE !important; color: #0284C7 !important; border: 1px solid #BAE6FD !important; }
+.cs-status-pill.finalizado { background: #EDE9FE !important; color: #6D28D9 !important; border: 1px solid #DDD6FE !important; }
+.cs-status-pill.approved,
+.cs-status-pill.aprobada,
+.cs-status-pill.completed { background: #DCFCE7 !important; color: #15803D !important; border: 1px solid #BBF7D0 !important; }
+.cs-status-pill.pending { background: #FEF3C7 !important; color: #B45309 !important; border: 1px solid #FDE68A !important; }
+/* status pills styles */
+.cs-status-pill.live { background: #EFF6FF !important; color: #1D4ED8 !important; border: 1px solid #BFDBFE !important; }
+.cs-status-pill.live:empty { display: none; }
+.cs-status-pill.pending-approval { background: #FEE2E2 !important; color: #B91C1C !important; border: 1px solid #FECACA !important; }
+
+
+.cs-service-arrow {
+  color: #94A3B8;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Tarjeta de Bitácora Diaria */
+.cs-log-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  padding: 16px;
+  border: 1px solid #F1F5F9;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+  margin-bottom: 16px;
+}
+
+.cs-log-card:last-child {
+  margin-bottom: 24px;
+}
+
+.cs-log-empty-card {
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  border-radius: 20px;
+  padding: 28px 16px;
+  text-align: center;
+  color: #64748B;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.02);
+}
+
+.cs-log-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cs-log-card-title-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs-log-card-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.cs-log-card-time {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748B;
+  margin-top: 2px;
+}
+
+/* Cuadrícula de 2 Columnas para Detalles de la Bitácora */
+.cs-log-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding-top: 14px;
+  border-top: 1px solid #F1F5F9;
+}
+
+.cs-log-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cs-log-col.left {
+  border-right: 1px solid #F1F5F9;
+  padding-right: 10px;
+}
+
+.cs-log-item {
+  display: flex;
+  align-items: center;
+  font-size: 11.5px;
+  color: #64748B;
+  line-height: 1.2;
+}
+
+.cs-log-item-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+  color: #94A3B8;
+  flex-shrink: 0;
+}
+
+.cs-log-item-label {
+  font-weight: 500;
+  color: #64748B;
+  margin-right: 6px;
+  white-space: nowrap;
+}
+
+.cs-log-item-value {
+  font-weight: 700;
+  color: #0F172A;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.cs-log-col.right .cs-log-item {
+  align-items: flex-start;
+}
+
+.cs-log-col.right .cs-log-item-value {
+  font-weight: 600;
+  color: #0F172A;
+  margin-left: 0;
+  white-space: normal;
+}
+
+.cs-log-item-value.val-ok,
+.cs-log-col.right .cs-log-item-value.val-ok {
+  color: #059669 !important;
+  font-weight: 700;
+}
+.cs-log-item-value.val-alert,
+.cs-log-col.right .cs-log-item-value.val-alert {
+  color: #E84C3D !important;
+  font-weight: 700;
+}
+
+/* Botón inferior "Ver bitácora completa" */
+.cs-log-footer-btn {
+  background: #FFF1F5;
+  color: #E84C9A;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+  border-radius: 20px;
+  padding: 11px;
+  margin-top: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: background-color 0.2s;
+  border: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cs-log-footer-btn:hover {
+  background: #FCE7F3;
+}
+
+.cs-log-footer-btn:active {
+  transform: scale(0.99);
+}
+
+/* Vista activa sin parpadeos */
+#vista-cliente-servicios.activa {
+  display: block !important;
+}
+
+/* ==========================================================================
+   BOTÓN Y BADGE DE CONFIRMACIÓN DE ASISTENCIA (NIÑERA)
+   ========================================================================== */
+.cs-btn-asistencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cs-btn-asistencia:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(16, 185, 129, 0.35);
+  filter: brightness(1.05);
+}
+
+.cs-btn-asistencia:active {
+  transform: translateY(0);
+}
+
+.cs-asistencia-confirmada-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #DCFCE7;
+  color: #15803D;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(21, 128, 61, 0.08);
+}
+
+/* ==========================================================================
+   MODAL DE CONFIRMACIÓN DE ASISTENCIA (MODERNO / PREMIUM)
+   ========================================================================== */
+.cs-confirm-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  display: none !important; /* Oculto por defecto en todos los paneles */
+  pointer-events: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
+
+.cs-confirm-modal-overlay.active {
+  display: flex !important; /* Solo visible cuando la niñera abre el modal */
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  animation: csModalFadeIn 0.2s ease-out;
+}
+
+@keyframes csModalFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cs-confirm-modal-card {
+  background: #FFFFFF;
+  border-radius: 24px;
+  max-width: 400px;
+  width: 100%;
+  padding: 26px 22px 22px 22px;
+  text-align: center;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  box-sizing: border-box;
+  position: relative;
+}
+
+.cs-confirm-modal-icon-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: #DCFCE7;
+  color: #16A34A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px auto;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.2);
+}
+
+.cs-confirm-modal-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.3px;
+}
+
+.cs-confirm-modal-msg {
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.45;
+  margin: 0 0 14px 0;
+}
+
+.cs-confirm-modal-week-chip {
+  display: inline-block;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 22px;
+}
+
+.cs-confirm-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.cs-confirm-btn-cancel {
+  flex: 1;
+  background: #F1F5F9;
+  color: #475569;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.cs-confirm-btn-cancel:hover {
+  background: #E2E8F0;
+  color: #1E293B;
+}
+
+.cs-confirm-btn-submit {
+  flex: 1.4;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+  transition: all 0.15s ease;
+}
+
+.cs-confirm-btn-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+  filter: brightness(1.05);
+}
+
+.cs-confirm-btn-submit:active {
+  transform: translateY(0);
+}
+

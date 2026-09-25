@@ -1,0 +1,5697 @@
+/* ==========================================================================
+   CONTROL DE SERVICIOS - MODO CLARO MARCA NANNYS & PEQUES (HIGH-DENSITY DATA GRID)
+   ========================================================================== */
+
+
+:root {
+  /* Brand Palette (Nannys & Peques) */
+  --brand-pink: #e84c9a;
+  --brand-pink-hover: #d63b88;
+  --brand-pink-light: #fdf2f8;
+  --brand-pink-border: #fbcfe8;
+  
+  --bg-main: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --border-color: #cbd5e1;
+  --border-light: #e2e8f0;
+
+  /* Service Colors (Flat & Clean) */
+  --neuronanny-color: #6d28d9;
+  --neuronanny-bg: #f3e8ff;
+  --neuronanny-border: #ddd6fe;
+
+  --educativa-color: #be185d;
+  --educativa-bg: #fce7f3;
+  --educativa-border: #fbcfe8;
+
+  --bitacora-color: #0369a1;
+  --bitacora-bg: #e0f2fe;
+  --bitacora-border: #bae6fd;
+
+  --estimulacion-color: #047857;
+  --estimulacion-bg: #d1fae5;
+  --estimulacion-border: #a7f3d0;
+
+  /* Row Alert Pastels */
+  --alert-red-bg: #fef2f2;
+  --alert-red-text: #b91c1c;
+  --alert-red-border: #fca5a5;
+
+  --alert-yellow-bg: #fffbeb;
+  --alert-yellow-text: #b45309;
+  --alert-yellow-border: #fde68a;
+
+  --alert-blue-bg: #f0f9ff;
+  --alert-blue-text: #0369a1;
+  --alert-blue-border: #bae6fd;
+}
+
+/* Desactivar gesto de 'ir hacia atrás' del navegador al hacer scroll horizontal en la matriz */
+html.en-control-servicios,
+body.en-control-servicios {
+  overscroll-behavior-x: contain;
+}
+
+/* Reset y Box-Sizing Universal */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   🚀 CERO ESPACIOS DESPERDICIADOS Y ELIMINACIÓN DE DOBLE SCROLL (EXCLUSIVO MATRIZ DE SERVICIO)
+   El resto de la aplicación mantiene su scroll vertical nativo completo.
+   ========================================================= */
+html.en-control-servicios,
+body.en-control-servicios {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.admin .container {
+  max-width: 99% !important;
+  width: 99% !important;
+  padding: 8px 10px 60px 10px !important;
+  margin: 0 auto !important;
+}
+
+body.admin #app {
+  padding-top: 6px !important;
+  padding-bottom: 60px !important;
+}
+
+body.en-control-servicios #app {
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+
+.cs-wrapper,
+#adminControlServiciosView {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-primary);
+  background: transparent !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  padding: 8px 12px 10px 12px !important;
+  margin: 0 !important;
+  width: 100%;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  display: flex;
+  flex-direction: column !important;
+  overscroll-behavior: contain;
+}
+
+#adminControlServiciosView[style*="display: none"],
+#adminControlServiciosView[style*="display:none"] {
+  display: none !important;
+}
+
+/* Soporte para standalone control_servicios.html */
+body.cs-wrapper {
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 8px 12px 10px 12px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Top Clean Header Panel */
+.cs-header {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+  flex-shrink: 0 !important;
+}
+
+/* Botón estilizado de Cerrar Sesión en Header */
+.cs-btn-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cs-btn-logout:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+  transform: translateY(-1px);
+}
+
+/* Modales SweetAlert2 de confirmación elegantes */
+.cs-swal-popup {
+  border-radius: 20px !important;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  padding: 24px 20px !important;
+}
+
+.cs-swal-popup .swal2-title {
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}
+
+.cs-swal-popup .swal2-html-container {
+  font-size: 0.95rem !important;
+  color: #475569 !important;
+  margin-top: 8px !important;
+}
+
+.cs-swal-popup .swal2-confirm,
+.cs-swal-popup .swal2-cancel {
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  padding: 10px 20px !important;
+}
+
+.cs-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cs-title-group h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--brand-pink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cs-title-badge {
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--brand-pink-light);
+  color: var(--brand-pink);
+  border: 1px solid var(--brand-pink-border);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* =========================================================
+   SELECTOR DE CIUDAD MATRIZ (Puebla, Xalapa, Querétaro, CDMX)
+   ========================================================= */
+.cs-city-selector-pills {
+  display: inline-flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid rgba(232, 76, 154, 0.22);
+  padding: 3px;
+  border-radius: 12px;
+  gap: 3px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.cs-city-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 9px;
+  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.cs-city-pill:hover:not(.active) {
+  background: rgba(232, 76, 154, 0.08);
+  color: var(--brand-pink, #e84c9a);
+  transform: translateY(-0.5px);
+}
+
+.cs-city-pill.active {
+  background: linear-gradient(135deg, #e84c9a 0%, #d81b60 100%);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(232, 76, 154, 0.35);
+  transform: scale(1.02);
+}
+
+.cs-city-pill .cs-city-icon {
+  font-size: 0.92rem;
+  display: inline-block;
+  transition: transform 0.2s ease;
+}
+
+.cs-city-pill:hover .cs-city-icon {
+  transform: scale(1.15);
+}
+
+.cs-city-pill.active .cs-city-icon {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+@media (max-width: 768px) {
+  .cs-city-selector-pills {
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .cs-city-pill {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    flex: 1 0 auto;
+    justify-content: center;
+  }
+}
+
+/* Week Selector Navigator */
+.cs-week-navigator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+/* History Controls (Undo / Redo - Ctrl+Z / Ctrl+Y) */
+.cs-history-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+
+.cs-history-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: white;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px 9px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cs-history-btn:hover:not(:disabled) {
+  border-color: var(--brand-pink);
+  color: var(--brand-pink);
+  background: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(232, 76, 154, 0.12);
+}
+
+.cs-history-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.cs-history-btn:disabled,
+.cs-history-btn.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed !important;
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #94a3b8 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.cs-history-icon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.cs-nav-btn {
+  background: white;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.cs-nav-btn:hover {
+  border-color: var(--brand-pink);
+  color: var(--brand-pink);
+}
+
+.cs-week-label {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 180px;
+  text-align: center;
+}
+
+/* Search Box and Filter Controls (Sin superposición) */
+.cs-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.cs-search-box {
+  position: relative;
+  width: 250px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.cs-search-box input,
+.cs-search-box input[type="text"],
+#csSearchInput {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: white !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  padding: 6px 12px 6px 36px !important;
+  padding-left: 36px !important;
+  color: var(--text-primary) !important;
+  font-size: 0.85rem !important;
+  line-height: normal !important;
+  height: 32px !important;
+  margin: 0 !important;
+  outline: none !important;
+  transition: all 0.15s ease !important;
+  text-align: left !important;
+}
+
+.cs-search-box input:focus,
+#csSearchInput:focus {
+  border-color: var(--brand-pink) !important;
+  box-shadow: 0 0 0 3px rgba(232, 76, 154, 0.18) !important;
+  background: #ffffff !important;
+}
+
+.cs-search-icon {
+  position: absolute !important;
+  left: 11px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: #64748b !important;
+  font-size: 0.92rem !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+  line-height: 1 !important;
+}
+
+/* Filter Chips (Flat Style) */
+.cs-filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
+.cs-chip {
+  background: white;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.cs-chip:hover {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+.cs-chip.active {
+  background: var(--brand-pink);
+  border-color: var(--brand-pink);
+  color: white;
+}
+
+/* Cotizador Button */
+.cs-btn-cotizador {
+  background: var(--brand-pink);
+  color: white;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s ease;
+}
+
+.cs-btn-cotizador:hover {
+  background: var(--brand-pink-hover);
+}
+
+/* High-Density Data Grid Container - Unificado con Scroll Único */
+.cs-grid-container {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  height: auto !important;
+  width: 100%;
+}
+
+#panelServicios:not(.hidden) {
+  display: block !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+#panelClientes:not(.hidden),
+#panelNanny:not(.hidden) {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+#panelServicios.hidden,
+#panelClientes.hidden,
+#panelNanny.hidden,
+.cs-view-panel.hidden {
+  display: none !important;
+}
+
+#panelClientes .cs-subpanel-toolbar,
+#panelNanny .cs-subpanel-toolbar {
+  flex-shrink: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+#panelClientes .cs-grid-container,
+#panelNanny .cs-grid-container {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+}
+
+/* Table Scrollbar */
+.cs-grid-container::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.cs-grid-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.cs-grid-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.cs-grid-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Ocultar barra de scroll vertical exclusivamente en la matriz de servicios (#panelServicios) */
+#panelServicios {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE / Edge legacy */
+}
+#panelServicios::-webkit-scrollbar {
+  width: 0px !important;
+  height: 8px;
+}
+#panelServicios::-webkit-scrollbar:vertical {
+  width: 0px !important;
+  display: none !important;
+}
+
+/* Table Layout */
+.cs-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+/* Table Header Styles - Exact Pixel Alignment */
+.cs-table th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.4px;
+  padding: 0 8px;
+  border-bottom: 2px solid var(--border-color);
+  border-right: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  text-align: center;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+/* Resizer de columnas interactivo (Estilo Excel / Sheets) */
+.cs-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 25;
+  transition: background 0.12s ease;
+}
+
+.cs-resizer:hover,
+.cs-resizer.resizing {
+  background: var(--brand-pink) !important;
+  box-shadow: 0 0 4px rgba(232, 76, 154, 0.5);
+}
+
+body.cs-is-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.cs-is-resizing * {
+  user-select: none !important;
+}
+
+/* Row 1: Day Group Headers */
+.cs-table th.header-day-group {
+  background: var(--brand-pink-light);
+  color: var(--brand-pink);
+  border-bottom: 1px solid var(--brand-pink-border);
+  font-weight: 800;
+  font-size: 0.72rem;
+  height: 26px;
+  line-height: 25px;
+  padding: 0 4px;
+}
+
+/* Row 2: Sub-headers (Inicio / Fin) */
+.cs-table th.header-sub {
+  top: 26px;
+  font-size: 0.65rem;
+  height: 22px;
+  line-height: 20px;
+  padding: 0 4px;
+  background: #f8fafc;
+  color: var(--text-secondary);
+}
+
+/* Columns spanning both rows (rowspan="2") */
+.cs-table th[rowspan="2"] {
+  height: 48px;
+  top: 0;
+}
+
+/* Separadores verticales marcados entre bloques de días (Lunes, Martes, etc.) y columna Horas */
+.cs-table th.col-total-hours,
+.cs-table td.col-total-hours,
+.cs-table tbody td:nth-child(1) {
+  border-right: 2px solid #94a3b8 !important;
+}
+
+.cs-table th.header-day-group {
+  border-right: 2px solid #94a3b8 !important;
+}
+
+.cs-table tr th.header-sub:nth-child(2n) {
+  border-right: 2px solid #94a3b8 !important;
+}
+
+/* Líneas laterales divisorias de cada día que bajan hasta el fondo de la matriz */
+.cs-table tbody td:nth-child(3),
+.cs-table tbody td:nth-child(5),
+.cs-table tbody td:nth-child(7),
+.cs-table tbody td:nth-child(9),
+.cs-table tbody td:nth-child(11),
+.cs-table tbody td:nth-child(13),
+.cs-table tbody td:nth-child(15),
+.cs-table tbody td:has([data-field$="_fin"]) {
+  border-right: 2px solid #94a3b8 !important;
+}
+
+/* Table Cell Styling - Ultra High-Density Reduced Height */
+.cs-table tr {
+  height: 21px !important;
+}
+
+.cs-table td {
+  padding: 0 4px !important;
+  height: 21px !important;
+  border-bottom: 1px solid var(--border-light) !important;
+  border-right: 1px solid var(--border-light) !important;
+  vertical-align: middle !important;
+  color: var(--text-primary);
+  background: white;
+  line-height: 1;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Celdas de horarios de Lunes a Domingo (columnas 2 a 15):
+   Cero padding en el td para que la píldora aproveche el 100% del ancho
+   y el texto no se oculte antes de que la línea de la columna llegue a él */
+.cs-table td:has(.cs-time-input),
+.cs-table td:nth-child(n+2):nth-child(-n+15) {
+  padding: 0 !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+}
+
+/* Celdas a partir de "Tipo de Servicio" (columna 16 en adelante):
+   Cero padding y centrado completo horizontal y vertical para que el texto permanezca centrado
+   y solo se corte cuando la línea divisoria de la columna llegue físicamente al texto */
+.cs-table td:nth-child(n+16) {
+  vertical-align: middle !important;
+  text-align: center !important;
+  padding: 0 !important;
+  line-height: 21px !important;
+}
+
+/* Anchos iniciales por columna (totalmente elásticos sin min-width fijo que impida encoger) */
+.col-service-type {
+  width: 155px;
+}
+
+.col-email {
+  width: 225px;
+}
+
+.col-client {
+  width: 190px;
+}
+
+.col-zone {
+  width: 160px;
+}
+
+.col-nanny {
+  width: 215px;
+}
+
+.col-compact-check {
+  width: 44px;
+  padding: 2px !important;
+  text-align: center !important;
+}
+
+.col-compact-rate {
+  width: 68px;
+  padding: 2px !important;
+  text-align: center !important;
+}
+
+.cs-rate-input {
+  text-align: center !important;
+  font-weight: 600 !important;
+  font-size: 0.78rem !important;
+  padding: 2px 4px !important;
+}
+
+.col-alerts {
+  width: 150px;
+}
+
+.col-obs {
+  width: 240px;
+}
+
+/* Input de Alertas y estilo rojo elegante al escribir texto */
+.cs-alert-input {
+  width: 100% !important;
+  text-align: center !important;
+  font-weight: 600;
+  transition: all 0.2s ease !important;
+}
+
+.cs-alert-input.has-alert-active {
+  background: #ffe4e6 !important; /* Rojo pastel suave y elegante */
+  border: 1px solid #fda4af !important;
+  color: #e11d48 !important; /* Carmesí oscuro */
+  font-weight: 700 !important;
+  box-shadow: 0 1px 2px rgba(225, 29, 72, 0.08) !important;
+}
+
+.cs-alert-input.has-alert-active:focus {
+  background: #fff1f2 !important;
+  border-color: #e11d48 !important;
+  box-shadow: 0 0 0 2px rgba(225, 29, 72, 0.2) !important;
+}
+
+.header-sub {
+  width: 62px;
+}
+
+.cs-table tbody tr:hover td {
+  background: #f1f5f9 !important;
+}
+
+/* Alert Row Highlights */
+.cs-table tr.alert-red td {
+  background: var(--alert-red-bg) !important;
+  border-bottom-color: var(--alert-red-border);
+}
+
+.cs-table tr.alert-yellow td {
+  background: var(--alert-yellow-bg) !important;
+  border-bottom-color: var(--alert-yellow-border);
+}
+
+.cs-table tr.alert-blue td {
+  background: var(--alert-blue-bg) !important;
+  border-bottom-color: var(--alert-blue-border);
+}
+
+/* Schedule Time Pills */
+.time-pill {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  text-align: center;
+}
+
+.time-pill.empty {
+  color: #94a3b8;
+  background: transparent;
+  border: none;
+}
+
+/* Flat Service Badges */
+.badge-service {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  text-align: center;
+}
+
+.badge-neuronanny {
+  background: var(--neuronanny-bg);
+  color: var(--neuronanny-color);
+  border: 1px solid var(--neuronanny-border);
+}
+
+.badge-educativa {
+  background: var(--educativa-bg);
+  color: var(--educativa-color);
+  border: 1px solid var(--educativa-border);
+}
+
+.badge-bitacora {
+  background: var(--bitacora-bg);
+  color: var(--bitacora-color);
+  border: 1px solid var(--bitacora-border);
+}
+
+.badge-estimulacion {
+  background: var(--estimulacion-bg);
+  color: var(--estimulacion-color);
+  border: 1px solid var(--estimulacion-border);
+}
+
+/* Custom Checkbox Compacto Más Pequeño (Pestaña Servicios) */
+#panelServicios .custom-checkbox,
+.cs-table .custom-checkbox,
+.custom-checkbox {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 3px !important;
+  background: white;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  display: inline-block;
+  vertical-align: middle;
+  box-sizing: border-box;
+  line-height: 1 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+#panelServicios .custom-checkbox:hover,
+.cs-table .custom-checkbox:hover,
+.custom-checkbox:hover {
+  border-color: var(--brand-pink) !important;
+  box-shadow: 0 0 0 2px rgba(232, 76, 154, 0.15);
+}
+
+#panelServicios .custom-checkbox:checked,
+.cs-table .custom-checkbox:checked,
+.custom-checkbox:checked {
+  background: var(--brand-pink) !important;
+  border-color: var(--brand-pink) !important;
+}
+
+#panelServicios .custom-checkbox:checked::after,
+.cs-table .custom-checkbox:checked::after,
+.custom-checkbox:checked::after {
+  content: '✓' !important;
+  position: absolute !important;
+  color: white !important;
+  font-size: 9px !important;
+  font-weight: 800 !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  line-height: 1 !important;
+}
+
+#panelServicios .col-compact-check,
+.cs-table .col-compact-check,
+.col-compact-check {
+  text-align: center !important;
+  vertical-align: middle !important;
+  width: 40px !important;
+  min-width: 36px !important;
+  padding: 0 2px !important;
+}
+
+/* Zone Tag */
+.zone-tag {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+  font-weight: 500;
+}
+
+/* Hourly Rates */
+.rate-cell {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.72rem;
+  line-height: 21px !important;
+  vertical-align: middle !important;
+  display: inline-block !important;
+}
+.rate-client {
+  color: #0284c7;
+}
+.rate-nanny {
+  color: var(--brand-pink);
+}
+
+/* Compact Columns Optimization (Checkboxes & 4-Digit Rates) */
+.col-compact-check {
+  width: 44px;
+  min-width: 44px;
+  padding: 4px 2px !important;
+  text-align: center !important;
+}
+
+.col-compact-rate {
+  width: 66px;
+  min-width: 62px;
+  max-width: 72px;
+  padding: 4px 2px !important;
+  text-align: center !important;
+  font-size: 0.76rem !important;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+}
+
+/* Observation Cells */
+.obs-cell {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.78rem;
+  color: var(--text-primary);
+}
+
+.obs-tag-red {
+  background: #fef2f2;
+  color: var(--alert-red-text);
+  border: 1px solid var(--alert-red-border);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.obs-tag-yellow {
+  background: #fffbeb;
+  color: var(--alert-yellow-text);
+  border: 1px solid var(--alert-yellow-border);
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   MATRIZ EDITABLE DE SERVICIOS (HIGH-DENSITY EDITABLE INPUTS)
+   ========================================================================== */
+
+/* Estilo base para todos los inputs dentro de celdas (centrado horizontal y vertical sin márgenes) */
+.cs-cell-input {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 1px 1px !important;
+  font-family: inherit;
+  font-size: 0.72rem;
+  color: var(--text-primary);
+  height: 19px;
+  line-height: 17px;
+  outline: none;
+  transition: all 0.15s ease;
+  overflow: hidden;
+  text-overflow: clip;
+  text-align: center;
+  vertical-align: middle !important;
+  display: inline-block !important;
+  margin: 0 !important;
+}
+
+.cs-cell-input:hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #cbd5e1;
+}
+
+.cs-cell-input:focus {
+  background: #ffffff !important;
+  border-color: var(--brand-pink) !important;
+  box-shadow: 0 0 0 2px rgba(232, 76, 154, 0.18) !important;
+}
+
+/* Campo de Email no editable desde la matriz */
+.cs-readonly-input {
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: #64748b !important;
+  cursor: default !important;
+  user-select: text;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.cs-readonly-input:hover,
+.cs-readonly-input:focus {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Inputs de horarios de inicio y fin (Limpio, integrado en la celda sin contornos ni fondos fuera del blanco) */
+.cs-time-input {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 19px;
+  padding: 0 1px !important;
+  margin: 0 !important;
+  border-radius: 3px;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+  color: #1e293b;
+  box-sizing: border-box !important;
+  transition: all 0.15s ease;
+  outline: none;
+  cursor: pointer;
+  line-height: 17px;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+  vertical-align: middle;
+  display: block;
+}
+
+.cs-time-input:hover {
+  background: rgba(232, 76, 154, 0.04) !important;
+  border-color: rgba(232, 76, 154, 0.25) !important;
+}
+
+.cs-time-input:focus {
+  background: #ffffff !important;
+  border-color: var(--brand-pink) !important;
+  box-shadow: 0 0 0 2px rgba(232, 76, 154, 0.2) !important;
+  cursor: text;
+}
+
+.cs-time-input.empty-val {
+  color: transparent !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
+}
+
+.cs-time-input.empty-val:hover {
+  background: rgba(232, 76, 154, 0.04) !important;
+  border-color: rgba(232, 76, 154, 0.25) !important;
+}
+
+/* Selector desplegable de Tipo de Servicio compacto */
+.cs-service-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 100% !important;
+  height: 19px;
+  font-size: 0.60rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  padding: 1px 10px 1px 2px !important;
+  border-radius: 3px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background-color: white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  background-size: 6px;
+  outline: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box !important;
+  white-space: nowrap;
+  line-height: 17px;
+  text-align: center;
+  text-align-last: center;
+  vertical-align: middle !important;
+  display: inline-block !important;
+  margin: 0 !important;
+}
+
+.col-obs {
+  vertical-align: middle !important;
+  text-align: center !important;
+}
+
+.col-obs > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 21px !important;
+  padding: 0 !important;
+}
+
+.cs-service-select:focus {
+  border-color: var(--brand-pink);
+  box-shadow: 0 0 0 2px rgba(232, 76, 154, 0.2);
+}
+
+.cs-service-select.svc-neuronanny {
+  background-color: var(--neuronanny-bg);
+  color: var(--neuronanny-color);
+  border-color: var(--neuronanny-border);
+}
+
+.cs-service-select.svc-educativa {
+  background-color: var(--educativa-bg);
+  color: var(--educativa-color);
+  border-color: var(--educativa-border);
+}
+
+.cs-service-select.svc-miss-nanny {
+  background-color: #fff7ed;
+  color: #c2410c;
+  border-color: #fed7aa;
+}
+
+.cs-service-select.svc-bitacora {
+  background-color: var(--bitacora-bg);
+  color: var(--bitacora-color);
+  border-color: var(--bitacora-border);
+}
+
+/* Inputs de Clientes y Niñeras con autocompletado */
+.cs-client-input, .cs-nanny-input {
+  font-weight: 600;
+  color: var(--text-primary);
+  min-width: 0 !important;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='9' viewBox='0 0 24 24' fill='%2310b981'%3E%3Cpath d='m7 10 5 5 5-5z'/%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 18px !important;
+}
+
+td.col-nanny.cs-nanny-confirmed .cs-nanny-input {
+  background-position: right 18px center !important;
+  padding-right: 28px !important;
+}
+
+.cs-client-input:focus, .cs-nanny-input:focus {
+  border-color: var(--brand-pink);
+}
+
+/* Email de cliente */
+.cs-email-input {
+  min-width: 0 !important;
+  color: #475569;
+  font-size: 0.78rem;
+}
+
+/* Zona (campo de texto abierto) */
+.cs-zone-input {
+  min-width: 0 !important;
+  color: var(--text-secondary);
+}
+
+/* Tarifas editables */
+.cs-rate-input {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 0.76rem;
+  text-align: center;
+  min-width: 0 !important;
+}
+.cs-rate-input.rate-client {
+  color: #0284c7;
+}
+.cs-rate-input.rate-nanny {
+  color: var(--brand-pink);
+}
+
+/* Observaciones (campo de texto abierto) */
+.cs-obs-input {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  color: var(--text-primary);
+  font-size: 0.78rem;
+  text-align: left !important;
+  padding: 1px 4px !important;
+}
+
+/* Envoltorio de la celda de observaciones con botones de acción */
+.cs-obs-cell-wrap {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  height: 21px !important;
+  padding: 0 4px !important;
+  gap: 4px !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+/* Agarradera de arrastre: 3 puntos verticales (⋮) */
+.cs-row-drag-handle {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: grab;
+  cursor: -webkit-grab;
+  width: 18px;
+  height: 20px;
+  padding: 0;
+  font-size: 15px;
+  font-weight: 800;
+  border-radius: 4px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.35;
+  transition: all 0.15s ease;
+  user-select: none;
+  touch-action: none;
+  flex-shrink: 0;
+}
+
+.cs-table tr:hover .cs-row-drag-handle {
+  opacity: 0.9;
+  color: #475569;
+}
+
+.cs-row-drag-handle:hover {
+  opacity: 1 !important;
+  color: var(--brand-pink);
+  background: rgba(232, 76, 154, 0.08);
+  transform: scale(1.2);
+}
+
+.cs-row-drag-handle:active {
+  cursor: grabbing;
+  cursor: -webkit-grabbing;
+}
+
+/* ==========================================================================
+   SECCIONES DE LA MATRIZ (7 BLOQUES TEMÁTICOS CON ESPACIO EN BLANCO)
+   ========================================================================== */
+
+/* Pequeño espacio completamente en blanco entre cada sección */
+.cs-section-gap-tr {
+  background: #ffffff !important;
+}
+
+.cs-section-gap-tr td {
+  height: 32px !important;
+  min-height: 32px !important;
+  background: #ffffff !important;
+  border: none !important;
+  padding: 0 !important;
+  pointer-events: none;
+}
+
+.cs-section-header-tr {
+  user-select: none;
+  background: #ffffff !important;
+}
+
+.cs-section-header-tr td {
+  padding: 14px 16px 8px !important;
+  background: #ffffff !important;
+  border: none !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* Borde superior en la primera fila de datos de cada bloque */
+.cs-section-header-tr + tr.cs-row-item td,
+.cs-section-header-tr + tr.cs-section-empty-row td {
+  border-top: 1px solid var(--border-light) !important;
+}
+
+
+.cs-section-banner-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.cs-section-line {
+  flex: 1 1 0%;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.cs-section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 18px;
+  border-radius: 24px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.2s ease;
+}
+
+.cs-section-badge .cs-section-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.cs-section-count {
+  font-size: 0.70rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #64748b;
+  margin-left: 2px;
+}
+
+/* Colores temáticos suaves por bloque */
+.cs-sec-servicios_fijos .cs-section-badge {
+  border-color: #fbcfe8;
+  color: #be185d;
+  background: linear-gradient(135deg, #fff, #fdf2f8);
+}
+.cs-sec-servicios_fijos .cs-section-count {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.cs-sec-servicios_temporales .cs-section-badge {
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  background: linear-gradient(135deg, #fff, #eff6ff);
+}
+.cs-sec-servicios_temporales .cs-section-count {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.cs-sec-clientes_espera .cs-section-badge {
+  border-color: #fde68a;
+  color: #b45309;
+  background: linear-gradient(135deg, #fff, #fffbeb);
+}
+.cs-sec-clientes_espera .cs-section-count {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.cs-sec-clientes_potenciales .cs-section-badge {
+  border-color: #ddd6fe;
+  color: #6d28d9;
+  background: linear-gradient(135deg, #fff, #f5f3ff);
+}
+.cs-sec-clientes_potenciales .cs-section-count {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.cs-sec-proximos_servicios .cs-section-badge {
+  border-color: #a7f3d0;
+  color: #047857;
+  background: linear-gradient(135deg, #fff, #ecfdf5);
+}
+.cs-sec-proximos_servicios .cs-section-count {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.cs-sec-servicios_cancelados .cs-section-badge {
+  border-color: #fecaca;
+  color: #b91c1c;
+  background: linear-gradient(135deg, #fff, #fef2f2);
+}
+.cs-sec-servicios_cancelados .cs-section-count {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.cs-sec-servicios_eventuales .cs-section-badge {
+  border-color: #a5f3fc;
+  color: #0e7490;
+  background: linear-gradient(135deg, #fff, #ecfeff);
+}
+.cs-sec-servicios_eventuales .cs-section-count {
+  background: #cffafe;
+  color: #0e7490;
+}
+
+/* Fila para agregar en cada sección */
+.cs-section-add-tr td {
+  padding: 6px 12px 12px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  text-align: center;
+}
+
+.cs-section-add-btn {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cs-section-add-btn:hover {
+  background: #ffffff;
+  color: var(--brand-pink);
+  border-color: var(--brand-pink);
+  box-shadow: 0 2px 8px rgba(232, 76, 154, 0.16);
+  transform: translateY(-1px);
+}
+
+.cs-section-add-btn:hover {
+  background: #ffffff;
+  color: var(--brand-pink);
+  border-color: var(--brand-pink);
+  box-shadow: 0 2px 6px rgba(232, 76, 154, 0.18);
+  transform: translateY(-1px);
+}
+
+.cs-section-empty-row td {
+  padding: 10px 10px !important;
+  text-align: center !important;
+  color: #94a3b8 !important;
+  font-size: 0.73rem !important;
+  font-style: italic;
+  background: #ffffff !important;
+  border-bottom: 1px dashed #e2e8f0 !important;
+}
+
+/* Estados visuales durante el Drag & Drop */
+.cs-row-dragging {
+  opacity: 0.25 !important;
+  background: #fdf2f8 !important;
+  outline: 2px dashed var(--brand-pink) !important;
+  outline-offset: -2px;
+}
+
+.cs-drag-ghost {
+  position: fixed !important;
+  z-index: 999999 !important;
+  pointer-events: none !important;
+  background: #ffffff !important;
+  border: 1.5px solid var(--brand-pink) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 20px 40px -6px rgba(0, 0, 0, 0.28), 0 8px 16px -4px rgba(232, 76, 154, 0.35) !important;
+  opacity: 0.96 !important;
+  transform: scale(1.015) rotate(0.8deg) !important;
+  transform-origin: center center;
+  transition: transform 0.08s ease;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center;
+}
+
+/* Indicador de posición de inserción (Drop line animada con resplandor) */
+.cs-drop-indicator-top {
+  position: relative;
+}
+.cs-drop-indicator-top td {
+  box-shadow: inset 0 3px 0 0 var(--brand-pink) !important;
+}
+
+.cs-drop-indicator-bottom {
+  position: relative;
+}
+.cs-drop-indicator-bottom td {
+  box-shadow: inset 0 -3px 0 0 var(--brand-pink) !important;
+}
+
+.cs-section-drag-over td {
+  background: #fdf2f8 !important;
+  border-color: var(--brand-pink) !important;
+}
+
+/* Menú contextual flotante para acciones de fila (Insertar arriba/abajo, duplicar, eliminar) */
+/* ==========================================================================
+   ESTILOS DE COLOR PERSONALIZADO EN CELDAS DE LA MATRIZ
+   ========================================================================== */
+.cs-table tbody tr:hover td[data-custom-bg],
+td[data-custom-bg] {
+  background-color: var(--custom-bg) !important;
+}
+
+/* Contorno de la pill donde va el texto de la celda:
+   Aplica a inputs de texto estándar y selects cuando la celda tiene fondo personalizado */
+td[data-custom-bg]:not([data-custom-bg="#FFFFFF"]):not([data-custom-bg="#ffffff"]):not([data-custom-bg="white"]) .cs-cell-input,
+td[data-custom-bg]:not([data-custom-bg="#FFFFFF"]):not([data-custom-bg="#ffffff"]):not([data-custom-bg="white"]) .cs-service-select {
+  border: 1px solid var(--custom-bg) !important;
+  border-color: var(--custom-bg) !important;
+  border-radius: 20px !important;
+  background-color: var(--custom-bg) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transition: all 0.15s ease !important;
+}
+
+td[data-custom-bg] .cs-cell-input:hover,
+td[data-custom-bg] .cs-service-select:hover {
+  border-color: var(--custom-bg) !important;
+  background-color: var(--custom-bg) !important;
+}
+
+td[data-custom-bg] .cs-cell-input:focus,
+td[data-custom-bg] .cs-time-input:focus,
+td[data-custom-bg] .cs-service-select:focus {
+  background-color: #ffffff !important;
+  border-color: var(--brand-pink) !important;
+  box-shadow: 0 0 0 2px rgba(232, 76, 154, 0.2) !important;
+  color: #1e293b !important;
+}
+
+
+/* Si la celda tiene únicamente color de texto personalizado, contorno coordinado */
+td[data-custom-color]:not([data-custom-bg]) .cs-cell-input,
+td[data-custom-color]:not([data-custom-bg]) .cs-service-select {
+  border: 1px solid var(--custom-color) !important;
+  border-radius: 20px !important;
+}
+
+td[data-custom-color],
+td[data-custom-color] input,
+td[data-custom-color] select,
+td[data-custom-color] span {
+  color: var(--custom-color) !important;
+  font-weight: 600;
+}
+td[data-custom-color] input::placeholder {
+  color: var(--custom-color) !important;
+  opacity: 0.55;
+}
+
+/* ==========================================================================
+   MENÚ CONTEXTUAL FLOTANTE Y SELECTOR DE COLORES DE CELDA Y FILA
+   ========================================================================== */
+.cs-row-context-menu {
+  position: fixed;
+  z-index: 100000;
+  width: 280px;
+  max-width: 310px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(14px);
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.22), 0 6px 16px -3px rgba(15, 23, 42, 0.08);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  animation: csMenuFadeIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes csMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.cs-cph-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 4px 7px 4px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 5px;
+}
+
+.cs-cph-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.cs-cph-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.1px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cs-cph-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  background: #fdf2f8;
+  color: #db2777;
+  border: 1px solid #fbcfe8;
+  border-radius: 999px;
+  padding: 1px 7px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cs-color-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 5px 4px 4px 4px;
+}
+
+.cs-color-sec-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+}
+
+.cs-color-quick-clear {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 1px 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.cs-color-quick-clear:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.cs-color-swatches-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 4px;
+  padding: 2px 3px 6px 3px;
+}
+
+.cs-color-swatch-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+.cs-color-swatch-btn:hover {
+  transform: scale(1.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+.cs-color-swatch-btn.is-active {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #e84c9a !important;
+  transform: scale(1.1);
+  z-index: 3;
+}
+.cs-color-swatch-btn.is-active::after {
+  content: '✓';
+  font-size: 11px;
+  font-weight: 900;
+  color: #0f172a;
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+.cs-color-swatch-clear {
+  background: repeating-linear-gradient(45deg, #f8fafc, #f8fafc 4px, #e2e8f0 4px, #e2e8f0 8px) !important;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.cs-color-text-swatches-row {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  padding: 2px 3px 6px 3px;
+}
+
+.cs-text-swatch-btn {
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+  box-sizing: border-box;
+}
+.cs-text-swatch-btn:hover {
+  transform: scale(1.16);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  z-index: 2;
+}
+.cs-text-swatch-btn.is-active {
+  box-shadow: 0 0 0 2px #ffffff, 0 0 0 4px #e84c9a !important;
+  transform: scale(1.1);
+  background: #ffffff;
+  z-index: 3;
+}
+
+.cs-color-custom-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: linear-gradient(135deg, #f43f5e, #eab308, #10b981, #06b6d4, #8b5cf6);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s ease;
+  box-sizing: border-box;
+}
+.cs-color-custom-btn:hover {
+  transform: scale(1.16);
+}
+.cs-color-input-native {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  width: 44px;
+  height: 44px;
+  opacity: 0;
+  cursor: pointer;
+}
+.cs-color-custom-icon {
+  font-size: 11px;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+}
+
+.cs-color-actions-bar {
+  display: flex;
+  gap: 5px;
+  padding: 4px 3px 6px 3px;
+}
+
+.cs-color-action-pill {
+  flex: 1;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #334155;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 5px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+.cs-color-action-pill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.cs-color-action-pill:active {
+  transform: scale(0.98);
+}
+
+.cs-rc-header {
+  padding: 4px 6px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 3px;
+}
+
+.cs-rc-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.cs-rc-item:hover {
+  background: #f8fafc;
+}
+
+.cs-rc-item:active {
+  transform: scale(0.98);
+}
+
+.cs-rc-icon {
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.cs-rc-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.cs-rc-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.cs-rc-desc {
+  font-size: 9px;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.cs-rc-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 4px 0;
+}
+
+.cs-rc-danger:hover {
+  background: #fff1f2;
+}
+
+.cs-rc-danger:hover .cs-rc-title {
+  color: #e11d48;
+}
+
+.cs-rc-danger:hover .cs-rc-desc {
+  color: #f43f5e;
+}
+
+/* ==========================================================================
+   FILA INFERIOR PARA AGREGAR SERVICIOS (BOTÓN + BONITO Y PEQUEÑO)
+   ========================================================================== */
+.cs-add-row-tr {
+  background: #f8fafc !important;
+}
+
+.cs-add-row-tr td {
+  padding: 6px 12px !important;
+  background: #f8fafc !important;
+  border-bottom: 2px dashed #cbd5e1 !important;
+  text-align: center;
+}
+
+.cs-add-row-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cs-btn-add-mini {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 50%;
+  background: var(--brand-pink);
+  color: white;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(232, 76, 154, 0.3);
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  padding: 0;
+}
+
+.cs-btn-add-mini:hover {
+  transform: scale(1.18);
+  background: var(--brand-pink-hover);
+  box-shadow: 0 4px 10px rgba(232, 76, 154, 0.45);
+}
+
+.cs-btn-add-mini:active {
+  transform: scale(0.95);
+}
+
+.cs-add-row-hint {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.cs-add-row-wrapper:hover .cs-add-row-hint {
+  color: var(--brand-pink);
+}
+
+
+
+/* ==========================================================================
+   MENÚ FLOTANTE INFERIOR (DESPLEGABLE AL HOVER)
+   ========================================================================== */
+
+/* Zona sensible ÚNICAMENTE en la parte inferior central para activar el menú */
+.cs-bottom-sensor {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  height: 14px;
+  z-index: 998;
+  pointer-events: auto;
+  background: transparent;
+}
+
+/* Menú Flotante Oculto (no intercepta clics cuando está replegado) */
+.cs-floating-nav {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%) translateY(90px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(14px);
+  border: 1.5px solid var(--brand-pink);
+  border-radius: 40px;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 10px 30px rgba(232, 76, 154, 0.25), 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* Ocultar la pestañita saliente para que no estorbe la barra de scroll */
+.cs-floating-nav::before {
+  display: none !important;
+}
+
+/* Revelar al pasar el mouse por la zona inferior central o por el propio menú */
+.cs-bottom-sensor:hover + .cs-floating-nav,
+.cs-floating-nav:hover {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* Botones dentro del Menú Flotante */
+.cs-nav-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.cs-nav-tab-btn:hover {
+  background: var(--brand-pink-light);
+  color: var(--brand-pink);
+}
+
+.cs-nav-tab-btn.active {
+  background: var(--brand-pink);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(232, 76, 154, 0.3);
+}
+
+/* Paneles de Contenido de Vistas */
+.cs-view-panel {
+  display: block;
+}
+.cs-view-panel.hidden {
+  display: none !important;
+}
+
+/* =========================================================
+   SUBPANEL TOOLBARS (CLIENTES Y NIÑERAS)
+   ========================================================= */
+.cs-subpanel-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.cs-subpanel-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cs-subpanel-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.cs-subpanel-search {
+  display: inline-flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0 12px;
+  gap: 8px;
+  min-width: 250px;
+  flex: 1 1 220px;
+  max-width: 400px;
+  height: 38px !important;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.cs-subpanel-search:focus-within {
+  border-color: #ec4899;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.14);
+}
+
+.cs-subpanel-search span {
+  font-size: 0.9rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+}
+
+.cs-subpanel-search input {
+  border: none !important;
+  background: transparent !important;
+  outline: none !important;
+  font-family: inherit;
+  font-size: 0.85rem !important;
+  line-height: 1 !important;
+  height: 100% !important;
+  min-height: unset !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  color: #1e293b;
+  width: 100%;
+  box-shadow: none !important;
+}
+
+.cs-subpanel-search input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.cs-subpanel-count {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #e11d48;
+  background: #fff1f2;
+  padding: 0 14px;
+  height: 38px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1.5px solid #fecdd3;
+  box-sizing: border-box;
+  line-height: 1;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.cs-subpanel-btn {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 0 16px;
+  height: 38px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.cs-subpanel-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.cs-subpanel-btn:active {
+  transform: translateY(0);
+}
+
+.cs-btn-new-client,
+.cs-btn-new-nanny {
+  background: #3BB6C4 !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0.2px;
+  box-shadow: 0 3px 10px rgba(59, 182, 196, 0.35) !important;
+}
+
+.cs-btn-new-client:hover,
+.cs-btn-new-nanny:hover {
+  background: #32a3b0 !important;
+  transform: translateY(-1.5px) !important;
+  box-shadow: 0 5px 15px rgba(59, 182, 196, 0.45) !important;
+}
+
+.cs-btn-new-client:active,
+.cs-btn-new-nanny:active {
+  background: #2b919d !important;
+  transform: translateY(0) !important;
+}
+
+/* =========================================================
+   FILTRO Y SELECTOR EDITABLE DE CIUDAD (DISEÑO PREMIUM)
+   ========================================================= */
+.cs-city-filter-box {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+}
+
+.cs-city-filter-icon {
+  position: absolute;
+  left: 9px;
+  font-size: 0.85rem;
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.cs-city-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  height: 32px !important;
+  padding: 0 28px 0 27px !important;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-subtle, #f8fafc);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 11px 11px;
+  color: #334155;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.15s ease;
+}
+
+.cs-city-select:hover {
+  background-color: #ffffff;
+  border-color: var(--brand-pink, #e84c9a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.cs-city-select:focus {
+  background-color: #ffffff;
+  border-color: var(--brand-pink, #e84c9a);
+  box-shadow: 0 0 0 2px rgba(232, 76, 154, 0.15);
+}
+
+/* =========================================================
+   DROPDOWNS PERSONALIZADOS MODERNOS (CONTROL SERVICIOS)
+   ========================================================= */
+.cs-custom-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.cs-dropdown-trigger {
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  background: var(--bg-subtle, #f8fafc);
+  color: #334155;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.cs-dropdown-trigger:hover {
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04);
+}
+
+.cs-dropdown-trigger.has-filter {
+  background: #fdf2f8;
+  border-color: #f472b6;
+  color: #db2777;
+}
+
+.cs-custom-dropdown.open .cs-dropdown-trigger {
+  background: #ffffff;
+  border-color: var(--brand-pink, #e84c9a);
+  box-shadow: 0 0 0 3px rgba(232, 76, 154, 0.14);
+}
+
+.cs-dd-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cs-dd-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.cs-dd-arrow {
+  width: 14px;
+  height: 14px;
+  color: #64748b;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.cs-custom-dropdown.open .cs-dd-arrow {
+  transform: rotate(180deg);
+  color: var(--brand-pink, #e84c9a);
+}
+
+.cs-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 210px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 13px;
+  padding: 6px;
+  box-shadow: 0 12px 30px -4px rgba(15, 23, 42, 0.12), 0 4px 10px -2px rgba(15, 23, 42, 0.05);
+  z-index: 1200;
+  box-sizing: border-box;
+  animation: csDdFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cs-custom-dropdown.open .cs-dropdown-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cs-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cs-dropdown-item:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.cs-dropdown-item.active {
+  background: #fdf2f8;
+  color: #db2777;
+  font-weight: 600;
+}
+
+.cs-dropdown-item .cs-item-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-dropdown-item .cs-item-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cs-dropdown-item .cs-item-label {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cs-dropdown-item .cs-item-check {
+  display: none;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--brand-pink, #e84c9a);
+  margin-left: 12px;
+}
+
+.cs-dropdown-item.active .cs-item-check {
+  display: inline-block;
+}
+
+.cs-cell-city-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+
+.cs-cell-city-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  height: 28px;
+  padding: 0 24px 0 9px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  background-size: 9px 9px;
+  color: #1e293b;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.cs-cell-city-select:hover {
+  border-color: var(--brand-pink, #e84c9a);
+}
+
+.cs-cell-city-select:focus {
+  border-color: var(--brand-pink, #e84c9a);
+  box-shadow: 0 0 0 2px rgba(232, 76, 154, 0.2);
+}
+
+.cs-cell-city-select.saved {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+  color: #065f46;
+}
+
+.cs-save-indicator {
+  font-size: 0.85rem;
+  animation: fadeInOut 1.5s ease forwards;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: scale(0.8); }
+  30% { opacity: 1; transform: scale(1.1); }
+  70% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; }
+}
+
+/* Celdas de usuario (Foto + Nombre + Email) */
+.cs-user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.cs-avatar-img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--brand-pink-border);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.cs-avatar-placeholder {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fce7f3, #e0f2fe);
+  color: var(--brand-pink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 2px solid var(--brand-pink-border);
+}
+
+.cs-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cs-user-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cs-user-name {
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.cs-auth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  padding: 1.5px 7px;
+  border-radius: 9999px;
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  line-height: 1.2;
+  cursor: help;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.cs-auth-badge.cs-auth-migrado {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.12);
+}
+
+.cs-auth-badge.cs-auth-migrado:hover {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(16, 185, 129, 0.2);
+}
+
+.cs-auth-badge.cs-auth-migrado svg {
+  fill: #059669;
+  flex-shrink: 0;
+}
+
+.cs-auth-badge.cs-auth-pendiente {
+  background: #f8fafc;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+}
+
+.cs-auth-badge.cs-auth-pendiente:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.cs-auth-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #94a3b8;
+  display: inline-block;
+}
+
+.cs-user-email {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Teléfono interactivo */
+.cs-tel-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cs-tel-chip:hover {
+  background: #dcfce7;
+}
+
+/* Tags de Peques */
+.cs-peque-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 2px;
+}
+
+/* Badges de Estado */
+.cs-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.cs-status-active {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+
+.cs-status-inactive {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fca5a5;
+}
+
+/* Selectores de Estado Editables */
+.cs-cell-status-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+}
+
+.cs-cell-status-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  height: 28px;
+  padding: 0 22px 0 9px;
+  border-radius: 20px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+  background-repeat: no-repeat;
+  background-position: right 7px center;
+  background-size: 8px 8px;
+}
+
+.cs-cell-status-select.status-active {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1.5px solid #86efac;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%2315803d' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.cs-cell-status-select.status-inactive {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1.5px solid #fca5a5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23b91c1c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.cs-cell-status-select:hover {
+  transform: scale(1.02);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+}
+
+.cs-cell-status-select:focus {
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.1);
+}
+
+.cs-maps-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.cs-maps-link:hover {
+  text-decoration: underline;
+}
+
+.cs-loading-row td {
+  text-align: center !important;
+  padding: 40px 20px !important;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+
+/* =========================================================
+   CONTROL DE ZOOM PARA LA MATRIZ DE SERVICIOS
+   ========================================================= */
+.cs-zoom-control {
+  display: inline-flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 2px 4px;
+  gap: 2px;
+  height: 36px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.cs-zoom-btn {
+  background: transparent;
+  border: none;
+  color: #475569;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.cs-zoom-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.cs-zoom-btn:active {
+  transform: translateY(0);
+}
+
+.cs-zoom-level {
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: "JetBrains Mono", monospace, sans-serif;
+  color: #1e293b;
+  padding: 3px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 44px;
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.cs-zoom-level:hover {
+  background: #e2e8f0;
+  color: var(--brand-pink);
+}
+
+.cs-zoom-hud {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-family: "JetBrains Mono", monospace, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;
+  transform: translateY(10px) scale(0.95);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cs-zoom-hud.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* =========================================================
+   SELECTOR DE SEMANAS CON CALENDARIO INTERACTIVO Y BOTÓN HOY
+   ========================================================= */
+.cs-week-navigator {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 4px 6px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.cs-btn-cal-icon {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  line-height: 1;
+}
+
+.cs-btn-cal-icon:hover {
+  background: #fdf2f8;
+  border-color: #f472b6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.15);
+}
+
+.cs-week-label {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  min-width: 175px;
+  text-align: center;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cs-week-label:hover {
+  background: #f1f5f9;
+  color: var(--brand-pink);
+}
+
+.cs-btn-hoy {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.80rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1;
+}
+
+.cs-btn-hoy:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
+}
+
+.cs-btn-hoy.is-current-week {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #15803d;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+}
+
+.cs-pulse-feedback {
+  animation: csPulseOnce 0.4s ease;
+}
+
+@keyframes csPulseOnce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+/* Dropdown del Calendario de Meses */
+.cs-calendar-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 320px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 18px;
+  box-shadow: 0 16px 40px -4px rgba(15, 23, 42, 0.16), 0 6px 16px -2px rgba(15, 23, 42, 0.08);
+  padding: 14px;
+  z-index: 2000;
+  user-select: none;
+  animation: csCalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes csCalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cs-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cs-cal-month-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.2px;
+}
+
+.cs-cal-nav-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cs-cal-nav-btn:hover {
+  background: #fdf2f8;
+  border-color: #f472b6;
+  color: #db2777;
+  transform: translateY(-1px);
+}
+
+.cs-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+  font-size: 0.70rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  padding: 0 4px;
+}
+
+.cs-cal-weeks-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cs-cal-week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.cs-cal-week-row:hover {
+  background: #fdf2f8;
+  border-color: #f472b6;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.12);
+}
+
+.cs-cal-week-row.cs-cal-week-active {
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+  border-color: #ec4899;
+  box-shadow: 0 2px 10px rgba(236, 72, 153, 0.2);
+}
+
+.cs-cal-day {
+  height: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.80rem;
+  font-weight: 600;
+  color: #1e293b;
+  position: relative;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.cs-cal-week-row:hover .cs-cal-day {
+  color: #be185d;
+}
+
+.cs-cal-week-row.cs-cal-week-active .cs-cal-day {
+  color: #9d174d;
+  font-weight: 700;
+}
+
+.cs-cal-day.cs-other-month {
+  color: #cbd5e1 !important;
+  opacity: 0.6;
+}
+
+.cs-cal-day.cs-is-today span {
+  position: relative;
+}
+
+.cs-cal-day.cs-is-today::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ec4899;
+}
+
+.cs-cal-footer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: center;
+}
+
+.cs-cal-today-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.cs-cal-today-btn:hover {
+  background: #fdf2f8;
+  border-color: #f472b6;
+  color: #db2777;
+}
+/* ==========================================================================
+   CELDA DE NIÑERA CON ASISTENCIA CONFIRMADA (AVISO AL ADMIN)
+   ========================================================================== */
+td.col-nanny.cs-nanny-confirmed {
+  background-color: #DCFCE7 !important;
+  border-color: #86EFAC !important;
+  --custom-bg: #DCFCE7 !important;
+  --custom-border: #DCFCE7 !important;
+  position: relative;
+}
+
+td.col-nanny.cs-nanny-confirmed .cs-nanny-input,
+td.col-nanny.cs-nanny-confirmed .cs-cell-input {
+  color: #15803D !important;
+  font-weight: 700 !important;
+  background-color: #DCFCE7 !important;
+  border: 1px solid #DCFCE7 !important;
+  border-color: #DCFCE7 !important;
+  border-radius: 20px !important;
+  box-shadow: none !important;
+}
+
+td.col-nanny.cs-nanny-confirmed .cs-nanny-input:hover,
+td.col-nanny.cs-nanny-confirmed .cs-cell-input:hover {
+  background-color: #DCFCE7 !important;
+  border-color: #DCFCE7 !important;
+}
+
+td.col-nanny.cs-nanny-confirmed::after {
+  content: '✓';
+  position: absolute;
+  right: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-weight: 800;
+  color: #16A34A;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   DROPDOWN FLOTANTE AUTOCOMPLETADO (CLIENTES Y NIÑERAS) CON HOVER RESALTADO
+   ========================================================================== */
+.cs-autocomplete-dropdown {
+  position: fixed;
+  z-index: 999999;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 12px 28px -4px rgba(0, 0, 0, 0.18), 0 8px 12px -6px rgba(0, 0, 0, 0.08);
+  border: 1px solid #e2e8f0;
+  padding: 6px;
+  max-height: 270px;
+  overflow-y: auto;
+  min-width: 240px;
+  max-width: 380px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  animation: csDropdownPopIn 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes csDropdownPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cs-autocomplete-arrow {
+  position: absolute;
+  top: -6px;
+  left: 24px;
+  width: 10px;
+  height: 10px;
+  background: #ffffff;
+  border-left: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+
+.cs-autocomplete-dropdown.pos-arriba .cs-autocomplete-arrow {
+  top: auto;
+  bottom: -6px;
+  border-left: none;
+  border-top: none;
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cs-autocomplete-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cs-autocomplete-item {
+  padding: 8px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.1s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  user-select: none;
+  border-left: 3px solid transparent;
+}
+
+/* RESALTADO CLARO AL PASAR EL PUNTERO (HOVER) Y TECLADO */
+.cs-autocomplete-item:hover,
+.cs-autocomplete-item.is-selected {
+  background-color: #f0fdf4 !important;
+  border-left: 3px solid #16a34a !important;
+  transform: translateX(2px);
+}
+
+.cs-autocomplete-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+}
+
+.cs-autocomplete-item:hover .cs-autocomplete-title,
+.cs-autocomplete-item.is-selected .cs-autocomplete-title {
+  color: #15803d;
+}
+
+.cs-autocomplete-subtitle {
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cs-autocomplete-item:hover .cs-autocomplete-subtitle,
+.cs-autocomplete-item.is-selected .cs-autocomplete-subtitle {
+  color: #334155;
+}
+
+/* ==========================================================================
+   NUEVA FUNCIÓN: SERVICIOS BASE (BOTÓN DROPDOWN Y MODAL FULLSCREEN)
+   ========================================================================== */
+
+.cs-dropdown-servicios-base {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cs-btn-servicios-base {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+  color: #ffffff;
+  border: 1px solid #4338ca;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 8px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25);
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.cs-btn-servicios-base:hover {
+  background: linear-gradient(135deg, #4338ca, #3730a3);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+  transform: translateY(-1px);
+}
+
+.cs-btn-servicios-base .cs-arrow-down {
+  font-size: 11px;
+  opacity: 0.85;
+  transition: transform 0.2s ease;
+}
+
+.cs-dropdown-servicios-base.is-open .cs-arrow-down {
+  transform: rotate(180deg);
+}
+
+.cs-servicios-base-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.18), 0 4px 10px -2px rgba(15, 23, 42, 0.08);
+  padding: 6px;
+  min-width: 175px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: csMenuSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes csMenuSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.cs-sb-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s ease;
+  user-select: none;
+}
+
+.cs-sb-menu-item:hover {
+  background: #f1f5f9;
+  color: #4f46e5;
+  transform: translateX(2px);
+}
+
+.cs-sb-menu-item:active {
+  transform: scale(0.98);
+}
+
+/* MODAL FULLSCREEN DE SERVICIOS BASE */
+.cs-sb-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  box-sizing: border-box;
+  animation: csSbFadeIn 0.2s ease-out;
+}
+
+/* Forzar que todos los diálogos de SweetAlert2 se muestren siempre al frente */
+.swal2-container {
+  z-index: 99999999 !important;
+}
+
+@keyframes csSbFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cs-sb-modal-container {
+  width: 99vw;
+  height: 97vh;
+  max-width: 100%;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: csSbScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes csSbScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Header del Modal */
+.cs-sb-modal-header {
+  padding: 12px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.cs-sb-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cs-sb-modal-title-group h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-sb-badge {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.cs-sb-modal-subtitle {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.cs-sb-modal-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cs-sb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.cs-sb-btn:active {
+  transform: scale(0.97);
+}
+
+/* Botón Nuevo cliente */
+.cs-sb-btn-nuevo-cliente {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+.cs-sb-btn-nuevo-cliente:hover {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);
+}
+
+/* Botón Cliente perdido */
+.cs-sb-btn-cliente-perdido {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+.cs-sb-btn-cliente-perdido:hover {
+  background: #ffe4e6;
+  color: #9f1239;
+  border-color: #fda4af;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.15);
+}
+
+/* Botón Guardar Plantilla */
+.cs-sb-btn-guardar {
+  background: var(--brand-pink);
+  color: #ffffff;
+  border: 1px solid var(--brand-pink-hover);
+  box-shadow: 0 2px 6px rgba(232, 76, 154, 0.25);
+}
+.cs-sb-btn-guardar:hover {
+  background: var(--brand-pink-hover);
+  box-shadow: 0 4px 10px rgba(232, 76, 154, 0.35);
+}
+
+/* Botón Cerrar Modal */
+.cs-sb-btn-cerrar {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+.cs-sb-btn-cerrar:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* Toolbar de Multi-selección: Cliente Perdido */
+.cs-sb-selection-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+  border: 1px solid #fecdd3;
+  padding: 6px 14px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.1);
+  animation: csSbFadeIn 0.2s ease-out;
+}
+
+.cs-sb-selection-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cs-sb-selection-badge {
+  background: #be123c;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  letter-spacing: 0.2px;
+}
+
+.cs-sb-selection-count {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #881337;
+}
+
+.cs-sb-selection-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-sb-btn-confirm-loss {
+  background: #e11d48;
+  color: #ffffff;
+  border: 1px solid #be123c;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
+}
+.cs-sb-btn-confirm-loss:hover {
+  background: #be123c;
+  box-shadow: 0 4px 10px rgba(225, 29, 72, 0.35);
+}
+
+.cs-sb-btn-cancel-loss {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+.cs-sb-btn-cancel-loss:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Badge distintivo de nuevo cliente en fila de Servicios Base */
+.cs-sb-new-tag {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.cs-sb-loss-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #e11d48;
+}
+
+.cs-sb-row-selected-for-loss {
+  background-color: #fff1f2 !important;
+}
+
+/* Cuerpo y Tabla del Modal */
+.cs-sb-modal-body {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: auto;
+  background: #ffffff;
+  padding: 0;
+}
+
+.cs-sb-modal-body .cs-table {
+  min-width: 100%;
+}
+
+.cs-sb-btn-delete-row {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.12s ease;
+}
+
+.cs-sb-btn-delete-row:hover {
+  background: #ffe4e6;
+  color: #be123c;
+  transform: scale(1.08);
+}
+
+.cs-sb-empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.cs-sb-empty-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* Footer del Modal */
+.cs-sb-modal-footer {
+  padding: 10px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+/* ==========================================================================
+   COLUMNA DE HORAS TOTALES SEMANALES
+   ========================================================================== */
+.col-total-hours {
+  width: 68px !important;
+  min-width: 68px !important;
+  max-width: 80px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  font-weight: 700;
+  padding: 0 4px !important;
+  box-sizing: border-box;
+}
+
+th.col-total-hours {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.3px;
+  z-index: 11 !important;
+}
+
+td.col-total-hours {
+  background: #fafbfc;
+  border-right: 2px solid #94a3b8 !important;
+  text-align: center !important;
+}
+
+.cs-hours-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 18px;
+  line-height: 16px;
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 0.80rem;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #64748b;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  white-space: nowrap;
+  letter-spacing: -0.2px;
+  user-select: none;
+  transition: all 0.15s ease;
+  box-sizing: border-box;
+}
+
+.cs-hours-badge.has-hours {
+  color: #0f766e;
+  background: #f0fdfa;
+  border-color: #99f6e4;
+  box-shadow: 0 1px 3px rgba(15, 118, 110, 0.08);
+}
+
+/* ==========================================================================
+   BOTÓN Y ELEMENTOS DE GESTIÓN DE COLUMNAS (TOOLBAR & MATRIZ)
+   ========================================================================== */
+.cs-btn-columns {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.cs-btn-columns:hover {
+  background: #fdf2f8;
+  color: #be185d;
+  border-color: #fbcfe8;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(219, 39, 119, 0.12);
+}
+
+.cs-cols-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f43f5e;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+  letter-spacing: -0.2px;
+  line-height: 14px;
+  animation: csBadgePop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes csBadgePop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Menú contextual de columna */
+.cs-col-context-menu {
+  width: 290px;
+  max-width: 320px;
+}
+
+.cs-hidden-cols-quick-list {
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 4px 0;
+  padding-right: 2px;
+}
+
+.cs-hidden-cols-quick-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.cs-hidden-cols-quick-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.cs-rc-item-subtle {
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 3px;
+  border: 1px solid #f1f5f9;
+}
+
+.cs-rc-item-subtle:hover {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+}
+
+.cs-rc-item-subtle:hover .cs-rc-title {
+  color: #15803d !important;
+}
+
+.cs-rc-action-btn {
+  background: #fdf2f8;
+  border: 1px solid #fbcfe8;
+  border-radius: 8px;
+}
+
+.cs-rc-action-btn:hover {
+  background: #fce7f3 !important;
+  border-color: #f472b6 !important;
+}
+
+.cs-rc-action-btn:hover .cs-rc-title {
+  color: #be185d !important;
+}
+
+/* ==========================================================================
+   MODAL DE ADMINISTRACIÓN DE COLUMNAS VISIBLES
+   ========================================================================== */
+.cs-modal-cols-card {
+  max-width: 640px !important;
+  width: 95% !important;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  animation: csModalZoomIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes csModalZoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.cs-modal-cols-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.cs-modal-cols-count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-cols-count-badge {
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.cs-cols-count-badge strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.cs-cols-hidden-pill {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e11d48;
+  background: #ffe4e6;
+  border: 1px solid #fecdd3;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.cs-modal-cols-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-modal-col-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fdf2f8;
+  color: #be185d;
+  border: 1px solid #fbcfe8;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cs-modal-col-btn:hover {
+  background: #fce7f3;
+  border-color: #f472b6;
+  transform: translateY(-1px);
+}
+
+.cs-modal-col-btn-sec {
+  background: #ffffff;
+  color: #475569;
+  border-color: #cbd5e1;
+}
+
+.cs-modal-col-btn-sec:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+.cs-modal-cols-list {
+  padding: 14px 20px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+  flex: 1;
+}
+
+.cs-modal-cols-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cs-modal-cols-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+}
+
+.cs-col-toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.cs-col-toggle-item:hover {
+  border-color: #f472b6;
+  background: #fff5f9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(219, 39, 119, 0.08);
+}
+
+.cs-col-toggle-item.is-hidden {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  opacity: 0.65;
+}
+
+.cs-col-toggle-item.is-hidden:hover {
+  opacity: 0.9;
+}
+
+.cs-col-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.cs-col-toggle-icon {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.cs-col-toggle-info {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cs-col-toggle-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-col-toggle-desc {
+  font-size: 11px;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Switch toggle elegante */
+.cs-col-switch-wrap {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.cs-col-switch-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.cs-col-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 999px;
+}
+
+.cs-col-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.cs-col-switch-input:checked + .cs-col-switch-slider {
+  background-color: #db2777;
+}
+
+.cs-col-switch-input:checked + .cs-col-switch-slider:before {
+  transform: translateX(18px);
+}
+
+.cs-modal-footer-hint {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-right: auto;
+}
+
+.cs-btn-modal-done {
+  background: linear-gradient(135deg, #db2777, #be185d);
+  color: #ffffff;
+  border: none;
+  padding: 9px 22px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(219, 39, 119, 0.28);
+  transition: all 0.18s ease;
+}
+
+.cs-btn-modal-done:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(219, 39, 119, 0.38);
+}
+
+/* ==========================================================================
+   BOTÓN VERDE "SALDOS" Y MODAL DE SALDOS SEMANALES (CLIENTES Y NIÑERAS)
+   ========================================================================== */
+.cs-btn-saldos {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  border: 1px solid #047857;
+  padding: 6px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.28);
+}
+
+.cs-btn-saldos:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.cs-btn-saldos:active {
+  transform: translateY(0);
+}
+
+/* Overlay Global para Modales de Control de Servicios */
+.cs-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999999 !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.cs-modal-overlay.is-hidden,
+.cs-modal-overlay[style*="display: none"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.cs-btn-close-modal {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.cs-btn-close-modal:hover {
+  background: #ffffff;
+  color: #E84C9A;
+  border-color: #ffffff;
+  transform: rotate(90deg) scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.cs-btn-close-modal:active {
+  transform: rotate(90deg) scale(0.95);
+}
+
+/* Modal de Saldos con Identidad Corporativa Nannys y Peques (Ultra Premium) */
+.cs-saldos-modal {
+  background: #ffffff;
+  width: 95vw;
+  max-width: 880px;
+  max-height: 88vh;
+  border-radius: 22px;
+  box-shadow: 0 25px 60px -15px rgba(232, 76, 154, 0.25), 0 10px 30px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  animation: csModalZoomIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cs-saldos-header {
+  padding: 20px 26px;
+  background: linear-gradient(135deg, #E84C9A 0%, #D03584 65%, #B81D6C 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 14px rgba(232, 76, 154, 0.25);
+  position: relative;
+}
+
+.cs-saldos-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cs-saldos-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.cs-saldos-header-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: #ffffff;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+
+.cs-saldos-header-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.92);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 500;
+}
+
+.cs-saldos-semana-pill {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+}
+
+/* Selector de Pestañas (Clientes vs Niñeras) */
+.cs-saldos-nav {
+  padding: 14px 26px;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.cs-saldos-tabs-bar {
+  display: inline-flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 13px;
+  gap: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.cs-saldos-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 10px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+.cs-saldos-tab-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.6);
+  color: #0f172a;
+}
+
+.cs-saldos-tab-btn.active {
+  background: #ffffff;
+  color: #E84C9A;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.cs-saldos-tab-badge {
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  transition: all 0.18s ease;
+}
+
+.cs-saldos-tab-btn.active .cs-saldos-tab-badge {
+  background: #fce7f3;
+  color: #E84C9A;
+}
+
+.cs-saldos-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cs-saldos-quick-btn {
+  background: #ffffff;
+  color: #E84C9A;
+  border: 1px solid #fbcfe8;
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  box-shadow: 0 1px 3px rgba(232, 76, 154, 0.06);
+}
+
+.cs-saldos-quick-btn:hover {
+  background: #fdf2f8;
+  border-color: #E84C9A;
+  color: #D03584;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(232, 76, 154, 0.12);
+}
+
+/* Cuerpo con Scroll y Tabla */
+.cs-saldos-body {
+  padding: 16px 26px 20px 26px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 280px;
+}
+
+.cs-saldos-table-wrap {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+}
+
+.cs-saldos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.cs-saldos-table thead th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 13px 18px;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.cs-saldos-table tbody tr {
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.cs-saldos-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.cs-saldos-table tbody tr:hover {
+  background: #fff5f9;
+}
+
+.cs-saldos-table tbody td {
+  padding: 14px 18px;
+  vertical-align: middle;
+  color: #1e293b;
+}
+
+/* Celdas específicas */
+.cs-saldos-col-hours {
+  width: 135px;
+}
+
+.cs-saldos-hours-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #eff6ff;
+  color: #0284c7;
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 5px 11px;
+  border-radius: 9px;
+  border: 1px solid #bae6fd;
+}
+
+.cs-saldos-col-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cs-saldos-name-flex {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cs-saldos-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+  color: #E84C9A;
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #f472b6;
+  flex-shrink: 0;
+  box-shadow: 0 2px 5px rgba(232, 76, 154, 0.12);
+}
+
+.cs-saldos-avatar-circle.nanny {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  color: #0284c7;
+  border-color: #38bdf8;
+  box-shadow: 0 2px 5px rgba(2, 132, 199, 0.12);
+}
+
+.cs-saldos-name-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.cs-saldos-name-main {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.cs-saldos-name-sub {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.cs-saldos-col-amount {
+  font-weight: 800;
+  font-size: 15px;
+  color: #059669;
+  letter-spacing: -0.2px;
+  width: 170px;
+}
+
+.cs-saldos-col-amount.empty {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.cs-saldos-col-vis {
+  width: 150px;
+  text-align: center;
+}
+
+/* Switch de Visibilidad para Cliente */
+.cs-saldos-vis-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cs-saldos-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+}
+
+.cs-saldos-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.cs-saldos-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 22px;
+}
+
+.cs-saldos-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+}
+
+.cs-saldos-switch input:checked + .cs-saldos-slider {
+  background-color: #10b981;
+}
+
+.cs-saldos-switch input:checked + .cs-saldos-slider:before {
+  transform: translateX(18px);
+}
+
+.cs-saldos-vis-text {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  min-width: 48px;
+  text-align: left;
+}
+
+.cs-saldos-vis-text.active {
+  color: #059669;
+}
+
+/* Estado Vacío */
+.cs-saldos-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: #64748b;
+}
+
+.cs-saldos-empty-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.cs-saldos-empty-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 4px;
+}
+
+.cs-saldos-empty-desc {
+  font-size: 12.5px;
+  color: #94a3b8;
+  max-width: 360px;
+  margin: 0 auto;
+}
+
+/* Footer del Modal */
+.cs-saldos-footer {
+  padding: 16px 26px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.cs-saldos-footer-info {
+  font-size: 12px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cs-btn-saldos-close {
+  background: linear-gradient(135deg, #E84C9A 0%, #D03584 100%);
+  color: #ffffff;
+  border: none;
+  padding: 10px 28px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(232, 76, 154, 0.35);
+  font-family: inherit;
+}
+
+.cs-btn-saldos-close:hover {
+  background: linear-gradient(135deg, #D03584 0%, #be185d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(232, 76, 154, 0.45);
+}
+
+.cs-btn-saldos-close:active {
+  transform: translateY(0);
+}
+
+/* =========================================================
+   MODAL DE DETALLES DEL SERVICIO (CONTACTO Y UBICACIÓN)
+   ========================================================= */
+.cs-details-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10005;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  animation: csFadeIn 0.2s ease-out forwards;
+}
+
+.cs-details-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 520px;
+  width: 100%;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  animation: csScaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes csFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes csScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.cs-details-modal-header {
+  background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%);
+  padding: 18px 24px;
+  border-bottom: 1px solid #fbcfe8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cs-details-modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cs-details-modal-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ec4899, #db2777);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(219, 39, 119, 0.3);
+  flex-shrink: 0;
+}
+
+.cs-details-modal-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #831843;
+  line-height: 1.2;
+}
+
+.cs-details-modal-subtitle {
+  font-size: 0.8rem;
+  color: #be185d;
+  font-weight: 600;
+  display: block;
+  margin-top: 2px;
+}
+
+.cs-details-modal-close {
+  background: none;
+  border: none;
+  color: #9d174d;
+  font-size: 20px;
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.cs-details-modal-close:hover {
+  background: rgba(219, 39, 119, 0.15);
+  color: #831843;
+}
+
+.cs-details-modal-banner {
+  padding: 12px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.8rem;
+  color: #475569;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.cs-details-modal-banner-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.cs-details-modal-banner-text {
+  line-height: 1.45;
+}
+
+.cs-details-modal-banner-text strong {
+  color: #0f172a;
+}
+
+.cs-details-modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cs-details-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cs-details-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cs-details-input,
+.cs-details-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 13px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.18s ease;
+  background: #ffffff;
+  font-family: inherit;
+}
+
+.cs-details-input:focus,
+.cs-details-textarea:focus {
+  border-color: #db2777;
+  box-shadow: 0 0 0 3px rgba(219, 39, 119, 0.12);
+  background: #fff;
+}
+
+.cs-details-input::placeholder,
+.cs-details-textarea::placeholder {
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+.cs-details-textarea {
+  resize: vertical;
+  min-height: 68px;
+}
+
+.cs-details-modal-footer {
+  padding: 14px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cs-details-btn {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cs-details-btn-cancel {
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+}
+
+.cs-details-btn-cancel:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #94a3b8;
+}
+
+.cs-details-btn-save {
+  border: none;
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(219, 39, 119, 0.35);
+}
+
+.cs-details-btn-save:hover {
+  background: linear-gradient(135deg, #db2777 0%, #be185d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(219, 39, 119, 0.45);
+}
+
+.cs-details-btn-save:active {
+  transform: translateY(0);
+}
+
+/* Indicador y cursor interactivo en celda Zona para bloques eventuales y temporales */
+tr[data-bloque="servicios_temporales"] td.col-zone input.cs-zone-input,
+tr[data-bloque="servicios_eventuales"] td.col-zone input.cs-zone-input,
+tr[data-bloque="servicios_temporales"] td.col-zone,
+tr[data-bloque="servicios_eventuales"] td.col-zone {
+  cursor: pointer !important;
+}
+
+tr[data-bloque="servicios_temporales"] td.col-zone input.cs-zone-input:hover,
+tr[data-bloque="servicios_eventuales"] td.col-zone input.cs-zone-input:hover {
+  background-color: #fdf2f8 !important;
+}
+
+/* =========================================================
+   SUB-PESTAÑAS CLIENTES (FIJOS VS EVENTUALES)
+   ========================================================= */
+.cs-client-type-switcher {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  gap: 2px;
+}
+
+.cs-client-type-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  user-select: none;
+}
+
+.cs-client-type-btn:hover {
+  color: #334155;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.cs-client-type-btn.active {
+  background: #ffffff;
+  color: #db2777;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.cs-client-type-btn.active span {
+  color: #db2777;
+}
+
+.cs-tel-plain {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  letter-spacing: 0.3px;
+}
+
+/* ==========================================================================
+   INDICADOR DE NOTA EN CELDAS DE HORARIOS (ESTILO EXCEL)
+   ========================================================================== */
+td.has-cell-note {
+  position: relative !important;
+}
+
+td.has-cell-note::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 0 7px 7px 0;
+  border-color: transparent #0f172a transparent transparent;
+  pointer-events: none;
+  z-index: 8;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+td.has-cell-note:hover::after {
+  transform: scale(1.2);
+  border-color: transparent #000000 transparent transparent;
+}
+
+/* Tooltip flotante al pasar el puntero sobre celda con nota */
+.cs-cell-note-tooltip {
+  position: fixed;
+  z-index: 100005;
+  max-width: 260px;
+  background: #0f172a;
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11.5px;
+  line-height: 1.4;
+  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.35), 0 4px 10px -2px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  animation: csTooltipFadeIn 0.12s ease-out;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.cs-cell-note-tooltip .cs-cnt-header {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #f472b6;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cs-cell-note-tooltip .cs-cnt-text {
+  color: #f1f5f9;
+  word-break: break-word;
+  white-space: pre-wrap;
+  margin-bottom: 5px;
+}
+
+.cs-cell-note-tooltip .cs-cnt-extras {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 10.5px;
+  color: #94a3b8;
+}
+
+.cs-cell-note-tooltip .cs-cnt-extras span strong {
+  color: #38bdf8;
+}
+
+@keyframes csTooltipFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   MODAL DE NOTAS Y HORAS EXTRAS DE CELDA
+   ========================================================================== */
+.cs-note-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 100010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: csModalOverlayIn 0.15s ease-out;
+}
+
+@keyframes csModalOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.cs-note-modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  animation: csModalCardIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@keyframes csModalCardIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.cs-note-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #fdf2f8 0%, #f8fafc 100%);
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.cs-note-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cs-note-modal-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.cs-note-modal-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+.cs-note-modal-subtitle {
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 500;
+  display: block;
+  margin-top: 2px;
+}
+
+.cs-note-modal-close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  color: #94a3b8;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s ease;
+}
+
+.cs-note-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.cs-note-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cs-note-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cs-note-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cs-note-label-hint {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.cs-note-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #0f172a;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 75px;
+  max-height: 160px;
+  transition: all 0.15s ease;
+}
+
+.cs-note-textarea:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.12);
+}
+
+.cs-note-horas-extras-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.cs-note-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+
+.cs-note-input-wrap:focus-within {
+  border-color: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+.cs-note-input-prefix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #475569;
+  background: #f1f5f9;
+  border-right: 1.5px solid #cbd5e1;
+  user-select: none;
+  line-height: 1;
+}
+
+.cs-note-number-input {
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  font-family: inherit;
+  background: transparent;
+  height: 38px;
+  line-height: normal;
+}
+
+
+.cs-note-modal-footer {
+  display: flex;
+  align-items: center;
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
+  gap: 10px;
+}
+
+.cs-note-btn {
+  padding: 8px 16px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+.cs-note-btn-primary {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(219, 39, 119, 0.3);
+}
+
+.cs-note-btn-primary:hover {
+  background: linear-gradient(135deg, #db2777 0%, #be185d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(219, 39, 119, 0.35);
+}
+
+.cs-note-btn-secondary {
+  background: #ffffff;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.cs-note-btn-secondary:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.cs-note-btn-danger {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+
+.cs-note-btn-danger:hover {
+  background: #fecaca;
+  color: #b91c1c;
+}
+
+/* Item destacado en el menú contextual para Nota */
+.cs-rc-item-note-action {
+  background: #fdf2f8 !important;
+  border-color: #fbcfe8 !important;
+  margin-bottom: 6px;
+}
+
+.cs-rc-item-note-action:hover {
+  background: #fce7f3 !important;
+}
+
+.cs-rc-item-note-action .cs-rc-title {
+  color: #db2777 !important;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   MODAL DE SELECCIÓN DE SERVICIOS BASE A INSERTAR
+   ========================================================================== */
+.cs-sb-choice-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 2px solid #f1f5f9;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cs-sb-choice-btn:hover {
+  transform: translateY(-2px);
+  border-color: #f472b6;
+  box-shadow: 0 8px 20px -4px rgba(236, 72, 153, 0.18);
+  background: #fffdfd;
+}
+
+.cs-sb-choice-btn:active {
+  transform: translateY(0);
+}
+
+.cs-sel-sb-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  animation: csSbFadeIn 0.2s ease-out;
+}
+
+.cs-sel-sb-modal-container {
+  width: 720px;
+  max-width: 96vw;
+  max-height: 88vh;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: csSbScaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.cs-sel-sb-header {
+  padding: 20px 24px 16px 24px;
+  background: linear-gradient(135deg, #FFF5F9 0%, #FFFFFF 100%);
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.cs-sel-sb-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cs-sel-sb-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #EC4899 0%, #BE185D 100%);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25);
+  flex-shrink: 0;
+}
+
+.cs-sel-sb-title {
+  margin: 0;
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.3px;
+}
+
+.cs-sel-sb-subtitle {
+  margin: 2px 0 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.cs-sel-sb-close-btn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.cs-sel-sb-close-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
+  transform: rotate(90deg);
+}
+
+.cs-sel-sb-toolbar {
+  padding: 12px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.cs-sel-sb-search-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.cs-sel-sb-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  background: #ffffff;
+  color: #0f172a;
+  box-sizing: border-box;
+  transition: all 0.15s;
+}
+
+.cs-sel-sb-search-input:focus {
+  outline: none;
+  border-color: #ec4899;
+  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
+}
+
+.cs-sel-sb-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.cs-sel-sb-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cs-sel-sb-btn-quick {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cs-sel-sb-btn-quick:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.cs-sel-sb-counter-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #fdf2f8;
+  border: 1px solid #fbcfe8;
+  color: #db2777;
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cs-sel-sb-body {
+  padding: 16px 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cs-sel-sb-item-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #f1f5f9;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.cs-sel-sb-item-card:hover {
+  border-color: #f472b6;
+  background: #fffbfd;
+  transform: translateX(2px);
+  box-shadow: 0 4px 12px -2px rgba(236, 72, 153, 0.08);
+}
+
+.cs-sel-sb-item-card.is-selected {
+  border-color: #ec4899;
+  background: #fdf2f8;
+}
+
+.cs-sel-sb-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  accent-color: #ec4899;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cs-sel-sb-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cs-sel-sb-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.cs-sel-sb-card-name {
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cs-sel-sb-tag-nuevo {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+
+.cs-sel-sb-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.cs-sel-sb-meta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-weight: 500;
+}
+
+.cs-sel-sb-meta-pill.pill-nanny {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.cs-sel-sb-meta-pill.pill-nanny.no-nanny {
+  background: #f8fafc;
+  color: #94a3b8;
+  border-color: #e2e8f0;
+}
+
+.cs-sel-sb-meta-pill.pill-hours {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.cs-sel-sb-footer {
+  padding: 14px 24px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.cs-sel-sb-btn-cancel {
+  padding: 9px 18px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.cs-sel-sb-btn-cancel:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.cs-sel-sb-btn-insert {
+  padding: 9px 22px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #EC4899 0%, #DB2777 100%);
+  color: #ffffff;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.25);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cs-sel-sb-btn-insert:hover:not(:disabled) {
+  background: linear-gradient(135deg, #F472B6 0%, #EC4899 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(236, 72, 153, 0.35);
+}
+
+.cs-sel-sb-btn-insert:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+
+
+
+
+
+
+

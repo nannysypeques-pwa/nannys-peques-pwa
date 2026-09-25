@@ -190,29 +190,28 @@ try {
     const s = localStorage.getItem('nyp_sesion');
     if (s) {
         SESION = JSON.parse(s);
-        // Autenticar de forma silenciosa de inmediato si ya tiene el token guardado
-        if (SESION.firebaseToken) {
+
+        // 🛡️ Saneamiento: Si el token almacenado contiene un JWT de Supabase (>250 chars o prefijo eyJ),
+        // limpiarlo para no interferir con llamadas al backend de Sheets
+        if (SESION.token && (typeof SESION.token !== 'string' || SESION.token.length > 250 || SESION.token.startsWith('eyJ'))) {
+            SESION.token = null;
+        }
+
+        // Si la sesión no cuenta ni con token de backend ni con autenticación de Supabase:
+        if (!SESION.token && !SESION.supabaseUid) {
+            console.warn('⚠️ Sesión sin credenciales activas detectada en almacenamiento local, cerrando sesión residual...');
+            SESION = { email: null, token: null, nombre: '', admin: false, supervision: false, rh: false, cliente: false };
+            localStorage.removeItem('nyp_sesion');
+        }
+
+        // Autenticar de forma silenciosa de inmediato en Firebase si la sesión está activa
+        if (SESION.email) {
             (async () => {
                 try {
-                    const firebaseAppModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
-                    const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
-                    const { db } = await import('./firebase-config.js');
-                    const auth = firebaseAuthModule.getAuth(db.app);
-                    
-                    // Esperar a que Firebase intente restaurar la sesión persistente de IndexedDB
-                    if (typeof auth.authStateReady === 'function') {
-                        await auth.authStateReady();
-                    }
-                    
-                    if (auth.currentUser) {
-                        console.log("✅ [Inicio] Firebase Auth (Sesión Restaurada) para:", SESION.email);
-                    } else {
-                        // Si no hay una sesión activa persistida en Firebase, intentar con el token guardado
-                        await firebaseAuthModule.signInWithCustomToken(auth, SESION.firebaseToken);
-                        console.log("✅ [Inicio] Firebase Auth OK para:", SESION.email);
-                    }
+                    const { asegurarAutenticacionFirebase } = await import('./firebase-config.js');
+                    await asegurarAutenticacionFirebase(null, SESION.email);
                 } catch (fbErr) {
-                    console.warn("⚠️ [Inicio] Firebase Auth silencioso falló:", fbErr.message);
+                    console.warn("⚠️ [Inicio] Firebase Auth silencioso falló (no crítico):", fbErr.message);
                 }
             })();
         }
@@ -241,7 +240,6 @@ let CACHE_NINERA = { servicios: null, planeaciones: null, disponibilidad: null }
 let ADMIN_WEEK_START_ISO = null;
 
 const TIPOS_CON_PLANEACION = [
-    'neuronanny',
     'nanny educativa',
     'miss nanny'
 ];
@@ -319,12 +317,30 @@ function validarLinksImagenes(val) {
    AUTH
    ========================================= */
 function mostrarOlvide() {
-    document.getElementById('paso-login').style.display = 'none';
-    document.getElementById('paso-olvide').style.display = 'block';
+    const supaCard = document.getElementById('auth-supabase-card');
+    if (supaCard && (supaCard.style.display !== 'none' || localStorage.getItem('nyp_login_mode') === 'supabase')) {
+        if (typeof mostrarOlvideSupabase === 'function') {
+            mostrarOlvideSupabase();
+            return;
+        }
+    }
+    const pasoLogin = document.getElementById('paso-login');
+    const pasoOlvide = document.getElementById('paso-olvide');
+    if (pasoLogin) pasoLogin.style.display = 'none';
+    if (pasoOlvide) pasoOlvide.style.display = 'block';
 }
 function volverLogin() {
-    document.getElementById('paso-login').style.display = 'block';
-    document.getElementById('paso-olvide').style.display = 'none';
+    const supaCard = document.getElementById('auth-supabase-card');
+    if (supaCard && (supaCard.style.display !== 'none' || localStorage.getItem('nyp_login_mode') === 'supabase')) {
+        if (typeof volverDeOlvide === 'function') {
+            volverDeOlvide();
+            return;
+        }
+    }
+    const pasoLogin = document.getElementById('paso-login');
+    const pasoOlvide = document.getElementById('paso-olvide');
+    if (pasoLogin) pasoLogin.style.display = 'block';
+    if (pasoOlvide) pasoOlvide.style.display = 'none';
 }
 
 async function login(rol) {
@@ -353,18 +369,36 @@ async function login(rol) {
 
         const res = await api('login', { email, contrasena: pass, rol: rol });
 
-        SESION.email = email;
-        SESION.token = res.token || null;
-        SESION.nombre = res.nombre || '';
-        SESION.admin = !!res.admin;
-        SESION.supervision = !!res.supervision;
-        SESION.rh = !!res.rh;
-        SESION.cliente = !!res.cliente;
-        SESION.firebaseToken = res.firebaseToken || null; // 🔐 Guardamos el token en la sesión persistente
+        // 🔐 Verificar si la cuenta fue inactivada en Supabase
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        if (client) {
+            const tableToCheck = (rol === 'cliente' || res?.cliente) ? 'clientes' : (rol === 'staff' ? null : 'nannys');
+            if (tableToCheck) {
+                const { data: statusCheck } = await client
+                    .from(tableToCheck)
+                    .select('activo')
+                    .eq('email', email)
+                    .maybeSingle();
+                if (statusCheck && statusCheck.activo === false) {
+                    throw new Error("⛔ Tu cuenta se encuentra inactiva. El acceso a la aplicación ha sido bloqueado por la administración.");
+                }
+            }
+        }
 
-        document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente', 'rh');
-        if (SESION.admin) document.body.classList.add('admin');
-        else if (SESION.supervision) document.body.classList.add('supervision');
+        SESION.email = email;
+        SESION.token = res?.token || null;
+        SESION.nombre = res?.nombre || '';
+        SESION.admin = !!res?.admin;
+        SESION.supervision = !!res?.supervision;
+        SESION.rh = !!res?.rh;
+        SESION.cliente = !!res?.cliente;
+        SESION.firebaseToken = res?.firebaseToken || null; // 🔐 Guardamos el token en la sesión persistente
+
+        document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente', 'rh', 'en-control-servicios');
+        document.documentElement.classList.remove('en-control-servicios');
+        if (SESION.admin) {
+            document.body.classList.add('admin');
+        } else if (SESION.supervision) document.body.classList.add('supervision');
         else if (SESION.rh) document.body.classList.add('rh');
         else if (SESION.cliente) document.body.classList.add('cliente');
         else document.body.classList.add('ninera');
@@ -375,17 +409,17 @@ async function login(rol) {
         localStorage.setItem(LAST_LOGIN_KEY, JSON.stringify({ email: SESION.email, cliente: SESION.cliente }));
 
         // 🔐 Autenticación silenciosa con Firebase (para reglas de Firestore seguras)
-        if (res.firebaseToken) {
-            try {
-                const firebaseAppModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js");
-                const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
-                const { db } = await import('./firebase-config.js');
-                const auth = firebaseAuthModule.getAuth(db.app);
-                await firebaseAuthModule.signInWithCustomToken(auth, res.firebaseToken);
-                console.log("✅ Firebase Auth OK para:", email);
-            } catch (fbErr) {
-                console.warn("⚠️ Firebase Auth silenciosa falló (no crítico):", fbErr.message);
-            }
+        if (email) {
+            (async () => {
+                try {
+                    const { db, asegurarAutenticacionFirebase } = await import('./firebase-config.js');
+                    const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
+                    const auth = firebaseAuthModule.getAuth(db.app);
+                    await asegurarAutenticacionFirebase(auth, email);
+                } catch (fbErr) {
+                    console.warn("⚠️ Firebase Auth silenciosa falló (no crítico):", fbErr.message);
+                }
+            })();
         }
 
 
@@ -460,11 +494,11 @@ async function login(rol) {
             } else if (SESION.cliente) {
                 const navDefault = document.querySelector('.bottom-nav:not(#nav-supervision):not(#nav-ventas):not(#nav-rh)');
                 if (navDefault) navDefault.style.display = 'flex';
-                irVista('servicios');
+                irVista('inicio');
             } else {
                 const navDefault = document.querySelector('.bottom-nav:not(#nav-supervision):not(#nav-ventas):not(#nav-rh)');
                 if (navDefault) navDefault.style.display = 'flex';
-                irVista('servicios');
+                irVista('inicio');
             }
 
             const appDiv = document.getElementById('app');
@@ -518,13 +552,60 @@ async function guardarNueva() {
     }
 }
 
+/**
+ * Modal de confirmación para cerrar sesión con SweetAlert2
+ */
+async function confirmarLogout() {
+    if (typeof Swal !== 'undefined') {
+        const res = await Swal.fire({
+            title: '¿Cerrar sesión?',
+            text: '¿Estás seguro de que deseas salir de la sesión actual?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#e11d48',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Sí, salir',
+            cancelButtonText: 'Cancelar',
+            reverseButtons: true,
+            customClass: {
+                popup: 'cs-swal-popup'
+            }
+        });
+        if (res.isConfirmed) {
+            logout(false);
+        }
+    } else {
+        if (confirm('¿Estás seguro de que deseas salir de la sesión?')) {
+            logout(false);
+        }
+    }
+}
+window.confirmarLogout = confirmarLogout;
+
 function logout(isTimeout = false) {
     // Si no es timeout, podríamos querer limpiar la persistencia, 
     // pero el requerimiento pide recordar el usuario. 
     // Así que lo mantenemos en LAST_LOGIN_KEY siempre que se loguee con éxito.
 
+    // Revocación formal de sesión en Supabase Auth (OWASP ASVS 5.0 V3)
+    try {
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        if (client && client.auth) {
+            client.auth.signOut().catch(() => { });
+        }
+    } catch (_) { }
+
     localStorage.removeItem('nyp_sesion');
+    localStorage.removeItem('nyp_profile_cache');
+    localStorage.removeItem('np_usuario_cliente');
     SESION = { email: null, nombre: '', admin: false, supervision: false, rh: false, cliente: false, token: null };
+
+    // Limpiar clases de control de servicios y roles del body y html para restaurar scroll normal
+    document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente', 'rh', 'en-control-servicios');
+    document.documentElement.classList.remove('en-control-servicios');
+
+    const csView = document.getElementById('adminControlServiciosView');
+    if (csView) csView.style.display = 'none';
 
     document.getElementById('app').style.display = 'none';
     document.getElementById('auth').style.display = 'flex';
@@ -553,6 +634,92 @@ function logout(isTimeout = false) {
         volverSeleccion();
     }
 }
+
+/**
+ * Control y revocación de sesión en tiempo real para usuarios inactivados por admin
+ */
+let _verificandoStatus = false;
+async function verificarStatusCuentaUsuario() {
+    if (_verificandoStatus) return;
+    if (typeof SESION === 'undefined' || !SESION || !SESION.email) return;
+    // Administradores, supervisión y rh no se bloquean por este mecanismo
+    if (SESION.admin || SESION.supervision || SESION.rh) return;
+
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!client) return;
+
+    _verificandoStatus = true;
+    try {
+        const isCli = SESION.cliente === true || SESION.cliente === 'true';
+        const table = isCli ? 'clientes' : 'nannys';
+        const cleanEmail = String(SESION.email || '').trim().toLowerCase();
+
+        const { data, error } = await client
+            .from(table)
+            .select('activo')
+            .ilike('email', cleanEmail)
+            .maybeSingle();
+
+        if (!error && data && data.activo === false) {
+            console.warn(`🚨 [Sesión Revocada] La cuenta ${SESION.email} ha sido inactivada por el administrador.`);
+            await bloquearUsuarioInactivo();
+            return;
+        }
+    } catch (e) {
+        console.warn("Error en monitor de status de cuenta:", e);
+    } finally {
+        _verificandoStatus = false;
+    }
+}
+window.verificarStatusCuentaUsuario = verificarStatusCuentaUsuario;
+
+async function bloquearUsuarioInactivo() {
+    console.warn("🚨 Ejecutando bloqueo de sesión para usuario inactivo...");
+    try {
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        if (client && client.auth) await client.auth.signOut();
+    } catch (e) { }
+
+    localStorage.removeItem('nyp_sesion');
+    localStorage.removeItem('last_login_data');
+    if (typeof SESION !== 'undefined') {
+        SESION.token = null;
+        SESION.email = null;
+        SESION.cliente = false;
+        SESION.admin = false;
+    }
+
+    if (typeof Swal !== 'undefined') {
+        await Swal.fire({
+            icon: 'error',
+            title: 'Acceso Revocado',
+            text: 'Tu cuenta ha sido desactivada por la administración. La sesión ha sido finalizada.',
+            confirmButtonText: 'Entendido',
+            confirmButtonColor: '#E84C9A',
+            allowOutsideClick: false
+        });
+    } else {
+        alert('Tu cuenta ha sido desactivada por la administración. La sesión ha sido finalizada.');
+    }
+
+    window.location.reload();
+}
+window.bloquearUsuarioInactivo = bloquearUsuarioInactivo;
+
+// Monitor de cuenta activa en segundo plano (cada 15 segundos y al reactivar la app/pestaña)
+setInterval(() => {
+    if (typeof SESION !== 'undefined' && SESION && SESION.email && !SESION.admin && !SESION.supervision && !SESION.rh) {
+        verificarStatusCuentaUsuario();
+    }
+}, 15000);
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        if (typeof SESION !== 'undefined' && SESION && SESION.email && !SESION.admin && !SESION.supervision && !SESION.rh) {
+            verificarStatusCuentaUsuario();
+        }
+    }
+});
 
 /* =========================================
    TABLAS DE TURNOS (DISPONIBILIDAD)
@@ -832,32 +999,58 @@ function cargarResumenBitacoras(force = false) {
     if (!force && LAST_FETCH['cargarResumenBitacoras'] && (Date.now() - LAST_FETCH['cargarResumenBitacoras'] < DEFAULT_TTL)) return Promise.resolve();
     LAST_FETCH['cargarResumenBitacoras'] = Date.now();
 
+    // Asegurar que el canal en tiempo real esté conectado para recibir eventos en vivo
+    if (typeof suscribirRealtimePortalServicios === 'function') {
+        suscribirRealtimePortalServicios();
+    }
+
     const c1 = document.getElementById('resumenBitacorasActual');
-    const c2 = document.getElementById('resumenBitacorasSiguiente');
+    const c2 = document.getElementById('resumenBitacorasSiguiente') || document.getElementById('resumenBitacorasAnterior');
+
+    const sesEmail = (window.SESION && window.SESION.email) ? window.SESION.email : 'anon';
 
     if (!force) {
-        const cached = localStorage.getItem('CACHE_BITACORAS_SUP_' + SESION.email);
+        const cached = localStorage.getItem('CACHE_BITACORAS_SUP_' + sesEmail);
         if (cached) {
             try {
                 const parsed = JSON.parse(cached);
-                if (c1) renderResumenBitacoras(parsed.actual, c1);
-                if (c2) renderResumenBitacoras(parsed.siguiente, c2, 'siguiente');
+                if (c1) renderResumenBitacoras(parsed.actual, c1, 'actual');
+                if (c2) renderResumenBitacoras(parsed.anterior || parsed.siguiente, c2, 'anterior');
             } catch (e) { console.error("Error al leer caché bitácoras", e); }
         }
     }
 
-    return api('getResumenBitacorasDosSemanas', { email: SESION.email })
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    const fetchProm = (client && window.BitacorasSupabase?.obtenerResumenDosSemanas)
+        ? window.BitacorasSupabase.obtenerResumenDosSemanas()
+        : (typeof obtenerResumenBitacorasDosSemanasSupabase === 'function'
+            ? obtenerResumenBitacorasDosSemanasSupabase()
+            : api('getResumenBitacorasDosSemanas', { email: sesEmail }));
+
+    return fetchProm
         .then(res => {
             if (res) {
-                if (c1) renderResumenBitacoras(res.actual, c1);
-                if (c2) renderResumenBitacoras(res.siguiente, c2, 'siguiente');
-                localStorage.setItem('CACHE_BITACORAS_SUP_' + SESION.email, JSON.stringify(res));
+                if (c1) renderResumenBitacoras(res.actual, c1, 'actual');
+                if (c2) renderResumenBitacoras(res.anterior || res.siguiente, c2, 'anterior');
+                try { localStorage.setItem('CACHE_BITACORAS_SUP_' + sesEmail, JSON.stringify(res)); } catch (eLs) { }
             }
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+            console.error("Error en cargarResumenBitacoras:", err);
+            if (client) {
+                api('getResumenBitacorasDosSemanas', { email: sesEmail })
+                    .then(res => {
+                        if (res) {
+                            if (c1) renderResumenBitacoras(res.actual, c1, 'actual');
+                            if (c2) renderResumenBitacoras(res.anterior || res.siguiente, c2, 'anterior');
+                        }
+                    }).catch(e => console.error(e));
+            }
+        });
 }
 
 function renderResumenBitacoras(data, cont, prefijo) {
+    if (!cont) return;
     if (!data || Object.keys(data).length === 0) {
         cont.innerHTML = '<p class="muted">No hay bitácoras requeridas.</p>';
         return;
@@ -865,7 +1058,8 @@ function renderResumenBitacoras(data, cont, prefijo) {
 
     let html = '';
     Object.keys(data).forEach((ciudad, indexCiudad) => {
-        const ciudadId = `bitacoras_${prefijo || 'actual'}_ciudad_${indexCiudad}`;
+        const safeCiudad = String(ciudad).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+        const ciudadId = `bitacoras_${prefijo || 'actual'}_ciudad_${safeCiudad}`;
         // REGLA DE MEMORIA: Verificar si ya estaba abierta
         const estabaAbierta = window.CIUDADES_ABIERTAS && window.CIUDADES_ABIERTAS.has(ciudadId);
         const display = estabaAbierta ? 'block' : 'none';
@@ -875,7 +1069,10 @@ function renderResumenBitacoras(data, cont, prefijo) {
             <div class="ciudad-group" style="margin-bottom:15px;">
                 <div class="ciudad-header" style="display:flex;align-items:center;gap:10px;cursor:pointer; font-weight:700; color:var(--blue-main); margin-bottom:8px; border-bottom:1px solid #eee; padding-bottom:4px;" onclick="toggleCiudad('${ciudadId}')">
                     <span id="${ciudadId}_icon" style="font-size:18px;user-select:none;">${icono}</span>
-                    <h4 style="margin:0;">📍 ${ciudad}</h4>
+                    <h4 style="margin:0;display:flex;align-items:center;gap:8px;">
+                        <span>📍 ${ciudad}</span>
+                        <span style="font-size:11px;font-weight:600;color:var(--text-muted);background:rgba(59,130,246,0.08);padding:1px 8px;border-radius:10px;">${data[ciudad].length} servicios</span>
+                    </h4>
                 </div>
                 <div id="${ciudadId}" style="display:${display}; margin-left:28px; margin-top:6px;">
                     <ul style="list-style:none; padding-left:0; margin:0;">
@@ -895,6 +1092,8 @@ function renderResumenBitacoras(data, cont, prefijo) {
             const sTipoSafe = (s.tipo_servicio || '').replace(/'/g, "\\'");
 
             const handler = `abrirBitacorasClienteDesdeResumen('${sClienteSafe}', '${prefijo || 'actual'}', '${sTipoSafe}', '${sNineraSafe}')`;
+            const clienteIdSafe = (s.cliente || '').replace(/[^a-z0-9]/gi, '_');
+            const nineraIdSafe = (s.ninera || '').replace(/[^a-z0-9]/gi, '_');
 
             html += `
                 <li style="display:flex; align-items:flex-start; gap:8px; margin-bottom:8px; font-size:14px; cursor:pointer;" onclick="${handler}">
@@ -904,10 +1103,10 @@ function renderResumenBitacoras(data, cont, prefijo) {
                             <span style="font-weight:600;">${s.cliente}</span>
                             ${s.tieneBitacora ? `
                                 <div style="display:flex; align-items:center; gap:4px;">
-                                    <span style="font-size:9px; font-weight:700; text-transform:uppercase; padding:1px 5px; border-radius:4px; background:${bgBadge}; color:${colorBadge}; border:1px solid rgba(0,0,0,0.05); white-space:nowrap;">
+                                    <span id="badge-bit-acepta-${prefijo || 'actual'}-${clienteIdSafe}_${nineraIdSafe}" class="badge-bit-acepta" data-cliente="${sClienteSafe}" data-ninera="${sNineraSafe}" data-prefijo="${prefijo || 'actual'}" style="font-size:9px; font-weight:700; text-transform:uppercase; padding:1px 5px; border-radius:4px; background:${bgBadge}; color:${colorBadge}; border:1px solid rgba(0,0,0,0.05); white-space:nowrap;">
                                         ${textoBadge}
                                     </span>
-                                    <span id="indicador-rev-${prefijo || 'actual'}-${s.cliente.replace(/[^a-z0-9]/gi, '_')}_${(s.ninera || '').replace(/[^a-z0-9]/gi, '_')}" style="width:8px; height:8px; border-radius:50%; background:${s.revisada ? '#16a34a' : '#3b82f6'}; flex-shrink:0;" title="${s.revisada ? 'Revisado' : 'Pendiente de revisar'}"></span>
+                                    <span id="indicador-rev-${prefijo || 'actual'}-${clienteIdSafe}_${nineraIdSafe}" style="width:8px; height:8px; border-radius:50%; background:${s.revisada ? '#16a34a' : '#3b82f6'}; flex-shrink:0;" title="${s.revisada ? 'Revisado' : 'Pendiente de revisar'}"></span>
                                 </div>
                             ` : ''}
                         </div>
@@ -921,6 +1120,1443 @@ function renderResumenBitacoras(data, cont, prefijo) {
     });
     cont.innerHTML = html;
 }
+
+/* =========================================================================
+   VINCULACIÓN SUPABASE: CONTROL DE SERVICIOS (CLIENTES Y NIÑERAS)
+   ========================================================================= */
+
+function getMondayISO_Safe(d) {
+    if (typeof getMondayISO === 'function') return getMondayISO(d);
+    const date = d ? new Date(d) : new Date();
+    const day = date.getDay();
+    const diff = (day === 0 ? -6 : 1 - day);
+    const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+    const offset = monday.getTimezoneOffset() * 60000;
+    return new Date(monday.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function addWeeksToISO_Safe(isoStr, numWeeks) {
+    if (typeof addWeeksToISO === 'function') return addWeeksToISO(isoStr, numWeeks);
+    const parts = (isoStr || getMondayISO_Safe(new Date())).split('-').map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2] + (numWeeks * 7));
+    const offset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function calcularFechaDiaSemana(lunesIso, diaOffset) {
+    if (!lunesIso) return '';
+    const parts = lunesIso.split('-').map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2] + diaOffset);
+    const offset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - offset).toISOString().slice(0, 10);
+}
+
+function normalizarHoraServicio(horaStr) {
+    if (!horaStr) return '';
+    const h = String(horaStr).trim();
+    const m = h.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (m) {
+        return `${m[1].padStart(2, '0')}:${m[2]}`;
+    }
+    return h;
+}
+
+const DIAS_MATRIZ_SEMANAL = [
+    { key: 'lun', offset: 0, nombre: 'Lunes' },
+    { key: 'mar', offset: 1, nombre: 'Martes' },
+    { key: 'mie', offset: 2, nombre: 'Miércoles' },
+    { key: 'jue', offset: 3, nombre: 'Jueves' },
+    { key: 'vie', offset: 4, nombre: 'Viernes' },
+    { key: 'sab', offset: 5, nombre: 'Sábado' },
+    { key: 'dom', offset: 6, nombre: 'Domingo' }
+];
+
+/**
+ * Genera el texto estructurado de los peques para las notas del modal de niñera
+ */
+function construirNotasPeques(c) {
+    if (!c) return '';
+    const bloques = [];
+
+    // Peque 1
+    if (c.peque_nombre) {
+        let b = `👶 ${c.peque_nombre}`;
+        if (c.peque_edad && String(c.peque_edad).trim() !== '' && c.peque_edad !== '—') b += `\n• Edad: ${c.peque_edad}`;
+        if (c.alergias && String(c.alergias).trim() !== '' && c.alergias !== '—') b += `\n• Alergias: ${c.alergias}`;
+        if (c.condicion_medica && String(c.condicion_medica).trim() !== '' && c.condicion_medica !== '—') b += `\n• Condición médica: ${c.condicion_medica}`;
+        if (c.salud_actual && String(c.salud_actual).trim() !== '' && c.salud_actual !== '—') b += `\n• Salud actual: ${c.salud_actual}`;
+        if (c.preferencias && String(c.preferencias).trim() !== '' && c.preferencias !== '—') b += `\n• Preferencias: ${c.preferencias}`;
+        bloques.push(b);
+    }
+
+    // Peque 2
+    if (c.peque_nombre_2) {
+        let b = `👶 ${c.peque_nombre_2}`;
+        if (c.peque_edad_2 && String(c.peque_edad_2).trim() !== '' && c.peque_edad_2 !== '—') b += `\n• Edad: ${c.peque_edad_2}`;
+        if (c.alergias_2 && String(c.alergias_2).trim() !== '' && c.alergias_2 !== '—') b += `\n• Alergias: ${c.alergias_2}`;
+        if (c.condicion_medica_2 && String(c.condicion_medica_2).trim() !== '' && c.condicion_medica_2 !== '—') b += `\n• Condición médica: ${c.condicion_medica_2}`;
+        if (c.salud_actual_2 && String(c.salud_actual_2).trim() !== '' && c.salud_actual_2 !== '—') b += `\n• Salud actual: ${c.salud_actual_2}`;
+        if (c.preferencias_2 && String(c.preferencias_2).trim() !== '' && c.preferencias_2 !== '—') b += `\n• Preferencias: ${c.preferencias_2}`;
+        bloques.push(b);
+    }
+
+    // Peque 3
+    if (c.peque_nombre_3) {
+        let b = `👶 ${c.peque_nombre_3}`;
+        if (c.peque_edad_3 && String(c.peque_edad_3).trim() !== '' && c.peque_edad_3 !== '—') b += `\n• Edad: ${c.peque_edad_3}`;
+        if (c.alergias_3 && String(c.alergias_3).trim() !== '' && c.alergias_3 !== '—') b += `\n• Alergias: ${c.alergias_3}`;
+        if (c.condicion_medica_3 && String(c.condicion_medica_3).trim() !== '' && c.condicion_medica_3 !== '—') b += `\n• Condición médica: ${c.condicion_medica_3}`;
+        if (c.salud_actual_3 && String(c.salud_actual_3).trim() !== '' && c.salud_actual_3 !== '—') b += `\n• Salud actual: ${c.salud_actual_3}`;
+        if (c.preferencias_3 && String(c.preferencias_3).trim() !== '' && c.preferencias_3 !== '—') b += `\n• Preferencias: ${c.preferencias_3}`;
+        bloques.push(b);
+    }
+
+    if (c.mascotas && c.mascotas !== '0' && c.mascotas !== 'ninguna') {
+        bloques.push(`🐾 Mascotas: ${c.mascotas}`);
+    }
+
+    return bloques.join('\n\n');
+}
+
+/**
+ * Convierte las filas de control_servicios de Supabase en eventos individuales para cada día
+ * aplicando las reglas de visibilidad:
+ * - Para cliente: solo si row.ok_cliente === true
+ * - Para niñera: solo si row.ok_nanny === true
+ */
+function transformarFilasControlServicios(filas, tipoUsuario, sesionUsuario, mapaClientes = {}) {
+    if (!Array.isArray(filas) || filas.length === 0) return [];
+    const servicios = [];
+
+    const emailUsuario = (sesionUsuario?.email || '').trim().toLowerCase();
+    const nombreUsuario = (sesionUsuario?.nombre || '').trim().toLowerCase();
+
+    filas.forEach(row => {
+        if (!row || !row.semana_iso) return;
+
+        let bId = (row.bloque || '').trim().toLowerCase();
+        if (!bId && row.observaciones && typeof row.observaciones === 'string' && row.observaciones.includes('<!--bloque:')) {
+            const mB = row.observaciones.match(/<!--bloque:(.*?)-->/);
+            if (mB) bId = mB[1].trim().toLowerCase();
+        }
+
+        // Regla de Visibilidad: Los servicios en bloques de control interno ("Próximos servicios",
+        // "Clientes en lista de espera", "Clientes Potenciales") son exclusivamente para gestión interna del admin.
+        // NO son visibles para clientes ni niñeras hasta que el admin los traslade a un bloque operativo (fijos, temporales, cancelados o eventuales).
+        if (tipoUsuario !== 'admin') {
+            const BLOQUES_SOLO_ADMIN = ['proximos_servicios', 'clientes_espera', 'clientes_potenciales'];
+            if (BLOQUES_SOLO_ADMIN.includes(bId)) {
+                return;
+            }
+        }
+
+        if (tipoUsuario === 'cliente') {
+            // Regla de Visibilidad: solo si ok_cliente está marcado
+            const isOkCli = row.ok_cliente === true || row.ok_cliente === 'true' || row.ok_cliente === 1;
+            if (!isOkCli) return;
+
+            const rowEmail = (row.cliente_email || '').trim().toLowerCase();
+            const rowNombre = (row.cliente_nombre || '').trim().toLowerCase();
+            const normRowNombre = typeof normalizarTexto === 'function' ? normalizarTexto(rowNombre) : rowNombre;
+            const normSesionNombre = typeof normalizarTexto === 'function' ? normalizarTexto(nombreUsuario) : nombreUsuario;
+
+            const coincideEmail = emailUsuario && rowEmail && emailUsuario === rowEmail;
+            const coincideNombre = normSesionNombre && normRowNombre && (
+                normRowNombre.includes(normSesionNombre) || normSesionNombre.includes(normRowNombre)
+            );
+
+            if (!coincideEmail && !coincideNombre) return;
+
+        } else if (tipoUsuario === 'nanny') {
+            // Regla de Visibilidad: solo si ok_nanny está marcado
+            const isOkNan = row.ok_nanny === true || row.ok_nanny === 'true' || row.ok_nanny === 1;
+            if (!isOkNan) return;
+
+            const rowNanny = (row.nanny_nombre || '').trim().toLowerCase();
+            if (!rowNanny || !nombreUsuario) return;
+
+            const normRowNanny = typeof normalizarTexto === 'function' ? normalizarTexto(rowNanny) : rowNanny;
+            const normSesionNanny = typeof normalizarTexto === 'function' ? normalizarTexto(nombreUsuario) : nombreUsuario;
+            const primerNombreNanny = normSesionNanny.split(' ')[0];
+
+            const coincideNanny = normRowNanny.includes(normSesionNanny) ||
+                normSesionNanny.includes(normRowNanny) ||
+                (primerNombreNanny.length >= 3 && normRowNanny.includes(primerNombreNanny));
+
+            if (!coincideNanny) return;
+        }
+
+        const clientKey = (row.cliente_email || row.cliente_nombre || '').trim().toLowerCase();
+        const clientEmailKey = (row.cliente_email || '').trim().toLowerCase();
+        const clientNombreKey = (row.cliente_nombre || '').trim().toLowerCase();
+        const clientNombreNorm = normalizarTexto(clientNombreKey);
+
+        const infoCliente = mapaClientes[clientKey] ||
+            mapaClientes[clientEmailKey] ||
+            mapaClientes[clientNombreKey] ||
+            mapaClientes[clientNombreNorm] || {};
+
+        // Extraer detalles específicos del servicio si fueron personalizados desde la matriz (eventuales/temporales)
+        let detallesSvc = null;
+        if (row.observaciones && typeof row.observaciones === 'string') {
+            const mDet = row.observaciones.match(/<!--detalles_servicio:(.*?)-->/);
+            if (mDet && mDet[1]) {
+                try {
+                    detallesSvc = JSON.parse(decodeURIComponent(mDet[1]));
+                } catch (e) {
+                    try { detallesSvc = JSON.parse(mDet[1]); } catch (e2) { }
+                }
+            }
+        }
+
+        const notasPequeDef = construirNotasPeques(infoCliente);
+        const notasPeque = (detallesSvc && detallesSvc.notas !== undefined && String(detallesSvc.notas).trim() !== '')
+            ? detallesSvc.notas
+            : (notasPequeDef || '');
+
+        const ubicacionVal = (detallesSvc && (detallesSvc.ubicacion || detallesSvc.ubicacion_link))
+            ? (detallesSvc.ubicacion || detallesSvc.ubicacion_link)
+            : (infoCliente.ubicacion || infoCliente.link_ubicacion || infoCliente.link_de_la_ubicacion_del_servicio || infoCliente.ubicacion_link || '');
+
+        const direccionVal = (detallesSvc && (detallesSvc.direccion || detallesSvc.zona))
+            ? (detallesSvc.direccion || detallesSvc.zona)
+            : (infoCliente.direccion || infoCliente.direccion_del_servicio || row.zona || 'Por confirmar');
+
+        const telefonoVal = (detallesSvc && (detallesSvc.numero_contacto || detallesSvc.telefono))
+            ? (detallesSvc.numero_contacto || detallesSvc.telefono)
+            : (infoCliente.telefono || infoCliente.numero_contacto || '');
+
+        const edadNinoVal = (detallesSvc && (detallesSvc.edad_peque || detallesSvc.peque_edad))
+            ? (detallesSvc.edad_peque || detallesSvc.peque_edad)
+            : (infoCliente.peque_edad || '—');
+
+        const emergenciaVal = infoCliente.emergencia || infoCliente.telefonos_de_emergencia || '';
+        const cuotaNannyVal = row.tarifa_nanny || infoCliente.tarifa_nanny || '';
+        const cuotaClienteVal = row.tarifa_cliente || infoCliente.tarifa_cliente || '';
+
+        let saldoCliVal = (row.saldo_cliente !== undefined && row.saldo_cliente !== null) ? String(row.saldo_cliente).trim() : '';
+        if (!saldoCliVal && row.observaciones && typeof row.observaciones === 'string' && row.observaciones.includes('<!--saldo_cliente:')) {
+            const mSaldo = row.observaciones.match(/<!--saldo_cliente:(.*?)-->/);
+            if (mSaldo) saldoCliVal = mSaldo[1].trim();
+        }
+
+        let pagoNanVal = (row.pago_nanny !== undefined && row.pago_nanny !== null) ? String(row.pago_nanny).trim() : '';
+        if (!pagoNanVal && row.observaciones && typeof row.observaciones === 'string' && row.observaciones.includes('<!--pago_nanny:')) {
+            const mPago = row.observaciones.match(/<!--pago_nanny:(.*?)-->/);
+            if (mPago) pagoNanVal = mPago[1].trim();
+        }
+
+        // Construir peques_lista para compatibilidad con Estimulación y Supervisión
+        const pequesLista = [];
+        const p1Nom = infoCliente.peque_nombre || infoCliente.nombre_del_peque;
+        if (p1Nom) {
+            pequesLista.push({
+                nombre: p1Nom,
+                nacimiento: infoCliente.peque_nacimiento || infoCliente.fecha_de_nacimiento || infoCliente.fecha_de_nacimiento_del_peque || null
+            });
+        }
+        const p2Nom = infoCliente.peque_nombre_2 || infoCliente.nombre_del_peque_2;
+        if (p2Nom) {
+            pequesLista.push({
+                nombre: p2Nom,
+                nacimiento: infoCliente.peque_nacimiento_2 || infoCliente.fecha_de_nacimiento_2 || infoCliente.fecha_de_nacimiento_del_peque_2 || null
+            });
+        }
+        const p3Nom = infoCliente.peque_nombre_3 || infoCliente.nombre_del_peque_3;
+        if (p3Nom) {
+            pequesLista.push({
+                nombre: p3Nom,
+                nacimiento: infoCliente.peque_nacimiento_3 || infoCliente.fecha_de_nacimiento_3 || infoCliente.fecha_de_nacimiento_del_peque_3 || null
+            });
+        }
+
+        const correoClienteFinal = (row.cliente_email || infoCliente.email || '').trim();
+
+        DIAS_MATRIZ_SEMANAL.forEach(diaInfo => {
+            const hInicio = normalizarHoraServicio(row[`${diaInfo.key}_inicio`]);
+            const hFin = normalizarHoraServicio(row[`${diaInfo.key}_fin`]);
+
+            if (!hInicio && !hFin) return;
+
+            const fechaDia = calcularFechaDiaSemana(row.semana_iso, diaInfo.offset);
+            const horarioTexto = (hInicio && hFin) ? `${hInicio} - ${hFin}` : (hInicio || hFin);
+
+            // Determinar si la niñera confirmó su asistencia para ESTE día en particular
+            let asistConf = false;
+            let evidenciaConf = null;
+
+            const _toMinutes = (str) => {
+                if (!str) return null;
+                if (typeof horaStringAMinutos === 'function') {
+                    const m = horaStringAMinutos(str);
+                    if (m !== null) return m;
+                }
+                const clean = String(str).trim().toLowerCase();
+                const isPM = clean.includes('p') || clean.includes('pm');
+                const isAM = clean.includes('a') || clean.includes('am');
+                const nums = clean.replace(/[^0-9:]/g, '').split(':');
+                if (nums.length >= 1) {
+                    let h = parseInt(nums[0], 10) || 0;
+                    let min = nums.length > 1 ? (parseInt(nums[1], 10) || 0) : 0;
+                    if (isPM && h < 12) h += 12;
+                    if (isAM && h === 12) h = 0;
+                    return (h % 24) * 60 + min;
+                }
+                return null;
+            };
+
+            const checkDayConfirmation = (data) => {
+                // 1. Validar que la niñera sea EXACTAMENTE la misma que confirmó (nombre completo idéntico)
+                let nannyData = (data.nanny_nombre || '').trim();
+                if (!nannyData && data.dias_confirmados) {
+                    const primerDia = Object.values(data.dias_confirmados)[0];
+                    if (primerDia && primerDia.nanny_nombre) {
+                        nannyData = primerDia.nanny_nombre.trim();
+                    }
+                }
+                const nannyRow = (row.nanny_nombre || '').trim();
+                if (nannyRow && nannyData) {
+                    const normRow = typeof normalizarTexto === 'function' ? normalizarTexto(nannyRow) : nannyRow.toLowerCase().trim();
+                    const normData = typeof normalizarTexto === 'function' ? normalizarTexto(nannyData) : nannyData.toLowerCase().trim();
+                    if (normRow !== normData) return false;
+                }
+
+                // 2. Validar que el cliente sea EXACTAMENTE el mismo
+                let cliData = (data.cliente_nombre || data.cliente || '').trim();
+                if (!cliData && data.dias_confirmados) {
+                    const primerDia = Object.values(data.dias_confirmados)[0];
+                    if (primerDia && (primerDia.cliente || primerDia.cliente_nombre)) {
+                        cliData = (primerDia.cliente || primerDia.cliente_nombre).trim();
+                    }
+                }
+                const cliRow = (row.cliente_nombre || (infoCliente && infoCliente.nombre) || '').trim();
+                if (cliRow && cliData) {
+                    const normCliRow = typeof normalizarTexto === 'function' ? normalizarTexto(cliRow) : cliRow.toLowerCase().trim();
+                    const normCliData = typeof normalizarTexto === 'function' ? normalizarTexto(cliData) : cliData.toLowerCase().trim();
+                    if (normCliRow !== normCliData) return false;
+                }
+
+                // Helper para verificar que el horario confirmado coincida con el horario actual de este día
+                const validarHorarioCoincide = (confObj) => {
+                    if (!confObj || typeof confObj !== 'object') return true;
+                    const horConf = (confObj.horario || '').trim();
+                    const iniConf = (confObj.hora_inicio || confObj.inicio || '').trim();
+                    const finConf = (confObj.hora_fin || confObj.fin || '').trim();
+
+                    if (!horConf && !iniConf && !finConf) return true;
+
+                    const curMinIni = _toMinutes(hInicio);
+                    const curMinFin = _toMinutes(hFin);
+
+                    let confMinIni = iniConf ? _toMinutes(iniConf) : null;
+                    let confMinFin = finConf ? _toMinutes(finConf) : null;
+
+                    if (horConf && (confMinIni === null || confMinFin === null)) {
+                        const partes = horConf.split(/[-–—a]/i).map(x => x.trim()).filter(Boolean);
+                        if (partes.length >= 1 && confMinIni === null) confMinIni = _toMinutes(partes[0]);
+                        if (partes.length >= 2 && confMinFin === null) confMinFin = _toMinutes(partes[1]);
+                    }
+
+                    if (curMinIni !== null && confMinIni !== null && curMinIni !== confMinIni) {
+                        return false;
+                    }
+                    if (curMinFin !== null && confMinFin !== null && curMinFin !== confMinFin) {
+                        return false;
+                    }
+                    return true;
+                };
+
+                // 1. Si existe mapa específico por días (dias_confirmados)
+                if (data.dias_confirmados && typeof data.dias_confirmados === 'object') {
+                    const diaConf = data.dias_confirmados[diaInfo.key] || data.dias_confirmados[fechaDia];
+                    if (diaConf) {
+                        if (!validarHorarioCoincide(diaConf)) return false;
+                        evidenciaConf = diaConf;
+                        return true;
+                    }
+                    return false; // El mapa existe y este día específico no está confirmado aún
+                }
+                // 2. Si existe array de días confirmados
+                if (Array.isArray(data.dias)) {
+                    if (data.dias.includes(diaInfo.key) || data.dias.includes(fechaDia)) {
+                        if (!validarHorarioCoincide(data)) return false;
+                        evidenciaConf = data;
+                        return true;
+                    }
+                    return false; // El array existe y este día no está incluido
+                }
+                // 3. Fallback legado si no hay desglose por días
+                if (data.confirmada === true) {
+                    if (!validarHorarioCoincide(data)) return false;
+                    evidenciaConf = data;
+                    return true;
+                }
+                return false;
+            };
+
+            if (row.asistencia_nanny) {
+                let aData = row.asistencia_nanny;
+                if (typeof aData === 'string') {
+                    try { aData = JSON.parse(aData); } catch (e) { }
+                }
+                if (checkDayConfirmation(aData)) {
+                    asistConf = true;
+                }
+            }
+
+            if (!asistConf && row.observaciones && typeof row.observaciones === 'string') {
+                const mAsist = row.observaciones.match(/<!--asistencia_nanny:(.*?)-->/);
+                if (mAsist && mAsist[1]) {
+                    try {
+                        const p = JSON.parse(mAsist[1]);
+                        if (checkDayConfirmation(p)) {
+                            asistConf = true;
+                        }
+                    } catch (e) { }
+                }
+            }
+
+            // Extraer bitácora para este día desde observaciones si existe
+            let bitacoraDia = null;
+            if (row.observaciones && typeof row.observaciones === 'string') {
+                const regexBit = new RegExp(`<!--bitacora_(?:${diaInfo.key}|${fechaDia}):(.*?)-->`);
+                const mBit = row.observaciones.match(regexBit);
+                if (mBit && mBit[1]) {
+                    try {
+                        const parsedBit = JSON.parse(mBit[1]);
+                        bitacoraDia = (window.BitacorasSupabase?.formatearRegistro)
+                            ? window.BitacorasSupabase.formatearRegistro(parsedBit)
+                            : parsedBit;
+                        if (window.BITACORA_CACHE) {
+                            const normN = typeof _norm === 'function' ? _norm(row.nanny_nombre || '') : (row.nanny_nombre || '').toLowerCase();
+                            const cK = `${fechaDia}_${correoClienteFinal || row.cliente_nombre || 'Cliente'}_${normN}`;
+                            window.BITACORA_CACHE[cK] = bitacoraDia;
+                        }
+                    } catch (eBit) { }
+                }
+            }
+
+            servicios.push({
+                id: `${row.id || 'srv'}_${diaInfo.key}`,
+                bitacora_datos: bitacoraDia,
+                bitacora_aceptada: !!(bitacoraDia && (bitacoraDia.Acepta === 'Sí' || bitacoraDia.acepta === 'Sí' || bitacoraDia.estado === 'aprobada' || bitacoraDia.fecha_acepta)),
+                estado_bitacora: (bitacoraDia && (bitacoraDia.Acepta === 'Sí' || bitacoraDia.acepta === 'Sí' || bitacoraDia.estado === 'aprobada' || bitacoraDia.fecha_acepta)) ? 'aprobada' : (bitacoraDia?.estado || 'borrador'),
+                row_id: row.id,
+                dia_clave: diaInfo.key,
+                semana_iso: row.semana_iso,
+                Fecha: fechaDia,
+                fecha: fechaDia,
+                hora_inicio: hInicio || hFin || '',
+                hora_fin: hFin || '',
+                Horario: horarioTexto,
+                nombre_ninera: row.nanny_nombre || 'Por asignar',
+                'Nombre de la niñera': row.nanny_nombre || 'Por asignar',
+                cliente: row.cliente_nombre || infoCliente.nombre || 'Cliente',
+                cliente_nombre: row.cliente_nombre || infoCliente.nombre || 'Cliente',
+                cliente_email: correoClienteFinal,
+                email: correoClienteFinal,
+                correo_cliente: correoClienteFinal,
+                peques_lista: pequesLista,
+                zona: direccionVal || row.zona || '',
+                tipo_servicio: row.tipo_servicio || 'Servicio',
+                bloque: row.bloque || bId || 'servicios_fijos',
+                confirmado_en: asistConf ? (evidenciaConf?.confirmado_en || 'Confirmado') : '',
+                estado: (evidenciaConf?.fin_real) ? 'completado' : ((evidenciaConf?.inicio_real) ? 'en curso' : (asistConf ? 'confirmado' : 'pendiente')),
+                inicio_real: evidenciaConf?.inicio_real || '',
+                fin_real: evidenciaConf?.fin_real || '',
+                asistencia_confirmada: asistConf,
+                asistencia_evidencia: evidenciaConf,
+                ok_cliente: !!row.ok_cliente,
+                ok_nanny: !!row.ok_nanny,
+                ver: true,
+                observaciones: row.observaciones || '',
+                alerta: row.alerta || '',
+                tarifa: cuotaNannyVal,
+                tarifa_nanny: cuotaNannyVal,
+                cuota_nanny: cuotaNannyVal,
+                tarifa_cliente: cuotaClienteVal,
+                cuota_cliente: cuotaClienteVal,
+                saldo_cliente: saldoCliVal,
+                pago_nanny: pagoNanVal,
+                Direccion: direccionVal,
+                direccion: direccionVal,
+                Ubicacion: ubicacionVal,
+                ubicacion: ubicacionVal,
+                ubicacion_link: ubicacionVal,
+                telefono: telefonoVal,
+                numero_contacto: telefonoVal,
+                emergencia: emergenciaVal,
+                numero_de_emergencia: emergenciaVal,
+                edad_nino: edadNinoVal,
+                peque_nombre: infoCliente.peque_nombre || '',
+                peque_edad: edadNinoVal,
+                detalles_servicio: detallesSvc,
+                notas: notasPeque || row.observaciones || ''
+            });
+        });
+    });
+
+    return servicios;
+}
+
+/**
+ * Parsea un string que contiene una fecha en múltiples formatos en español o numéricos,
+ * o detecta si es directamente una edad expresada en texto.
+ * Retorna { esEdadTexto: boolean, fechaObj: Date|null, textoEdad: string|null }
+ */
+function interpretarFechaOEdadPeque(str) {
+    if (!str || typeof str !== 'string') return null;
+    let s = str.trim();
+    if (!s || s === '—' || s === '-' || s.toLowerCase() === 'no especificada') return null;
+
+    // 1. Limpieza de prefijos/sufijos
+    s = s.replace(/^[•\-\*▦🎂👶\s:]+/, '').replace(/[\*]+$/g, '').trim();
+
+    // 2. Verificar si ya es una edad expresada directamente en texto
+    // Ej: "2 años", "6 años", "2 meses", "1 año y 3 meses", "3 años 6 meses", "5 meses", "1 año", "18 meses", "recién nacido"
+    const esTextoEdadPuro = /^\s*(?:recién\s+nacido|\d+\s*(?:años?|anos?|mes(?:es)?|días?|dias?|semanas?)(?:\s*(?:y|,|\+)\s*\d+\s*(?:años?|anos?|mes(?:es)?|días?|dias?|semanas?))?)\s*$/i.test(s);
+    if (esTextoEdadPuro) {
+        return { esEdadTexto: true, fechaObj: null, textoEdad: s };
+    }
+
+    const MESES = {
+        enero: 0, ene: 0,
+        febrero: 1, feb: 1,
+        marzo: 2, mar: 2,
+        abril: 3, abr: 3,
+        mayo: 4, may: 4,
+        junio: 5, jun: 5,
+        julio: 6, jul: 6,
+        agosto: 7, ago: 7,
+        septiembre: 8, setiembre: 8, sep: 8, set: 8,
+        octubre: 9, oct: 9,
+        noviembre: 10, nov: 10,
+        diciembre: 11, dic: 11
+    };
+
+    // 3. Formato con mes en texto: "7 de enero de 2024", "15 de mayo del 2021", "20 enero 24", "8/nov/2023", "12-marzo-2022"
+    const matchMesTexto = s.match(/(\d{1,2})\s*(?:de|\/|\-|\.|\s)\s*([a-záéíóú]+)\s*(?:del?|\/|\-|\.|\s)?\s*(\d{2,4})/i);
+    if (matchMesTexto) {
+        const dia = parseInt(matchMesTexto[1], 10);
+        const mesNombre = matchMesTexto[2].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        let anio = parseInt(matchMesTexto[3], 10);
+        if (anio < 100) anio += anio <= 40 ? 2000 : 1900;
+        if (MESES[mesNombre] !== undefined && dia >= 1 && dia <= 31) {
+            const d = new Date(anio, MESES[mesNombre], dia);
+            if (!isNaN(d.getTime())) {
+                const fnCalc = typeof window.calcularEdadPeque === 'function' ? window.calcularEdadPeque : calcularEdadPeque;
+                const edadCalculada = typeof fnCalc === 'function' ? fnCalc(d, 'completo') : '';
+                if (edadCalculada) {
+                    return { esEdadTexto: false, fechaObj: d, textoEdad: edadCalculada };
+                }
+            }
+        }
+    }
+
+    // 4. Formatos numéricos: dd/mm/aaaa, dd/mm/aa, dd.mm.aaaa, dd.mm.aaa, dd.mm.aa, dd-mm-aaaa, yyyy-mm-dd
+    const matchNum = s.match(/(\d{1,4})[\/\.\-](\d{1,2})[\/\.\-](\d{2,4})/);
+    if (matchNum) {
+        let p1 = parseInt(matchNum[1], 10);
+        let p2 = parseInt(matchNum[2], 10);
+        let p3 = parseInt(matchNum[3], 10);
+        let dia, mes, anio;
+
+        if (p1 > 1000) {
+            // yyyy-mm-dd
+            anio = p1;
+            mes = p2 - 1;
+            dia = p3;
+        } else {
+            // dd/mm/yyyy o dd/mm/yy
+            dia = p1;
+            mes = p2 - 1;
+            anio = p3;
+            if (anio < 100) anio += anio <= 40 ? 2000 : 1900;
+        }
+
+        if (mes >= 0 && mes <= 11 && dia >= 1 && dia <= 31 && anio > 1900) {
+            const d = new Date(anio, mes, dia);
+            if (!isNaN(d.getTime())) {
+                const fnCalc = typeof window.calcularEdadPeque === 'function' ? window.calcularEdadPeque : calcularEdadPeque;
+                const edadCalculada = typeof fnCalc === 'function' ? fnCalc(d, 'completo') : '';
+                if (edadCalculada) {
+                    return { esEdadTexto: false, fechaObj: d, textoEdad: edadCalculada };
+                }
+            }
+        }
+    }
+
+    // 5. Si contiene "X años" o "X meses" embebido en texto
+    const matchEdadParcial = s.match(/\b(\d+\s*(?:años?|anos?|mes(?:es)?|días?|dias?)(?:\s*(?:y|,|\+)\s*\d+\s*(?:mes(?:es)?|días?|dias?))?)\b/i);
+    if (matchEdadParcial) {
+        return { esEdadTexto: true, fechaObj: null, textoEdad: matchEdadParcial[1].trim() };
+    }
+
+    // 6. Fallback con new Date nativo
+    try {
+        const d = new Date(s);
+        if (!isNaN(d.getTime()) && d.getFullYear() > 1900 && d <= new Date()) {
+            const fnCalc = typeof window.calcularEdadPeque === 'function' ? window.calcularEdadPeque : calcularEdadPeque;
+            const edadCalculada = typeof fnCalc === 'function' ? fnCalc(d, 'completo') : '';
+            if (edadCalculada) {
+                return { esEdadTexto: false, fechaObj: d, textoEdad: edadCalculada };
+            }
+        }
+    } catch (e) { }
+
+    // Si no es fecha válida pero es texto no vacío, devolver como está
+    return { esEdadTexto: true, fechaObj: null, textoEdad: s };
+}
+
+/**
+ * Renderiza las fichas de información del peque para Servicios Eventuales y Temporales
+ * Secuencia estricta solicitada:
+ * 1. Nombre del peque
+ * 2. Edad del peque (calculada dinámicamente desde fecha o texto directo, con soporte para múltiples peques)
+ * 3. Resto de la información (alergias, condición médica, estado de salud, preferencias, mascotas, indicaciones)
+ */
+function renderizarFichasPequesEventuales(s, container) {
+    if (!container) return;
+    const rawNotas = s.notas || '';
+    const lines = rawNotas
+        .split('\n')
+        .map(l => l.trim())
+        .filter(l => l && !l.startsWith('<!--'));
+
+    // --- A. Extraer Nombre(s) de Peque(s) ---
+    let rawNombrePeque = (s.peque_nombre || s.detalles_servicio?.peque_nombre || '').trim();
+    const nombresExtraidos = [];
+
+    lines.forEach(line => {
+        const lower = line.toLowerCase();
+        if (/nombre(?:\s+del)?\s+peque/i.test(lower) || /^[\s•\*👶👫]*nombre\s*:/i.test(lower)) {
+            const parts = line.split(':');
+            if (parts.length > 1) {
+                const candidate = parts.slice(1).join(':').replace(/^[•\-\*:]+\s*/, '').replace(/\*+$/g, '').trim();
+                if (candidate && candidate !== '—') rawNombrePeque = candidate;
+            } else {
+                const m = line.match(/\*?(?:nombre(?:\s+del)?\s+peque)\*?\s*[:\-]?\s*(.+)/i);
+                if (m && m[1]) {
+                    const candidate = m[1].replace(/^[•\-\*:]+\s*/, '').replace(/\*+$/g, '').trim();
+                    if (candidate && candidate !== '—') rawNombrePeque = candidate;
+                }
+            }
+        }
+    });
+
+    if (rawNombrePeque && rawNombrePeque !== '—') {
+        const splitNombres = rawNombrePeque.split(/\s*(?:,|y|&|\/)\s*/i).filter(n => n.trim().length > 0);
+        splitNombres.forEach(n => nombresExtraidos.push(n.trim()));
+    }
+
+    // --- B. Extraer y Calcular Edades de 1 o más Peques ---
+    const listaEdades = []; // { nombre: '', edad: '' }
+    const segmentosEdad = [];
+
+    // 1. Revisar peques_lista si viene poblada
+    if (Array.isArray(s.peques_lista) && s.peques_lista.length > 0) {
+        s.peques_lista.forEach(p => {
+            const valorNacOEdad = p.nacimiento || p.edad;
+            if (valorNacOEdad) {
+                const res = interpretarFechaOEdadPeque(valorNacOEdad);
+                if (res && res.textoEdad) {
+                    listaEdades.push({
+                        nombre: p.nombre || '',
+                        edad: res.textoEdad
+                    });
+                }
+            }
+        });
+    }
+
+    // 2. Si no viene en peques_lista, buscar en líneas de notas
+    if (listaEdades.length === 0) {
+        lines.forEach(line => {
+            const lower = line.toLowerCase();
+            if (/edad(?:\/fecha)?(?:\s+de)?\s+nacimiento/i.test(lower) || /^[\s•\*👶▦🎂]*edad(?:\s+del\s+peque)?\s*:/i.test(lower)) {
+                const parts = line.split(':');
+                if (parts.length > 1) {
+                    const candidate = parts.slice(1).join(':').replace(/^[•\-\*:]+\s*/, '').replace(/\*+$/g, '').trim();
+                    if (candidate && candidate !== '—') {
+                        segmentosEdad.push(candidate);
+                    }
+                } else {
+                    const m = line.match(/\*?(?:edad(?:\/fecha)?(?:\s+de)?\s+nacimiento|edad)\*?\s*[:\-]?\s*(.+)/i);
+                    if (m && m[1]) {
+                        const candidate = m[1].replace(/^[•\-\*:]+\s*/, '').replace(/\*+$/g, '').trim();
+                        if (candidate && candidate !== '—') {
+                            segmentosEdad.push(candidate);
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. Si aún no hay segmentos de edad en notas, revisar campos directos
+        if (segmentosEdad.length === 0) {
+            const camposDirectos = [
+                s.edad_peque, s.peque_edad, s.edad_nino,
+                s.detalles_servicio?.edad_peque, s.detalles_servicio?.peque_edad,
+                s.peque_nacimiento, s.peque_nacimiento_2, s.peque_nacimiento_3
+            ];
+            camposDirectos.forEach(c => {
+                if (c && typeof c === 'string' && c.trim() && c !== '—' && !segmentosEdad.includes(c.trim())) {
+                    segmentosEdad.push(c.trim());
+                }
+            });
+        }
+
+        // 4. Procesar segmentos de edad (soporte para múltiples fechas/edades en una sola línea o separadas)
+        segmentosEdad.forEach(seg => {
+            // Caso A: Pares tipo "Ander: 07/01/2024, Sofía: 15/05/2021"
+            if (seg.includes(':') && (seg.includes(',') || seg.includes('\n') || seg.includes(';'))) {
+                const subPartes = seg.split(/[,;\n]+/).filter(Boolean);
+                subPartes.forEach(sp => {
+                    const spParts = sp.split(':');
+                    if (spParts.length >= 2) {
+                        const subNom = spParts[0].trim();
+                        const subVal = spParts.slice(1).join(':').trim();
+                        const res = interpretarFechaOEdadPeque(subVal);
+                        if (res && res.textoEdad) {
+                            listaEdades.push({ nombre: subNom, edad: res.textoEdad });
+                        }
+                    } else {
+                        const res = interpretarFechaOEdadPeque(sp);
+                        if (res && res.textoEdad) {
+                            listaEdades.push({ nombre: '', edad: res.textoEdad });
+                        }
+                    }
+                });
+                return;
+            }
+
+            // Caso B: Fechas/edades separadas por comas, punto y coma, o " y " entre fechas
+            const partes = seg.split(/\s*[,;]\s*|\s+y\s+(?=\d{1,2}[\/\.\-]|(?:\d+|un|una)\s*(?:año|ano|mes|día))/i).filter(Boolean);
+            partes.forEach(p => {
+                const res = interpretarFechaOEdadPeque(p.trim());
+                if (res && res.textoEdad) {
+                    listaEdades.push({ nombre: '', edad: res.textoEdad });
+                }
+            });
+        });
+    }
+
+    // Asociar nombres extraídos si hay más de 1 edad y faltan nombres individuales
+    if (listaEdades.length > 1) {
+        listaEdades.forEach((item, idx) => {
+            if (!item.nombre && nombresExtraidos[idx]) {
+                item.nombre = nombresExtraidos[idx];
+            }
+        });
+    }
+
+    // --- C. Resto de la información (alergias, condición médica, salud, preferencias, mascotas, indicaciones) ---
+    const restoItems = [];
+    lines.forEach(line => {
+        const lower = line.toLowerCase();
+
+        // Omitir líneas ya procesadas (nombre y edad/nacimiento)
+        if (/nombre(?:\s+del)?\s+peque/i.test(lower) || /^[\s•\*👶👫]*nombre\s*:/i.test(lower)) return;
+        if (/edad(?:\/fecha)?(?:\s+de)?\s+nacimiento/i.test(lower) || /^[\s•\*👶▦🎂]*edad(?:\s+del\s+peque)?\s*:/i.test(lower)) return;
+
+        let l = line.trim();
+        let emoji = '';
+        const emojiMatch = l.match(/^([\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|[\uE000-\uF8FF]|🐾|🗣️?|🫀|🩺|🌈|🐶🐱|🐶|🐱|❤️|📝|👶|🧸|🎂|✨|•)+/u);
+        if (emojiMatch) {
+            emoji = emojiMatch[0].trim();
+            l = l.slice(emojiMatch[0].length).trim();
+        }
+        l = l.replace(/^[•\-\*]\s*/, '').trim();
+
+        let label = '';
+        let val = '';
+
+        if (l.includes(':')) {
+            const colonIdx = l.indexOf(':');
+            label = l.substring(0, colonIdx).replace(/\*/g, '').trim();
+            val = l.substring(colonIdx + 1).replace(/\*/g, '').trim();
+        } else if (l.includes('*')) {
+            const m = l.match(/\*(.*?)\*(.*)/);
+            if (m) {
+                label = m[1].trim();
+                val = m[2].trim();
+            } else {
+                val = l.replace(/\*/g, '').trim();
+            }
+        } else {
+            val = l;
+        }
+
+        if (!emoji) {
+            const lowerLabel = (label || val).toLowerCase();
+            if (lowerLabel.includes('alergia')) emoji = '🗣️';
+            else if (lowerLabel.includes('médic') || lowerLabel.includes('medic') || lowerLabel.includes('condici')) emoji = '🫀';
+            else if (lowerLabel.includes('salud')) emoji = '🩺';
+            else if (lowerLabel.includes('preferencia') || lowerLabel.includes('favorit') || lowerLabel.includes('jugar')) emoji = '🌈';
+            else if (lowerLabel.includes('mascota') || lowerLabel.includes('perro') || lowerLabel.includes('gato')) emoji = '🐶🐱';
+            else if (lowerLabel.includes('indicaci') || lowerLabel.includes('nanny') || lowerLabel.includes('cuidado') || lowerLabel.includes('nota')) emoji = '❤️';
+            else emoji = '•';
+        }
+
+        if (val || label) {
+            restoItems.push({ emoji, label, val });
+        }
+    });
+
+    const fragment = document.createDocumentFragment();
+
+    // --- FICHA 1: Nombre del peque (o Nombres de los peques) ---
+    if (rawNombrePeque && rawNombrePeque !== '—') {
+        const cardNombre = document.createElement('div');
+        cardNombre.className = 'peque-profile-card cs-ficha-eventual cs-ficha-nombre';
+        cardNombre.style.cssText = 'background:#FFF5F9; border:1px solid #FCE7F3; border-left:4px solid var(--pink-main, #E11D48); border-radius:12px; padding:10px 14px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.03); display:flex; align-items:center; gap:12px; box-sizing:border-box; width:100%;';
+
+        const labelFichaNombre = nombresExtraidos.length > 1 ? 'Nombres de los peques' : 'Nombre del peque';
+
+        cardNombre.innerHTML = `
+            <div style="width:36px; height:36px; background:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 1px 2px rgba(0,0,0,0.08); flex-shrink:0;">
+                👶
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#BE185D; margin-bottom:2px;">
+                    ${escapeHtml(labelFichaNombre)}
+                </div>
+                <div style="font-size:15px; font-weight:700; color:#1F2937; word-break:break-word;">
+                    ${escapeHtml(rawNombrePeque)}
+                </div>
+            </div>
+        `;
+        fragment.appendChild(cardNombre);
+    }
+
+    // --- FICHA 2: Edad del peque (calculada dinámicamente con soporte múltiple) ---
+    if (listaEdades.length > 0) {
+        const cardEdad = document.createElement('div');
+        cardEdad.className = 'peque-profile-card cs-ficha-eventual cs-ficha-edad';
+        cardEdad.style.cssText = 'background:#FFF5F9; border:1px solid #FCE7F3; border-left:4px solid var(--pink-main, #E11D48); border-radius:12px; padding:10px 14px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.03); display:flex; align-items:center; gap:12px; box-sizing:border-box; width:100%;';
+
+        if (listaEdades.length === 1) {
+            // Un solo peque
+            cardEdad.innerHTML = `
+                <div style="width:36px; height:36px; background:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 1px 2px rgba(0,0,0,0.08); flex-shrink:0;">
+                    🎂
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#BE185D; margin-bottom:2px;">
+                        Edad del peque
+                    </div>
+                    <div style="font-size:15px; font-weight:700; color:#1F2937; word-break:break-word;">
+                        ${escapeHtml(listaEdades[0].edad)}
+                    </div>
+                </div>
+            `;
+        } else {
+            // Múltiples peques
+            const edadesHtml = listaEdades.map((item, idx) => `
+                <div style="display:flex; align-items:center; gap:8px; font-size:13.5px; line-height:1.4;">
+                    <span style="font-size:14px; flex-shrink:0;">👶</span>
+                    ${item.nombre ? `<strong style="color:#BE185D;">${escapeHtml(item.nombre)}:</strong>` : `<span style="color:#6B7280; font-size:12px; font-weight:600;">Peque ${idx + 1}:</span>`}
+                    <span style="font-weight:700; color:#1F2937;">${escapeHtml(item.edad)}</span>
+                </div>
+            `).join('');
+
+            cardEdad.innerHTML = `
+                <div style="width:36px; height:36px; background:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 1px 2px rgba(0,0,0,0.08); flex-shrink:0; align-self:flex-start; margin-top:2px;">
+                    🎂
+                </div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#BE185D; margin-bottom:4px;">
+                        Edades de los peques (${listaEdades.length})
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:4px;">
+                        ${edadesHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        fragment.appendChild(cardEdad);
+    }
+
+    // --- FICHA 3: Resto de la información (Alergias, Condición médica, Estado de salud, Preferencias, Mascotas, Indicaciones) ---
+    if (restoItems.length > 0) {
+        const cardResto = document.createElement('div');
+        cardResto.className = 'peque-profile-card cs-ficha-eventual cs-ficha-resto';
+        cardResto.style.cssText = 'background:#FFF5F9; border:1px solid #FCE7F3; border-left:4px solid var(--pink-main, #E11D48); border-radius:12px; padding:12px 14px; margin-bottom:10px; box-shadow:0 1px 3px rgba(0,0,0,0.03); box-sizing:border-box; width:100%;';
+
+        const itemsHtml = restoItems.map(item => `
+            <div style="display:flex; align-items:flex-start; gap:8px; font-size:13px; line-height:1.4; color:#374151;">
+                <span style="font-size:15px; flex-shrink:0; line-height:1.2;">${escapeHtml(item.emoji)}</span>
+                <div style="flex:1;">
+                    ${item.label ? `<strong style="color:#4B5563;">${escapeHtml(item.label)}:</strong> ` : ''}
+                    <span style="color:#1F2937;">${escapeHtml(item.val)}</span>
+                </div>
+            </div>
+        `).join('');
+
+        cardResto.innerHTML = `
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid #FCE7F3;">
+                <div style="width:28px; height:28px; background:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:15px; box-shadow:0 1px 2px rgba(0,0,0,0.08); flex-shrink:0;">
+                    📋
+                </div>
+                <span style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#BE185D;">
+                    Información y Cuidados
+                </span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+                ${itemsHtml}
+            </div>
+        `;
+        fragment.appendChild(cardResto);
+    }
+
+    if (fragment.children.length === 0) {
+        if (rawNotas && rawNotas !== '—') {
+            container.textContent = rawNotas;
+        } else {
+            container.innerHTML = '<span class="text-muted" style="color:#9ca3af; font-size:13px;">Sin información adicional del peque</span>';
+        }
+    } else {
+        container.appendChild(fragment);
+    }
+}
+
+/**
+ * Suscribe a los usuarios (clientes y niñeras) a los cambios en tiempo real en control_servicios
+ */
+function suscribirRealtimePortalServicios() {
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    if (!client || window._portalServiciosSubscribed) return;
+    window._portalServiciosSubscribed = true;
+
+    try {
+        client.channel('realtime_portal_servicios')
+            .on('broadcast', { event: 'bitacora_live' }, (payload) => {
+                const data = payload?.payload;
+                if (!data) return;
+                console.log('⚡ [Realtime Portal] Bitácora en vivo recibida:', data);
+                if (data.registro && window.BITACORA_CACHE) {
+                    const normN = typeof _norm === 'function' ? _norm(data.ninera || '') : (data.ninera || '').toLowerCase();
+                    const cK = `${data.fecha}_${data.cliente}_${normN}`;
+                    const cKExact = `${data.fecha}_${data.email || data.cliente}_${normN}`;
+                    const cKSimple = `${data.fecha}_${data.cliente}`;
+                    window.BITACORA_CACHE[cK] = data.registro;
+                    window.BITACORA_CACHE[cKExact] = data.registro;
+                    window.BITACORA_CACHE[cKSimple] = data.registro;
+                }
+                if (window.BITACORA_SERVICIO_ACTUAL && (data.fecha === window.BITACORA_SERVICIO_ACTUAL.fecha || data.servicio_id === window.BITACORA_SERVICIO_ACTUAL.id)) {
+                    if (typeof _llenarFormularioBitacora === 'function') {
+                        _llenarFormularioBitacora(data.registro);
+                    }
+                    if (typeof _actualizarEstadoBtnLeido === 'function') {
+                        _actualizarEstadoBtnLeido(data.registro);
+                    }
+                    if (typeof _actualizarEstadoBtnRevisado === 'function') {
+                        _actualizarEstadoBtnRevisado(data.registro);
+                    }
+                }
+                if (window.ClienteServicios && typeof window.ClienteServicios.renderBitacora === 'function') {
+                    window.ClienteServicios.renderBitacora();
+                }
+
+                // ⚡ Si la vista de supervisión está abierta o existe en el DOM, recargar automáticamente
+                if (document.getElementById('resumenBitacorasActual') || (SESION && (SESION.admin || SESION.supervision))) {
+                    console.log('⚡ [Realtime Supervisión] Recargando resumen de bitácoras por evento en vivo...');
+                    // Actualización visual inmediata de badges de aceptación si corresponde
+                    if (data.status === 'aprobada' || data.estado === 'aprobada' || data.status === 'aceptada' || data.registro?.Acepta === 'Sí') {
+                        const cliCleanNorm = typeof _norm === 'function' ? _norm(data.cliente || '') : (data.cliente || '').toLowerCase().trim();
+                        const ninCleanNorm = typeof _norm === 'function' ? _norm(data.ninera || '') : (data.ninera || '').toLowerCase().trim();
+                        document.querySelectorAll('.badge-bit-acepta').forEach(el => {
+                            const elCli = typeof _norm === 'function' ? _norm(el.dataset.cliente || '') : (el.dataset.cliente || '').toLowerCase().trim();
+                            const elNin = typeof _norm === 'function' ? _norm(el.dataset.ninera || '') : (el.dataset.ninera || '').toLowerCase().trim();
+                            if (elCli && cliCleanNorm && (elCli.includes(cliCleanNorm) || cliCleanNorm.includes(elCli))) {
+                                if (!elNin || !ninCleanNorm || elNin.includes(ninCleanNorm) || ninCleanNorm.includes(elNin)) {
+                                    el.textContent = 'aceptadas';
+                                    el.style.background = '#dcfce7';
+                                    el.style.color = '#166534';
+                                }
+                            }
+                        });
+                    }
+
+                    if (typeof cargarResumenBitacoras === 'function') {
+                        cargarResumenBitacoras(true);
+                    }
+                }
+            })
+            .on('broadcast', { event: 'cambio_servicio_matriz' }, (payload) => {
+                console.log("⚡ [Realtime Portal] Broadcast de cambio en matriz recibido:", payload);
+                if (typeof CACHE_NINERA !== 'undefined') CACHE_NINERA.servicios = null;
+                if (typeof CACHE_CLIENTE !== 'undefined') CACHE_CLIENTE.servicios = null;
+                clearTimeout(window._tRefreshServicios);
+                window._tRefreshServicios = setTimeout(async () => {
+                    if (SESION.cliente) {
+                        if (typeof cargarServiciosCliente === 'function') await cargarServiciosCliente(true);
+                        if (typeof cargarActividadesCliente === 'function') await cargarActividadesCliente(true);
+                        if (window.ClienteInicio && typeof ClienteInicio.cargarServicios === 'function') await ClienteInicio.cargarServicios(true);
+                        if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') await ClienteServicios.cargar(true);
+                    } else if (!SESION.admin && !SESION.supervision) {
+                        try { if (typeof cargarServicios === 'function') await cargarServicios(true); } catch (_) { }
+                        try { if (window.NannyInicio && typeof NannyInicio.cargarServicios === 'function') await NannyInicio.cargarServicios(true); } catch (_) { }
+                        try { if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') await ClienteServicios.cargar(true); } catch (_) { }
+                        if (typeof window.actualizarClientesEstimulacion === 'function') {
+                            try { await window.actualizarClientesEstimulacion(true); } catch (_) { }
+                        }
+                    }
+                }, 100);
+            })
+            .on('broadcast', { event: 'control_servicios_update' }, (payload) => {
+                console.log("⚡ [Realtime Portal] Broadcast de actualización de servicios recibido:", payload);
+                if (typeof CACHE_NINERA !== 'undefined') CACHE_NINERA.servicios = null;
+                if (typeof CACHE_CLIENTE !== 'undefined') CACHE_CLIENTE.servicios = null;
+                clearTimeout(window._tRefreshServicios);
+                window._tRefreshServicios = setTimeout(async () => {
+                    if (SESION.cliente) {
+                        if (typeof cargarServiciosCliente === 'function') await cargarServiciosCliente(true);
+                        if (typeof cargarActividadesCliente === 'function') await cargarActividadesCliente(true);
+                        if (window.ClienteInicio && typeof ClienteInicio.cargarServicios === 'function') await ClienteInicio.cargarServicios(true);
+                        if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') await ClienteServicios.cargar(true);
+                    } else if (!SESION.admin && !SESION.supervision) {
+                        try { if (typeof cargarServicios === 'function') await cargarServicios(true); } catch (_) { }
+                        try { if (window.NannyInicio && typeof NannyInicio.cargarServicios === 'function') await NannyInicio.cargarServicios(true); } catch (_) { }
+                        try { if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') await ClienteServicios.cargar(true); } catch (_) { }
+                        if (typeof window.actualizarClientesEstimulacion === 'function') {
+                            try { await window.actualizarClientesEstimulacion(true); } catch (_) { }
+                        }
+                    }
+                }, 100);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'control_servicios' }, (payload) => {
+                console.log("⚡ [Realtime Servicios] Actualización detectada en matriz:", payload.eventType);
+
+                const newRow = payload.new || {};
+                const oldRow = payload.old || {};
+
+                clearTimeout(window._tRefreshServicios);
+                window._tRefreshServicios = setTimeout(async () => {
+                    if (SESION.cliente) {
+                        const cliEmail = (SESION.email || '').trim().toLowerCase();
+                        const cliNom = typeof normalizarTexto === 'function' ? normalizarTexto(SESION.nombre || '') : (SESION.nombre || '').trim().toLowerCase();
+                        const rowEmail = (newRow.cliente_email || oldRow.cliente_email || '').trim().toLowerCase();
+                        const rowNom = typeof normalizarTexto === 'function' ? normalizarTexto(newRow.cliente_nombre || oldRow.cliente_nombre || '') : (newRow.cliente_nombre || oldRow.cliente_nombre || '').trim().toLowerCase();
+
+                        const esParaEsteCliente = (cliEmail && rowEmail && cliEmail === rowEmail) ||
+                            (cliNom && rowNom && (rowNom.includes(cliNom) || cliNom.includes(rowNom)));
+
+                        // Solo recargar si el cambio en la matriz afecta al cliente actual
+                        if (esParaEsteCliente) {
+                            if (typeof cargarServiciosCliente === 'function') await cargarServiciosCliente(true);
+                            if (typeof cargarActividadesCliente === 'function') await cargarActividadesCliente(true);
+                            if (window.ClienteInicio && typeof ClienteInicio.cargarServicios === 'function') await ClienteInicio.cargarServicios(true);
+                            if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') await ClienteServicios.cargar(true);
+                        }
+                    } else if (!SESION.admin && !SESION.supervision) {
+                        // Niñera
+                        if (typeof CACHE_NINERA !== 'undefined') CACHE_NINERA.servicios = null;
+
+                        // ⚡ 1. Invalidar cachés locales
+                        if (typeof CACHE_NINERA !== 'undefined') CACHE_NINERA.servicios = null;
+                        if (typeof CACHE_CLIENTE !== 'undefined') CACHE_CLIENTE.servicios = null;
+
+                        // ⚡ 2. Recargar servicios de la niñera y cliente desde Supabase
+                        try {
+                            if (typeof cargarServicios === 'function') await cargarServicios(true);
+                        } catch (eCs) { console.warn("Aviso cargarServicios realtime:", eCs); }
+
+                        // ⚡ 3. Actualizar estimulación inmediatamente
+                        if (typeof window.actualizarClientesEstimulacion === 'function') {
+                            try { await window.actualizarClientesEstimulacion(true); } catch (eEst) { console.warn("Aviso estimulacion realtime:", eEst); }
+                        }
+
+                        try {
+                            if (window.ClienteInicio && typeof ClienteInicio.cargarServicios === 'function') {
+                                await ClienteInicio.cargarServicios(true);
+                            }
+                        } catch (eCliIni) { }
+
+                        try {
+                            if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') {
+                                await ClienteServicios.cargar(true);
+                            }
+                        } catch (eCls) { }
+
+                        try {
+                            if (window.NannyInicio && typeof NannyInicio.cargarServicios === 'function') {
+                                await NannyInicio.cargarServicios(true);
+                            }
+                        } catch (eNi) { }
+
+                        // 🔥 ACTUALIZAR AUTOMÁTICAMENTE PLANEACIONES DE LA NIÑERA
+                        if (typeof CACHE_NINERA !== 'undefined') CACHE_NINERA.planeaciones = null;
+                        if (typeof CACHE_PLANEACIONES !== 'undefined') CACHE_PLANEACIONES = {};
+                        if (typeof PLANEACION_SESSION_ID !== 'undefined') PLANEACION_SESSION_ID++;
+                        if (typeof cargarResumenPlaneacionesNinera === 'function') {
+                            try { await cargarResumenPlaneacionesNinera(true, true); } catch (ePl) { }
+                        }
+                    } else if (SESION.admin || SESION.supervision || document.getElementById('resumenBitacorasActual')) {
+                        if (typeof cargarResumenPlaneaciones === 'function') {
+                            await cargarResumenPlaneaciones(true, true);
+                        }
+                        if (typeof cargarResumenBitacoras === 'function') {
+                            await cargarResumenBitacoras(true);
+                        }
+                    }
+                }, 200);
+            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'confirmaciones_asistencia' }, (payload) => {
+                console.log("⚡ [Realtime Confirmaciones] Actualización de asistencia detectada:", payload.eventType);
+                clearTimeout(window._tRefreshServicios);
+                window._tRefreshServicios = setTimeout(async () => {
+                    if (typeof CACHE_NINERA !== 'undefined') CACHE_NINERA.servicios = null;
+                    if (typeof CACHE_CLIENTE !== 'undefined') CACHE_CLIENTE.servicios = null;
+                    if (typeof cargarServicios === 'function') await cargarServicios(true);
+                    if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') await ClienteServicios.cargar(true);
+                    if (window.NannyInicio && typeof NannyInicio.cargarServicios === 'function') await NannyInicio.cargarServicios(true);
+                }, 200);
+            })
+            .subscribe();
+        console.log("📡 [Realtime] Suscripción activa a control_servicios y confirmaciones_asistencia para portal de clientes, niñeras y supervisión.");
+
+        // ⚡ Sincronización instantánea por evento storage (fallback entre pestañas)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'nyp_servicios_sync_trigger') {
+                if (typeof CACHE_NINERA !== 'undefined') CACHE_NINERA.servicios = null;
+                if (typeof CACHE_CLIENTE !== 'undefined') CACHE_CLIENTE.servicios = null;
+                if (typeof cargarServicios === 'function') cargarServicios(true);
+                if (window.NannyInicio && typeof NannyInicio.cargarServicios === 'function') NannyInicio.cargarServicios(true);
+                if (window.ClienteInicio && typeof ClienteInicio.cargarServicios === 'function') ClienteInicio.cargarServicios(true);
+                if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') ClienteServicios.cargar(true);
+            }
+        });
+
+        // ⚡ Sincronización instantánea inter-pestañas
+        if (typeof BroadcastChannel !== 'undefined') {
+            if (!window._bcIndexPortalSync) {
+                window._bcIndexPortalSync = new BroadcastChannel('nyp_admin_sync_channel');
+                window._bcIndexPortalSync.onmessage = async (e) => {
+                    if (e.data && (e.data.type === 'control_servicios_update' || e.data.type === 'cambio_servicio_matriz')) {
+                        console.log("⚡ [Portal Sync] Cambio de matriz detectado vía BroadcastChannel:", e.data);
+                        if (typeof CACHE_NINERA !== 'undefined') CACHE_NINERA.servicios = null;
+                        if (typeof CACHE_CLIENTE !== 'undefined') CACHE_CLIENTE.servicios = null;
+                        if (typeof cargarServicios === 'function') await cargarServicios(true);
+                        if (typeof window.actualizarClientesEstimulacion === 'function') {
+                            await window.actualizarClientesEstimulacion(true);
+                        }
+                        if (window.ClienteInicio && typeof ClienteInicio.cargarServicios === 'function') {
+                            ClienteInicio.cargarServicios(true);
+                        }
+                        if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') {
+                            ClienteServicios.cargar(true);
+                        }
+                        if (window.NannyInicio && typeof NannyInicio.cargarServicios === 'function') {
+                            NannyInicio.cargarServicios(true);
+                        }
+                        if (document.getElementById('resumenBitacorasActual') || (SESION && (SESION.admin || SESION.supervision))) {
+                            if (typeof cargarResumenBitacoras === 'function') {
+                                cargarResumenBitacoras(true);
+                            }
+                        }
+                    }
+                };
+            }
+
+            if (!window._bcBitacorasSync) {
+                window._bcBitacorasSync = new BroadcastChannel('nyp_bitacoras_channel');
+                window._bcBitacorasSync.onmessage = async (e) => {
+                    console.log("⚡ [Bitacoras Sync] Evento detectado vía BroadcastChannel:", e.data);
+                    if (document.getElementById('resumenBitacorasActual') || (SESION && (SESION.admin || SESION.supervision))) {
+                        if (e.data && (e.data.type === 'bitacora_aceptada' || e.data.status === 'aprobada' || e.data.status === 'aceptada')) {
+                            const cliCleanNorm = typeof _norm === 'function' ? _norm(e.data.cliente || '') : (e.data.cliente || '').toLowerCase().trim();
+                            const ninCleanNorm = typeof _norm === 'function' ? _norm(e.data.ninera || '') : (e.data.ninera || '').toLowerCase().trim();
+                            document.querySelectorAll('.badge-bit-acepta').forEach(el => {
+                                const elCli = typeof _norm === 'function' ? _norm(el.dataset.cliente || '') : (el.dataset.cliente || '').toLowerCase().trim();
+                                const elNin = typeof _norm === 'function' ? _norm(el.dataset.ninera || '') : (el.dataset.ninera || '').toLowerCase().trim();
+                                if (elCli && cliCleanNorm && (elCli.includes(cliCleanNorm) || cliCleanNorm.includes(elCli))) {
+                                    if (!elNin || !ninCleanNorm || elNin.includes(ninCleanNorm) || ninCleanNorm.includes(elNin)) {
+                                        el.textContent = 'aceptadas';
+                                        el.style.background = '#dcfce7';
+                                        el.style.color = '#166534';
+                                    }
+                                }
+                            });
+                        }
+
+                        if (typeof cargarResumenBitacoras === 'function') {
+                            cargarResumenBitacoras(true);
+                        }
+                    }
+                };
+            }
+        }
+    } catch (e) {
+        console.warn("No se pudo activar realtime en portal de servicios:", e);
+    }
+}
+window.suscribirRealtimePortalServicios = suscribirRealtimePortalServicios;
+
+/**
+ * Actualiza la visibilidad de las pestañas "Estimulación" y "Actividades" en el menú de la niñera (#nav-ninera)
+ * según los tipos de servicio asignados para esta semana o la siguiente en control_servicios:
+ * - Mínimo 1 "Neuronanny" -> Muestra "Estimulación"
+ * - Mínimo 1 "Nanny Educativa" o "Miss Nanny" -> Muestra "Actividades"
+ * - Ambos tipos -> Muestra ambas pestañas
+ * - En caso contrario -> Oculta ambas pestañas
+ */
+async function actualizarVisibilidadPestanasNinera(serviciosParam = null) {
+    if (!window.SESION || window.SESION.cliente || window.SESION.admin || window.SESION.supervision || window.SESION.rh) {
+        return;
+    }
+
+    const navEst = document.getElementById('nav-estimulacion');
+    const navAct = document.getElementById('nav-actividades');
+    if (!navEst && !navAct) return;
+
+    const hoy = new Date();
+    const lunesActualDate = (typeof startMonday === 'function') ? startMonday(hoy) : new Date();
+    const lunesActualISO = (typeof toISO === 'function') ? toISO(lunesActualDate) : lunesActualDate.toISOString().slice(0, 10);
+
+    const lunesSigDate = new Date(lunesActualDate);
+    lunesSigDate.setDate(lunesSigDate.getDate() + 7);
+    const lunesSigISO = (typeof toISO === 'function') ? toISO(lunesSigDate) : lunesSigDate.toISOString().slice(0, 10);
+
+    const semanasPermitidas = [lunesActualISO, lunesSigISO];
+
+    let filas = [];
+
+    if (Array.isArray(serviciosParam) && serviciosParam.length > 0) {
+        filas = serviciosParam;
+    } else if (Array.isArray(window.CAL_SERVICIOS) && window.CAL_SERVICIOS.length > 0) {
+        filas = window.CAL_SERVICIOS;
+    } else if (window.CACHE_NINERA && Array.isArray(window.CACHE_NINERA.servicios) && window.CACHE_NINERA.servicios.length > 0) {
+        filas = window.CACHE_NINERA.servicios;
+    }
+
+    if (filas.length === 0) {
+        try {
+            const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+            if (client && SESION && SESION.nombre) {
+                const nannyNom = (SESION.nombre || '').trim();
+                const primerNom = nannyNom.split(' ')[0];
+                let q = client.from('control_servicios').select('*').in('semana_iso', semanasPermitidas);
+                if (primerNom.length >= 3) {
+                    q = q.or(`nanny_nombre.ilike.%${nannyNom}%,nanny_nombre.ilike.%${primerNom}%`);
+                }
+                const { data, error } = await q;
+                if (!error && Array.isArray(data)) {
+                    filas = data;
+                }
+            }
+        } catch (eQuery) {
+            console.warn("Nota consultando servicios para visibilidad de pestañas niñera:", eQuery);
+        }
+    }
+
+    let tieneNeuronanny = false;
+    let tieneEducativaOMiss = false;
+
+    const nannyNombreNorm = typeof normalizarTexto === 'function' ? normalizarTexto(SESION.nombre || '') : (SESION.nombre || '').trim().toLowerCase();
+    const nannyEmailNorm = (SESION.email || '').trim().toLowerCase();
+
+    filas.forEach(s => {
+        if (s.ver === false) return;
+
+        // Validar que corresponda a la niñera si la fila contiene nanny_nombre o nanny_email
+        if (s.nanny_nombre || s.nanny_email || s.nombre_ninera || s.email_ninera) {
+            const sNannyNom = typeof normalizarTexto === 'function' ? normalizarTexto(s.nanny_nombre || s.nombre_ninera || '') : (s.nanny_nombre || s.nombre_ninera || '').toLowerCase();
+            const sNannyEmail = (s.nanny_email || s.email_ninera || '').trim().toLowerCase();
+            const coincide = (nannyEmailNorm && sNannyEmail && sNannyEmail === nannyEmailNorm) ||
+                (nannyNombreNorm && sNannyNom && (sNannyNom.includes(nannyNombreNorm) || nannyNombreNorm.includes(sNannyNom)));
+            if (!coincide) return;
+        }
+
+        // Validar semana (actual o siguiente)
+        let semISO = s.semana_iso;
+        if (!semISO && s.fecha) {
+            semISO = (typeof getMondayISO_Safe === 'function') ? getMondayISO_Safe(s.fecha) : s.fecha;
+        }
+
+        const maxDateISO = (typeof addWeeksToISO_Safe === 'function') ? addWeeksToISO_Safe(lunesActualISO, 2) : '9999-12-31';
+        const esSemanaValida = semanasPermitidas.includes(semISO) ||
+            (s.fecha && s.fecha >= lunesActualISO && s.fecha < maxDateISO);
+
+        if (!esSemanaValida) return;
+
+        // Validar tipo de servicio
+        const tipoRaw = s.tipo_servicio || s.servicio || s.tipo || '';
+        const tipoNorm = typeof normalizarTexto === 'function' ? normalizarTexto(tipoRaw) : tipoRaw.toLowerCase();
+
+        if (tipoNorm.includes('neuronanny') || tipoNorm.includes('estimulacion')) {
+            tieneNeuronanny = true;
+        }
+        if (tipoNorm.includes('educativa') || tipoNorm.includes('miss nanny') || tipoNorm.includes('miss')) {
+            tieneEducativaOMiss = true;
+        }
+    });
+
+    // Aplicar visibilidad en la barra de navegación de la niñera (#nav-ninera)
+    if (navEst) {
+        navEst.style.display = tieneNeuronanny ? 'flex' : 'none';
+    }
+    if (navAct) {
+        navAct.style.display = tieneEducativaOMiss ? 'flex' : 'none';
+    }
+
+    window._nannyTieneNeuronannyValido = tieneNeuronanny;
+    window._nannyTieneEducativaValido = tieneEducativaOMiss;
+
+    console.log(`🧭 [Nav Niñera] Visibilidad de pestañas -> Estimulación: ${tieneNeuronanny ? 'VISIBLE' : 'OCULTA'}, Actividades: ${tieneEducativaOMiss ? 'VISIBLE' : 'OCULTA'}`);
+
+    // 🚀 Si la niñera se encuentra actualmente en una pestaña que se acaba de ocultar, redirigir de inmediato a "Inicio"
+    const vistaEstActiva = document.getElementById('vista-estimulacion')?.classList.contains('activa');
+    const vistaActActiva = document.getElementById('vista-actividades')?.classList.contains('activa');
+
+    if ((!tieneNeuronanny && vistaEstActiva) || (!tieneEducativaOMiss && vistaActActiva)) {
+        console.log("⚠️ [Nav Niñera] La pestaña actual ha dejado de estar asignada. Redirigiendo automáticamente a Inicio...");
+        if (typeof irVista === 'function') {
+            irVista('inicio');
+        } else if (window.NannyInicio && typeof window.NannyInicio.mostrarVistaInicio === 'function') {
+            window.NannyInicio.mostrarVistaInicio();
+        }
+    }
+}
+window.actualizarVisibilidadPestanasNinera = actualizarVisibilidadPestanasNinera;
+
+/**
+ * Actualiza la visibilidad de las pestañas "Estimulación" y "Actividades" en el menú del cliente (#nav-cliente)
+ * según los tipos de servicio asignados para esta semana o la siguiente en control_servicios:
+ * - Mínimo 1 "Neuronanny" -> Muestra "Estimulación"
+ * - Mínimo 1 "Nanny Educativa" o "Miss Nanny" -> Muestra "Actividades"
+ * - Ambos tipos -> Muestra ambas pestañas
+ * - En caso contrario -> Oculta ambas pestañas
+ */
+async function actualizarVisibilidadPestanasCliente(serviciosParam = null) {
+    if (!window.SESION || !window.SESION.cliente) {
+        return;
+    }
+
+    const navEst = document.getElementById('cnav-estimulacion');
+    const navAct = document.getElementById('cnav-actividades');
+    if (!navEst && !navAct) return;
+
+    const hoy = new Date();
+    const lunesActualDate = (typeof startMonday === 'function') ? startMonday(hoy) : new Date();
+    const lunesActualISO = (typeof toISO === 'function') ? toISO(lunesActualDate) : lunesActualDate.toISOString().slice(0, 10);
+
+    const lunesSigDate = new Date(lunesActualDate);
+    lunesSigDate.setDate(lunesSigDate.getDate() + 7);
+    const lunesSigISO = (typeof toISO === 'function') ? toISO(lunesSigDate) : lunesSigDate.toISOString().slice(0, 10);
+
+    const semanasPermitidas = [lunesActualISO, lunesSigISO];
+
+    let filas = [];
+
+    if (Array.isArray(serviciosParam) && serviciosParam.length > 0) {
+        filas = serviciosParam;
+    } else if (window.CACHE_CLIENTE && Array.isArray(window.CACHE_CLIENTE.servicios) && window.CACHE_CLIENTE.servicios.length > 0) {
+        filas = window.CACHE_CLIENTE.servicios;
+    } else if (window.ClienteServicios && Array.isArray(window.ClienteServicios._servicios) && window.ClienteServicios._servicios.length > 0) {
+        filas = window.ClienteServicios._servicios;
+    }
+
+    if (filas.length === 0) {
+        try {
+            const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+            if (client && SESION && (SESION.email || SESION.nombre)) {
+                const emailCli = (SESION.email || '').trim().toLowerCase();
+                const nomCli = (SESION.nombre || '').trim().toLowerCase();
+                let q = client.from('control_servicios').select('*').in('semana_iso', semanasPermitidas);
+                if (emailCli && nomCli) {
+                    q = q.or(`cliente_email.ilike.${emailCli},cliente_nombre.ilike.%${nomCli}%`);
+                } else if (emailCli) {
+                    q = q.ilike('cliente_email', emailCli);
+                }
+                const { data, error } = await q;
+                if (!error && Array.isArray(data)) {
+                    filas = data;
+                }
+            }
+        } catch (eQuery) {
+            console.warn("Nota consultando servicios para visibilidad de pestañas cliente:", eQuery);
+        }
+    }
+
+    let tieneNeuronanny = false;
+    let tieneEducativaOMiss = false;
+
+    const cliNombreNorm = typeof normalizarTexto === 'function' ? normalizarTexto(SESION.nombre || '') : (SESION.nombre || '').trim().toLowerCase();
+    const cliEmailNorm = (SESION.email || '').trim().toLowerCase();
+
+    filas.forEach(s => {
+        if (s.ver === false) return;
+
+        // Validar que corresponda al cliente
+        if (s.cliente_email || s.cliente_nombre || s.correo_cliente || s.cliente) {
+            const sCliNom = typeof normalizarTexto === 'function' ? normalizarTexto(s.cliente_nombre || s.cliente || '') : (s.cliente_nombre || s.cliente || '').toLowerCase();
+            const sCliEmail = (s.cliente_email || s.correo_cliente || s.email || '').trim().toLowerCase();
+            const coincide = (cliEmailNorm && sCliEmail && sCliEmail === cliEmailNorm) ||
+                (cliNombreNorm && sCliNom && (sCliNom.includes(cliNombreNorm) || cliNombreNorm.includes(sCliNom)));
+            if (!coincide) return;
+        }
+
+        // Validar semana (actual o siguiente)
+        let semISO = s.semana_iso;
+        if (!semISO && s.fecha) {
+            semISO = (typeof getMondayISO_Safe === 'function') ? getMondayISO_Safe(s.fecha) : s.fecha;
+        }
+
+        const maxDateISO = (typeof addWeeksToISO_Safe === 'function') ? addWeeksToISO_Safe(lunesActualISO, 2) : '9999-12-31';
+        const esSemanaValida = semanasPermitidas.includes(semISO) ||
+            (s.fecha && s.fecha >= lunesActualISO && s.fecha < maxDateISO);
+
+        if (!esSemanaValida) return;
+
+        // Validar tipo de servicio
+        const tipoRaw = s.tipo_servicio || s.servicio || s.tipo || '';
+        const tipoNorm = typeof normalizarTexto === 'function' ? normalizarTexto(tipoRaw) : tipoRaw.toLowerCase();
+
+        if (tipoNorm.includes('neuronanny') || tipoNorm.includes('estimulacion')) {
+            tieneNeuronanny = true;
+        }
+        if (tipoNorm.includes('educativa') || tipoNorm.includes('miss nanny') || tipoNorm.includes('miss')) {
+            tieneEducativaOMiss = true;
+        }
+    });
+
+    // Aplicar visibilidad en la barra de navegación del cliente (#nav-cliente)
+    if (navEst) {
+        navEst.style.display = tieneNeuronanny ? 'flex' : 'none';
+    }
+    if (navAct) {
+        navAct.style.display = tieneEducativaOMiss ? 'flex' : 'none';
+    }
+
+    // 🌟 Aplicar visibilidad en la sección de actividades sugeridas de la pestaña Inicio (#ciActivityCarouselContainer)
+    const secActividadesInicio = document.getElementById('ciActivityCarouselContainer');
+    if (secActividadesInicio) {
+        secActividadesInicio.style.display = tieneNeuronanny ? 'block' : 'none';
+    }
+
+    window._clienteTieneNeuronannyValido = tieneNeuronanny;
+    window._clienteTieneEducativaValido = tieneEducativaOMiss;
+
+    console.log(`🧭 [Nav Cliente] Visibilidad de pestañas -> Estimulación: ${tieneNeuronanny ? 'VISIBLE' : 'OCULTA'}, Actividades: ${tieneEducativaOMiss ? 'VISIBLE' : 'OCULTA'}`);
+
+    // 🚀 Si el cliente se encuentra actualmente en una pestaña que se acaba de ocultar, redirigir de inmediato a "Inicio"
+    const vistaEstActiva = document.getElementById('vista-estimulacion')?.classList.contains('activa');
+    const vistaActCliActiva = document.getElementById('vista-actividades-cliente')?.classList.contains('activa') ||
+        document.getElementById('vista-actividades')?.classList.contains('activa');
+
+    if ((!tieneNeuronanny && vistaEstActiva) || (!tieneEducativaOMiss && vistaActCliActiva)) {
+        console.log("⚠️ [Nav Cliente] La pestaña actual ha dejado de estar asignada para el cliente. Redirigiendo automáticamente a Inicio...");
+        if (typeof irVista === 'function') {
+            irVista('inicio');
+        } else if (window.ClienteInicio && typeof window.ClienteInicio.mostrarVistaInicio === 'function') {
+            window.ClienteInicio.mostrarVistaInicio();
+        }
+    }
+}
+window.actualizarVisibilidadPestanasCliente = actualizarVisibilidadPestanasCliente;
 
 async function cargarServicios(force = false) {
     if (!force && LAST_FETCH['cargarServicios'] && (Date.now() - LAST_FETCH['cargarServicios'] < DEFAULT_TTL)) return;
@@ -936,54 +2572,145 @@ async function cargarServicios(force = false) {
         return;
     }
 
-    cont.innerHTML = '';
-    msg.textContent = 'Cargando servicios...';
+    // Activar escucha en tiempo real de Supabase si no está activa
+    suscribirRealtimePortalServicios();
 
-    try {
-        // Calcular fecha de inicio: Lunes de la semana actual
-        const hoy = new Date();
-        const diaSemana = hoy.getDay(); // 0=Domingo, 1=Lunes...
-        const diasDesdeLunes = (diaSemana + 6) % 7;
-        const lunes = new Date(hoy);
-        lunes.setDate(hoy.getDate() - diasDesdeLunes);
-        const fechaInicioISO = toISO(lunes);
+    if (msg && (!cont || !cont.children.length)) msg.textContent = 'Cargando servicios...';
 
-        const lista = await api('getServiciosNinera', {
-            email: SESION.email,
-            dias: 21,
-            fecha_inicio: fechaInicioISO
-        });
+    let serviciosCargados = false;
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
 
-        CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
-        msg.textContent = `Servicios recibidos: ${CAL_SERVICIOS.length}`;
+    // 🚀 PASO 1: Consultar directamente en Supabase (control_servicios)
+    if (client && SESION && SESION.nombre) {
+        try {
+            const lunesActual = getMondayISO_Safe(new Date());
+            const semanasConsultarNan = [-2, -1, 0, 1, 2, 3].map(w => addWeeksToISO_Safe(lunesActual, w));
+            let qNan = client.from('control_servicios').select('*');
+            const nannyNom = (SESION.nombre || '').trim();
+            const primerNom = nannyNom.split(' ')[0];
+            if (primerNom.length >= 3) {
+                qNan = qNan.or(`nanny_nombre.ilike.%${nannyNom}%,nanny_nombre.ilike.%${primerNom}%`);
+            } else {
+                qNan = qNan.in('semana_iso', semanasConsultarNan);
+            }
 
-        //Normalizar campo "ver"
-        CAL_SERVICIOS = CAL_SERVICIOS.map(s => {
-            let ver = s.ver;
-            if (ver === undefined || ver === null || ver === '') ver = true;
-            if (typeof ver === 'string') ver = ver.trim().toLowerCase();
-            if (ver === 'true' || ver === '1') ver = true;
-            if (ver === 'false' || ver === '0') ver = false;
-            return { ...s, ver: ver === true };
-        });
+            const { data: filasMatriz, error: errMatriz } = await qNan;
 
-        // Guardar en caché
-        CACHE_NINERA.servicios = CAL_SERVICIOS;
+            if (!errMatriz && Array.isArray(filasMatriz)) {
+                // Obtener datos de todos los clientes para enriquecer direcciones y ubicaciones
+                let mapaClientes = {};
+                try {
+                    const { data: clientesList } = await client
+                        .from('clientes')
+                        .select('*');
 
-        if (!SEMANA_CALENDARIO_BASE) {
-            SEMANA_CALENDARIO_BASE = new Date();
+                    if (Array.isArray(clientesList)) {
+                        clientesList.forEach(c => {
+                            const kEmail = (c.email || '').trim().toLowerCase();
+                            const kNom = (c.nombre || '').trim().toLowerCase();
+                            const kNomNorm = normalizarTexto(kNom);
+                            if (kEmail) mapaClientes[kEmail] = c;
+                            if (kNom) mapaClientes[kNom] = c;
+                            if (kNomNorm) mapaClientes[kNomNorm] = c;
+                        });
+                    }
+                } catch (eCli) {
+                    console.warn("No se pudo obtener lista de clientes para niñera:", eCli);
+                }
+
+                const svcs = transformarFilasControlServicios(filasMatriz, 'nanny', SESION, mapaClientes);
+                console.log(`⚡ [Servicios Supabase] Encontrados ${svcs.length} servicios visibles para niñera ${SESION.nombre}`);
+
+                CAL_SERVICIOS = svcs;
+                CACHE_NINERA.servicios = svcs;
+
+                // Separar para siguiente semana
+                const lunesSigISO = addWeeksToISO_Safe(lunesActual, 1);
+                CAL_SERVICIOS_SIG = svcs.filter(s => s.fecha >= lunesSigISO);
+
+                if (!SEMANA_CALENDARIO_BASE) {
+                    SEMANA_CALENDARIO_BASE = new Date();
+                }
+
+                renderCalendario2Semanas();
+                serviciosCargados = true;
+                if (typeof window.actualizarClientesEstimulacion === 'function') {
+                    window.actualizarClientesEstimulacion();
+                }
+                actualizarVisibilidadPestanasNinera(svcs);
+                if (window.ClienteServicios && typeof window.ClienteServicios.renderServiciosList === 'function') {
+                    window.ClienteServicios._servicios = svcs;
+                    window.ClienteServicios.renderMetricas();
+                    window.ClienteServicios.renderCalendarStrip();
+                    window.ClienteServicios.renderServiciosList();
+                    window.ClienteServicios.renderBitacora();
+                }
+                if (msg) {
+                    msg.textContent = `Servicios recibidos: ${svcs.length}`;
+                    setTimeout(() => { if (msg && msg.textContent.startsWith('Servicios recibidos')) msg.textContent = ''; }, 1500);
+                }
+            }
+        } catch (supaErr) {
+            console.warn("Error leyendo servicios de Supabase para niñera:", supaErr);
+        }
+    }
+
+    // 🔄 PASO 2: Fallback tradicional a GAS si no se cargó desde Supabase y tiene token
+    if (!serviciosCargados) {
+        if (!SESION.token) {
+            CAL_SERVICIOS = [];
+            CACHE_NINERA.servicios = [];
+            renderCalendario2Semanas();
+            if (msg) msg.textContent = '';
+            return;
         }
 
-        renderCalendario2Semanas();
-        setTimeout(() => { if (msg.textContent.startsWith('Servicios recibidos')) msg.textContent = ''; }, 1500);
+        try {
+            const hoy = new Date();
+            const diaSemana = hoy.getDay();
+            const diasDesdeLunes = (diaSemana + 6) % 7;
+            const lunes = new Date(hoy);
+            lunes.setDate(hoy.getDate() - diasDesdeLunes);
+            const fechaInicioISO = toISO(lunes);
 
-    } catch (err) {
-        console.error('Error cargarServicios:', err);
-        msg.innerHTML = `<span class="err">${err.message}</span>`;
+            const lista = await api('getServiciosNinera', {
+                email: SESION.email,
+                dias: 21,
+                fecha_inicio: fechaInicioISO
+            });
+
+            CAL_SERVICIOS = Array.isArray(lista) ? lista : [];
+            if (msg) msg.textContent = `Servicios recibidos: ${CAL_SERVICIOS.length}`;
+
+            CAL_SERVICIOS = CAL_SERVICIOS.map(s => {
+                let ver = s.ver;
+                if (ver === undefined || ver === null || ver === '') ver = true;
+                if (typeof ver === 'string') ver = ver.trim().toLowerCase();
+                if (ver === 'true' || ver === '1') ver = true;
+                if (ver === 'false' || ver === '0') ver = false;
+                return { ...s, ver: ver === true };
+            });
+
+            CACHE_NINERA.servicios = CAL_SERVICIOS;
+
+            if (!SEMANA_CALENDARIO_BASE) {
+                SEMANA_CALENDARIO_BASE = new Date();
+            }
+
+            renderCalendario2Semanas();
+            setTimeout(() => { if (msg && msg.textContent.startsWith('Servicios recibidos')) msg.textContent = ''; }, 1500);
+        } catch (err) {
+            console.error('Error cargarServicios GAS:', err);
+            if (msg) msg.innerHTML = `<span class="err">${err.message}</span>`;
+        }
     }
 }
 
 async function cargarServiciosSiguienteSemana() {
+    // Si ya fueron cargados desde Supabase en cargarServicios, no repetir
+    if (CAL_SERVICIOS_SIG && CAL_SERVICIOS_SIG.length > 0) return;
+    if (!SESION.token) return;
+
     try {
         const lista = await api('getServiciosNinera', { email: SESION.email, dias: 14 });
         const todos = Array.isArray(lista) ? lista : [];
@@ -1031,9 +2758,17 @@ function renderCalendario2Semanas() {
         const servicios = (map[iso] || []).slice().sort(compararServicios);
 
         const serviciosVisibles = servicios.filter(s => {
-            const nineraServicio = normalizarTexto(s?.nombre_ninera || '');
-            const nineraSesion = normalizarTexto(SESION.nombre || '');
-            if (nineraSesion && nineraServicio && nineraServicio !== nineraSesion) return false;
+            const nineraServicio = typeof normalizarTexto === 'function' ? normalizarTexto(s?.nombre_ninera || '') : (s?.nombre_ninera || '').toLowerCase();
+            const nineraSesion = typeof normalizarTexto === 'function' ? normalizarTexto(SESION.nombre || '') : (SESION.nombre || '').toLowerCase();
+            if (nineraSesion && nineraServicio) {
+                const primerNombreSesion = nineraSesion.split(' ')[0];
+                const primerNombreServicio = nineraServicio.split(' ')[0];
+                const coincide = nineraServicio.includes(nineraSesion) ||
+                    nineraSesion.includes(nineraServicio) ||
+                    (primerNombreSesion.length >= 3 && nineraServicio.includes(primerNombreSesion)) ||
+                    (primerNombreServicio.length >= 3 && nineraSesion.includes(primerNombreServicio));
+                if (!coincide) return false;
+            }
 
             const v = s?.ver;
             if (v === undefined || v === null || v === '') return true;
@@ -1112,8 +2847,15 @@ function formatTimestamp(timestamp) {
         return timestamp; // En caso de error, devolver original
     }
 }
-function abrirModalServicio(s) {
-    document.getElementById('mCliente').textContent = s.cliente || 'Detalle del servicio';
+function abrirModalServicio(sOrId) {
+    let s = sOrId;
+    if (typeof sOrId === 'string') {
+        const pool = (window.CAL_SERVICIOS || []).concat(window.NannyInicio?._servicios || []).concat(window.CACHE_NINERA?.servicios || []).concat(window.CACHE_CLIENTE?.servicios || []).concat(window.ClienteServicios?._servicios || []);
+        s = pool.find(item => item && (item.id === sOrId || String(item.id).startsWith(sOrId))) || { cliente: 'Detalle del servicio' };
+    }
+    if (!s || typeof s !== 'object') return;
+
+    document.getElementById('mCliente').textContent = s.cliente || s.cliente_nombre || 'Detalle del servicio';
 
     //Formatear fecha: Lunes 19 de Enero
     let fechaTexto = s.fecha || '—';
@@ -1134,34 +2876,61 @@ function abrirModalServicio(s) {
 
     const u = document.getElementById('mUbicacion');
     u.textContent = '—';
-    if (s.ubicacion_link) {
-        let safeLink = String(s.ubicacion_link).trim();
+    const linkUbicacion = s.ubicacion_link || s.ubicacion || s.Ubicacion;
+    if (linkUbicacion) {
+        let safeLink = String(linkUbicacion).trim();
         // Solo permitir http o https
         if (/^https?:\/\//i.test(safeLink)) {
             u.innerHTML = `<a href="${escapeHtml(safeLink)}" target="_blank" rel="noopener">Abrir mapa</a>`;
         } else {
             // Si no es un link válido, mostrar texto simple escapado
-            u.textContent = s.ubicacion_link;
+            u.textContent = safeLink;
         }
     }
 
-    document.getElementById('mEdad').textContent = s.edad_nino || '—';
+    document.getElementById('mEdad').textContent = s.edad_nino || s.peque_edad || '—';
     //--- LÓGICA MEJORADA PARA NOTAS DE PEQUES (PARSING) ---
     const rawNotas = s.notas || '—';
     const containerNotas = document.getElementById('mNotas');
     const containerEdad = document.getElementById('mEdad')?.parentElement; //Contenedor de la edad global
+    const labelNotas = containerNotas?.previousElementSibling; //El div con 📝 Notas:
 
-    //Resetear visibilidad de edad global por defecto
+    //Resetear visibilidad y estilos por defecto
     if (containerEdad) containerEdad.style.display = 'block';
+    if (labelNotas && labelNotas.textContent.includes('Notas:')) {
+        labelNotas.style.display = 'block';
+    }
+    if (containerNotas) {
+        containerNotas.style.whiteSpace = 'normal';
+    }
 
-    if (s.notas && (s.notas.includes('👶') || s.notas.includes('•'))) {
+    const esEventualOTemporal = Boolean(
+        s.bloque === 'servicios_eventuales' ||
+        s.bloque === 'servicios_temporales' ||
+        s.bloque === 'eventuales' ||
+        s.bloque === 'temporales' ||
+        (s.tipo_servicio && (
+            String(s.tipo_servicio).toLowerCase().includes('eventual') ||
+            String(s.tipo_servicio).toLowerCase().includes('temporal')
+        ))
+    );
+
+    if (esEventualOTemporal) {
+        // === SERVICIOS EVENTUALES Y TEMPORALES: FICHAS DIVIDIDAS SEGÚN SECUENCIA SOLICITADA ===
+        // 1. Nombre del peque
+        // 2. Edad del peque
+        // 3. Resto de la información (alergias, condición médica, estado de salud, preferencias, mascotas, indicaciones)
+        if (containerEdad) containerEdad.style.display = 'none';
+        if (labelNotas && labelNotas.textContent.includes('Notas:')) {
+            labelNotas.style.display = 'none';
+        }
+        containerNotas.innerHTML = '';
+        renderizarFichasPequesEventuales(s, containerNotas);
+
+    } else if (s.notas && (s.notas.includes('👶') || s.notas.includes('•'))) {
+        // === SERVICIOS FIJOS: NO TOCAR LA LÓGICA ORIGINAL ===
         //Modo parseo: Intentar separar por peques
         containerNotas.innerHTML = '';
-
-        const labelNotas = containerNotas.previousElementSibling; //El div con 📝 Notas:
-        if (labelNotas && labelNotas.textContent.includes('Notas:')) {
-            labelNotas.style.display = 'block'; //Reset por defecto
-        }
 
         //Estrategia: Separar por el emoji de bebé o doble salto de línea
         //El backend usa: 👶 Nombre\n• Campo...
@@ -1248,7 +3017,8 @@ function abrirModalServicio(s) {
         //Texto plano normal (o fallback puro)
         containerNotas.textContent = rawNotas;
     }
-    document.getElementById('mCuota').textContent = s.cuota_nanny || '—';
+    const cuotaVal = s.cuota_nanny || s.tarifa_nanny || s.tarifa || '';
+    document.getElementById('mCuota').textContent = cuotaVal ? (String(cuotaVal).trim().startsWith('$') ? cuotaVal : `$${cuotaVal}`) : '—';
 
     const estado = (s.estado || 'pendiente').toLowerCase();
     const inicioReal = s.inicio_real ? String(s.inicio_real).trim() : '';
@@ -1256,24 +3026,18 @@ function abrirModalServicio(s) {
     const confirmadoEn = s.confirmado_en ? String(s.confirmado_en).trim() : '';
 
     const actions = document.querySelector('#modalBackdrop .actions');
-    actions.innerHTML = '';
+    if (actions) actions.innerHTML = '';
 
-    if (!SESION.admin && s.empalmado) {
-        const warn = document.createElement('div');
-        warn.className = 'pill';
-        warn.style.background = '#fee2e2';
-        warn.style.borderColor = '#ef4444';
-        warn.style.color = '#b91c1c';
-        warn.textContent = '⚠️ Servicio empalmado';
-        actions.appendChild(warn);
+    const mMsgEl = document.getElementById('mMsg');
+    if (mMsgEl) {
+        mMsgEl.innerHTML = '';
+        if (!SESION.admin && s.empalmado) {
+            mMsgEl.innerHTML += `<div class="pill" style="background:#fee2e2; border:1px solid #ef4444; color:#b91c1c; margin-bottom:8px; display:inline-block; font-weight:700;">⚠️ Servicio empalmado</div><br>`;
+        }
+        if (confirmadoEn) mMsgEl.innerHTML += `<span class="pill" style="background:#DCFCE7; color:#15803D; border:1px solid #BBF7D0; font-weight:600; margin-bottom:4px; display:inline-block;">✓ Confirmado: ${formatTimestamp(confirmadoEn)}</span><br>`;
+        if (inicioReal) mMsgEl.innerHTML += `<span class="pill" style="background:#E0F2FE; color:#0284C7; border:1px solid #BAE6FD; font-weight:600; margin-bottom:4px; display:inline-block;">⏱ Inicio real: ${formatTimestamp(inicioReal)}</span><br>`;
+        if (finReal) mMsgEl.innerHTML += `<span class="pill" style="background:#EDE9FE; color:#6D28D9; border:1px solid #DDD6FE; font-weight:600; margin-bottom:4px; display:inline-block;">🏁 Fin real: ${formatTimestamp(finReal)}</span><br>`;
     }
-
-    const chips = document.createElement('div');
-    chips.style.marginBottom = '6px';
-    if (confirmadoEn) chips.innerHTML += `<span class="pill">Confirmado: ${formatTimestamp(confirmadoEn)}</span><br>`;
-    if (inicioReal) chips.innerHTML += `<span class="pill">Inicio real: ${formatTimestamp(inicioReal)}</span><br>`;
-    if (finReal) chips.innerHTML += `<span class="pill">Fin real: ${formatTimestamp(finReal)}</span><br>`;
-    actions.appendChild(chips);
 
     if (SESION.admin) {
         const c = document.createElement('button');
@@ -1285,43 +3049,35 @@ function abrirModalServicio(s) {
         return;
     }
 
-    if (estado === 'pendiente' && !s.empalmado) {
-        const b = document.createElement('button');
-        b.className = 'btn-primary';
-        b.textContent = 'Confirmo asistencia';
-        b.onclick = () => accionConfirmar(s);
-        actions.appendChild(b);
-    }
-    else if (estado === 'confirmado') {
+    if (estado === 'confirmado') {
         if (!inicioReal) {
             const b = document.createElement('button');
             b.className = 'btn-primary';
-            b.textContent = 'Iniciar servicio';
-            b.onclick = () => accionIniciar(s.sheet, s.row_base, s.fecha);
+            b.innerHTML = '<span>🚀 Iniciar servicio</span>';
+            b.onclick = () => accionIniciar(s);
             actions.appendChild(b);
         } else if (!finReal) {
             // Botón Bitácora - aparece después de iniciar servicio
             const btnBitacora = document.createElement('button');
             btnBitacora.className = 'btn-primary';
-            btnBitacora.textContent = 'Bitácora';
-            btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
-            btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
-            btnBitacora.style.marginBottom = '10px';
+            btnBitacora.innerHTML = '<span>📋 Bitácora</span>';
+            btnBitacora.style.background = 'linear-gradient(135deg, #0284C7, #0369A1)';
+            btnBitacora.style.boxShadow = '0 4px 14px rgba(2, 132, 199, 0.3)';
             btnBitacora.onclick = () => abrirBitacora(s);
             actions.appendChild(btnBitacora);
 
             const b = document.createElement('button');
             b.className = 'btn-primary';
-            b.textContent = 'Finalizar servicio';
-            b.onclick = () => accionFinalizar(s.sheet, s.row_base, s.fecha);
+            b.innerHTML = '<span>🏁 Finalizar servicio</span>';
+            b.onclick = () => accionFinalizar(s);
             actions.appendChild(b);
         } else {
             // Botón Bitácora - permanece visible después de finalizar
             const btnBitacora = document.createElement('button');
             btnBitacora.className = 'btn-primary';
-            btnBitacora.textContent = 'Bitácora';
-            btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
-            btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
+            btnBitacora.innerHTML = '<span>📋 Bitácora</span>';
+            btnBitacora.style.background = 'linear-gradient(135deg, #0284C7, #0369A1)';
+            btnBitacora.style.boxShadow = '0 4px 14px rgba(2, 132, 199, 0.3)';
             btnBitacora.onclick = () => abrirBitacora(s);
             actions.appendChild(btnBitacora);
         }
@@ -1331,25 +3087,24 @@ function abrirModalServicio(s) {
             // Botón Bitácora - aparece en estado "en curso"
             const btnBitacora = document.createElement('button');
             btnBitacora.className = 'btn-primary';
-            btnBitacora.textContent = 'Bitácora';
-            btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
-            btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
-            btnBitacora.style.marginBottom = '10px';
+            btnBitacora.innerHTML = '<span>📋 Bitácora</span>';
+            btnBitacora.style.background = 'linear-gradient(135deg, #0284C7, #0369A1)';
+            btnBitacora.style.boxShadow = '0 4px 14px rgba(2, 132, 199, 0.3)';
             btnBitacora.onclick = () => abrirBitacora(s);
             actions.appendChild(btnBitacora);
 
             const b = document.createElement('button');
             b.className = 'btn-primary';
-            b.textContent = 'Finalizar servicio';
-            b.onclick = () => accionFinalizar(s.sheet, s.row_base, s.fecha);
+            b.innerHTML = '<span>🏁 Finalizar servicio</span>';
+            b.onclick = () => accionFinalizar(s);
             actions.appendChild(b);
         } else {
             // Botón Bitácora - permanece visible después de finalizar
             const btnBitacora = document.createElement('button');
             btnBitacora.className = 'btn-primary';
-            btnBitacora.textContent = 'Bitácora';
-            btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
-            btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
+            btnBitacora.innerHTML = '<span>📋 Bitácora</span>';
+            btnBitacora.style.background = 'linear-gradient(135deg, #0284C7, #0369A1)';
+            btnBitacora.style.boxShadow = '0 4px 14px rgba(2, 132, 199, 0.3)';
             btnBitacora.onclick = () => abrirBitacora(s);
             actions.appendChild(btnBitacora);
         }
@@ -1358,9 +3113,9 @@ function abrirModalServicio(s) {
         // Botón Bitácora - visible en servicios completados
         const btnBitacora = document.createElement('button');
         btnBitacora.className = 'btn-primary';
-        btnBitacora.textContent = 'Bitácora';
-        btnBitacora.style.background = '#3BB6C4'; // Color azul claro de marca
-        btnBitacora.style.boxShadow = '0 4px 15px rgba(59, 182, 196, 0.3)';
+        btnBitacora.innerHTML = '<span>📋 Bitácora</span>';
+        btnBitacora.style.background = 'linear-gradient(135deg, #0284C7, #0369A1)';
+        btnBitacora.style.boxShadow = '0 4px 14px rgba(2, 132, 199, 0.3)';
         btnBitacora.onclick = () => abrirBitacora(s);
         actions.appendChild(btnBitacora);
     }
@@ -1384,28 +3139,25 @@ function cerrarModal() {
    ========================================= */
 
 // Variable global para almacenar el contexto del servicio actual
-let BITACORA_SERVICIO_ACTUAL = null;
+var BITACORA_SERVICIO_ACTUAL = null;
+window.BITACORA_SERVICIO_ACTUAL = null;
+window.BITACORA_SERVICIO_ACTUAL = null;
 
 /**
  * Maneja la selección visual de botones de opción en la bitácora
  */
 function selectBitOption(btn, inputId, value) {
-    // --- NUEVO: Prevent changes in read-only mode ---
-    if (document.getElementById('bitacoraBackdrop').classList.contains('bitacora-solo-lectura')) return;
+    if (document.getElementById('bitacoraBackdrop')?.classList.contains('bitacora-solo-lectura')) return;
 
-    // 1. Quitar 'active' de todos los botones en el mismo grupo
-    const container = btn.closest('.bitacora-options');
-    if (!container) return; // Seguridad
-    container.querySelectorAll('.bitacora-option-btn').forEach(b => b.classList.remove('active'));
+    const container = btn.closest('.bit-options-row, .bitacora-options');
+    if (!container) return;
 
-    // 2. Activar el botón clickeado
+    container.querySelectorAll('.bit-option-pill, .bitacora-option-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
 
-    // 3. Actualizar el input oculto
     const input = document.getElementById(inputId);
     if (input) input.value = value;
 
-    // 4. Lógica especial para la pregunta 1 (síntomas)
     if (inputId === 'bit_p1') {
         const p1Cuales = document.getElementById('bit_p1_cuales');
         if (p1Cuales) {
@@ -1419,7 +3171,12 @@ function selectBitOption(btn, inputId, value) {
             }
         }
     }
+
+    if (typeof window._triggerAutoSaveDebounced === 'function') {
+        window._triggerAutoSaveDebounced();
+    }
 }
+window.selectBitOption = selectBitOption;
 
 /**
  * Abre el modal de bitácora y guarda el contexto del servicio
@@ -1428,16 +3185,42 @@ function selectBitOption(btn, inputId, value) {
  * Abre el modal de bitácora y pre-llena con datos existentes si los hay
  */
 async function abrirBitacora(servicio, soloLectura = false) {
+    window.BITACORA_SOLO_LECTURA = !!soloLectura;
+    window._cargandoBitacora = true;
+    if (window.BitacorasSupabase?.cancelarAutoGuardado) {
+        window.BitacorasSupabase.cancelarAutoGuardado();
+    }
+
     BITACORA_SERVICIO_ACTUAL = servicio;
+    window.BITACORA_SERVICIO_ACTUAL = servicio;
 
     const backdrop = document.getElementById('bitacoraBackdrop');
+    // Bloquear scroll general de la pantalla para evitar doble barra y desplazamiento de fondo
+    document.body.classList.add('bitacora-modal-open');
+    document.documentElement.classList.add('bitacora-modal-open');
+
+    // Asignar clase de solo lectura de inmediato para evitar que cualquier evento dispare auto-guardados
+    if (soloLectura) {
+        backdrop.classList.add('bitacora-solo-lectura');
+    } else {
+        backdrop.classList.remove('bitacora-solo-lectura');
+    }
+
     // Mostrar modal inmediatamente para que el preloader sea visible dentro
     backdrop.style.display = 'flex';
+
+    // Reiniciar al paso 1 en la navegación
+    if (typeof cambiarPasoBitacora === 'function') {
+        const actual = typeof _pasoBitacoraActual !== 'undefined' ? _pasoBitacoraActual : 1;
+        cambiarPasoBitacora(1 - actual);
+    }
 
     // Poblar cabecera dinámica (ID actualizados en index.html)
     const titulo = document.getElementById('bit_titulo');
     const infoCliente = document.getElementById('bit_info_cliente');
     const infoNinera = document.getElementById('bit_info_ninera');
+    const fechaDisplay = document.getElementById('bit_info_fecha_display');
+    const horarioDisplay = document.getElementById('bit_info_horario_display');
 
     if (titulo) {
         const tipoBase = (servicio.tipo_servicio || '').toLowerCase();
@@ -1447,17 +3230,35 @@ async function abrirBitacora(servicio, soloLectura = false) {
 
         titulo.textContent = soloLectura ? `${textoTitulo} (Lectura)` : textoTitulo;
     }
-    if (infoCliente) infoCliente.innerHTML = `👶 Cliente: ${servicio.cliente || '—'}`;
+    if (infoCliente) infoCliente.textContent = `Cliente: ${servicio.cliente || servicio.nombre_cliente || '—'}`;
     if (infoNinera) {
-        const nombreNinera = servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'] || '—';
-        infoNinera.innerHTML = `🧸 Niñera: ${nombreNinera}`;
+        const nombreNinera = servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'] || (window.SESION?.nombre) || '—';
+        infoNinera.textContent = `Niñera: ${nombreNinera}`;
+    }
+
+    if (fechaDisplay && servicio.fecha) {
+        try {
+            const [yy, mm, dd] = String(servicio.fecha).slice(0, 10).split('-');
+            const dObj = new Date(yy, mm - 1, dd, 12, 0, 0);
+            const dias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            fechaDisplay.textContent = `${dias[dObj.getDay()]} ${String(dObj.getDate()).padStart(2, '0')} ${meses[dObj.getMonth()]}`;
+        } catch (e) {
+            fechaDisplay.textContent = servicio.fecha;
+        }
+    }
+    if (horarioDisplay) {
+        const hIni = servicio.hora_inicio || servicio.inicio || '';
+        const hFin = servicio.hora_fin || servicio.fin || '';
+        horarioDisplay.textContent = (hIni && hFin) ? `${hIni} - ${hFin}` : (hIni || '08:00 AM - 02:00 PM');
     }
 
     const infoFechaCreacion = document.getElementById('bit_info_fecha_creacion');
     if (infoFechaCreacion) infoFechaCreacion.innerHTML = '';
 
     // --- NUEVO: Manejo de solo lectura ---
-    const btnGuardar = document.querySelector('#formBitacora button[type="submit"]');
+    const btnDraft = document.getElementById('bit_btn_draft');
+    const btnFinalizar = document.getElementById('bit_btn_finalizar');
     const form = document.getElementById('formBitacora');
 
     // Eliminar botones dinámicos previos (para evitar duplicados)
@@ -1468,7 +3269,8 @@ async function abrirBitacora(servicio, soloLectura = false) {
 
     if (soloLectura) {
         backdrop.classList.add('bitacora-solo-lectura');
-        if (btnGuardar) btnGuardar.style.display = 'none';
+        if (btnDraft) btnDraft.style.display = 'none';
+        if (btnFinalizar) btnFinalizar.style.display = 'none';
         if (form) {
             form.querySelectorAll('input:not([type="hidden"]), textarea').forEach(el => {
                 el.readOnly = true;
@@ -1483,7 +3285,7 @@ async function abrirBitacora(servicio, soloLectura = false) {
                 btnLeido.innerHTML = '✅ Leído y aceptado';
                 btnLeido.style.cssText = `
                 width: 100%;
-                margin-bottom: 12px;
+                margin-top: 14px;
                 padding: 14px 20px;
                 background: #FEF9C3;
                 color: #854D0E;
@@ -1512,62 +3314,112 @@ async function abrirBitacora(servicio, soloLectura = false) {
 
                     // Estado de carga
                     btnLeido.disabled = true;
-                    btnLeido.innerHTML = '⏳ Guardando...';
+                    btnLeido.innerHTML = '⏳ Guardando en la base de datos...';
 
                     try {
                         const servicio = BITACORA_SERVICIO_ACTUAL;
-                        await api('aceptarBitacora', {
-                            correo_cliente: SESION.email,
-                            nombre_cliente: SESION.nombre || '',
-                            fecha: servicio ? servicio.fecha : '',
-                            nombre_ninera: servicio ? (servicio.nombre_ninera || servicio['Nombre de la niñera'] || '') : ''
-                        });
+                        const nomCli = servicio.cliente || servicio.nombre_cliente || SESION.nombre || '';
+                        const nomNin = servicio.nombre_ninera || servicio['Nombre de la niñera'] || servicio.ninera || '';
 
-                        // --- FIX: Actualizar caché local para persistencia inmediata al reabrir ---
-                        const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}_${_norm(servicio.nombre_ninera || servicio['Nombre de la niñera'])}`;
-                        if (BITACORA_CACHE && BITACORA_CACHE[cacheKey]) {
-                            BITACORA_CACHE[cacheKey].Acepta = 'Sí'; // Coincide con _mapPayloadToSheetFormat
+                        let res = null;
+                        if (window.BitacorasSupabase) {
+                            res = await window.BitacorasSupabase.aceptar(servicio.fecha, nomCli, nomNin, servicio.row_id || servicio.id, servicio);
                         }
 
-                        // --- NUEVO: Actualizar el objeto de servicio para persistencia en el calendario ---
+                        const fechaIso = (res && res.fecha_acepta) || new Date().toISOString();
+                        const dObj = new Date(fechaIso);
+                        const fechaFmt = !isNaN(dObj.getTime())
+                            ? (dObj.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }) + ' ' + dObj.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' }))
+                            : '';
+
+                        // Actualizar caché local para persistencia inmediata al reabrir
+                        const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}_${_norm(nomNin)}`;
+                        const cacheKeyAlt = `${servicio.fecha}_${servicio.cliente}_${_norm(nomNin)}`;
+                        const cacheKeySimple = `${servicio.fecha}_${servicio.cliente}`;
+
+                        [cacheKey, cacheKeyAlt, cacheKeySimple].forEach(k => {
+                            if (BITACORA_CACHE) {
+                                if (!BITACORA_CACHE[k]) BITACORA_CACHE[k] = {};
+                                BITACORA_CACHE[k].Acepta = 'Sí';
+                                BITACORA_CACHE[k].acepta = 'Sí';
+                                BITACORA_CACHE[k].fecha_acepta = fechaIso;
+                                BITACORA_CACHE[k].estado = 'aprobada';
+                            }
+                            try {
+                                const ls = localStorage.getItem('BITACORA_DRAFT_' + k);
+                                if (ls) {
+                                    const p = JSON.parse(ls);
+                                    p.Acepta = 'Sí';
+                                    p.acepta = 'Sí';
+                                    p.fecha_acepta = fechaIso;
+                                    p.estado = 'aprobada';
+                                    localStorage.setItem('BITACORA_DRAFT_' + k, JSON.stringify(p));
+                                }
+                            } catch (eLs) { }
+                        });
+
+                        // Actualizar el objeto de servicio para persistencia en el calendario
                         servicio.bitacora_aceptada = true;
+                        servicio.estado_bitacora = 'aprobada';
+                        if (servicio.bitacora_datos) {
+                            servicio.bitacora_datos.Acepta = 'Sí';
+                            servicio.bitacora_datos.acepta = 'Sí';
+                            servicio.bitacora_datos.fecha_acepta = fechaIso;
+                            servicio.bitacora_datos.estado = 'aprobada';
+                        }
+
                         if (CACHE_CLIENTE.servicios && Array.isArray(CACHE_CLIENTE.servicios)) {
-                            const bitKey = `${servicio.fecha}|${_norm(servicio.nombre_ninera || servicio['Nombre de la niñera'])}`;
-                            // Buscar y actualizar en el caché global de servicios
+                            const bitKey = `${servicio.fecha}|${_norm(nomNin)}`;
                             const sCache = CACHE_CLIENTE.servicios.find(sv =>
                                 sv.fecha === servicio.fecha &&
-                                _norm(sv.nombre_ninera || sv['Nombre de la niñera']) === _norm(servicio.nombre_ninera || servicio['Nombre de la niñera'])
+                                _norm(sv.nombre_ninera || sv['Nombre de la niñera']) === _norm(nomNin)
                             );
-                            if (sCache) sCache.bitacora_aceptada = true;
+                            if (sCache) {
+                                sCache.bitacora_aceptada = true;
+                                sCache.estado_bitacora = 'aprobada';
+                                if (sCache.bitacora_datos) {
+                                    sCache.bitacora_datos.Acepta = 'Sí';
+                                    sCache.bitacora_datos.acepta = 'Sí';
+                                    sCache.bitacora_datos.fecha_acepta = fechaIso;
+                                    sCache.bitacora_datos.estado = 'aprobada';
+                                }
+                            }
 
-                            // Actualizar visualmente la pill en el calendario si existe
                             const pill = document.querySelector(`.svc-pill-bitacora[data-bit-key="${bitKey}"]`);
                             if (pill) pill.classList.add('aceptada');
                         }
 
-                        // Animar a verde (igual que las pills confirmadas)
+                        // Animar botón a verde con estado Aprobado y fecha/hora
                         btnLeido.dataset.aceptado = 'true';
-                        btnLeido.innerHTML = '✅ ¡Aceptado!';
+                        btnLeido.innerHTML = `✅ Leído y Aprobado${fechaFmt ? ` (${fechaFmt})` : ''}`;
                         btnLeido.style.background = '#dcfce7';
                         btnLeido.style.color = '#166534';
                         btnLeido.style.borderLeftColor = '#22c55e';
                         btnLeido.style.boxShadow = '0 4px 12px rgba(34, 197, 94, 0.3)';
+                        btnLeido.style.cursor = 'default';
 
-                        // Cerrar después de una pequeña pausa para que se vea el cambio
-                        // setTimeout(() => cerrarBitacora(), 800); // COMENTADO POR SOLICITUD DEL USUARIO (Mantener modal abierto)
+                        // Actualizar vistas del cliente si están montadas
+                        if (window.ClienteServicios) {
+                            if (typeof window.ClienteServicios.renderBitacora === 'function') {
+                                window.ClienteServicios.renderBitacora();
+                            }
+                            if (typeof window.ClienteServicios.renderSummary === 'function') {
+                                window.ClienteServicios.renderSummary();
+                            }
+                        }
+
+                        mostrarToast('✅ Bitácora aprobada y registrada en la base de datos', 'success');
 
                     } catch (err) {
-                        // Revertir en caso de error
                         btnLeido.disabled = false;
                         btnLeido.innerHTML = '✅ Leído y aceptado';
                         mostrarToast('❌ Error al guardar: ' + (err.message || 'Intenta de nuevo'));
                     }
                 };
 
-                // Insertar ANTES del div de botones (Cancelar), que es el último hijo del form
-                const divBotones = form.querySelector('div[style*="display: flex"][style*="gap"]');
-                if (divBotones) {
-                    form.insertBefore(btnLeido, divBotones);
+                const actionBar = document.querySelector('.bit-action-bar');
+                if (actionBar) {
+                    actionBar.appendChild(btnLeido);
                 } else {
                     form.appendChild(btnLeido);
                 }
@@ -1581,12 +3433,12 @@ async function abrirBitacora(servicio, soloLectura = false) {
                 btnRevisada.innerHTML = '🎯 Marcar como Revisada';
                 btnRevisada.style.cssText = `
                     width: 100%;
-                    margin-bottom: 20px;
-                    padding: 16px 20px;
+                    margin-top: 14px;
+                    padding: 14px 20px;
                     background: var(--blue-main, #3b82f6);
                     color: white;
                     font-family: 'Nunito Sans', sans-serif;
-                    font-size: 16px;
+                    font-size: 15px;
                     font-weight: 800;
                     border: none;
                     border-radius: 16px;
@@ -1612,42 +3464,64 @@ async function abrirBitacora(servicio, soloLectura = false) {
                 btnRevisada.onclick = async () => {
                     if (btnRevisada.disabled) return;
                     btnRevisada.disabled = true;
-                    btnRevisada.innerHTML = '<span class="spinner-inline"></span> Guardando revisión...';
+                    btnRevisada.innerHTML = '<span class="spinner-inline"></span> Guardando en Supabase...';
 
                     try {
                         const servicio = BITACORA_SERVICIO_ACTUAL;
-                        const res = await api('revisarBitacora', {
-                            fecha: servicio.fecha,
-                            correo_cliente: servicio.email || '',
-                            nombre_ninera: servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'] || ''
+                        const nomCli = servicio.cliente || servicio.nombre_cliente || '';
+                        const nomNin = servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'] || '';
+
+                        if (window.BitacorasSupabase) {
+                            await window.BitacorasSupabase.revisar(servicio.fecha, nomCli, nomNin, servicio.row_id || servicio.id, servicio, window.SESION);
+                        }
+
+                        mostrarToast('✅ Bitácora marcada como revisada exitosamente');
+                        btnRevisada.style.opacity = '0';
+                        btnRevisada.style.transform = 'scale(0.9)';
+                        setTimeout(() => btnRevisada.remove(), 400);
+
+                        const normN = typeof _norm === 'function' ? _norm(nomNin) : nomNin.toLowerCase();
+                        const nowIso = new Date().toISOString();
+                        const cacheKeys = [
+                            `${servicio.fecha}_${servicio.email || servicio.cliente}_${normN}`,
+                            `${servicio.fecha}_${servicio.cliente}_${normN}`,
+                            `${servicio.fecha}_${servicio.cliente}`
+                        ];
+
+                        cacheKeys.forEach(k => {
+                            if (BITACORA_CACHE) {
+                                if (!BITACORA_CACHE[k]) BITACORA_CACHE[k] = {};
+                                BITACORA_CACHE[k].Revisada = 'Sí';
+                                BITACORA_CACHE[k].revisada = 'Sí';
+                                BITACORA_CACHE[k].fecha_revisada = nowIso;
+                                BITACORA_CACHE[k].estado_revision = 'revisada';
+                            }
+                            try {
+                                const ls = localStorage.getItem('BITACORA_DRAFT_' + k);
+                                if (ls) {
+                                    const p = JSON.parse(ls);
+                                    p.Revisada = 'Sí';
+                                    p.revisada = 'Sí';
+                                    p.fecha_revisada = nowIso;
+                                    p.estado_revision = 'revisada';
+                                    localStorage.setItem('BITACORA_DRAFT_' + k, JSON.stringify(p));
+                                }
+                            } catch (eLs) { }
                         });
 
-                        if (res && res.ok) {
-                            mostrarToast('✅ Bitácora marcada como revisada');
-                            // Animación de salida: desaparecer y remover
-                            btnRevisada.style.opacity = '0';
-                            btnRevisada.style.transform = 'scale(0.9)';
-                            setTimeout(() => btnRevisada.remove(), 400);
+                        const clienteId = (nomCli).replace(/[^a-z0-9]/gi, '_');
+                        const nineraId = (nomNin).replace(/[^a-z0-9]/gi, '_');
+                        const elPrefijo = servicio.prefijo || 'actual';
+                        const indicador = document.getElementById(`indicador-rev-${elPrefijo}-${clienteId}_${nineraId}`);
 
-                            // Actualizar el caché si existe
-                            const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}_${_norm(servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'])}`;
-                            if (BITACORA_CACHE[cacheKey]) {
-                                BITACORA_CACHE[cacheKey].Revisada = res.revisada;
-                            }
+                        if (indicador) {
+                            indicador.style.background = '#16a34a';
+                            indicador.title = 'Revisado';
+                        }
 
-                            // --- Actualizar el indicador visual en el panel de supervisión en segundo plano ---
-                            // --- Actualizar el indicador visual en el panel de supervisión en segundo plano ---
-                            const clienteId = (servicio.cliente || '').replace(/[^a-z0-9]/gi, '_');
-                            const nineraId = (servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'] || '').replace(/[^a-z0-9]/gi, '_');
-
-                            // Actualizar SOLO el indicador pertinente a esta semana/contexto
-                            const elPrefijo = servicio.prefijo || 'actual';
-                            const indicador = document.getElementById(`indicador-rev-${elPrefijo}-${clienteId}_${nineraId}`);
-
-                            if (indicador) {
-                                indicador.style.background = '#16a34a';
-                                indicador.title = 'Revisado';
-                            }
+                        // Recargar automáticamente el resumen de bitácoras para actualizar indicadores de la lista
+                        if (typeof cargarResumenBitacoras === 'function') {
+                            cargarResumenBitacoras(true);
                         }
                     } catch (e) {
                         btnRevisada.disabled = false;
@@ -1656,10 +3530,9 @@ async function abrirBitacora(servicio, soloLectura = false) {
                     }
                 };
 
-                // Insertar ANTES del div de botones (Cancelar)
-                const divBotones = form.querySelector('div[style*="display: flex"][style*="gap"]');
-                if (divBotones) {
-                    form.insertBefore(btnRevisada, divBotones);
+                const actionBar = document.querySelector('.bit-action-bar');
+                if (actionBar) {
+                    actionBar.appendChild(btnRevisada);
                 } else {
                     form.appendChild(btnRevisada);
                 }
@@ -1667,11 +3540,10 @@ async function abrirBitacora(servicio, soloLectura = false) {
         }
     } else {
         backdrop.classList.remove('bitacora-solo-lectura');
-        if (btnGuardar) btnGuardar.style.display = 'block';
+        if (btnDraft) btnDraft.style.display = 'inline-flex';
         if (form) {
             form.querySelectorAll('input:not([type="hidden"]), textarea').forEach(el => {
-                // Mantener horas como readonly (p21 y p22)
-                if (el.id !== 'bit_p21' && el.id !== 'bit_p22') {
+                if (el.id !== 'bit_p23' && el.id !== 'bit_p24') {
                     el.readOnly = false;
                     el.disabled = false;
                 }
@@ -1680,14 +3552,14 @@ async function abrirBitacora(servicio, soloLectura = false) {
     }
 
     // Mostrar preloader premium
-    mostrarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper', 'Buscando bitácora guardada...');
+    mostrarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper', 'Sincronizando con Supabase...');
 
     // Resetear formulario
     if (form) form.reset();
 
     // Limpiar clases active de botones y valores de inputs ocultos
     if (form) {
-        form.querySelectorAll('.bitacora-option-btn').forEach(btn => btn.classList.remove('active'));
+        form.querySelectorAll('.bit-option-pill, .bitacora-option-btn').forEach(btn => btn.classList.remove('active'));
         form.querySelectorAll('input[type="hidden"]').forEach(input => input.value = '');
     }
 
@@ -1701,74 +3573,127 @@ async function abrirBitacora(servicio, soloLectura = false) {
     // Pre-llenar horas siempre (desde el servicio)
     _prellenarHorasServicio(servicio);
 
-    // Identificador único para el caché (Candado: incluye niñera)
-    const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}_${_norm(servicio.nombre_ninera || servicio['Nombre de la niñera'])}`;
+    // Identificador único para el caché
+    const sNinName = servicio.nombre_ninera || servicio.ninera || servicio['Nombre de la niñera'] || (window.SESION?.nombre) || '';
+    const sCliName = servicio.cliente || servicio.nombre_cliente || '';
+    const cacheKey = `${servicio.fecha}_${servicio.email || servicio.cliente}_${_norm(sNinName)}`;
+    const cacheKeyAlt = `${servicio.fecha}_${servicio.cliente}_${_norm(sNinName)}`;
+    const cacheKeySimple = `${servicio.fecha}_${servicio.cliente}`;
 
-    // 1. Revisar Caché primero (Instantáneo)
-    if (BITACORA_CACHE[cacheKey]) {
-        console.log('Bitácora recuperada de caché local:', cacheKey);
-        const data = BITACORA_CACHE[cacheKey];
-        _llenarFormularioBitacora(data);
-        _actualizarEstadoBtnLeido(data);
-        _actualizarEstadoBtnRevisado(data);
+    // Asegurar que los listeners de auto-guardado estén activos en el formulario
+    if (form && !form._autoSaveAttached) {
+        form._autoSaveAttached = true;
+        form.addEventListener('input', () => { if (typeof window._triggerAutoSaveDebounced === 'function') window._triggerAutoSaveDebounced(); });
+        form.addEventListener('change', () => { if (typeof window._triggerAutoSaveDebounced === 'function') window._triggerAutoSaveDebounced(); });
+    }
 
-        // --- NUEVO: CANDADO DE SEGURIDAD ---
-        const yaAceptado = data['Acepta'] || data['acepta'];
-        const yaRevisada = data['Revisada'] || data['revisada'];
+    // 1. Revisar Caché primero (Instantáneo en memoria o LocalStorage)
+    let cachedData = (BITACORA_CACHE && (BITACORA_CACHE[cacheKey] || BITACORA_CACHE[cacheKeyAlt] || BITACORA_CACHE[cacheKeySimple])) || null;
+    if (!cachedData) {
+        try {
+            const lsRaw = localStorage.getItem('BITACORA_DRAFT_' + cacheKey) ||
+                localStorage.getItem('BITACORA_DRAFT_' + cacheKeyAlt) ||
+                localStorage.getItem('BITACORA_DRAFT_' + cacheKeySimple);
+            if (lsRaw) {
+                cachedData = JSON.parse(lsRaw);
+            }
+        } catch (eLs) { }
+    }
+
+    if (cachedData) {
+        console.log('Bitácora recuperada de caché local / LocalStorage:', cacheKey);
+        if (BITACORA_CACHE) BITACORA_CACHE[cacheKey] = cachedData;
+        _llenarFormularioBitacora(cachedData);
+        _actualizarEstadoBtnLeido(cachedData);
+        _actualizarEstadoBtnRevisado(cachedData);
+
+        const yaAceptado = cachedData['Acepta'] || cachedData['acepta'];
+        const yaRevisada = cachedData['Revisada'] || cachedData['revisada'];
         if ((yaAceptado || yaRevisada)) {
             _bloquearFormularioBitacora('(Lectura)');
         }
 
         ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
-        return;
     }
 
-    // 2. Si no hay caché, intentar obtener del backend
+    // 2. Obtener directamente de Supabase
     try {
-        const bitacoraExistente = await api('obtenerBitacora', {
-            correo_cliente: servicio.email || '',
-            nombre_cliente: servicio.cliente || '',
-            fecha: servicio.fecha,
-            nombre_ninera: servicio.nombre_ninera || servicio['Nombre de la niñera'] || ''
-        });
+        let bitacoraExistente = null;
+        if (window.BitacorasSupabase) {
+            bitacoraExistente = await window.BitacorasSupabase.obtener(servicio.fecha, sCliName, sNinName, servicio.row_id || servicio.id);
+        }
 
         if (bitacoraExistente) {
-            console.log('Bitácora encontrada en backend:', bitacoraExistente);
-            // Guardar en caché para futuras aperturas
-            BITACORA_CACHE[cacheKey] = bitacoraExistente;
+            console.log('Bitácora encontrada en Supabase:', bitacoraExistente);
+            if (BITACORA_CACHE) {
+                BITACORA_CACHE[cacheKey] = bitacoraExistente;
+                BITACORA_CACHE[cacheKeyAlt] = bitacoraExistente;
+                BITACORA_CACHE[cacheKeySimple] = bitacoraExistente;
+            }
+            try {
+                localStorage.setItem('BITACORA_DRAFT_' + cacheKey, JSON.stringify(bitacoraExistente));
+                localStorage.setItem('BITACORA_DRAFT_' + cacheKeySimple, JSON.stringify(bitacoraExistente));
+            } catch (eLs2) { }
+
             _llenarFormularioBitacora(bitacoraExistente);
             _actualizarEstadoBtnLeido(bitacoraExistente);
             _actualizarEstadoBtnRevisado(bitacoraExistente);
 
-            // --- NUEVO: CANDADO DE SEGURIDAD ---
             const yaAceptado = bitacoraExistente['Acepta'] || bitacoraExistente['acepta'];
             const yaRevisada = bitacoraExistente['Revisada'] || bitacoraExistente['revisada'];
             if ((yaAceptado || yaRevisada)) {
                 _bloquearFormularioBitacora('(Lectura)');
             }
-
-            mostrarToast('📋 Bitácora cargada');
         }
     } catch (e) {
-        console.error('Error al obtener bitácora:', e);
+        console.error('Error al obtener bitácora desde Supabase:', e);
     } finally {
-        // Ocultar preloader premium
         ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
+        setTimeout(() => {
+            window._cargandoBitacora = false;
+        }, 200);
+    }
+
+    // 3. Suscribir a eventos Realtime para actualización en vivo (Familia / Niñera)
+    if (window.BitacorasSupabase?.suscribirRealtime) {
+        window.BitacorasSupabase.suscribirRealtime(
+            servicio.fecha,
+            sCliName,
+            sNinName,
+            (datosActualizados) => {
+                console.log('⚡ [Realtime Bitacora] Datos recibidos en vivo:', datosActualizados);
+                _llenarFormularioBitacora(datosActualizados);
+                _actualizarEstadoBtnLeido(datosActualizados);
+                _actualizarEstadoBtnRevisado(datosActualizados);
+            }
+        );
     }
 }
 
 /**
  * Actualiza el estado del botón 'Leído y aceptado' según si la bitácora ya fue aceptada.
- * Si el campo 'Acepta' tiene valor, pone el botón en verde y lo deshabilita.
+ * Si el campo 'Acepta' o 'fecha_acepta' tiene valor, pone el botón en verde con la fecha/hora y lo deshabilita.
  */
 function _actualizarEstadoBtnLeido(datos) {
     const btn = document.getElementById('btn-leido-aceptado');
     if (!btn) return;
     const valorAcepta = datos && (datos['Acepta'] || datos['acepta'] || '');
-    if (valorAcepta && String(valorAcepta).trim() !== '') {
+    const fechaAcepta = datos && (datos.fecha_acepta || datos.fecha_aceptacion);
+    const esAprobada = datos && (datos.estado === 'aprobada' || valorAcepta === 'Sí' || valorAcepta === 'si' || String(valorAcepta).trim() !== '' || !!fechaAcepta);
+
+    if (esAprobada) {
         btn.dataset.aceptado = 'true';
         btn.disabled = true;
-        btn.innerHTML = '✅ ¡Aceptado!';
+        let fechaTxt = '';
+        if (fechaAcepta) {
+            try {
+                const d = new Date(fechaAcepta);
+                if (!isNaN(d.getTime())) {
+                    fechaTxt = ` (${d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })} ${d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })})`;
+                }
+            } catch (e) { }
+        }
+        btn.innerHTML = `✅ Leído y Aprobado${fechaTxt}`;
         btn.style.background = '#dcfce7';
         btn.style.color = '#166534';
         btn.style.borderLeftColor = '#22c55e';
@@ -1815,26 +3740,49 @@ function _bloquearFormularioBitacora(estatusLectura = '(Lectura)') {
  * Pre-llena las horas fijas del servicio (inicio_real / fin_real)
  */
 function _prellenarHorasServicio(servicio) {
-    if (servicio.inicio_real) {
-        try {
-            const val = servicio.inicio_real.includes('T') ? servicio.inicio_real : servicio.inicio_real.replace(' ', 'T');
-            const inicio = new Date(val);
-            if (!isNaN(inicio)) {
-                const horaInicio = String(inicio.getHours()).padStart(2, '0') + ':' + String(inicio.getMinutes()).padStart(2, '0');
-                document.getElementById('bit_p23').value = horaInicio;
-            }
-        } catch (e) { console.error('Error al parsear hora de inicio:', e); }
+    if (!servicio) return;
+    function parseHoraToHHMM(str) {
+        if (!str) return '';
+        const s = String(str).trim();
+        if (/^\d{2}:\d{2}$/.test(s)) return s;
+        const mTime = s.match(/(\d{1,2}):(\d{2})(?::\d{2})?/);
+        if (s.includes('/') || s.includes('T') || s.includes('-')) {
+            try {
+                let d = null;
+                if (s.includes('/')) {
+                    const parts = s.split(' ');
+                    const dateParts = parts[0].split('/');
+                    const timeParts = parts[1] ? parts[1].split(':') : ['00', '00'];
+                    const yy = dateParts[2].length === 2 ? ('20' + dateParts[2]) : dateParts[2];
+                    const mm = parseInt(dateParts[1], 10) - 1;
+                    const dd = parseInt(dateParts[0], 10);
+                    const hh = parseInt(timeParts[0], 10);
+                    const min = parseInt(timeParts[1], 10);
+                    d = new Date(yy, mm, dd, hh, min);
+                } else {
+                    d = new Date(s.includes('T') ? s : s.replace(' ', 'T'));
+                }
+                if (d && !isNaN(d.getTime())) {
+                    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+                }
+            } catch (e) { }
+        }
+        if (mTime) {
+            return String(parseInt(mTime[1], 10)).padStart(2, '0') + ':' + mTime[2];
+        }
+        return '';
     }
 
-    if (servicio.fin_real) {
-        try {
-            const val = servicio.fin_real.includes('T') ? servicio.fin_real : servicio.fin_real.replace(' ', 'T');
-            const fin = new Date(val);
-            if (!isNaN(fin)) {
-                const horaFin = String(fin.getHours()).padStart(2, '0') + ':' + String(fin.getMinutes()).padStart(2, '0');
-                document.getElementById('bit_p24').value = horaFin;
-            }
-        } catch (e) { console.error('Error al parsear hora de fin:', e); }
+    const valIni = parseHoraToHHMM(servicio.inicio_real || servicio.hora_inicio_real || servicio.checkin);
+    if (valIni) {
+        const el = document.getElementById('bit_p23');
+        if (el) el.value = valIni;
+    }
+
+    const valFin = parseHoraToHHMM(servicio.fin_real || servicio.hora_fin_real || servicio.checkout);
+    if (valFin) {
+        const el = document.getElementById('bit_p24');
+        if (el) el.value = valFin;
     }
 }
 
@@ -1843,11 +3791,12 @@ function _prellenarHorasServicio(servicio) {
  */
 function _llenarFormularioBitacora(datos) {
     if (!datos) return;
+    console.log('📋 [_llenarFormularioBitacora] Llenando formulario con:', datos);
 
-    // --- NUEVO: Mostrar fecha de guardado (creación) ---
+    // --- Mostrar fecha de guardado (creación) ---
     const infoFechaCreacion = document.getElementById('bit_info_fecha_creacion');
     if (infoFechaCreacion) {
-        let fechaRaw = datos['Fecha de creación'] || datos['fecha de creación'] || '';
+        let fechaRaw = datos['Fecha de creación'] || datos['fecha de creación'] || datos.actualizado_en || datos.creado_en || '';
         if (fechaRaw) {
             try {
                 const d = new Date(fechaRaw);
@@ -1859,7 +3808,6 @@ function _llenarFormularioBitacora(datos) {
                     const mins = String(d.getMinutes()).padStart(2, '0');
                     infoFechaCreacion.innerHTML = `💾 Guardado: ${dia}/${mes}/${anio} ${horas}:${mins}`;
                 } else {
-                    // Si no es un Date válido (tal vez ya sea un string formateado), mostrar tal cual
                     infoFechaCreacion.innerHTML = `💾 Guardado: ${fechaRaw}`;
                 }
             } catch (e) {
@@ -1872,22 +3820,57 @@ function _llenarFormularioBitacora(datos) {
 
     // Mapeo de preguntas 1 a 24
     for (let i = 1; i <= 24; i++) {
-        const fieldName = `Pregunta ${i}`;
-        const val = datos[fieldName] || '';
+        let val = '';
+        if (datos.respuestas && datos.respuestas[`p${i}`] !== undefined && String(datos.respuestas[`p${i}`]).trim() !== '') {
+            val = datos.respuestas[`p${i}`];
+        } else if (datos[`p${i}`] !== undefined && String(datos[`p${i}`]).trim() !== '') {
+            val = datos[`p${i}`];
+        } else if (datos[`Pregunta ${i}`] !== undefined && String(datos[`Pregunta ${i}`]).trim() !== '') {
+            val = datos[`Pregunta ${i}`];
+        } else if (datos[`pregunta_${i}`] !== undefined && String(datos[`pregunta_${i}`]).trim() !== '') {
+            val = datos[`pregunta_${i}`];
+        } else if (datos.respuestas && datos.respuestas[`Pregunta ${i}`] !== undefined && String(datos.respuestas[`Pregunta ${i}`]).trim() !== '') {
+            val = datos.respuestas[`Pregunta ${i}`];
+        } else if (i === 23 && (datos['Check-in'] || datos.checkin)) {
+            val = datos['Check-in'] || datos.checkin;
+        } else if (i === 24 && (datos['Check-out'] || datos.checkout)) {
+            val = datos['Check-out'] || datos.checkout;
+        } else if (datos.respuestas && datos.respuestas[`p${i}`] !== undefined) {
+            val = datos.respuestas[`p${i}`];
+        } else if (datos[`p${i}`] !== undefined) {
+            val = datos[`p${i}`];
+        } else if (datos[`Pregunta ${i}`] !== undefined) {
+            val = datos[`Pregunta ${i}`];
+        }
+
         const inputId = `bit_p${i}`;
         const input = document.getElementById(inputId);
 
         if (!input) continue;
+        // Si el usuario está editando activamente este input, no sobreescribir su cursor
+        if (document.activeElement === input) continue;
 
         if (input.type === 'hidden') {
-            // Caso especial P1 con condicional
-            if (i === 1 && String(val).includes(' / ')) {
-                const parts = String(val).split(' / ');
-                _marcarOpcionBotones(inputId, parts[0]);
-                const cualesEl = document.getElementById('bit_p1_cuales');
-                if (cualesEl) {
-                    cualesEl.value = parts[1];
-                    cualesEl.style.display = 'block';
+            // Caso especial P1 con condicional de síntomas
+            if (i === 1) {
+                const sCuales = (datos.respuestas && datos.respuestas.p1_cuales) || datos.p1_cuales || '';
+                if (String(val).includes(' / ')) {
+                    const parts = String(val).split(' / ');
+                    _marcarOpcionBotones(inputId, parts[0]);
+                    const cualesEl = document.getElementById('bit_p1_cuales');
+                    if (cualesEl) {
+                        cualesEl.value = parts[1] || sCuales;
+                        cualesEl.style.display = 'block';
+                    }
+                } else if (sCuales) {
+                    _marcarOpcionBotones(inputId, val || 'No');
+                    const cualesEl = document.getElementById('bit_p1_cuales');
+                    if (cualesEl) {
+                        cualesEl.value = sCuales;
+                        cualesEl.style.display = 'block';
+                    }
+                } else {
+                    _marcarOpcionBotones(inputId, val);
                 }
             } else {
                 _marcarOpcionBotones(inputId, val);
@@ -1895,28 +3878,21 @@ function _llenarFormularioBitacora(datos) {
         } else {
             // Inputs normales (number, text, textarea, time)
             if (input.type === 'time' && val) {
-                // Asegurar formato HH:mm para inputs de tipo time
+                // Formato HH:mm
                 try {
                     if (val instanceof Date) {
                         input.value = String(val.getHours()).padStart(2, '0') + ':' + String(val.getMinutes()).padStart(2, '0');
                     } else if (String(val).includes(':')) {
                         const parts = String(val).split(':');
                         input.value = parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
-                    } else {
-                        // Si falla el formateo o no es válido, asignar solo si tiene formato correcto HH:mm
-                        // De lo contrario, dejar vacío para evitar warning
-                        if (/^\d{2}:\d{2}$/.test(val)) {
-                            input.value = val;
-                        } else {
-                            input.value = ''; // Limpiar si es inválido para evitar "The specified value..."
-                        }
+                    } else if (/^\d{2}:\d{2}$/.test(val)) {
+                        input.value = val;
                     }
                 } catch (e) {
                     console.error('Error al formatear tiempo para P' + i, e);
-                    input.value = '';
                 }
             } else {
-                input.value = val;
+                input.value = (val !== undefined && val !== null) ? val : '';
             }
         }
     }
@@ -1926,23 +3902,60 @@ function _llenarFormularioBitacora(datos) {
  * Marca un botón como activo basándose en su valor e input oculto
  */
 function _marcarOpcionBotones(inputId, valor) {
-    if (!valor) return;
+    if (valor === undefined || valor === null || valor === '') return;
     const input = document.getElementById(inputId);
     if (!input) return;
 
     input.value = valor;
 
-    // Buscar botones que pertenecen a este input y tengan este valor
-    // Cada botón llama a selectBitOption(this, 'inputId', 'valor')
+    // Normalizar valor buscado (soportando booleans, números y strings)
+    let vNorm = typeof _norm === 'function' ? _norm(valor) : String(valor).toLowerCase().trim();
+    if (valor === true || vNorm === 'true' || vNorm === '1' || vNorm === 'si' || vNorm === 'sí') vNorm = 'si';
+    else if (valor === false || vNorm === 'false' || vNorm === '0' || vNorm === 'no') vNorm = 'no';
+    else if (vNorm === 'n/a' || vNorm === 'na' || vNorm === 'no aplica') vNorm = 'na';
+    else if (vNorm === 'mas' || vNorm === 'pidio mas' || vNorm === 'mucho') vNorm = 'pidio mas';
+    else if (vNorm === 'aviso' || vNorm === 'avisó') vNorm = 'aviso';
+
     const form = document.getElementById('formBitacora');
-    const botones = form.querySelectorAll(`.bitacora-option-btn`);
+    if (!form) return;
+
+    // Buscar en el contenedor específico de la pregunta o en todo el formulario
+    const container = input.closest('.bit-form-group, .bitacora-form-group') || form;
+    const botones = container.querySelectorAll('.bit-option-pill, .bitacora-option-btn');
 
     botones.forEach(btn => {
-        // Checar si el onclick contiene el inputId y el valor
         const onclick = btn.getAttribute('onclick') || '';
-        if (onclick.includes(`'${inputId}'`) && onclick.includes(`'${valor}'`)) {
+        if (container === form && !onclick.includes(`'${inputId}'`) && !onclick.includes(`"${inputId}"`)) {
+            return;
+        }
+
+        const btnText = btn.textContent.replace(/[✓✔]/g, '').trim();
+        let tNorm = typeof _norm === 'function' ? _norm(btnText) : btnText.toLowerCase().trim();
+        if (tNorm === 'si' || tNorm === 'sí') tNorm = 'si';
+        else if (tNorm === 'no') tNorm = 'no';
+        else if (tNorm === 'n/a' || tNorm === 'na') tNorm = 'na';
+        else if (tNorm === 'mas' || tNorm === 'pidio mas') tNorm = 'pidio mas';
+        else if (tNorm === 'aviso' || tNorm === 'avisó') tNorm = 'aviso';
+
+        let optValNorm = '';
+        const matchArg = onclick.match(/selectBitOption\s*\([^,]+,[^,]+,\s*['"]([^'"]+)['"]/);
+        if (matchArg && matchArg[1]) {
+            optValNorm = typeof _norm === 'function' ? _norm(matchArg[1]) : matchArg[1].toLowerCase().trim();
+            if (optValNorm === 'si' || optValNorm === 'sí') optValNorm = 'si';
+            else if (optValNorm === 'no') optValNorm = 'no';
+            else if (optValNorm === 'n/a' || optValNorm === 'na') optValNorm = 'na';
+            else if (optValNorm === 'mas' || optValNorm === 'pidio mas') optValNorm = 'pidio mas';
+            else if (optValNorm === 'aviso' || optValNorm === 'avisó') optValNorm = 'aviso';
+        }
+
+        const isMatch = (vNorm === tNorm) ||
+            (optValNorm && vNorm === optValNorm) ||
+            (vNorm && tNorm && (vNorm.includes(tNorm) || tNorm.includes(vNorm))) ||
+            (optValNorm && (vNorm.includes(optValNorm) || optValNorm.includes(vNorm)));
+
+        if (isMatch) {
             btn.classList.add('active');
-        } else if (onclick.includes(`'${inputId}'`)) {
+        } else {
             btn.classList.remove('active');
         }
     });
@@ -1952,9 +3965,25 @@ function _marcarOpcionBotones(inputId, valor) {
  * Cierra el modal de bitácora y limpia el formulario
  */
 function cerrarBitacora() {
+    // Cancelar cualquier temporizador de auto-guardado
+    if (window.BitacorasSupabase?.cancelarAutoGuardado) {
+        window.BitacorasSupabase.cancelarAutoGuardado();
+    }
+    window.BITACORA_SOLO_LECTURA = false;
+    window._cargandoBitacora = false;
+
+    // Desuscribir canal Realtime
+    if (window.BitacorasSupabase?.desuscribirRealtime) {
+        window.BitacorasSupabase.desuscribirRealtime();
+    }
+
     const backdrop = document.getElementById('bitacoraBackdrop');
     backdrop.style.display = 'none';
     backdrop.classList.remove('bitacora-solo-lectura');
+
+    // Restaurar scroll general de la pantalla
+    document.body.classList.remove('bitacora-modal-open');
+    document.documentElement.classList.remove('bitacora-modal-open');
 
     const form = document.getElementById('formBitacora');
     if (form) form.reset();
@@ -1989,6 +4018,7 @@ async function abrirBitacorasClienteDesdeResumen(cliente, prefijo, tipoServicioR
     }
 
     BITACORAS_FECHAS = fechas.slice().sort();
+    BITACORA_INDEX = 0;
     BITACORA_FUENTE = BITACORAS_FECHAS.map(f => ({
         cliente,
         fecha: f,
@@ -2003,19 +4033,15 @@ async function abrirBitacorasClienteDesdeResumen(cliente, prefijo, tipoServicioR
     const sessionId = BITACORA_SESSION_ID;
     Promise.all(BITACORA_FUENTE.map(async (s) => {
         // Generar cacheKey igual que en abrirBitacora
-        // Nota: abrirBitacora usa _norm para nombre_ninera
         const nNorm = typeof _norm === 'function' ? _norm(s.nombre_ninera || '') : (s.nombre_ninera || '').trim();
         const cacheKey = `${s.fecha}_${s.email || s.cliente}_${nNorm}`;
-
         if (BITACORA_CACHE[cacheKey]) return; // Ya está en caché
 
         try {
-            const datos = await api('obtenerBitacora', {
-                correo_cliente: s.email || '',
-                nombre_cliente: s.cliente || '',
-                fecha: s.fecha,
-                nombre_ninera: s.nombre_ninera || ''
-            });
+            let datos = null;
+            if (window.BitacorasSupabase) {
+                datos = await window.BitacorasSupabase.obtener(s.fecha, s.cliente, s.nombre_ninera);
+            }
 
             // Solo guardar si la sesión siguen siendo la misma (el usuario no cambió de cliente)
             if (BITACORA_SESSION_ID === sessionId && datos) {
@@ -2115,66 +4141,41 @@ function actualizarNavegacionBitacora() {
  * Maneja el envío del formulario de bitácora
  */
 async function enviarBitacora(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
 
     if (!BITACORA_SERVICIO_ACTUAL) {
         alert('Error: No hay servicio seleccionado');
         return;
     }
 
-    // Recopilar datos del formulario
-    const datos = {
-        // Datos del servicio
-        fecha: BITACORA_SERVICIO_ACTUAL.fecha,
-        correo_ninera: SESION.email,
-        nombre_ninera: SESION.nombre || '',
-        correo_cliente: BITACORA_SERVICIO_ACTUAL.email || '',
-        nombre_cliente: BITACORA_SERVICIO_ACTUAL.cliente || '',
+    const respuestas = typeof _recopilarRespuestasBitacora === 'function'
+        ? _recopilarRespuestasBitacora()
+        : {};
 
-        // Preguntas 1-24
-        p1: document.getElementById('bit_p1').value,
-        p1_cuales: document.getElementById('bit_p1').value === 'No' ? document.getElementById('bit_p1_cuales').value : '',
-        p2: document.getElementById('bit_p2').value,
-        p3: document.getElementById('bit_p3').value,
-        p4: document.getElementById('bit_p4').value,
-        p5: document.getElementById('bit_p5').value,
-        p6: document.getElementById('bit_p6').value,
-        p7: document.getElementById('bit_p7').value || '',
-        p8: document.getElementById('bit_p8').value || '0',
-        p9: document.getElementById('bit_p9').value || '0',
-        p10: document.getElementById('bit_p10').value,
-        p11: document.getElementById('bit_p11').value || '0',
-        p12: document.getElementById('bit_p12').value || '0',
-        p13: document.getElementById('bit_p13').value,
-        p14: document.getElementById('bit_p14').value,
-        p15: document.getElementById('bit_p15').value,
-        p16: document.getElementById('bit_p16').value,
-        p17: document.getElementById('bit_p17').value,
-        p18: document.getElementById('bit_p18').value || '',
-        p19: document.getElementById('bit_p19').value,
-        p20: document.getElementById('bit_p20').value || '',
-        p21: document.getElementById('bit_p21').value || '',
-        p22: document.getElementById('bit_p22').value,
-        p23: document.getElementById('bit_p23').value,
-        p24: document.getElementById('bit_p24').value,
-        acepta: '' // Campo de aceptación vacío por defecto durante la creación
-    };
+    // Si no se recopiló por la función de pasos, recopilar manualmente
+    if (!respuestas.p1) {
+        for (let i = 1; i <= 24; i++) {
+            const el = document.getElementById(`bit_p${i}`);
+            if (el) respuestas[`p${i}`] = el.value || '';
+        }
+        const p1Cuales = document.getElementById('bit_p1_cuales');
+        if (p1Cuales) respuestas.p1_cuales = p1Cuales.value || '';
+    }
 
     try {
-        // Mostrar preloader premium
-        mostrarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper', 'Guardando bitácora...');
+        mostrarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper', 'Guardando bitácora en Supabase...');
 
-        // Enviar al backend
-        const res = await api('guardarBitacora', datos);
+        if (window.BitacorasSupabase) {
+            const registro = await window.BitacorasSupabase.guardar(BITACORA_SERVICIO_ACTUAL, respuestas, 'completada');
 
-        // Actualizar caché local para que la próxima apertura sea instantánea
-        const cacheKey = `${BITACORA_SERVICIO_ACTUAL.fecha}_${BITACORA_SERVICIO_ACTUAL.email || BITACORA_SERVICIO_ACTUAL.cliente}`;
-        BITACORA_CACHE[cacheKey] = _mapPayloadToSheetFormat(datos, res.fecha_creacion);
+            const sNinName = BITACORA_SERVICIO_ACTUAL.nombre_ninera || BITACORA_SERVICIO_ACTUAL.ninera || BITACORA_SERVICIO_ACTUAL['Nombre de la niñera'] || '';
+            const cacheKey = `${BITACORA_SERVICIO_ACTUAL.fecha}_${BITACORA_SERVICIO_ACTUAL.email || BITACORA_SERVICIO_ACTUAL.cliente}_${_norm(sNinName)}`;
+            BITACORA_CACHE[cacheKey] = registro;
+        }
 
-        // Cerrar modal y mostrar éxito
         cerrarBitacora();
         ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
-        mostrarToast('✅ Bitácora guardada', 'success');
+        mostrarToast('✅ Bitácora guardada en Supabase', 'success');
 
     } catch (error) {
         ocultarPreloaderModal('bitacoraBackdrop', 'bitacora-content-wrapper');
@@ -2232,7 +4233,142 @@ document.addEventListener('DOMContentLoaded', function () {
 async function accionConfirmar(s) {
     cerrarModal();
 
-    if (!s || !s.sheet || !s.row_base) {
+    if (!s) {
+        alert('Error interno: datos del servicio incompletos');
+        return;
+    }
+
+    // 🚀 Soporte nativo para servicios gestionados desde Supabase control_servicios
+    if (s.row_id || (s.id && !s.sheet)) {
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        const rId = s.row_id || (s.id ? s.id.split('_')[0] : '');
+        const nannyNombre = (window.SESION?.nombre || '').trim() || 'Niñera';
+        const nannyEmail = (window.SESION?.email || '').trim().toLowerCase();
+        const timestampISO = new Date().toISOString();
+
+        if (client && rId) {
+            try {
+                const { data: curRow } = await client.from('control_servicios').select('*').eq('id', rId).maybeSingle();
+                const diaClave = s.dia_clave || 'lun';
+                const diasMap = {};
+                let curAsist = curRow?.asistencia_nanny;
+                if (typeof curAsist === 'string') {
+                    try { curAsist = JSON.parse(curAsist); } catch (e) { }
+                }
+                if (!curAsist && curRow?.observaciones) {
+                    const m = curRow.observaciones.match(/<!--asistencia_nanny:(.*?)-->/);
+                    if (m && m[1]) {
+                        try { curAsist = JSON.parse(m[1]); } catch (e) { }
+                    }
+                }
+                if (curAsist && curAsist.dias_confirmados) {
+                    Object.assign(diasMap, curAsist.dias_confirmados);
+                }
+                const curIni = (s.hora_inicio || s.inicio || (curRow ? curRow[`${diaClave}_inicio`] : '') || '').trim();
+                const curFin = (s.hora_fin || s.fin || (curRow ? curRow[`${diaClave}_fin`] : '') || '').trim();
+                const horStr = s.Horario || s.horario || ((curIni && curFin) ? `${curIni} - ${curFin}` : (curIni || curFin));
+                const cliStr = s.cliente || s.cliente_nombre || (curRow ? curRow.cliente_nombre : '') || '';
+
+                const existingDia = diasMap[diaClave] || {};
+                diasMap[diaClave] = {
+                    ...existingDia,
+                    dia_clave: diaClave,
+                    nanny_nombre: nannyNombre,
+                    nanny_email: nannyEmail,
+                    horario: horStr,
+                    hora_inicio: curIni,
+                    hora_fin: curFin,
+                    cliente: cliStr,
+                    confirmado_en: existingDia.confirmado_en || timestampISO
+                };
+
+                const evidencePayload = {
+                    confirmada: true,
+                    nanny_nombre: nannyNombre,
+                    nanny_email: nannyEmail,
+                    cliente: cliStr,
+                    cliente_nombre: cliStr,
+                    dias: Object.keys(diasMap),
+                    dias_confirmados: diasMap,
+                    ultima_actualizacion: timestampISO
+                };
+                const tag = `<!--asistencia_nanny:${JSON.stringify(evidencePayload)}-->`;
+                let obsBase = (curRow?.observaciones || s.observaciones || '').replace(/<!--asistencia_nanny:.*?-->/g, '').trim();
+                const nuevaObs = `${tag} ${obsBase}`.trim();
+
+                const updObj = {
+                    semana_iso: curRow?.semana_iso || s.semana_iso || '',
+                    observaciones: nuevaObs,
+                    asistencia_nanny: evidencePayload,
+                    actualizado_en: timestampISO
+                };
+
+                let { error: errUpd } = await client.from('control_servicios').update(updObj).eq('id', rId);
+                if (errUpd && errUpd.message && errUpd.message.includes('asistencia_nanny')) {
+                    delete updObj.asistencia_nanny;
+                    await client.from('control_servicios').update(updObj).eq('id', rId);
+                }
+
+                // Notificar en vivo para actualización inmediata
+                const payloadSync = {
+                    row_ids: [rId],
+                    nanny_nombre: nannyNombre,
+                    evidence: evidencePayload,
+                    timestamp: Date.now()
+                };
+
+                try {
+                    if (typeof BroadcastChannel !== 'undefined') {
+                        const bc = new BroadcastChannel('nyp_asistencia_channel');
+                        bc.postMessage(payloadSync);
+                        setTimeout(() => { bc.close(); }, 1000);
+                    }
+                } catch (eBc) { }
+
+                try {
+                    localStorage.setItem('nyp_evento_asistencia_confirmada', JSON.stringify(payloadSync));
+                } catch (eSt) { }
+
+                const ch = client.channel('rt_control_servicios_matriz');
+                const doSend = () => {
+                    ch.send({
+                        type: 'broadcast',
+                        event: 'asistencia_nanny_confirmada',
+                        payload: payloadSync
+                    }).catch(() => { });
+                };
+                if (ch.state === 'joined' || ch.status === 'SUBSCRIBED') {
+                    doSend();
+                } else {
+                    ch.subscribe((st) => {
+                        if (st === 'SUBSCRIBED') {
+                            doSend();
+                        }
+                    });
+                }
+            } catch (eSupa) {
+                console.warn("Aviso al confirmar servicio individual en Supabase:", eSupa);
+            }
+        }
+
+        s.estado = 'confirmado';
+        s.asistencia_confirmada = true;
+        s.confirmado_en = timestampISO;
+
+        (CAL_SERVICIOS || []).forEach(x => {
+            if (x.id === s.id || (rId && x.row_id === rId && x.dia_clave === s.dia_clave)) {
+                x.estado = 'confirmado';
+                x.asistencia_confirmada = true;
+                x.confirmado_en = timestampISO;
+            }
+        });
+
+        renderCalendario2Semanas();
+        if (typeof window.mostrarToast === 'function') window.mostrarToast("✅ ¡Asistencia confirmada!");
+        return;
+    }
+
+    if (!s.sheet || !s.row_base) {
         alert('Error interno: datos del servicio incompletos');
         return;
     }
@@ -2262,33 +4398,398 @@ async function accionConfirmar(s) {
     }
 }
 
-async function accionIniciar(sheetName, row, fechaISO) {
+async function accionIniciar(sOrSheet, row, fechaISO) {
     cerrarModal();
-    try {
-        await api('registrarInicioServicio', {
-            sheet: sheetName,
-            row_base: row,
-            fecha: fechaISO,
-            email: SESION.email
+    let s = (sOrSheet && typeof sOrSheet === 'object') ? sOrSheet : null;
+    let sheetName = typeof sOrSheet === 'string' ? sOrSheet : (s ? s.sheet : '');
+    let r = row || (s ? (s.row_base || s.row_id) : '');
+    let fecha = fechaISO || (s ? (s.fecha || s.Fecha) : '');
+
+    // 🚀 1. Soporte nativo y seguro para Supabase control_servicios
+    if (s && (s.row_id || (s.id && !s.sheet))) {
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        const rId = s.row_id || (s.id ? s.id.split('_')[0] : '');
+        const nannyNombre = (window.SESION?.nombre || '').trim() || 'Niñera';
+        const nannyEmail = (window.SESION?.email || '').trim().toLowerCase();
+        const timestampISO = new Date().toISOString();
+
+        if (client && rId) {
+            try {
+                const { data: curRow } = await client.from('control_servicios').select('*').eq('id', rId).maybeSingle();
+                const diaClave = s.dia_clave || 'lun';
+                const diasMap = {};
+                let curAsist = curRow?.asistencia_nanny;
+                if (typeof curAsist === 'string') {
+                    try { curAsist = JSON.parse(curAsist); } catch (e) { }
+                }
+                if (!curAsist && curRow?.observaciones) {
+                    const m = curRow.observaciones.match(/<!--asistencia_nanny:(.*?)-->/);
+                    if (m && m[1]) {
+                        try { curAsist = JSON.parse(m[1]); } catch (e) { }
+                    }
+                }
+                if (curAsist && curAsist.dias_confirmados) {
+                    Object.assign(diasMap, curAsist.dias_confirmados);
+                }
+                const curDia = diasMap[diaClave] || {};
+                curDia.inicio_real = timestampISO;
+                curDia.estado = 'en curso';
+                curDia.nanny_nombre = nannyNombre;
+                curDia.nanny_email = nannyEmail;
+                if (!curDia.confirmado_en) curDia.confirmado_en = timestampISO;
+                if (s.horario && !curDia.horario) curDia.horario = s.horario;
+                if (s.hora_inicio && !curDia.hora_inicio) curDia.hora_inicio = s.hora_inicio;
+                if (s.hora_fin && !curDia.hora_fin) curDia.hora_fin = s.hora_fin;
+                if (!curDia.cliente) curDia.cliente = s.cliente || s.cliente_nombre || curRow?.cliente_nombre || '';
+                diasMap[diaClave] = curDia;
+
+                const evidencePayload = {
+                    confirmada: true,
+                    nanny_nombre: nannyNombre,
+                    nanny_email: nannyEmail,
+                    cliente: s.cliente || s.cliente_nombre || curRow?.cliente_nombre || '',
+                    cliente_nombre: s.cliente || s.cliente_nombre || curRow?.cliente_nombre || '',
+                    dias: Object.keys(diasMap),
+                    dias_confirmados: diasMap,
+                    ultima_actualizacion: timestampISO
+                };
+                const tag = `<!--asistencia_nanny:${JSON.stringify(evidencePayload)}-->`;
+                let obsBase = (curRow?.observaciones || s.observaciones || '').replace(/<!--asistencia_nanny:.*?-->/g, '').trim();
+                const nuevaObs = `${tag} ${obsBase}`.trim();
+
+                const updObj = {
+                    observaciones: nuevaObs,
+                    asistencia_nanny: evidencePayload,
+                    actualizado_en: timestampISO
+                };
+
+                let { error: errUpd } = await client.from('control_servicios').update(updObj).eq('id', rId);
+                if (errUpd && errUpd.message && errUpd.message.includes('asistencia_nanny')) {
+                    delete updObj.asistencia_nanny;
+                    await client.from('control_servicios').update(updObj).eq('id', rId);
+                }
+
+                // Guardar en tabla confirmaciones_asistencia
+                try {
+                    await client.from('confirmaciones_asistencia').insert([{
+                        servicio_id: s.id || `${rId}_${diaClave}`,
+                        row_id: rId,
+                        semana_iso: curRow?.semana_iso || s.semana_iso || '',
+                        fecha: s.fecha || new Date().toISOString().split('T')[0],
+                        dia_clave: diaClave,
+                        horario: s.horario || s.Horario || '',
+                        nanny_nombre: nannyNombre,
+                        nanny_email: nannyEmail,
+                        cliente_nombre: s.cliente || s.cliente_nombre || curRow?.cliente_nombre || '',
+                        tipo_servicio: s.tipo_servicio || curRow?.tipo_servicio || '',
+                        detalles: { accion: 'inicio_servicio', inicio_real: timestampISO }
+                    }]);
+                } catch (_) { }
+
+                // Notificar en tiempo real multi-pestaña y matriz de servicios
+                const payloadSync = {
+                    row_id: rId,
+                    row_ids: [rId],
+                    nanny_nombre: nannyNombre,
+                    nanny_email: nannyEmail,
+                    evidence: evidencePayload,
+                    timestamp: Date.now()
+                };
+
+                try {
+                    if (typeof BroadcastChannel !== 'undefined') {
+                        const bc = new BroadcastChannel('nyp_asistencia_channel');
+                        bc.postMessage(payloadSync);
+                        setTimeout(() => { try { bc.close(); } catch (e) { } }, 1000);
+                    }
+                } catch (eBc) { }
+
+                try {
+                    localStorage.setItem('nyp_evento_asistencia_confirmada', JSON.stringify(payloadSync));
+                } catch (eSt) { }
+
+                try {
+                    const ch = client.channel('rt_control_servicios_matriz');
+                    const doSend = () => {
+                        ch.send({
+                            type: 'broadcast',
+                            event: 'asistencia_nanny_confirmada',
+                            payload: payloadSync
+                        }).catch(() => { });
+                    };
+                    if (ch.state === 'joined' || ch.status === 'SUBSCRIBED') {
+                        doSend();
+                    } else {
+                        ch.subscribe((st) => {
+                            if (st === 'SUBSCRIBED') {
+                                doSend();
+                            }
+                        });
+                    }
+                } catch (eCh) { }
+
+                if (typeof emitirCambioMatrizRealtime === 'function') {
+                    emitirCambioMatrizRealtime(client, { accion: 'inicio_servicio', servicio_id: s.id });
+                }
+            } catch (eSupa) {
+                console.warn("Aviso registrando inicio de servicio en Supabase:", eSupa);
+            }
+        }
+
+        s.inicio_real = timestampISO;
+        s.estado = 'en curso';
+        (CAL_SERVICIOS || []).forEach(x => {
+            if (x.id === s.id || (rId && x.row_id === rId && x.dia_clave === s.dia_clave)) {
+                x.inicio_real = timestampISO;
+                x.estado = 'en curso';
+            }
         });
-        refreshServicios();
-    } catch (err) {
-        alert(err.message);
+
+        // 🚀 Sincronizar automáticamente hora de inicio en la bitácora (p23 / Check-in)
+        try {
+            const hIniObj = new Date(timestampISO);
+            const horaIniStr = String(hIniObj.getHours()).padStart(2, '0') + ':' + String(hIniObj.getMinutes()).padStart(2, '0');
+            const p23El = document.getElementById('bit_p23');
+            if (p23El) p23El.value = horaIniStr;
+
+            if (window.BitacorasSupabase) {
+                let curBit = null;
+                if (typeof window.BitacorasSupabase.obtener === 'function') {
+                    curBit = await window.BitacorasSupabase.obtener(s.fecha, s.cliente || s.cliente_nombre, s.nombre_ninera || nannyNombre, s.id || rId);
+                }
+                const curResp = Object.assign({}, curBit?.respuestas || {});
+                curResp.p23 = horaIniStr;
+                if (typeof window.BitacorasSupabase.guardar === 'function') {
+                    await window.BitacorasSupabase.guardar(s, curResp, curBit?.estado || 'borrador');
+                }
+            }
+        } catch (eBitIni) {
+            console.warn("Aviso auto-sincronizando inicio en bitácora:", eBitIni);
+        }
+
+        if (typeof renderCalendario2Semanas === 'function') renderCalendario2Semanas();
+        if (window.NannyInicio && typeof window.NannyInicio.cargarServicios === 'function') {
+            window.NannyInicio.cargarServicios(true);
+        }
+        if (typeof window.mostrarToast === 'function') {
+            window.mostrarToast("🚀 ¡Servicio iniciado con éxito!");
+        } else {
+            alert("🚀 ¡Servicio iniciado con éxito!");
+        }
+        return;
+    }
+
+    // 🚀 2. Fallback legado para Google Sheets
+    if (sheetName && r) {
+        try {
+            await api('registrarInicioServicio', {
+                sheet: sheetName,
+                row_base: r,
+                fecha: fecha,
+                email: SESION.email
+            });
+            if (typeof refreshServicios === 'function') refreshServicios();
+        } catch (err) {
+            alert(err.message);
+        }
     }
 }
 
-async function accionFinalizar(sheetName, row, fechaISO) {
+async function accionFinalizar(sOrSheet, row, fechaISO) {
     cerrarModal();
-    try {
-        await api('registrarFinServicio', {
-            sheet: sheetName,
-            row_base: row,
-            fecha: fechaISO,
-            email: SESION.email
+    let s = (sOrSheet && typeof sOrSheet === 'object') ? sOrSheet : null;
+    let sheetName = typeof sOrSheet === 'string' ? sOrSheet : (s ? s.sheet : '');
+    let r = row || (s ? (s.row_base || s.row_id) : '');
+    let fecha = fechaISO || (s ? (s.fecha || s.Fecha) : '');
+
+    // 🚀 1. Soporte nativo y seguro para Supabase control_servicios
+    if (s && (s.row_id || (s.id && !s.sheet))) {
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        const rId = s.row_id || (s.id ? s.id.split('_')[0] : '');
+        const nannyNombre = (window.SESION?.nombre || '').trim() || 'Niñera';
+        const nannyEmail = (window.SESION?.email || '').trim().toLowerCase();
+        const timestampISO = new Date().toISOString();
+
+        if (client && rId) {
+            try {
+                const { data: curRow } = await client.from('control_servicios').select('*').eq('id', rId).maybeSingle();
+                const diaClave = s.dia_clave || 'lun';
+                const diasMap = {};
+                let curAsist = curRow?.asistencia_nanny;
+                if (typeof curAsist === 'string') {
+                    try { curAsist = JSON.parse(curAsist); } catch (e) { }
+                }
+                if (!curAsist && curRow?.observaciones) {
+                    const m = curRow.observaciones.match(/<!--asistencia_nanny:(.*?)-->/);
+                    if (m && m[1]) {
+                        try { curAsist = JSON.parse(m[1]); } catch (e) { }
+                    }
+                }
+                if (curAsist && curAsist.dias_confirmados) {
+                    Object.assign(diasMap, curAsist.dias_confirmados);
+                }
+                const curDia = diasMap[diaClave] || {};
+                curDia.fin_real = timestampISO;
+                curDia.estado = 'completado';
+                curDia.nanny_nombre = nannyNombre;
+                curDia.nanny_email = nannyEmail;
+                if (s.inicio_real && !curDia.inicio_real) curDia.inicio_real = s.inicio_real;
+                if (!curDia.confirmado_en) curDia.confirmado_en = curDia.inicio_real || timestampISO;
+                if (s.horario && !curDia.horario) curDia.horario = s.horario;
+                if (s.hora_inicio && !curDia.hora_inicio) curDia.hora_inicio = s.hora_inicio;
+                if (s.hora_fin && !curDia.hora_fin) curDia.hora_fin = s.hora_fin;
+                if (!curDia.cliente) curDia.cliente = s.cliente || s.cliente_nombre || curRow?.cliente_nombre || '';
+                diasMap[diaClave] = curDia;
+
+                const evidencePayload = {
+                    confirmada: true,
+                    nanny_nombre: nannyNombre,
+                    nanny_email: nannyEmail,
+                    cliente: s.cliente || s.cliente_nombre || curRow?.cliente_nombre || '',
+                    cliente_nombre: s.cliente || s.cliente_nombre || curRow?.cliente_nombre || '',
+                    dias: Object.keys(diasMap),
+                    dias_confirmados: diasMap,
+                    ultima_actualizacion: timestampISO
+                };
+                const tag = `<!--asistencia_nanny:${JSON.stringify(evidencePayload)}-->`;
+                let obsBase = (curRow?.observaciones || s.observaciones || '').replace(/<!--asistencia_nanny:.*?-->/g, '').trim();
+                const nuevaObs = `${tag} ${obsBase}`.trim();
+
+                const updObj = {
+                    observaciones: nuevaObs,
+                    asistencia_nanny: evidencePayload,
+                    actualizado_en: timestampISO
+                };
+
+                let { error: errUpd } = await client.from('control_servicios').update(updObj).eq('id', rId);
+                if (errUpd && errUpd.message && errUpd.message.includes('asistencia_nanny')) {
+                    delete updObj.asistencia_nanny;
+                    await client.from('control_servicios').update(updObj).eq('id', rId);
+                }
+
+                // Guardar en tabla confirmaciones_asistencia
+                try {
+                    await client.from('confirmaciones_asistencia').insert([{
+                        servicio_id: s.id || `${rId}_${diaClave}`,
+                        row_id: rId,
+                        semana_iso: curRow?.semana_iso || s.semana_iso || '',
+                        fecha: s.fecha || new Date().toISOString().split('T')[0],
+                        dia_clave: diaClave,
+                        horario: s.horario || s.Horario || '',
+                        nanny_nombre: nannyNombre,
+                        nanny_email: nannyEmail,
+                        cliente_nombre: s.cliente || s.cliente_nombre || curRow?.cliente_nombre || '',
+                        tipo_servicio: s.tipo_servicio || curRow?.tipo_servicio || '',
+                        detalles: { accion: 'fin_servicio', fin_real: timestampISO }
+                    }]);
+                } catch (_) { }
+
+                // Notificar en tiempo real multi-pestaña y matriz de servicios
+                const payloadSync = {
+                    row_id: rId,
+                    row_ids: [rId],
+                    nanny_nombre: nannyNombre,
+                    nanny_email: nannyEmail,
+                    evidence: evidencePayload,
+                    timestamp: Date.now()
+                };
+
+                try {
+                    if (typeof BroadcastChannel !== 'undefined') {
+                        const bc = new BroadcastChannel('nyp_asistencia_channel');
+                        bc.postMessage(payloadSync);
+                        setTimeout(() => { try { bc.close(); } catch (e) { } }, 1000);
+                    }
+                } catch (eBc) { }
+
+                try {
+                    localStorage.setItem('nyp_evento_asistencia_confirmada', JSON.stringify(payloadSync));
+                } catch (eSt) { }
+
+                try {
+                    const ch = client.channel('rt_control_servicios_matriz');
+                    const doSend = () => {
+                        ch.send({
+                            type: 'broadcast',
+                            event: 'asistencia_nanny_confirmada',
+                            payload: payloadSync
+                        }).catch(() => { });
+                    };
+                    if (ch.state === 'joined' || ch.status === 'SUBSCRIBED') {
+                        doSend();
+                    } else {
+                        ch.subscribe((st) => {
+                            if (st === 'SUBSCRIBED') {
+                                doSend();
+                            }
+                        });
+                    }
+                } catch (eCh) { }
+
+                if (typeof emitirCambioMatrizRealtime === 'function') {
+                    emitirCambioMatrizRealtime(client, { accion: 'fin_servicio', servicio_id: s.id });
+                }
+            } catch (eSupa) {
+                console.warn("Aviso registrando fin de servicio en Supabase:", eSupa);
+            }
+        }
+
+        s.fin_real = timestampISO;
+        s.estado = 'completado';
+        (CAL_SERVICIOS || []).forEach(x => {
+            if (x.id === s.id || (rId && x.row_id === rId && x.dia_clave === s.dia_clave)) {
+                x.fin_real = timestampISO;
+                x.estado = 'completado';
+            }
         });
-        refreshServicios();
-    } catch (err) {
-        alert(err.message);
+
+        // 🚀 Sincronizar automáticamente hora de fin en la bitácora (p24 / Check-out)
+        try {
+            const hFinObj = new Date(timestampISO);
+            const horaFinStr = String(hFinObj.getHours()).padStart(2, '0') + ':' + String(hFinObj.getMinutes()).padStart(2, '0');
+            const p24El = document.getElementById('bit_p24');
+            if (p24El) p24El.value = horaFinStr;
+
+            if (window.BitacorasSupabase) {
+                let curBit = null;
+                if (typeof window.BitacorasSupabase.obtener === 'function') {
+                    curBit = await window.BitacorasSupabase.obtener(s.fecha, s.cliente || s.cliente_nombre, s.nombre_ninera || nannyNombre, s.id || rId);
+                }
+                const curResp = Object.assign({}, curBit?.respuestas || {});
+                curResp.p24 = horaFinStr;
+                if (typeof window.BitacorasSupabase.guardar === 'function') {
+                    await window.BitacorasSupabase.guardar(s, curResp, curBit?.estado || 'borrador');
+                }
+            }
+        } catch (eBitFin) {
+            console.warn("Aviso auto-sincronizando fin en bitácora:", eBitFin);
+        }
+
+        if (typeof renderCalendario2Semanas === 'function') renderCalendario2Semanas();
+        if (window.NannyInicio && typeof window.NannyInicio.cargarServicios === 'function') {
+            window.NannyInicio.cargarServicios(true);
+        }
+        if (typeof window.mostrarToast === 'function') {
+            window.mostrarToast("🏁 ¡Servicio finalizado con éxito!");
+        } else {
+            alert("🏁 ¡Servicio finalizado con éxito!");
+        }
+        return;
+    }
+
+    // 🚀 2. Fallback legado para Google Sheets
+    if (sheetName && r) {
+        try {
+            await api('registrarFinServicio', {
+                sheet: sheetName,
+                row_base: r,
+                fecha: fecha,
+                email: SESION.email
+            });
+            if (typeof refreshServicios === 'function') refreshServicios();
+        } catch (err) {
+            alert(err.message);
+        }
     }
 }
 
@@ -2522,19 +5023,31 @@ function cargarResumenPlaneaciones(force = false, silent = false) {
         }
     }
 
-    // Llamada consolidada (Una sola petición para las 2 semanas)
-    api('getResumenPlaneacionesDosSemanas', { email: SESION.email })
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    const fetchProm = (client && typeof obtenerResumenPlaneacionesDosSemanasSupabase === 'function')
+        ? obtenerResumenPlaneacionesDosSemanasSupabase()
+        : api('getResumenPlaneacionesDosSemanas', { email: SESION.email });
+
+    fetchProm
         .then(res => {
             if (res) {
                 if (c1) renderResumenPlaneaciones(res.actual, c1);
                 if (c2) renderResumenPlaneaciones(res.siguiente, c2, 'siguiente');
-                // Guardar para la próxima vez
                 localStorage.setItem('CACHE_PLANEACIONES_SUP_' + SESION.email, JSON.stringify(res));
             }
             if (btn) btn.textContent = '🔄 Actualizar';
         })
         .catch(err => {
-            console.error(err);
+            console.error("Error en cargarResumenPlaneaciones:", err);
+            if (client) {
+                api('getResumenPlaneacionesDosSemanas', { email: SESION.email })
+                    .then(res => {
+                        if (res) {
+                            if (c1) renderResumenPlaneaciones(res.actual, c1);
+                            if (c2) renderResumenPlaneaciones(res.siguiente, c2, 'siguiente');
+                        }
+                    }).catch(e => console.error(e));
+            }
             if (btn) btn.textContent = '🔄 Actualizar';
         });
 }
@@ -2584,17 +5097,22 @@ function renderResumenPlaneaciones(data, cont, prefijo) {
     }
 
     Object.keys(data).forEach((ciudad, indexCiudad) => {
-        const ciudadId = `${prefijo}_ciudad_${indexCiudad}`;
+        const safeCiudad = String(ciudad).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_');
+        const ciudadId = `${prefijo || 'actual'}_ciudad_${safeCiudad}`;
         // REGLA DE MEMORIA: Verificar si ya estaba abierta
         const estabaAbierta = window.CIUDADES_ABIERTAS && window.CIUDADES_ABIERTAS.has(ciudadId);
         const display = estabaAbierta ? 'block' : 'none';
         const icono = estabaAbierta ? '➖' : '➕';
 
-        html += `<div style="margin:10px 0;">
-        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="toggleCiudad('${ciudadId}')">
-          <span id="${ciudadId}_icon" style="font-size:18px;user-select:none;">${icono}</span><h4 style="margin:0;">${ciudad}</h4>
+        html += `<div style="margin:12px 0;">
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:4px 0;" onclick="toggleCiudad('${ciudadId}')">
+          <span id="${ciudadId}_icon" style="font-size:16px;user-select:none;color:var(--pink-main);font-weight:700;">${icono}</span>
+          <h4 style="margin:0;font-size:15px;color:var(--pink-main);display:flex;align-items:center;gap:8px;">
+            <span>📍 ${ciudad}</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-muted);background:rgba(232,76,154,0.08);padding:1px 8px;border-radius:10px;">${data[ciudad].length} servicios</span>
+          </h4>
         </div>
-        <div id="${ciudadId}" style="display:${display}; margin-left:28px; margin-top:6px;">
+        <div id="${ciudadId}" style="display:${display}; margin-left:28px; margin-top:8px;">
           <ul style="list-style:none;margin:4px 0 12px;padding-left:0;">`;
 
         data[ciudad].forEach(p => {
@@ -2614,10 +5132,10 @@ function renderResumenPlaneaciones(data, cont, prefijo) {
             RESUMEN_PLANEACIONES_SUP[key] = fechas;
             const handler = `abrirPlaneacionesClienteDesdeResumen('${p.cliente}', '${prefijo || 'actual'}', '${p.tipo_servicio || ''}', '${p.ninera || ''}')`;
 
-            html += `<li style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;" onclick="${handler}">
-          <span style="width:10px;height:10px;border-radius:999px;background:${colorPlaneacion};display:inline-block;"></span>
-          <span><b>${p.cliente}</b> – ${p.ninera}</span><span class="muted">(${textoPlaneacion})</span>
-          ${p.tienePlaneacion ? `<span style="width:10px;height:10px;border-radius:999px;background:${colorRevision};display:inline-block;"></span>` : ``}
+            html += `<li style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer;font-size:14px;" onclick="${handler}">
+          <span style="width:10px;height:10px;border-radius:999px;background:${colorPlaneacion};display:inline-block;flex-shrink:0;"></span>
+          <span><b>${p.cliente}</b> – ${p.ninera}</span><span class="muted" style="font-size:13px;">(${textoPlaneacion})</span>
+          ${p.tienePlaneacion ? `<span style="width:10px;height:10px;border-radius:999px;background:${colorRevision};display:inline-block;flex-shrink:0;" title="${estadoRevision}"></span>` : ``}
         </li>`;
         });
         html += `</ul></div></div>`;
@@ -2775,14 +5293,40 @@ async function cargarListaNinerasAdmin() {
     dataList.innerHTML = '';
 
     try {
-        const lista = await api('obtenerListaNineras', { email: SESION.email });
-        lista.forEach(nombre => {
+        let nombres = [];
+        // 1. Cargar directamente desde Supabase
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        if (client) {
+            try {
+                const { data, error } = await client
+                    .from('nannys')
+                    .select('nombre')
+                    .order('nombre', { ascending: true });
+                if (!error && Array.isArray(data) && data.length > 0) {
+                    nombres = data.map(n => n.nombre).filter(Boolean);
+                }
+            } catch (supaErr) {
+                console.warn('Supabase nannys list nota:', supaErr.message);
+            }
+        }
+
+        // 2. Si no hubo datos de Supabase y existe token tradicional de Sheets, consultar Sheets
+        if (nombres.length === 0 && SESION && SESION.token) {
+            try {
+                const lista = await api('obtenerListaNineras', { email: SESION.email });
+                if (Array.isArray(lista)) nombres = lista;
+            } catch (apiErr) {
+                console.warn('Sheets obtenerListaNineras nota:', apiErr.message);
+            }
+        }
+
+        nombres.forEach(nombre => {
             const opt = document.createElement('option');
             opt.value = nombre;
             dataList.appendChild(opt);
         });
     } catch (err) {
-        alert('Error al cargar niñeras: ' + err.message);
+        console.warn('No se pudo poblar el datalist de niñeras:', err.message);
     }
 }
 
@@ -3058,35 +5602,87 @@ document.addEventListener('DOMContentLoaded', () => setTimeout(initCotizador, 10
    RUTEO /VISTAS
    ========================================= */
 function ocultarTodo() {
-    const ids = ['svcCard', 'puntosNineraCard', 'panel', 'tablaActualCard', 'tablaSiguienteCard', 'resumenCard', 'resumenCard2', 'adminCard', 'adminAgendaCard', 'adminPuntosCard', 'adminResumenDispCard', 'adminCotizadorCard'];
+    const ids = ['svcCard', 'puntosNineraCard', 'planeacionesNineraCard', 'planeacionesNineraCardSiguiente', 'panel', 'tablaActualCard', 'tablaSiguienteCard', 'resumenCard', 'resumenCard2', 'adminCard', 'adminAgendaCard', 'adminPuntosCard', 'adminResumenDispCard', 'adminCotizadorCard', 'adminControlServiciosView'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+    document.body.classList.remove('en-control-servicios');
+    document.documentElement.classList.remove('en-control-servicios');
 }
 
 function mostrarVistaAdmin() {
     ocultarTodo();
 
-    // Ocultamos navs anteriores
+    document.body.classList.add('admin', 'en-control-servicios');
+    document.documentElement.classList.add('en-control-servicios');
+
+    // Ocultamos el header-admin anterior para dejar la pantalla 100% limpia y amplia
+    const hAdmin = document.getElementById('header-admin');
+    if (hAdmin) hAdmin.style.display = 'none';
+
+    // Ocultamos todos los navs inferiores en vista de administración
     const navDefault = document.querySelector('.bottom-nav:not(#nav-supervision):not(#nav-ventas)');
     const navSuper = document.getElementById('nav-supervision');
     const navVentas = document.getElementById('nav-ventas');
     if (navDefault) navDefault.style.display = 'none';
     if (navSuper) navSuper.style.display = 'none';
-    if (navVentas) navVentas.style.display = 'flex';
+    if (navVentas) navVentas.style.display = 'none';
+
+    // 🚀 Vista principal de administración: Control de Servicios
+    const csView = document.getElementById('adminControlServiciosView');
+    if (csView) {
+        csView.style.display = 'flex';
+    }
+
+    if (typeof initControlServiciosUI === 'function') {
+        initControlServiciosUI();
+    }
 
     const monday = startMonday(new Date());
     ADMIN_WEEK_START_ISO = toISO(monday);
-
-    // Iniciamos la vista por defecto
-    irVistaVentas('cotizador');
 
     cargarAgendaAdminSemana(ADMIN_WEEK_START_ISO);
     cargarResumenDisponibilidadAdmin();
     cargarListaNinerasAdmin();
 }
 
+/**
+ * Abre la sección del Cotizador desde el Control de Servicios (sin modificar nada de su lógica)
+ */
+function abrirCotizadorDesdeControl() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.body.classList.remove('en-control-servicios');
+    document.documentElement.classList.remove('en-control-servicios');
+    const csView = document.getElementById('adminControlServiciosView');
+    if (csView) csView.style.display = 'none';
+
+    const cotCard = document.getElementById('adminCotizadorCard');
+    if (cotCard) {
+        cotCard.style.display = 'block';
+    }
+
+    if (typeof initCotizador === 'function') {
+        initCotizador();
+    }
+}
+window.abrirCotizadorDesdeControl = abrirCotizadorDesdeControl;
+
+/**
+ * Cierra la sección del Cotizador y regresa limpiamente al Control de Servicios
+ */
+function cerrarCotizadorHaciaControl() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const cotCard = document.getElementById('adminCotizadorCard');
+    if (cotCard) cotCard.style.display = 'none';
+
+    document.body.classList.add('en-control-servicios');
+    document.documentElement.classList.add('en-control-servicios');
+    const csView = document.getElementById('adminControlServiciosView');
+    if (csView) csView.style.display = 'flex';
+}
+window.cerrarCotizadorHaciaControl = cerrarCotizadorHaciaControl;
+
 function irVistaVentas(tab) {
     window.scrollTo({ top: 0, behavior: 'instant' });
-    const ids = ['adminCotizadorCard', 'adminAgendaCard', 'adminResumenDispCard', 'adminCard', 'adminPuntosCard'];
+    const ids = ['adminCotizadorCard', 'adminAgendaCard', 'adminResumenDispCard', 'adminCard', 'adminPuntosCard', 'adminControlServiciosView'];
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
     document.querySelectorAll('#nav-ventas button').forEach(b => b.classList.remove('activo'));
@@ -3094,27 +5690,36 @@ function irVistaVentas(tab) {
     if (btn) btn.classList.add('activo');
 
     if (tab === 'cotizador') {
-        const el = document.getElementById('adminCotizadorCard');
-        if (el) el.style.display = 'block';
+        abrirCotizadorDesdeControl();
     } else if (tab === 'servicios') {
-        const el = document.getElementById('adminAgendaCard');
-        if (el) el.style.display = 'block';
+        document.body.classList.add('en-control-servicios');
+        document.documentElement.classList.add('en-control-servicios');
+        const el = document.getElementById('adminControlServiciosView') || document.getElementById('adminAgendaCard');
+        if (el) el.style.display = 'flex';
     } else if (tab === 'disponibilidad') {
+        document.body.classList.remove('en-control-servicios');
+        document.documentElement.classList.remove('en-control-servicios');
         const el1 = document.getElementById('adminResumenDispCard');
         const el2 = document.getElementById('adminCard');
         if (el1) el1.style.display = 'block';
         if (el2) el2.style.display = 'block';
     } else if (tab === 'nannystar') {
+        document.body.classList.remove('en-control-servicios');
+        document.documentElement.classList.remove('en-control-servicios');
         const el = document.getElementById('adminPuntosCard');
         if (el) el.style.display = 'block';
     }
 }
 
 function irVistaRH(tab) {
+    document.body.classList.remove('en-control-servicios');
+    document.documentElement.classList.remove('en-control-servicios');
     window.scrollTo({ top: 0, behavior: 'instant' });
-    document.querySelectorAll('#nav-rh button').forEach(b => b.classList.remove('activo'));
+    document.querySelectorAll('#nav-rh button').forEach(b => {
+        b.classList.remove('activo', 'active');
+    });
     const btn = document.getElementById('rnav-' + tab);
-    if (btn) btn.classList.add('activo');
+    if (btn) btn.classList.add('activo', 'active');
 
     const subviewCalendario = document.getElementById('rh-subvista-calendario');
     const subviewCapacitaciones = document.getElementById('rh-subvista-capacitaciones');
@@ -3146,6 +5751,10 @@ async function mostrarVistaNinera() {
 
     document.getElementById('fecha').valueAsDate = new Date();
 
+    // ⚡ Asegurar suscripciones en tiempo real activas para cambios en la matriz y planeaciones
+    if (typeof suscribirRealtimePortalServicios === 'function') suscribirRealtimePortalServicios();
+    if (typeof suscribirRealtimePlaneaciones === 'function') suscribirRealtimePlaneaciones();
+
     // 🔥 CARGA PARALELA: Todo debe terminar antes de ocultar el preloader
     await Promise.all([
         cargarServicios(),
@@ -3155,23 +5764,99 @@ async function mostrarVistaNinera() {
         cargarPerfil(), // 👤 Cargar Perfil
         cargar()        // 📅 Cargar Disponibilidad
     ]);
+
+    if (typeof actualizarVisibilidadPestanasNinera === 'function') {
+        actualizarVisibilidadPestanasNinera();
+    }
 }
 
 function irVista(nombre, skipLogic = false) {
-    // 🏠 Siempre subir al inicio al cambiar de vista
+    // 🏠 Siempre subir al inicio al cambiar de vista y asegurar que el scroll vertical esté activo
     window.scrollTo({ top: 0, behavior: 'instant' });
+    document.body.classList.remove('en-control-servicios');
+    document.documentElement.classList.remove('en-control-servicios');
 
     document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
+    if (nombre !== 'estimulacion' && typeof window.resetRadarVisual === 'function') {
+        window.resetRadarVisual();
+    }
 
     let target = nombre;
     //Redirecciones por rol
     if (SESION.cliente) {
-        if (nombre === 'servicios') target = 'cliente';
-        if (nombre === 'disponibilidad') target = 'actividades-cliente';
+        if (nombre === 'inicio') target = 'cliente-inicio';
+        if (nombre === 'servicios' || nombre === 'serv') target = 'cliente-servicios';
+        if (nombre === 'perfil') target = 'cliente-perfil';
+        if (nombre === 'per') target = 'perfil';
+        if (nombre === 'disponibilidad' || nombre === 'actividades' || nombre === 'actividades-cliente') {
+            if (window._clienteTieneEducativaValido === false) {
+                target = 'cliente-inicio';
+                nombre = 'inicio';
+            } else {
+                target = 'actividades-cliente';
+            }
+        }
+        if (nombre === 'estimulacion') {
+            if (window._clienteTieneNeuronannyValido === false) {
+                target = 'cliente-inicio';
+                nombre = 'inicio';
+            }
+        }
+    } else {
+        if (nombre === 'inicio') target = 'nanny-inicio';
+        if (nombre === 'servicios' || nombre === 'serv') target = 'cliente-servicios';
+        if (nombre === 'perfil') target = 'nanny-perfil';
+        if (nombre === 'per') target = 'perfil';
+        if (nombre === 'actividades' || nombre === 'planeaciones' || nombre === 'nanny-actividades') {
+            if (window._nannyTieneEducativaValido === false) {
+                target = 'nanny-inicio';
+                nombre = 'inicio';
+            } else {
+                target = 'actividades';
+            }
+        }
+        if (nombre === 'estimulacion') {
+            if (window._nannyTieneNeuronannyValido === false) {
+                target = 'nanny-inicio';
+                nombre = 'inicio';
+            }
+        }
     }
 
     if (target === 'rh' || SESION.rh) {
         ocultarTodo();
+    }
+
+    if (target === 'cliente-servicios') {
+        document.body.classList.add('en-servicios');
+        document.body.style.background = '#E0F7FA';
+        document.body.style.backgroundColor = '#E0F7FA';
+        document.documentElement.style.background = '#E0F7FA';
+        document.documentElement.style.backgroundColor = '#E0F7FA';
+
+        if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') {
+            ClienteServicios.cargar(false);
+            if (typeof ClienteServicios.restaurarPosicionSemana === 'function') {
+                setTimeout(() => ClienteServicios.restaurarPosicionSemana(), 50);
+            }
+        }
+    } else if (target === 'nanny-inicio' || target === 'cliente-inicio' || target === 'inicio') {
+        document.body.classList.remove('en-servicios', 'en-estimulacion');
+        document.body.style.background = '#FFF9FB';
+        document.body.style.backgroundColor = '#FFF9FB';
+        document.documentElement.style.background = '#FFF9FB';
+        document.documentElement.style.backgroundColor = '#FFF9FB';
+        if (target === 'nanny-inicio') {
+            document.body.classList.add('en-nanny-inicio');
+        } else {
+            document.body.classList.add('en-cliente-inicio');
+        }
+    } else if (target !== 'estimulacion') {
+        document.body.classList.remove('en-servicios', 'en-nanny-inicio', 'en-cliente-inicio');
+        document.body.style.background = '';
+        document.body.style.backgroundColor = '';
+        document.documentElement.style.background = '';
+        document.documentElement.style.backgroundColor = '';
     }
 
     const vista = document.getElementById('vista-' + target);
@@ -3179,6 +5864,12 @@ function irVista(nombre, skipLogic = false) {
 
     // Inicializar módulos dinámicos
     if (target === 'comunidad') {
+        if (window.ComunidadDashboard) {
+            ComunidadDashboard.init();
+        }
+    }
+
+    if (target === 'com') {
         if (window.Comunidad) {
             Comunidad.init();
         }
@@ -3191,13 +5882,55 @@ function irVista(nombre, skipLogic = false) {
     }
 
     if (target === 'estimulacion') {
+        const esCliente = !!(SESION && SESION.cliente);
+        const esAdminOSup = !!(SESION && (SESION.admin || SESION.supervision || SESION.rh));
+        if (esCliente || esAdminOSup) {
+            if (typeof window.verificarBloqueoEstimulacionNinera === 'function') {
+                window.verificarBloqueoEstimulacionNinera(true);
+            }
+        } else if (typeof window.verificarBloqueoEstimulacionNinera === 'function') {
+            window.verificarBloqueoEstimulacionNinera(window._nannyTieneNeuronannyValido);
+        }
+
         if (typeof window.initEstimulacion === 'function') {
-            window.initEstimulacion();
+            window.initEstimulacion(true).then(() => {
+                if (typeof window.verificarBloqueoEstimulacionNinera === 'function') {
+                    window.verificarBloqueoEstimulacionNinera();
+                }
+            }).catch(() => { });
+        }
+        if (typeof window.animarRadarChart === 'function') {
+            window.animarRadarChart();
         }
     }
 
     if (target === 'convenios' && window.Convenios) {
         Convenios.init();
+    }
+
+    if (target === 'cliente-perfil' && window.ClientePerfil) {
+        ClientePerfil.init();
+    }
+
+    if (target === 'nanny-perfil') {
+        if (window.NannyPerfil) {
+            NannyPerfil.init();
+        }
+    }
+
+    if (target === 'nanny-inicio') {
+        if (window.NannyInicio) {
+            NannyInicio.mostrarVistaInicio();
+        }
+    } else {
+        if (window.NannyInicio) {
+            if (typeof window.NannyInicio.detenerCarrusel === 'function') {
+                NannyInicio.detenerCarrusel();
+            }
+            if (typeof window.NannyInicio.detenerCarruselConvenios === 'function') {
+                NannyInicio.detenerCarruselConvenios();
+            }
+        }
     }
 
     const navSuper = document.getElementById('nav-supervision');
@@ -3223,22 +5956,46 @@ function irVista(nombre, skipLogic = false) {
         if (navRH) navRH.style.display = 'none';
     }
 
-    document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('activo'));
+    document.querySelectorAll('.bottom-nav button').forEach(b => {
+        b.classList.remove('activo');
+        b.classList.remove('active');
+    });
     const btn = [...document.querySelectorAll('.bottom-nav button')].find(b => {
         const onClick = b.getAttribute('onclick') || '';
         return onClick.includes("'" + nombre + "'") || onClick.includes('"' + nombre + '"');
     });
-    if (btn) btn.classList.add('activo');
+    if (btn) {
+        btn.classList.add('activo');
+        btn.classList.add('active');
+    }
+    if (nombre === 'articulo' || target === 'articulo') {
+        const btnComEl = document.getElementById('nav-comunidad');
+        if (btnComEl) {
+            btnComEl.classList.add('activo');
+            btnComEl.classList.add('active');
+        }
+    }
+
+    if (window.NannyInicio && !SESION.cliente && !SESION.admin && !SESION.supervision && !SESION.rh) {
+        NannyInicio.actualizarBotonActivo(target);
+    }
 
     //Lógica adicional por vista y rol
     const btnAct = document.getElementById('nav-disponibilidad');
     const btnCom = document.getElementById('nav-comunidad');
+    const btnComOld = document.getElementById('nav-com');
     const lblAct = document.getElementById('label-disponibilidad');
 
     if (btnAct) btnAct.style.display = 'flex';
     if (btnCom) btnCom.style.display = 'flex';
+    if (btnComOld) btnComOld.style.display = 'none';
 
-    if (target === 'perfil') cargarPerfil();
+    if (target === 'perfil' || target === 'cliente-perfil' || target === 'nanny-perfil') cargarPerfil();
+
+    // Comprobación de cuenta activa para clientes y niñeras
+    if (typeof verificarStatusCuentaUsuario === 'function') {
+        verificarStatusCuentaUsuario();
+    }
 
     if (SESION.cliente) {
         if (lblAct) lblAct.textContent = 'Actividades';
@@ -3258,11 +6015,24 @@ function irVista(nombre, skipLogic = false) {
             }
         }
 
+        if (target === 'cliente-servicios' || target === 'servicios' || target === 'serv') {
+            if (window.ClienteServicios && typeof ClienteServicios.cargar === 'function') {
+                ClienteServicios.cargar(false);
+                if (typeof ClienteServicios.restaurarPosicionSemana === 'function') {
+                    setTimeout(() => ClienteServicios.restaurarPosicionSemana(), 50);
+                }
+            }
+        }
+        if (target === 'cliente-inicio' || target === 'inicio') {
+            if (window.ClienteInicio && typeof ClienteInicio.cargarServicios === 'function') {
+                ClienteInicio.cargarServicios(false);
+            }
+        }
         if (target === 'cliente') {
             // No hacemos await aquí para no bloquear irVista, pero la función es async interna
             mostrarVistaCliente();
         }
-        if (target === 'actividades-cliente') {
+        if (target === 'actividades-cliente' || target === 'actividades') {
             cargarActividadesCliente();
         }
         return;
@@ -3276,9 +6046,9 @@ function irVista(nombre, skipLogic = false) {
         const now = Date.now();
         if (!LAST_FETCH['validarPerfil'] || (now - LAST_FETCH['validarPerfil'] > 300000)) { // 5 min
             LAST_FETCH['validarPerfil'] = now;
-            api('getProfile', { email: SESION.email }).then(p => {
-                verificarDatosFaltantesNinera(p);
-            }).catch(err => console.error("Error validando perfi en irVista:", err));
+            cargarPerfil().then(p => {
+                if (p) verificarDatosFaltantesNinera(p);
+            }).catch(err => console.warn("Nota validando perfil en irVista:", err?.message || err));
         }
     }
 
@@ -3289,14 +6059,33 @@ function irVista(nombre, skipLogic = false) {
         document.getElementById('resumenCard').style.display = 'block';
         cargar(false); // Usar caché si está disponible
     }
-    if (nombre === 'servicios') {
+    if (nombre === 'servicios' || nombre === 'serv' || target === 'servicios') {
         ocultarTodo();
-        document.getElementById('svcCard').style.display = 'block';
-        document.getElementById('planeacionesNineraCard').style.display = 'block';
+        const svcCard = document.getElementById('svcCard');
+        if (svcCard) svcCard.style.display = 'block';
+        const planCard = document.getElementById('planeacionesNineraCard');
+        if (planCard) planCard.style.display = 'block';
+        const planSigCard = document.getElementById('planeacionesNineraCardSiguiente');
+        if (planSigCard) planSigCard.style.display = 'block';
+        const puntosCard = document.getElementById('puntosNineraCard');
+        if (puntosCard) puntosCard.style.display = 'block';
         cargarServicios(false); // Usar caché si está disponible
+    }
+    if (nombre === 'actividades' || target === 'actividades') {
+        ocultarTodo();
+        const planCard = document.getElementById('planeacionesNineraCard');
+        if (planCard) planCard.style.display = 'block';
+        const planSigCard = document.getElementById('planeacionesNineraCardSiguiente');
+        if (planSigCard) planSigCard.style.display = 'block';
+        if (typeof cargarResumenPlaneacionesNinera === 'function') {
+            cargarResumenPlaneacionesNinera(false);
+        }
     }
     if (nombre === 'supervision') {
         ocultarTodo();
+        if (typeof suscribirRealtimePortalServicios === 'function') {
+            suscribirRealtimePortalServicios();
+        }
         cargarResumenPlaneaciones();
         cargarResumenBitacoras();
     }
@@ -3423,28 +6212,57 @@ async function guardarDatosStaff() {
         return;
     }
 
-    msg.textContent = 'Guardando...';
+    msg.textContent = 'Guardando en base de datos...';
 
     try {
-        const res = await api('updatePerfilNinera', {
-            email: SESION.email,
-            telefono: tel,
-            direccion: dir,
-            emergencia: eme,
-            ubicacion: ubi
-        });
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
 
-        if (res.ok) {
-            msg.innerHTML = '<span class="ok">¡Información guardada! Cargando...</span>';
-            CACHE_CLIENTE.profile = null; // Limpiar caché para forzar recarga
-            setTimeout(() => {
-                const modal = document.getElementById('modalRegistroStaff');
-                if (modal) modal.style.display = 'none';
-                cargarPerfil(); //Recargar para ver los cambios
-            }, 1500);
+        if (client) {
+            console.log("💾 [Perfil Nanny] Guardando datos directamente en Supabase para:", SESION.email);
+            const { data, error } = await client
+                .from('nannys')
+                .upsert({
+                    email: SESION.email,
+                    telefono: tel,
+                    direccion: dir,
+                    emergencia: eme,
+                    ubicacion: ubi,
+                    actualizado_en: new Date().toISOString()
+                }, { onConflict: 'email' })
+                .select();
+
+            if (error) {
+                console.error("❌ Error guardando en Supabase:", error);
+                throw new Error(error.message || 'Error guardando en Supabase.');
+            }
+            console.log("✅ [Perfil Nanny] Guardado exitosamente en tabla nannys de Supabase:", data);
         } else {
-            throw new Error(res.error || 'Error al guardar');
+            // Fallback en caso de no tener cliente de Supabase
+            const res = await api('updatePerfilNinera', {
+                email: SESION.email,
+                telefono: tel,
+                direccion: dir,
+                emergencia: eme,
+                ubicacion: ubi
+            });
+            if (!res.ok) throw new Error(res.error || 'Error al guardar');
         }
+
+        // Actualizar caché de perfil local de inmediato
+        if (CACHE_CLIENTE.profile) {
+            CACHE_CLIENTE.profile.telefono = tel;
+            CACHE_CLIENTE.profile.direccion = dir;
+            CACHE_CLIENTE.profile.emergencia = eme;
+            CACHE_CLIENTE.profile.ubicacion = ubi;
+        }
+
+        msg.innerHTML = '<span class="ok">¡Información guardada exitosamente!</span>';
+        setTimeout(() => {
+            const modal = document.getElementById('modalRegistroStaff');
+            if (modal) modal.style.display = 'none';
+            cargarPerfil(); // Recargar para ver los cambios
+        }, 1200);
+
     } catch (err) {
         msg.innerHTML = `<span class="err">${err.message}</span>`;
     }
@@ -3616,24 +6434,71 @@ async function reenviarPlaneacionCorregida() {
     feedbackBotonInmediato(btn, 'Enviando…');
     mostrarToast('🔄 Enviando correcciones…');
 
+    const fileInput = document.getElementById('pl_imagen_file');
+    let base64 = null;
+    if (fileInput && fileInput.files.length > 0) {
+        try {
+            if (typeof comprimirImagen === 'function') {
+                const comp = await comprimirImagen(fileInput.files[0], { maxWidth: 1280, maxHeight: 1280, quality: 0.78 });
+                base64 = comp.base64;
+            } else {
+                base64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = error => reject(error);
+                    reader.readAsDataURL(fileInput.files[0]);
+                });
+            }
+        } catch (e) {
+            restaurarBoton(btn);
+            mostrarToast('❌ Error leyendo el archivo');
+            return;
+        }
+    }
+
     const payload = {
+        id: PLANEACION_EXISTENTE?.id || (typeof PLANEACION_EXISTENTE?.fila === 'string' && PLANEACION_EXISTENTE.fila.length > 15 ? PLANEACION_EXISTENTE.fila : null),
         fila: PLANEACION_EXISTENTE?.fila || null,
         fecha: SERVICIO_PLANEACION.fecha,
         cliente: SERVICIO_PLANEACION.cliente,
-        nombre_ninera: SERVICIO_PLANEACION.nombre_ninera,
+        nombre_ninera: SERVICIO_PLANEACION.nombre_ninera || SESION.nombre,
         area_desarrollo: document.getElementById('pl_area').value,
         objetivo: document.getElementById('pl_objetivo').value,
         descripcion: document.getElementById('pl_descripcion').value,
         materiales: document.getElementById('pl_materiales').value,
-        imagen: document.getElementById('pl_imagen').value
+        imagen: document.getElementById('pl_imagen').value,
+        imagen_base64: base64
     };
 
     try {
-        await api('reenviarPlaneacionCorregida', { ...payload, email: SESION.email });
-        btn.textContent = 'Enviado ✓';
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        if (client && typeof reenviarPlaneacionCorregidaSupabase === 'function') {
+            await reenviarPlaneacionCorregidaSupabase(payload, SESION.email);
+        } else {
+            await api('reenviarPlaneacionCorregida', { ...payload, email: SESION.email });
+        }
+        mostrarToast('✅ ¡Corrección enviada exitosamente!');
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Corrección enviada!',
+                text: 'La planeación corregida ha sido enviada exitosamente.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        btn.style.background = '#16a34a';
+        btn.style.borderColor = '#16a34a';
+        btn.style.color = '#ffffff';
+        btn.textContent = '¡Enviado con éxito! ✓';
         setTimeout(() => {
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            btn.style.color = '';
             restaurarBoton(btn);
-        }, 1500);
+        }, 2200);
 
         if (SESION.cliente) {
             // No aplica
@@ -3664,34 +6529,36 @@ async function guardarPlaneacionNeuronanny() {
     let base64 = null;
 
     if (fileInput && fileInput.files.length > 0) {
-        // Leer archivo
+        // Leer archivo y comprimir
         try {
-            base64 = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = e => resolve(e.target.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(fileInput.files[0]);
-            });
+            if (typeof comprimirImagen === 'function') {
+                const comp = await comprimirImagen(fileInput.files[0], { maxWidth: 1280, maxHeight: 1280, quality: 0.78 });
+                base64 = comp.base64;
+            } else {
+                base64 = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.onerror = error => reject(error);
+                    reader.readAsDataURL(fileInput.files[0]);
+                });
+            }
         } catch (e) {
             restaurarBoton(btn);
             mostrarToast('❌ Error leyendo el archivo');
             return;
         }
     } else {
-        // Si no hay archivo nuevo, validar si hay link en el input oculto
         const valImg = validarLinksImagenes(document.getElementById('pl_imagen').value);
         if (!valImg.ok && document.getElementById('pl_imagen').value.trim()) {
-            // Si tiene texto pero no es valido
-            // Nota: si esta vacío, pasa (es opcional la foto?)
-            // Asumimos que si el usuario quitó la foto, el input está vacío.
-            // Si el input hidden tiene valor, es el valor previo.
+            // Mantener valor previo si existe
         }
     }
 
     const payload = {
         fecha: SERVICIO_PLANEACION.fecha,
-        nombre_ninera: SERVICIO_PLANEACION.nombre_ninera,
+        nombre_ninera: SERVICIO_PLANEACION.nombre_ninera || SESION.nombre,
         cliente: SERVICIO_PLANEACION.cliente,
+        cliente_email: SERVICIO_PLANEACION.cliente_email || SERVICIO_PLANEACION.email || '',
         edad_nino: SERVICIO_PLANEACION.edad_nino,
         ciudad: SERVICIO_PLANEACION.ciudad || '',
         area_desarrollo: document.getElementById('pl_area').value,
@@ -3699,18 +6566,25 @@ async function guardarPlaneacionNeuronanny() {
         descripcion: document.getElementById('pl_descripcion').value,
         materiales: document.getElementById('pl_materiales').value,
         imagen: document.getElementById('pl_imagen').value, // Valor actual (link o vacío)
-        imagen_base64: base64, // Nuevo campo
+        imagen_base64: base64, // Archivo para subir a Drive
+        id: PLANEACION_EXISTENTE?.id || (typeof PLANEACION_EXISTENTE?.fila === 'string' && PLANEACION_EXISTENTE.fila.length > 15 ? PLANEACION_EXISTENTE.fila : null),
         fila: PLANEACION_EXISTENTE?.fila
     };
-    const fn = PLANEACION_EXISTENTE ? 'editarPlaneacionNeuronanny' : 'guardarPlaneacionNeuronanny';
 
     try {
-        const res = await api(fn, { ...payload, email: SESION.email });
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        let res = null;
+        if (client && typeof guardarPlaneacionSupabase === 'function') {
+            res = await guardarPlaneacionSupabase(payload, SESION.email);
+        } else {
+            const fn = PLANEACION_EXISTENTE ? 'editarPlaneacionNeuronanny' : 'guardarPlaneacionNeuronanny';
+            res = await api(fn, { ...payload, email: SESION.email });
+        }
 
-        // Actualizar estado local para que las siguientes pulsaciones (si no cierra el modal) 
-        // usen el ID correcto o sepan que ya existe.
-        if (res && res.fila) {
-            PLANEACION_EXISTENTE = { ...payload, fila: res.fila };
+        // Actualizar estado local para que las siguientes pulsaciones usen el ID correcto
+        if (res && (res.id || res.fila || res.data?.id)) {
+            const rowId = res.id || res.data?.id || res.fila;
+            PLANEACION_EXISTENTE = { ...payload, id: rowId, fila: rowId };
         }
 
         // Actualización Reactiva: Refrescar resumen en segundo plano
@@ -3724,10 +6598,28 @@ async function guardarPlaneacionNeuronanny() {
         const keyCache = `${payload.cliente}|${payload.fecha}|${normalizarTexto(payload.nombre_ninera || '')}`;
         delete CACHE_PLANEACIONES[keyCache];
 
-        btn.textContent = 'Guardado ✓';
+        mostrarToast('✅ ¡Planeación guardada exitosamente!');
+
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Planeación guardada!',
+                text: 'La planeación ha sido guardada exitosamente.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        btn.style.background = '#16a34a';
+        btn.style.borderColor = '#16a34a';
+        btn.style.color = '#ffffff';
+        btn.textContent = '¡Guardado con éxito! ✓';
         setTimeout(() => {
+            btn.style.background = '';
+            btn.style.borderColor = '';
+            btn.style.color = '';
             restaurarBoton(btn);
-        }, 1500);
+        }, 2200);
     } catch (err) {
         restaurarBoton(btn);
         mostrarToast('❌ Error al guardar');
@@ -3783,21 +6675,30 @@ async function cargarResumenPlaneacionesNinera(force = false, silent = false) {
     }
 
     try {
-        // 🔥 Optimización: Cargar ambas semanas en paralelo
-        const [dataActual, dataSig] = await Promise.all([
-            api('getResumenPlaneacionesSemana', {
-                email: SESION.email,
-                fechaBase: isoActual,
-                tipo: 'actual'
-            }),
-            api('getResumenPlaneacionesSemana', {
-                email: SESION.email,
-                fechaBase: isoSig,
-                tipo: 'siguiente'
-            })
-        ]);
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        let dataActual, dataSig;
 
-        //Reutilizamos la función de renderizado que aplana los datos por ciudad
+        if (client && typeof obtenerResumenPlaneacionesSemanaSupabase === 'function') {
+            [dataActual, dataSig] = await Promise.all([
+                obtenerResumenPlaneacionesSemanaSupabase(isoActual, SESION.nombre),
+                obtenerResumenPlaneacionesSemanaSupabase(isoSig, SESION.nombre)
+            ]);
+        } else {
+            [dataActual, dataSig] = await Promise.all([
+                api('getResumenPlaneacionesSemana', {
+                    email: SESION.email,
+                    fechaBase: isoActual,
+                    tipo: 'actual'
+                }),
+                api('getResumenPlaneacionesSemana', {
+                    email: SESION.email,
+                    fechaBase: isoSig,
+                    tipo: 'siguiente'
+                })
+            ]);
+        }
+
+        // Reutilizamos la función de renderizado que aplana los datos por ciudad
         renderResumenPlaneaciones(dataActual, contActual, 'ninera_actual');
         renderResumenPlaneaciones(dataSig, contSig, 'ninera_siguiente');
 
@@ -3834,18 +6735,24 @@ function cerrarPlaneacionNeuronanny() {
 }
 
 async function guardarObservaciones() {
-    const texto = document.getElementById('obsSupervision').value;
+    const texto = document.getElementById('obsSupervision')?.value || '';
+    const payload = {
+        fila: PLANEACION_EXISTENTE?.fila,
+        id: PLANEACION_EXISTENTE?.id || (typeof PLANEACION_EXISTENTE?.fila === 'string' && PLANEACION_EXISTENTE.fila.length > 15 ? PLANEACION_EXISTENTE.fila : null),
+        fecha: SERVICIO_PLANEACION?.fecha,
+        cliente: SERVICIO_PLANEACION?.cliente,
+        nombre_ninera: SERVICIO_PLANEACION?.nombre_ninera,
+        observaciones: texto,
+        tipo: 'revisada',
+        email: SESION.email
+    };
     try {
-        await api('guardarObservacionesSupervision', {
-            fila: PLANEACION_EXISTENTE?.fila,
-            observaciones: texto,
-            tipo: 'revisada', //o 'correccion' depend button?
-            //Wait, original HTML had separate buttons for "corrección" and "revisada".
-            //This function 'guardarObservaciones' was probably for auto-save or generic?
-            //Ah, the buttons called specific functions.
-            //I will assume this is generic save.
-            email: SESION.email
-        });
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        if (client && typeof guardarObservacionesSupervisionSupabase === 'function') {
+            await guardarObservacionesSupervisionSupabase(payload, SESION.email);
+        } else {
+            await api('guardarObservacionesSupervision', payload);
+        }
         mostrarToast('Observaciones guardadas');
     } catch (err) {
         console.error(err);
@@ -3866,8 +6773,8 @@ window.addEventListener('load', async function () {
             .catch(e => console.error('Error SW:', e));
     }
 
-    //Inicializar UI según sesión
-    if (SESION.email) {
+    //Inicializar UI según sesión (requiere email y al menos token de backend o autenticación Supabase)
+    if (SESION.email && (SESION.token || SESION.supabaseUid)) {
         document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente', 'rh');
         if (SESION.admin) document.body.classList.add('admin');
         else if (SESION.supervision) document.body.classList.add('supervision');
@@ -3894,12 +6801,20 @@ window.addEventListener('load', async function () {
                 irVista('rh');
             } else if (SESION.cliente) {
                 document.querySelector('.bottom-nav').style.display = 'flex';
-                irVista('servicios');
+                irVista('inicio');
             } else {
                 document.querySelector('.bottom-nav').style.display = 'flex';
-                irVista('servicios');
+                irVista('inicio');
             }
         };
+
+        // Verificar de inmediato si la cuenta está activa antes de precargar vistas
+        if (typeof verificarStatusCuentaUsuario === 'function') {
+            await verificarStatusCuentaUsuario();
+            if (typeof SESION === 'undefined' || !SESION || !SESION.email) {
+                return; // Bloqueado y expulsado
+            }
+        }
 
         preDeterminarVista();
 
@@ -3911,10 +6826,17 @@ window.addEventListener('load', async function () {
             try {
                 if (SESION.cliente) {
                     await mostrarVistaCliente(false, false);
+                    if (window.ClienteServicios && typeof window.ClienteServicios.cargar === 'function') {
+                        window.ClienteServicios.cargar(false);
+                    }
                 } else if (SESION.rh) {
                     await cargarPerfil();
                 } else if (!SESION.admin && !SESION.supervision) {
-                    await mostrarVistaNinera();
+                    if (SESION.token) {
+                        await mostrarVistaNinera();
+                    } else {
+                        console.info('ℹ️ Panel niñera: sin token de backend tradicional.');
+                    }
                 }
             } catch (error) {
                 console.error('Error cargando datos iniciales:', error);
@@ -3926,7 +6848,13 @@ window.addEventListener('load', async function () {
             new Promise(r => setTimeout(r, 10000))
         ]);
     } else {
-        //Mostrar login
+        // Limpiar sesión incompleta o sin token válido
+        localStorage.removeItem('nyp_sesion');
+        SESION = { email: null, token: null, nombre: '', admin: false, supervision: false, rh: false, cliente: false };
+        window.SESION = SESION;
+        // Mostrar login y asegurar scroll vertical activo
+        document.body.classList.remove('admin', 'supervision', 'ninera', 'cliente', 'rh', 'en-control-servicios');
+        document.documentElement.classList.remove('en-control-servicios');
         document.getElementById('auth').style.display = 'flex';
         document.getElementById('app').style.display = 'none';
     }
@@ -3961,6 +6889,15 @@ window.addEventListener('load', async function () {
         back.addEventListener('click', (e) => {
             if (e.target === back) {
                 cerrarModal();
+            }
+        });
+    }
+
+    const backCliente = document.getElementById('modalServicioCliente');
+    if (backCliente) {
+        backCliente.addEventListener('click', (e) => {
+            if (e.target === backCliente) {
+                cerrarModalCliente();
             }
         });
     }
@@ -4043,13 +6980,17 @@ function abrirPlaneacionPorIndice() {
 
     const sessionAtRequest = PLANEACION_SESSION_ID;
 
-    //Refactored to api
-    api('obtenerPlaneacionNeuronanny', {
-        fecha,
-        cliente: PLANEACION_CLIENTE,
-        email: SESION.email,
-        nombre_ninera: servicio.nombre_ninera // FIX: Enviar nombre de niñera para filtrar correctamente
-    })
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    const fetchProm = (client && typeof obtenerPlaneacionNeuronannySupabase === 'function')
+        ? obtenerPlaneacionNeuronannySupabase(fecha, PLANEACION_CLIENTE, servicio.nombre_ninera)
+        : api('obtenerPlaneacionNeuronanny', {
+            fecha,
+            cliente: PLANEACION_CLIENTE,
+            email: SESION.email,
+            nombre_ninera: servicio.nombre_ninera // FIX: Enviar nombre de niñera para filtrar correctamente
+        });
+
+    fetchProm
         .then(res => {
             if (sessionAtRequest !== PLANEACION_SESSION_ID) return;
 
@@ -4154,13 +7095,19 @@ async function precargarPlaneacionesCliente() {
     const nombreNinera = primerServicio?.nombre_ninera || '';
 
     try {
-        // Llamada Bulk
-        const res = await api('obtenerPlaneacionesBulk', {
-            fechas: localFechas,
-            cliente: localCliente,
-            email: SESION.email,
-            nombre_ninera: nombreNinera // FIX: Enviar filtro de niñera
-        });
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        let res = null;
+
+        if (client && typeof obtenerPlaneacionesBulkSupabase === 'function') {
+            res = await obtenerPlaneacionesBulkSupabase(localFechas, localCliente, nombreNinera);
+        } else {
+            res = await api('obtenerPlaneacionesBulk', {
+                fechas: localFechas,
+                cliente: localCliente,
+                email: SESION.email,
+                nombre_ninera: nombreNinera // FIX: Enviar filtro de niñera
+            });
+        }
 
         // Abortar si la sesión cambió mientras esperábamos al servidor
         if (localSession !== PLANEACION_SESSION_ID) return;
@@ -4210,14 +7157,24 @@ async function abrirPlaneacionesClienteDesdeResumen(cliente, prefijo, tipoServic
 }
 
 function marcarPlaneacionRevisada() {
-    const texto = document.getElementById('obsSupervision').value;
+    const texto = document.getElementById('obsSupervision')?.value || '';
     mostrarToast('💾 Guardando revisión...');
-    api('guardarObservacionesSupervision', {
+    const payload = {
         fila: PLANEACION_EXISTENTE?.fila,
+        id: PLANEACION_EXISTENTE?.id || (typeof PLANEACION_EXISTENTE?.fila === 'string' && PLANEACION_EXISTENTE.fila.length > 15 ? PLANEACION_EXISTENTE.fila : null),
+        fecha: SERVICIO_PLANEACION?.fecha,
+        cliente: SERVICIO_PLANEACION?.cliente,
+        nombre_ninera: SERVICIO_PLANEACION?.nombre_ninera,
         observaciones: texto,
         tipo: 'revisada',
         email: SESION.email
-    }).then(() => {
+    };
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    const saveProm = (client && typeof guardarObservacionesSupervisionSupabase === 'function')
+        ? guardarObservacionesSupervisionSupabase(payload, SESION.email)
+        : api('guardarObservacionesSupervision', payload);
+
+    saveProm.then(() => {
         mostrarToast('✅ Planeación marcada como revisada');
         // Actualización en segundo plano (como el panel de niñera)
         cargarResumenPlaneaciones(true, true);
@@ -4228,14 +7185,24 @@ function marcarPlaneacionRevisada() {
 }
 
 function enviarACorreccion() {
-    const texto = document.getElementById('obsSupervision').value;
+    const texto = document.getElementById('obsSupervision')?.value || '';
     mostrarToast('💾 Enviando a corrección...');
-    api('guardarObservacionesSupervision', {
+    const payload = {
         fila: PLANEACION_EXISTENTE?.fila,
+        id: PLANEACION_EXISTENTE?.id || (typeof PLANEACION_EXISTENTE?.fila === 'string' && PLANEACION_EXISTENTE.fila.length > 15 ? PLANEACION_EXISTENTE.fila : null),
+        fecha: SERVICIO_PLANEACION?.fecha,
+        cliente: SERVICIO_PLANEACION?.cliente,
+        nombre_ninera: SERVICIO_PLANEACION?.nombre_ninera,
         observaciones: texto,
         tipo: 'correccion',
         email: SESION.email
-    }).then(() => {
+    };
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+    const saveProm = (client && typeof guardarObservacionesSupervisionSupabase === 'function')
+        ? guardarObservacionesSupervisionSupabase(payload, SESION.email)
+        : api('guardarObservacionesSupervision', payload);
+
+    saveProm.then(() => {
         mostrarToast('🟠 Observaciones enviadas a corrección');
         // Actualización en segundo plano (como el panel de niñera)
         cargarResumenPlaneaciones(true, true);
@@ -4349,8 +7316,12 @@ function mostrarRegistroCliente() {
 window.mostrarRegistroCliente = mostrarRegistroCliente;
 
 async function iniciarRegistroCliente() {
-    const email = document.getElementById('email-reg').value.trim().toLowerCase();
-    const pass = document.getElementById('pass-reg').value;
+    if (typeof mostrarCrearCuentaCliente === 'function') {
+        mostrarCrearCuentaCliente();
+        return;
+    }
+    const email = document.getElementById('email-reg')?.value.trim().toLowerCase() || '';
+    const pass = document.getElementById('pass-reg')?.value || '';
     const msg = document.getElementById('msgRegistro');
 
     if (!email || !pass) {
@@ -4480,6 +7451,16 @@ window.cancelarFormularioCliente = cancelarFormularioCliente;
 function verificarDatosFaltantesCliente(p, mostrarErroresVisuales = false) {
     if (!p) return true; // Falta todo
 
+    // Si solo estamos verificando permisos de navegación (no al enviar el formulario),
+    // determinamos si el cliente ya es un usuario existente registrado con información básica
+    if (!mostrarErroresVisuales) {
+        const tieneNombre = !!(p.nombre_completo || p.nombre || p.nombre_del_cliente);
+        const tieneContacto = !!(p.telefono || p.teléfono || p.direccion || p.dirección || p.ubicacion || p.ubicación || p.peque_nombre || p.nombre_del_peque);
+        if (tieneNombre && tieneContacto) {
+            return false;
+        }
+    }
+
     // Solo limpiar errores si vamos a mostrar resaltados nuevos
     if (mostrarErroresVisuales) {
         document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error', 'input-error-shake'));
@@ -4497,10 +7478,54 @@ function verificarDatosFaltantesCliente(p, mostrarErroresVisuales = false) {
         { keys: ['fecha_de_nacimiento', 'fecha de nacimiento', 'peque_nacimiento'], id: 'reg_peque_nac', label: 'Fecha de nacimiento' },
         { keys: ['alergias'], id: 'reg_alergias', label: 'Alergias' },
         { keys: ['condición_médica_o_especificaciones_adicionales', 'condicion_medica', 'condicion'], id: 'reg_condicion', label: 'Condición médica' },
-        { keys: ['estado_de_salud_actual', 'estado de salud', 'salud'], id: 'reg_salud', label: 'Estado de salud' },
+        { keys: ['estado_de_salud_actual', 'salud_actual', 'salud', 'estado_de_sal_actual', 'estado de salud'], id: 'reg_salud', label: 'Estado de salud' },
         { keys: ['preferencias_o_actividades_favoritas', 'preferencias'], id: 'reg_preferencias', label: 'Preferencias' },
         { keys: ['políticas_de_contratación', 'politicas_de_contratacion', 'politicas', 'politicas_aceptadas'], id: 'reg_politicas_aceptadas', label: 'Políticas de contratación' }
     ];
+
+    // Determinar si Peque 2 está activo
+    let sec2Activo = false;
+    if (mostrarErroresVisuales) {
+        // Al enviar el formulario: activo si la sección está visible en pantalla
+        const sec2 = document.getElementById('section-peque-2');
+        sec2Activo = sec2 && sec2.style.display !== 'none';
+    } else {
+        // Al verificar permisos para navegar: activo SOLO si el perfil ya tiene registrado Peque 2
+        sec2Activo = !!(p.peque_nombre_2 || p.nombre_del_peque_2);
+    }
+
+    if (sec2Activo) {
+        req.push(
+            { keys: ['nombre_del_peque_2', 'peque_nombre_2'], id: 'reg_peque_nombre_2', label: 'Nombre del peque 2' },
+            { keys: ['fecha_de_nacimiento_2', 'peque_nac_2', 'peque_nacimiento_2'], id: 'reg_peque_nac_2', label: 'Fecha de nacimiento 2' },
+            { keys: ['alergias_2'], id: 'reg_alergias_2', label: 'Alergias 2' },
+            { keys: ['condicion_medica_2', 'condicion_2', 'condición_médica_o_especificaciones_adicionales_2'], id: 'reg_condicion_2', label: 'Condición médica 2' },
+            { keys: ['salud_actual_2', 'salud_2', 'estado_de_salud_actual_2'], id: 'reg_salud_2', label: 'Estado de salud actual 2' },
+            { keys: ['preferencias_2', 'preferencias_o_actividades_favoritas_2'], id: 'reg_preferencias_2', label: 'Preferencias 2' }
+        );
+    }
+
+    // Determinar si Peque 3 está activo
+    let sec3Activo = false;
+    if (mostrarErroresVisuales) {
+        // Al enviar el formulario: activo si la sección está visible en pantalla
+        const sec3 = document.getElementById('section-peque-3');
+        sec3Activo = sec3 && sec3.style.display !== 'none';
+    } else {
+        // Al verificar permisos para navegar: activo SOLO si el perfil ya tiene registrado Peque 3
+        sec3Activo = !!(p.peque_nombre_3 || p.nombre_del_peque_3);
+    }
+
+    if (sec3Activo) {
+        req.push(
+            { keys: ['nombre_del_peque_3', 'peque_nombre_3'], id: 'reg_peque_nombre_3', label: 'Nombre del peque 3' },
+            { keys: ['fecha_de_nacimiento_3', 'peque_nac_3', 'peque_nacimiento_3'], id: 'reg_peque_nac_3', label: 'Fecha de nacimiento 3' },
+            { keys: ['alergias_3'], id: 'reg_alergias_3', label: 'Alergias 3' },
+            { keys: ['condicion_medica_3', 'condicion_3', 'condición_médica_o_especificaciones_adicionales_3'], id: 'reg_condicion_3', label: 'Condición médica 3' },
+            { keys: ['salud_actual_3', 'salud_3', 'estado_de_salud_actual_3'], id: 'reg_salud_3', label: 'Estado de salud actual 3' },
+            { keys: ['preferencias_3', 'preferencias_o_actividades_favoritas_3'], id: 'reg_preferencias_3', label: 'Preferencias 3' }
+        );
+    }
 
     const faltantes = [];
     let primerError = null;
@@ -4603,16 +7628,120 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
 
     if (forceFetch || !perf) {
         try {
-            perf = await api('getProfile', { email: SESION.email });
-            CACHE_CLIENTE.profile = perf;
+            // 1. Priorizar consulta directa a Supabase (clientes) para obtener los datos precargados por Admin
+            const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+            if (client && SESION?.email) {
+                const { data: supaCliente } = await client
+                    .from('clientes')
+                    .select('*')
+                    .ilike('email', SESION.email)
+                    .maybeSingle();
+
+                if (supaCliente) {
+                    if (supaCliente.activo === false) {
+                        console.warn("🚨 [Cliente Inactivo] Sesión no permitida para cliente inactivo");
+                        await bloquearUsuarioInactivo();
+                        return;
+                    }
+                    perf = {
+                        email: supaCliente.email,
+                        nombre: supaCliente.nombre || SESION.email.split('@')[0],
+                        nombre_completo: supaCliente.nombre,
+                        rol: supaCliente.rol || 'cliente',
+                        telefono: supaCliente.telefono,
+                        teléfono: supaCliente.telefono,
+                        direccion: supaCliente.direccion,
+                        dirección: supaCliente.direccion,
+                        ubicacion: supaCliente.ubicacion,
+                        ubicación: supaCliente.ubicacion,
+                        emergencia: supaCliente.emergencia,
+                        'no._de_emergencia': supaCliente.emergencia,
+                        'no. de emergencia': supaCliente.emergencia,
+                        mascotas: supaCliente.mascotas,
+                        'no._de_mascotas': supaCliente.mascotas,
+                        'no. de mascotas': supaCliente.mascotas,
+                        politicas_contratacion: supaCliente.politicas_contratacion,
+                        'políticas_de_contratación': supaCliente.politicas_contratacion,
+                        politicas_aceptadas: supaCliente.politicas_contratacion,
+                        ciudad: supaCliente.ciudad,
+
+                        // Peque 1
+                        peque_nombre: supaCliente.peque_nombre,
+                        nombre_del_peque: supaCliente.peque_nombre,
+                        peque_nacimiento: supaCliente.peque_nacimiento,
+                        fecha_de_nacimiento: supaCliente.peque_nacimiento,
+                        edad_del_peque: supaCliente.peque_edad,
+                        peque_edad: supaCliente.peque_edad,
+                        alergias: supaCliente.alergias,
+                        condicion: supaCliente.condicion_medica,
+                        condicion_medica: supaCliente.condicion_medica,
+                        'condición_médica_o_especificaciones_adicionales': supaCliente.condicion_medica,
+                        salud: supaCliente.salud_actual,
+                        salud_actual: supaCliente.salud_actual,
+                        estado_de_sal_actual: supaCliente.salud_actual,
+                        estado_de_salud_actual: supaCliente.salud_actual,
+                        preferencias: supaCliente.preferencias,
+                        preferencias_o_actividades_favoritas: supaCliente.preferencias,
+
+                        // Peque 2
+                        peque_nombre_2: supaCliente.peque_nombre_2,
+                        nombre_del_peque_2: supaCliente.peque_nombre_2,
+                        peque_nac_2: supaCliente.peque_nacimiento_2,
+                        peque_nacimiento_2: supaCliente.peque_nacimiento_2,
+                        fecha_de_nacimiento_2: supaCliente.peque_nacimiento_2,
+                        edad_del_peque_2: supaCliente.peque_edad_2,
+                        peque_edad_2: supaCliente.peque_edad_2,
+                        alergias_2: supaCliente.alergias_2,
+                        condicion_2: supaCliente.condicion_medica_2,
+                        condicion_medica_2: supaCliente.condicion_medica_2,
+                        'condición_médica_o_especificaciones_adicionales_2': supaCliente.condicion_medica_2,
+                        salud_2: supaCliente.salud_actual_2,
+                        salud_actual_2: supaCliente.salud_actual_2,
+                        estado_de_salud_actual_2: supaCliente.salud_actual_2,
+                        preferencias_2: supaCliente.preferencias_2,
+                        preferencias_o_actividades_favoritas_2: supaCliente.preferencias_2,
+
+                        // Peque 3
+                        peque_nombre_3: supaCliente.peque_nombre_3,
+                        nombre_del_peque_3: supaCliente.peque_nombre_3,
+                        peque_nac_3: supaCliente.peque_nacimiento_3,
+                        peque_nacimiento_3: supaCliente.peque_nacimiento_3,
+                        fecha_de_nacimiento_3: supaCliente.peque_nacimiento_3,
+                        edad_del_peque_3: supaCliente.peque_edad_3,
+                        peque_edad_3: supaCliente.peque_edad_3,
+                        alergias_3: supaCliente.alergias_3,
+                        condicion_3: supaCliente.condicion_medica_3,
+                        condicion_medica_3: supaCliente.condicion_medica_3,
+                        'condición_médica_o_especificaciones_adicionales_3': supaCliente.condicion_medica_3,
+                        salud_3: supaCliente.salud_actual_3,
+                        salud_actual_3: supaCliente.salud_actual_3,
+                        estado_de_salud_actual_3: supaCliente.salud_actual_3,
+                        preferencias_3: supaCliente.preferencias_3,
+                        preferencias_o_actividades_favoritas_3: supaCliente.preferencias_3
+                    };
+                }
+            }
+
+            // 2. Fallback tradicional a Google Sheets si no se encontró en Supabase y existe token de sesión
+            if (!perf) {
+                const hasToken = !!(SESION.token || localStorage.getItem('token') || localStorage.getItem('session_token'));
+                if (hasToken) {
+                    try {
+                        perf = await api('getProfile', { email: SESION.email });
+                    } catch (apiErr) {
+                        console.warn("⚠️ [mostrarVistaCliente] Fallback tradicional no disponible:", apiErr.message);
+                    }
+                }
+            }
+            if (perf) {
+                CACHE_CLIENTE.profile = perf;
+            }
         } catch (e) {
-            console.error("Error cargando perfil:", e);
-            // Si el error es de sesión expirada, no mostrar onboarding, dejar que el api() global maneje el logout
+            console.error("Error cargando perfil cliente:", e);
             if (e.message && e.message.includes('Tu sesión ha expirado')) {
                 return;
             }
-            if (o) o.style.display = 'block';
-            return;
+            // En error de carga transitorio, NO mostrar onboarding forzado si ya hay sesión activa
         }
     }
 
@@ -4623,30 +7752,93 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
         if (o) {
             o.style.display = 'block';
             if (d) d.style.display = 'none'; // Asegurar que el dashboard esté oculto
-            // Pre-llenar campos con nombres normalizados del backend
-            if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || perf.nombre_completo || '';
-            if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || '';
-            if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || '';
-            if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.teléfono || '';
-            if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf.no_de_emergencia || perf['no._de_emergencia'] || perf['No. de emergencia'] || '';
-            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf.no_de_mascotas || perf['no._de_mascotas'] || perf['no. de mascotas'] || '';
-            if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || '';
 
-            // Fecha de nacimiento (ajuste de formato si es necesario)
-            if (document.getElementById('reg_peque_nac') && perf.fecha_de_nacimiento) {
-                try {
-                    const f = new Date(perf.fecha_de_nacimiento);
-                    if (!isNaN(f)) document.getElementById('reg_peque_nac').value = toISO(f);
-                } catch (e) { }
+            // Pre-llenar campos con nombres normalizados del backend o Supabase
+            if (document.getElementById('reg_nombre')) document.getElementById('reg_nombre').value = perf.nombre || perf.nombre_completo || '';
+            if (document.getElementById('reg_direccion')) document.getElementById('reg_direccion').value = perf.direccion || perf.dirección || '';
+            if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicacion || perf.ubicación || '';
+            if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.telefono || perf.teléfono || '';
+            if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf.emergencia || perf.no_de_emergencia || perf['no._de_emergencia'] || perf['No. de emergencia'] || '';
+            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf.mascotas || perf.no_de_mascotas || perf['no._de_mascotas'] || perf['no. de mascotas'] || '';
+
+            // PEQUE 1
+            if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.peque_nombre || perf.nombre_del_peque || '';
+            if (document.getElementById('reg_peque_nac')) {
+                const fNac = perf.peque_nacimiento || perf.fecha_de_nacimiento;
+                if (fNac) {
+                    try {
+                        if (typeof fNac === 'string' && /^\d{4}-\d{2}-\d{2}/.test(fNac.trim())) {
+                            document.getElementById('reg_peque_nac').value = fNac.trim().slice(0, 10);
+                        } else {
+                            const f = new Date(fNac);
+                            if (!isNaN(f.getTime())) document.getElementById('reg_peque_nac').value = typeof toISO === 'function' ? toISO(f) : f.toISOString().split('T')[0];
+                            else document.getElementById('reg_peque_nac').value = fNac;
+                        }
+                    } catch (e) { }
+                }
+                if (typeof actualizarEdadEnFormulario === 'function') actualizarEdadEnFormulario('reg_peque_nac', 'reg_peque_edad_badge');
+            }
+            if (document.getElementById('reg_alergias')) document.getElementById('reg_alergias').value = perf.alergias || '';
+            if (document.getElementById('reg_condicion')) document.getElementById('reg_condicion').value = perf.condicion_medica || perf.condicion || perf['condición_médica_o_especificaciones_adicionales'] || '';
+            if (document.getElementById('reg_salud')) document.getElementById('reg_salud').value = perf.salud_actual || perf.salud || perf.estado_de_salud_actual || perf.estado_de_sal_actual || '';
+            if (document.getElementById('reg_preferencias')) document.getElementById('reg_preferencias').value = perf.preferencias || perf.preferencias_o_actividades_favoritas || '';
+
+            // PEQUE 2 (Pre-llenar y mostrar si tiene información precargada)
+            const p2Nom = perf.peque_nombre_2 || perf.nombre_del_peque_2 || '';
+            if (p2Nom) {
+                const sec2 = document.getElementById('section-peque-2');
+                if (sec2) sec2.style.display = 'block';
+                if (document.getElementById('reg_peque_nombre_2')) document.getElementById('reg_peque_nombre_2').value = p2Nom;
+                if (document.getElementById('reg_peque_nac_2')) {
+                    const fNac2 = perf.peque_nac_2 || perf.peque_nacimiento_2 || perf.fecha_de_nacimiento_2;
+                    if (fNac2) {
+                        try {
+                            if (typeof fNac2 === 'string' && /^\d{4}-\d{2}-\d{2}/.test(fNac2.trim())) {
+                                document.getElementById('reg_peque_nac_2').value = fNac2.trim().slice(0, 10);
+                            } else {
+                                const f2 = new Date(fNac2);
+                                if (!isNaN(f2.getTime())) document.getElementById('reg_peque_nac_2').value = typeof toISO === 'function' ? toISO(f2) : f2.toISOString().split('T')[0];
+                                else document.getElementById('reg_peque_nac_2').value = fNac2;
+                            }
+                        } catch (e) { }
+                    }
+                    if (typeof actualizarEdadEnFormulario === 'function') actualizarEdadEnFormulario('reg_peque_nac_2', 'reg_peque_edad_badge_2');
+                }
+                if (document.getElementById('reg_alergias_2')) document.getElementById('reg_alergias_2').value = perf.alergias_2 || '';
+                if (document.getElementById('reg_condicion_2')) document.getElementById('reg_condicion_2').value = perf.condicion_medica_2 || perf.condicion_2 || perf['condición_médica_o_especificaciones_adicionales_2'] || '';
+                if (document.getElementById('reg_salud_2')) document.getElementById('reg_salud_2').value = perf.salud_actual_2 || perf.salud_2 || perf.estado_de_salud_actual_2 || '';
+                if (document.getElementById('reg_preferencias_2')) document.getElementById('reg_preferencias_2').value = perf.preferencias_2 || perf.preferencias_o_actividades_favoritas_2 || '';
             }
 
-            if (document.getElementById('reg_alergias')) document.getElementById('reg_alergias').value = perf.alergias || '';
-            if (document.getElementById('reg_condicion')) document.getElementById('reg_condicion').value = perf.condición_médica_o_especificaciones_adicionales || perf['condición_médica_o_especificaciones_adicionales'] || '';
-            if (document.getElementById('reg_salud')) document.getElementById('reg_salud').value = perf.estado_de_salud_actual || '';
-            if (document.getElementById('reg_preferencias')) document.getElementById('reg_preferencias').value = perf.preferencias_o_actividades_favoritas || '';
+            // PEQUE 3 (Pre-llenar y mostrar si tiene información precargada)
+            const p3Nom = perf.peque_nombre_3 || perf.nombre_del_peque_3 || '';
+            if (p3Nom) {
+                const sec3 = document.getElementById('section-peque-3');
+                if (sec3) sec3.style.display = 'block';
+                if (document.getElementById('reg_peque_nombre_3')) document.getElementById('reg_peque_nombre_3').value = p3Nom;
+                if (document.getElementById('reg_peque_nac_3')) {
+                    const fNac3 = perf.peque_nac_3 || perf.peque_nacimiento_3 || perf.fecha_de_nacimiento_3;
+                    if (fNac3) {
+                        try {
+                            if (typeof fNac3 === 'string' && /^\d{4}-\d{2}-\d{2}/.test(fNac3.trim())) {
+                                document.getElementById('reg_peque_nac_3').value = fNac3.trim().slice(0, 10);
+                            } else {
+                                const f3 = new Date(fNac3);
+                                if (!isNaN(f3.getTime())) document.getElementById('reg_peque_nac_3').value = typeof toISO === 'function' ? toISO(f3) : f3.toISOString().split('T')[0];
+                                else document.getElementById('reg_peque_nac_3').value = fNac3;
+                            }
+                        } catch (e) { }
+                    }
+                    if (typeof actualizarEdadEnFormulario === 'function') actualizarEdadEnFormulario('reg_peque_nac_3', 'reg_peque_edad_badge_3');
+                }
+                if (document.getElementById('reg_alergias_3')) document.getElementById('reg_alergias_3').value = perf.alergias_3 || '';
+                if (document.getElementById('reg_condicion_3')) document.getElementById('reg_condicion_3').value = perf.condicion_medica_3 || perf.condicion_3 || perf['condición_médica_o_especificaciones_adicionales_3'] || '';
+                if (document.getElementById('reg_salud_3')) document.getElementById('reg_salud_3').value = perf.salud_actual_3 || perf.salud_3 || perf.estado_de_salud_actual_3 || '';
+                if (document.getElementById('reg_preferencias_3')) document.getElementById('reg_preferencias_3').value = perf.preferencias_3 || perf.preferencias_o_actividades_favoritas_3 || '';
+            }
 
             // Verificar si las políticas ya fueron aceptadas
-            const politicasAceptadas = perf['políticas_de_contratación'] || '';
+            const politicasAceptadas = perf['políticas_de_contratación'] || perf.politicas_contratacion || '';
             const btnPoliticas = document.getElementById('btn_aceptar_politicas');
             const hiddenPoliticas = document.getElementById('reg_politicas_aceptadas');
 
@@ -4700,83 +7892,133 @@ async function mostrarVistaCliente(forceOnboarding = false, forceFetch = false) 
 window.mostrarVistaCliente = mostrarVistaCliente;
 
 async function guardarRegistroCompleto() {
-    // ---------------------------------------------------------
-    // CHANGE: Get button reference for UI feedback
     const btn = document.getElementById('btnGuardarCliente');
-    const originalText = btn ? btn.textContent : 'Guardar y Continuar';
+    const originalText = btn ? (btn.getAttribute('data-original-text') || 'Guardar y Continuar') : 'Guardar y Continuar';
 
     if (btn) {
+        if (!btn.getAttribute('data-original-text')) btn.setAttribute('data-original-text', originalText);
         btn.textContent = 'Guardando...';
         btn.disabled = true;
     }
-    // ---------------------------------------------------------
-
-    const payload = {
-        nombre_completo: document.getElementById('reg_nombre').value,
-        rol: document.getElementById('reg_rol').value,
-        direccion: document.getElementById('reg_direccion').value,
-        ubicacion: document.getElementById('reg_ubicacion').value,
-        telefono: document.getElementById('reg_tel').value,
-        emergencia: document.getElementById('reg_emergencia').value,
-
-        //Peque 1
-        peque_nombre: document.getElementById('reg_peque_nombre').value,
-        peque_nacimiento: document.getElementById('reg_peque_nac').value,
-        alergias: document.getElementById('reg_alergias').value,
-        condicion: document.getElementById('reg_condicion').value,
-        salud: document.getElementById('reg_salud').value,
-        preferencias: document.getElementById('reg_preferencias').value,
-        mascotas: document.getElementById('reg_mascotas').value,
-        politicas_aceptadas: document.getElementById('reg_politicas_aceptadas').value,
-
-        //Peque 2
-        peque_nombre_2: document.getElementById('reg_peque_nombre_2').value,
-        peque_nac_2: document.getElementById('reg_peque_nac_2').value,
-        alergias_2: document.getElementById('reg_alergias_2').value,
-        condicion_2: document.getElementById('reg_condicion_2').value,
-        salud_2: document.getElementById('reg_salud_2').value,
-        preferencias_2: document.getElementById('reg_preferencias_2').value,
-
-        //Peque 3
-        peque_nombre_3: document.getElementById('reg_peque_nombre_3').value,
-        peque_nac_3: document.getElementById('reg_peque_nac_3').value,
-        alergias_3: document.getElementById('reg_alergias_3').value,
-        condicion_3: document.getElementById('reg_condicion_3').value,
-        salud_3: document.getElementById('reg_salud_3').value,
-        preferencias_3: document.getElementById('reg_preferencias_3').value,
-
-        email: SESION.email
-    };
-
-    // ---------------------------------------------------------
-    // CHANGE: Validate before sending - AHORA CON EL FLAG PARA MOSTRAR ERRORES
-    if (verificarDatosFaltantesCliente(payload, true)) {
-        if (btn) {
-            btn.textContent = originalText;
-            btn.disabled = false;
-        }
-        mostrarToast('⚠️ Complete toda la información del formulario');
-        return;
-    }
-    // ---------------------------------------------------------
 
     try {
-        await api('updatePerfilCliente', payload);
-        CACHE_CLIENTE.profile = null; // Limpiar caché para forzar recarga y validación
-        mostrarToast('Perfil completado con éxito');
+        const sec2 = document.getElementById('section-peque-2');
+        const sec3 = document.getElementById('section-peque-3');
+        const sec2Visible = sec2 && sec2.style.display !== 'none';
+        const sec3Visible = sec3 && sec3.style.display !== 'none';
+
+        const payload = {
+            nombre_completo: document.getElementById('reg_nombre')?.value.trim() || '',
+            rol: document.getElementById('reg_rol')?.value || '',
+            direccion: document.getElementById('reg_direccion')?.value.trim() || '',
+            ubicacion: document.getElementById('reg_ubicacion')?.value.trim() || '',
+            telefono: document.getElementById('reg_tel')?.value.trim() || '',
+            emergencia: document.getElementById('reg_emergencia')?.value.trim() || '',
+
+            // Peque 1
+            peque_nombre: document.getElementById('reg_peque_nombre')?.value.trim() || '',
+            peque_nacimiento: document.getElementById('reg_peque_nac')?.value || '',
+            alergias: document.getElementById('reg_alergias')?.value.trim() || '',
+            condicion: document.getElementById('reg_condicion')?.value.trim() || '',
+            salud: document.getElementById('reg_salud')?.value.trim() || '',
+            preferencias: document.getElementById('reg_preferencias')?.value.trim() || '',
+            mascotas: document.getElementById('reg_mascotas')?.value.trim() || '',
+            politicas_aceptadas: document.getElementById('reg_politicas_aceptadas')?.value || '',
+
+            // Peque 2 (solo si la sección está visible)
+            peque_nombre_2: sec2Visible ? (document.getElementById('reg_peque_nombre_2')?.value.trim() || '') : null,
+            peque_nac_2: sec2Visible ? (document.getElementById('reg_peque_nac_2')?.value || '') : null,
+            alergias_2: sec2Visible ? (document.getElementById('reg_alergias_2')?.value.trim() || '') : null,
+            condicion_2: sec2Visible ? (document.getElementById('reg_condicion_2')?.value.trim() || '') : null,
+            salud_2: sec2Visible ? (document.getElementById('reg_salud_2')?.value.trim() || '') : null,
+            preferencias_2: sec2Visible ? (document.getElementById('reg_preferencias_2')?.value.trim() || '') : null,
+
+            // Peque 3 (solo si la sección está visible)
+            peque_nombre_3: sec3Visible ? (document.getElementById('reg_peque_nombre_3')?.value.trim() || '') : null,
+            peque_nac_3: sec3Visible ? (document.getElementById('reg_peque_nac_3')?.value || '') : null,
+            alergias_3: sec3Visible ? (document.getElementById('reg_alergias_3')?.value.trim() || '') : null,
+            condicion_3: sec3Visible ? (document.getElementById('reg_condicion_3')?.value.trim() || '') : null,
+            salud_3: sec3Visible ? (document.getElementById('reg_salud_3')?.value.trim() || '') : null,
+            preferencias_3: sec3Visible ? (document.getElementById('reg_preferencias_3')?.value.trim() || '') : null,
+
+            email: SESION.email
+        };
+
+        // Validar obligatoriedad antes de enviar
+        if (verificarDatosFaltantesCliente(payload, true)) {
+            mostrarToast('⚠️ Complete toda la información obligatoria del formulario');
+            return;
+        }
+
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        if (client) {
+            console.log("💾 [Perfil Cliente] Guardando directamente en Supabase para:", SESION.email);
+            const supaPayload = {
+                email: SESION.email,
+                nombre: payload.nombre_completo,
+                rol: payload.rol || 'cliente',
+                direccion: payload.direccion,
+                ubicacion: payload.ubicacion,
+                telefono: payload.telefono,
+                emergencia: payload.emergencia,
+                mascotas: payload.mascotas,
+                politicas_contratacion: payload.politicas_aceptadas || new Date().toISOString(),
+
+                peque_nombre: payload.peque_nombre,
+                peque_nacimiento: payload.peque_nacimiento,
+                peque_edad: typeof calcularEdadPeque === 'function' ? (calcularEdadPeque(payload.peque_nacimiento) || null) : null,
+                alergias: payload.alergias,
+                condicion_medica: payload.condicion,
+                salud_actual: payload.salud,
+                preferencias: payload.preferencias,
+
+                peque_nombre_2: payload.peque_nombre_2,
+                peque_nacimiento_2: payload.peque_nac_2,
+                peque_edad_2: (payload.peque_nac_2 && typeof calcularEdadPeque === 'function') ? (calcularEdadPeque(payload.peque_nac_2) || null) : null,
+                alergias_2: payload.alergias_2,
+                condicion_medica_2: payload.condicion_2,
+                salud_actual_2: payload.salud_2,
+                preferencias_2: payload.preferencias_2,
+
+                peque_nombre_3: payload.peque_nombre_3,
+                peque_nacimiento_3: payload.peque_nac_3,
+                peque_edad_3: (payload.peque_nac_3 && typeof calcularEdadPeque === 'function') ? (calcularEdadPeque(payload.peque_nac_3) || null) : null,
+                alergias_3: payload.alergias_3,
+                condicion_medica_3: payload.condicion_3,
+                salud_actual_3: payload.salud_3,
+                preferencias_3: payload.preferencias_3,
+
+                actualizado_en: new Date().toISOString()
+            };
+
+            const { error: supaErr } = await client
+                .from('clientes')
+                .upsert(supaPayload, { onConflict: 'email' });
+
+            if (supaErr) {
+                console.error("❌ Error guardando cliente en Supabase:", supaErr);
+                throw new Error(supaErr.message);
+            }
+            console.log("✅ [Perfil Cliente] Guardado en tabla clientes de Supabase exitosamente.");
+        } else {
+            await api('updatePerfilCliente', payload);
+        }
+
+        CACHE_CLIENTE.profile = null; // Limpiar caché para forzar recarga
+        mostrarToast('Perfil guardado con éxito ✨');
+
         // Cerrar formulario y regresar a perfil
         const o = document.getElementById('cliente-onboarding');
         if (o) o.style.display = 'none';
         irVista('perfil');
     } catch (e) {
-        // ---------------------------------------------------------
-        // CHANGE: Revert button state on error
+        console.error("Error en guardarRegistroCompleto:", e);
+        mostrarToast('Error: ' + e.message);
+    } finally {
         if (btn) {
             btn.textContent = originalText;
             btn.disabled = false;
         }
-        // ---------------------------------------------------------
-        mostrarToast('Error: ' + e.message);
     }
 }
 window.guardarRegistroCompleto = guardarRegistroCompleto;
@@ -4786,24 +8028,109 @@ function toggleMultiPeque() {
     const s3 = document.getElementById('section-peque-3');
     const btn = document.getElementById('btn-agregar-peque');
 
-    if (s2.style.display === 'none') {
-        s2.style.display = 'block';
-    } else if (s3.style.display === 'none') {
-        s3.style.display = 'block';
-        if (btn) btn.style.display = 'none'; //Máximo 3
+    const s2Visible = s2 && s2.style.display !== 'none';
+    const s3Visible = s3 && s3.style.display !== 'none';
+
+    if (!s2Visible) {
+        if (s2) s2.style.display = 'block';
+        if (btn) btn.style.display = 'block';
+    } else if (!s3Visible) {
+        if (s3) s3.style.display = 'block';
+        if (btn) btn.style.display = 'none'; // Máximo 3
     }
 }
 window.toggleMultiPeque = toggleMultiPeque;
 
+function eliminarPequeOnboarding(num) {
+    const s2 = document.getElementById('section-peque-2');
+    const s3 = document.getElementById('section-peque-3');
+    const btn = document.getElementById('btn-agregar-peque');
+
+    if (num === 2) {
+        // Si Peque 3 está activo, pasar los datos de Peque 3 a Peque 2 y ocultar Peque 3
+        if (s3 && s3.style.display !== 'none') {
+            const p3Nom = document.getElementById('reg_peque_nombre_3')?.value || '';
+            const p3Nac = document.getElementById('reg_peque_nac_3')?.value || '';
+            const p3Ale = document.getElementById('reg_alergias_3')?.value || '';
+            const p3Con = document.getElementById('reg_condicion_3')?.value || '';
+            const p3Sal = document.getElementById('reg_salud_3')?.value || '';
+            const p3Pre = document.getElementById('reg_preferencias_3')?.value || '';
+
+            if (document.getElementById('reg_peque_nombre_2')) document.getElementById('reg_peque_nombre_2').value = p3Nom;
+            if (document.getElementById('reg_peque_nac_2')) document.getElementById('reg_peque_nac_2').value = p3Nac;
+            if (document.getElementById('reg_alergias_2')) document.getElementById('reg_alergias_2').value = p3Ale;
+            if (document.getElementById('reg_condicion_2')) document.getElementById('reg_condicion_2').value = p3Con;
+            if (document.getElementById('reg_salud_2')) document.getElementById('reg_salud_2').value = p3Sal;
+            if (document.getElementById('reg_preferencias_2')) document.getElementById('reg_preferencias_2').value = p3Pre;
+
+            if (typeof actualizarEdadEnFormulario === 'function') {
+                actualizarEdadEnFormulario('reg_peque_nac_2', 'reg_peque_edad_badge_2');
+            }
+            eliminarPequeOnboarding(3);
+            return;
+        }
+
+        // Limpiar campos de Peque 2
+        ['reg_peque_nombre_2', 'reg_peque_nac_2', 'reg_alergias_2', 'reg_condicion_2', 'reg_salud_2', 'reg_preferencias_2'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = '';
+                el.classList.remove('input-error', 'input-error-shake');
+            }
+        });
+        const badge2 = document.getElementById('reg_peque_edad_badge_2');
+        if (badge2) badge2.textContent = '';
+
+        if (s2) s2.style.display = 'none';
+        if (btn) btn.style.display = 'block';
+        if (typeof mostrarToast === 'function') mostrarToast('Peque 2 eliminado del formulario');
+    } else if (num === 3) {
+        // Limpiar campos de Peque 3
+        ['reg_peque_nombre_3', 'reg_peque_nac_3', 'reg_alergias_3', 'reg_condicion_3', 'reg_salud_3', 'reg_preferencias_3'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.value = '';
+                el.classList.remove('input-error', 'input-error-shake');
+            }
+        });
+        const badge3 = document.getElementById('reg_peque_edad_badge_3');
+        if (badge3) badge3.textContent = '';
+
+        if (s3) s3.style.display = 'none';
+        if (btn) btn.style.display = 'block';
+        if (typeof mostrarToast === 'function') mostrarToast('Peque 3 eliminado del formulario');
+    }
+}
+window.eliminarPequeOnboarding = eliminarPequeOnboarding;
+
 function formatearFechaElegante(fechaStr) {
     if (!fechaStr) return '—';
     try {
-        //GAS suele enviar las fechas como string ISO 'YYYY-MM-DDTHH:mm:ss.sssZ' o similar
-        const d = new Date(fechaStr);
-        if (isNaN(d)) return fechaStr;
+        let d;
+        if (fechaStr instanceof Date) {
+            d = fechaStr;
+        } else if (typeof fechaStr === 'string') {
+            const limpio = fechaStr.trim();
+            if (!limpio) return '—';
+            // Manejo robusto de formatos YYYY-MM-DD para evitar desfase de zona horaria (UTC-6)
+            const partes = limpio.split(/[-/T ]/);
+            if (partes.length >= 3) {
+                if (partes[0].length === 4) {
+                    d = new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
+                } else if (partes[2].length === 4) {
+                    d = new Date(parseInt(partes[2], 10), parseInt(partes[1], 10) - 1, parseInt(partes[0], 10));
+                } else {
+                    d = new Date(limpio);
+                }
+            } else {
+                d = new Date(limpio);
+            }
+        } else {
+            d = new Date(fechaStr);
+        }
+        if (isNaN(d.getTime())) return fechaStr;
 
         const opciones = { day: '2-digit', month: 'long', year: 'numeric' };
-        //"04 de diciembre de 1994"
         return d.toLocaleDateString('es-MX', opciones);
     } catch (e) {
         return fechaStr;
@@ -4812,11 +8139,154 @@ function formatearFechaElegante(fechaStr) {
 
 async function cargarPerfil(force = false) {
     try {
-        let perf;
-        if (!force && CACHE_CLIENTE.profile) {
-            perf = CACHE_CLIENTE.profile;
-        } else {
-            perf = await api('getProfile', { email: SESION.email });
+        let perf = (!force && CACHE_CLIENTE.profile) ? CACHE_CLIENTE.profile : null;
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+
+        // 🚀 PASO 1: LEER PERFIL DIRECTAMENTE DESDE SUPABASE (Instantáneo)
+        if (!perf && client && SESION.email) {
+            try {
+                if (!SESION.cliente && !SESION.admin && !SESION.supervision) {
+                    // Consulta a la tabla 'nannys'
+                    const { data: supaNanny, error: nannyErr } = await client
+                        .from('nannys')
+                        .select('*')
+                        .eq('email', SESION.email)
+                        .maybeSingle();
+
+                    if (supaNanny) {
+                        console.log("⚡ [Perfil Supabase] Perfil de Nanny cargado directamente desde Supabase.");
+                        perf = {
+                            email: supaNanny.email,
+                            nombre: supaNanny.nombre || SESION.email.split('@')[0],
+                            rol: supaNanny.rol || 'nanny',
+                            isNanny: true,
+                            telefono: supaNanny.telefono,
+                            teléfono: supaNanny.telefono,
+                            direccion: supaNanny.direccion,
+                            emergencia: supaNanny.emergencia,
+                            'no._de_emergencia': supaNanny.emergencia,
+                            ubicacion: supaNanny.ubicacion,
+                            ubicación: supaNanny.ubicacion,
+                            ciudad: supaNanny.ciudad,
+                            foto: supaNanny.foto,
+                            imagen: supaNanny.foto,
+                            lat: supaNanny.lat,
+                            lng: supaNanny.lng
+                        };
+                    }
+                } else if (SESION.cliente) {
+                    // Consulta a la tabla 'clientes'
+                    const { data: supaCliente, error: clientErr } = await client
+                        .from('clientes')
+                        .select('*')
+                        .eq('email', SESION.email)
+                        .maybeSingle();
+
+                    if (supaCliente) {
+                        console.log("⚡ [Perfil Supabase] Perfil de Cliente cargado directamente desde Supabase.");
+                        perf = {
+                            email: supaCliente.email,
+                            nombre: supaCliente.nombre || SESION.email.split('@')[0],
+                            nombre_del_cliente: supaCliente.nombre,
+                            rol: supaCliente.rol || 'cliente',
+                            isNanny: false,
+                            telefono: supaCliente.telefono,
+                            teléfono: supaCliente.telefono,
+                            direccion: supaCliente.direccion,
+                            emergencia: supaCliente.emergencia,
+                            'no._de_emergencia': supaCliente.emergencia,
+                            'no. de emergencia': supaCliente.emergencia,
+                            ubicacion: supaCliente.ubicacion,
+                            ubicación: supaCliente.ubicacion,
+                            'no. de mascotas': supaCliente.mascotas,
+                            'no._de_mascotas': supaCliente.mascotas,
+                            'políticas_de_contratación': supaCliente.politicas_contratacion,
+                            foto: supaCliente.foto,
+                            imagen: supaCliente.foto,
+                            lat: supaCliente.lat,
+                            lng: supaCliente.lng,
+
+                            // Peque 1
+                            nombre_del_peque: supaCliente.peque_nombre,
+                            peque_nombre: supaCliente.peque_nombre,
+                            fecha_de_nacimiento: supaCliente.peque_nacimiento,
+                            peque_nacimiento: supaCliente.peque_nacimiento,
+                            edad_del_peque: supaCliente.peque_edad,
+                            peque_edad: supaCliente.peque_edad,
+                            alergias: supaCliente.alergias,
+                            condicion_medica: supaCliente.condicion_medica,
+                            condicion: supaCliente.condicion_medica,
+                            'condición_médica_o_especificaciones_adicionales': supaCliente.condicion_medica,
+                            salud_actual: supaCliente.salud_actual,
+                            salud: supaCliente.salud_actual,
+                            estado_de_sal_actual: supaCliente.salud_actual,
+                            estado_de_salud_actual: supaCliente.salud_actual,
+                            preferencias: supaCliente.preferencias,
+                            preferencias_o_actividades_favoritas: supaCliente.preferencias,
+
+                            // Peque 2
+                            nombre_del_peque_2: supaCliente.peque_nombre_2,
+                            peque_nombre_2: supaCliente.peque_nombre_2,
+                            fecha_de_nacimiento_2: supaCliente.peque_nacimiento_2,
+                            peque_nacimiento_2: supaCliente.peque_nacimiento_2,
+                            peque_nac_2: supaCliente.peque_nacimiento_2,
+                            edad_del_peque_2: supaCliente.peque_edad_2,
+                            peque_edad_2: supaCliente.peque_edad_2,
+                            alergias_2: supaCliente.alergias_2,
+                            condicion_medica_2: supaCliente.condicion_medica_2,
+                            condicion_2: supaCliente.condicion_medica_2,
+                            'condición_médica_o_especificaciones_adicionales_2': supaCliente.condicion_medica_2,
+                            salud_actual_2: supaCliente.salud_actual_2,
+                            salud_2: supaCliente.salud_actual_2,
+                            estado_de_salud_actual_2: supaCliente.salud_actual_2,
+                            preferencias_2: supaCliente.preferencias_2,
+                            preferencias_o_actividades_favoritas_2: supaCliente.preferencias_2,
+
+                            // Peque 3
+                            nombre_del_peque_3: supaCliente.peque_nombre_3,
+                            peque_nombre_3: supaCliente.peque_nombre_3,
+                            fecha_de_nacimiento_3: supaCliente.peque_nacimiento_3,
+                            peque_nacimiento_3: supaCliente.peque_nacimiento_3,
+                            peque_nac_3: supaCliente.peque_nacimiento_3,
+                            edad_del_peque_3: supaCliente.peque_edad_3,
+                            peque_edad_3: supaCliente.peque_edad_3,
+                            alergias_3: supaCliente.alergias_3,
+                            condicion_medica_3: supaCliente.condicion_medica_3,
+                            condicion_3: supaCliente.condicion_medica_3,
+                            'condición_médica_o_especificaciones_adicionales_3': supaCliente.condicion_medica_3,
+                            salud_actual_3: supaCliente.salud_actual_3,
+                            salud_3: supaCliente.salud_actual_3,
+                            estado_de_salud_actual_3: supaCliente.salud_actual_3,
+                            preferencias_3: supaCliente.preferencias_3,
+                            preferencias_o_actividades_favoritas_3: supaCliente.preferencias_3
+                        };
+                    }
+                }
+            } catch (supaErr) {
+                console.warn("⚠️ [Supabase Perfil] Error leyendo desde Supabase:", supaErr.message);
+            }
+        }
+
+        // 🔄 PASO 2: Fallback tradicional a Google Sheets si no se encontró en Supabase y existe token de sesión
+        if (!perf) {
+            const hasToken = !!(SESION.token || localStorage.getItem('token') || localStorage.getItem('session_token'));
+            if (hasToken) {
+                try {
+                    console.log("ℹ️ [Perfil Fallback] Consultando perfil en backend tradicional...");
+                    perf = await api('getProfile', { email: SESION.email });
+                } catch (apiErr) {
+                    console.warn("⚠️ [Perfil Fallback] No se pudo obtener perfil tradicional:", apiErr.message);
+                }
+            }
+
+            if (!perf) {
+                perf = {
+                    email: SESION.email,
+                    nombre: SESION.nombre || SESION.email.split('@')[0],
+                    rol: SESION.cliente ? 'cliente' : 'nanny',
+                    ciudad: SESION.ciudad || ''
+                };
+            }
         }
 
         if (perf) {
@@ -4929,42 +8399,51 @@ async function cargarPerfil(force = false) {
                 }
                 const phone = '522224021886'; // WhatsApp de la empresa (México: +52 2224021886)
                 const waLink = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
-                
+
                 try {
-                    new QRCode(qrContainer, {
-                        text: waLink,
-                        width: 150,
-                        height: 150,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
+                    if (typeof QRCode !== 'undefined') {
+                        new QRCode(qrContainer, {
+                            text: waLink,
+                            width: 150,
+                            height: 150,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    } else {
+                        console.warn("Librería QRCode no disponible.");
+                    }
                 } catch (err) {
-                    console.error("Error al generar el QR local:", err);
-                    // Fallback a API si falla la librería local por alguna razón
-                    const fallbackImg = document.createElement('img');
-                    fallbackImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(waLink)}`;
-                    fallbackImg.style.width = '150px';
-                    fallbackImg.style.height = '150px';
-                    fallbackImg.style.display = 'block';
-                    qrContainer.appendChild(fallbackImg);
+                    console.warn("Error al generar el QR local:", err);
                 }
             }
 
             if (esNanny && !SESION.admin && !SESION.supervision) {
+                if (window.NannyPerfil && typeof window.NannyPerfil.cargarDatos === 'function') {
+                    window.NannyPerfil.cargarDatos();
+                    if (typeof window.NannyPerfil.generarQRRecomendacion === 'function') {
+                        window.NannyPerfil.generarQRRecomendacion();
+                    }
+                }
                 verificarDatosFaltantesNinera(perf);
                 return;
             }
 
             //Peque 1 (Solo para clientes)
-            if (document.getElementById('perfil_peque')) document.getElementById('perfil_peque').textContent = perf.nombre_del_peque || '—';
-            if (document.getElementById('perfil_nac_peque')) document.getElementById('perfil_nac_peque').textContent = formatearFechaElegante(perf.fecha_de_nacimiento);
-            if (document.getElementById('perfil_edad_peque')) document.getElementById('perfil_edad_peque').textContent = perf.edad_del_peque || '—';
+            const nombreP1 = perf.nombre_del_peque || perf.peque_nombre;
+            const nacP1 = perf.fecha_de_nacimiento || perf.peque_nacimiento;
+            const edad1 = typeof calcularEdadPeque === 'function' && nacP1
+                ? (calcularEdadPeque(nacP1) || perf.edad_del_peque || perf.peque_edad || '—')
+                : (perf.edad_del_peque || perf.peque_edad || '—');
+
+            if (document.getElementById('perfil_peque')) document.getElementById('perfil_peque').textContent = nombreP1 || '—';
+            if (document.getElementById('perfil_nac_peque')) document.getElementById('perfil_nac_peque').textContent = formatearFechaElegante(nacP1);
+            if (document.getElementById('perfil_edad_peque')) document.getElementById('perfil_edad_peque').textContent = edad1;
             if (document.getElementById('perfil_alergias')) document.getElementById('perfil_alergias').textContent = perf.alergias || '—';
-            if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf['condición_médica_o_especificaciones_adicionales'] || '—';
-            if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.estado_de_sal_actual || perf.estado_de_salud_actual || '—';
-            if (document.getElementById('perfil_preferencias')) document.getElementById('perfil_preferencias').textContent = perf.preferencias_o_actividades_favoritas || '—';
-            if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no. de mascotas'] || perf['no._de_mascotas'] || '—';
+            if (document.getElementById('perfil_condicion')) document.getElementById('perfil_condicion').textContent = perf.condicion_medica || perf['condición_médica_o_especificaciones_adicionales'] || perf.condicion || '—';
+            if (document.getElementById('perfil_salud')) document.getElementById('perfil_salud').textContent = perf.salud_actual || perf.estado_de_salud_actual || perf.estado_de_sal_actual || perf.salud || '—';
+            if (document.getElementById('perfil_preferencias')) document.getElementById('perfil_preferencias').textContent = perf.preferencias || perf.preferencias_o_actividades_favoritas || '—';
+            if (document.getElementById('perfil_mascotas_gral')) document.getElementById('perfil_mascotas_gral').textContent = perf['no. de mascotas'] || perf['no._de_mascotas'] || perf.mascotas || '—';
 
             // Formatear fecha de políticas si existe
             const politicas = perf['políticas_de_contratación'] || '';
@@ -4994,32 +8473,51 @@ async function cargarPerfil(force = false) {
 
             //Peque 2
             const card2 = document.getElementById('perfil-peque-2');
-            if (perf.nombre_del_peque_2) {
+            const tieneP2 = perf.nombre_del_peque_2 || perf.peque_nombre_2;
+            if (tieneP2) {
                 card2.style.display = 'block';
-                if (document.getElementById('perfil_peque_2')) document.getElementById('perfil_peque_2').textContent = perf.nombre_del_peque_2;
-                if (document.getElementById('perfil_nac_peque_2')) document.getElementById('perfil_nac_peque_2').textContent = formatearFechaElegante(perf.fecha_de_nacimiento_2);
-                if (document.getElementById('perfil_edad_peque_2')) document.getElementById('perfil_edad_peque_2').textContent = perf.edad_del_peque_2 || '—';
+                const nacP2 = perf.fecha_de_nacimiento_2 || perf.peque_nacimiento_2 || perf.peque_nac_2;
+                const edad2 = typeof calcularEdadPeque === 'function' && nacP2
+                    ? (calcularEdadPeque(nacP2) || perf.edad_del_peque_2 || perf.peque_edad_2 || '—')
+                    : (perf.edad_del_peque_2 || perf.peque_edad_2 || '—');
+
+                if (document.getElementById('perfil_peque_2')) document.getElementById('perfil_peque_2').textContent = tieneP2;
+                if (document.getElementById('perfil_nac_peque_2')) document.getElementById('perfil_nac_peque_2').textContent = formatearFechaElegante(nacP2);
+                if (document.getElementById('perfil_edad_peque_2')) document.getElementById('perfil_edad_peque_2').textContent = edad2;
                 if (document.getElementById('perfil_alergias_2')) document.getElementById('perfil_alergias_2').textContent = perf.alergias_2 || '—';
-                if (document.getElementById('perfil_condicion_2')) document.getElementById('perfil_condicion_2').textContent = perf['condición_médica_o_especificaciones_adicionales_2'] || '—';
-                if (document.getElementById('perfil_salud_2')) document.getElementById('perfil_salud_2').textContent = perf.estado_de_salud_actual_2 || '—';
-                if (document.getElementById('perfil_preferencias_2')) document.getElementById('perfil_preferencias_2').textContent = perf.preferencias_o_actividades_favoritas_2 || '—';
+                if (document.getElementById('perfil_condicion_2')) document.getElementById('perfil_condicion_2').textContent = perf.condicion_medica_2 || perf['condición_médica_o_especificaciones_adicionales_2'] || perf.condicion_2 || '—';
+                if (document.getElementById('perfil_salud_2')) document.getElementById('perfil_salud_2').textContent = perf.salud_actual_2 || perf.estado_de_salud_actual_2 || perf.salud_2 || '—';
+                if (document.getElementById('perfil_preferencias_2')) document.getElementById('perfil_preferencias_2').textContent = perf.preferencias_2 || perf.preferencias_o_actividades_favoritas_2 || '—';
             } else {
                 card2.style.display = 'none';
             }
 
             //Peque 3
             const card3 = document.getElementById('perfil-peque-3');
-            if (perf.nombre_del_peque_3) {
+            const tieneP3 = perf.nombre_del_peque_3 || perf.peque_nombre_3;
+            if (tieneP3) {
                 card3.style.display = 'block';
-                if (document.getElementById('perfil_peque_3')) document.getElementById('perfil_peque_3').textContent = perf.nombre_del_peque_3;
-                if (document.getElementById('perfil_nac_peque_3')) document.getElementById('perfil_nac_peque_3').textContent = formatearFechaElegante(perf.fecha_de_nacimiento_3);
-                if (document.getElementById('perfil_edad_peque_3')) document.getElementById('perfil_edad_peque_3').textContent = perf.edad_del_peque_3 || '—';
+                const nacP3 = perf.fecha_de_nacimiento_3 || perf.peque_nacimiento_3 || perf.peque_nac_3;
+                const edad3 = typeof calcularEdadPeque === 'function' && nacP3
+                    ? (calcularEdadPeque(nacP3) || perf.edad_del_peque_3 || perf.peque_edad_3 || '—')
+                    : (perf.edad_del_peque_3 || perf.peque_edad_3 || '—');
+
+                if (document.getElementById('perfil_peque_3')) document.getElementById('perfil_peque_3').textContent = tieneP3;
+                if (document.getElementById('perfil_nac_peque_3')) document.getElementById('perfil_nac_peque_3').textContent = formatearFechaElegante(nacP3);
+                if (document.getElementById('perfil_edad_peque_3')) document.getElementById('perfil_edad_peque_3').textContent = edad3;
                 if (document.getElementById('perfil_alergias_3')) document.getElementById('perfil_alergias_3').textContent = perf.alergias_3 || '—';
-                if (document.getElementById('perfil_condicion_3')) document.getElementById('perfil_condicion_3').textContent = perf['condición_médica_o_especificaciones_adicionales_3'] || '—';
-                if (document.getElementById('perfil_salud_3')) document.getElementById('perfil_salud_3').textContent = perf.estado_de_salud_actual_3 || '—';
-                if (document.getElementById('perfil_preferencias_3')) document.getElementById('perfil_preferencias_3').textContent = perf.preferencias_o_actividades_favoritas_3 || '—';
+                if (document.getElementById('perfil_condicion_3')) document.getElementById('perfil_condicion_3').textContent = perf.condicion_medica_3 || perf['condición_médica_o_especificaciones_adicionales_3'] || perf.condicion_3 || '—';
+                if (document.getElementById('perfil_salud_3')) document.getElementById('perfil_salud_3').textContent = perf.salud_actual_3 || perf.estado_de_salud_actual_3 || perf.salud_3 || '—';
+                if (document.getElementById('perfil_preferencias_3')) document.getElementById('perfil_preferencias_3').textContent = perf.preferencias_3 || perf.preferencias_o_actividades_favoritas_3 || '—';
             } else {
                 card3.style.display = 'none';
+            }
+
+            if (window.ClientePerfil && typeof window.ClientePerfil.cargarDatos === 'function') {
+                window.ClientePerfil.cargarDatos();
+                if (typeof window.ClientePerfil.generarQRRecomendacion === 'function') {
+                    window.ClientePerfil.generarQRRecomendacion();
+                }
             }
         }
     } catch (e) {
@@ -5074,6 +8572,9 @@ function irSubVistaSupervision(subvista) {
 
     if (subvista === 'actividades') {
         if (vAct) vAct.style.display = 'block';
+        if (typeof suscribirRealtimePortalServicios === 'function') suscribirRealtimePortalServicios();
+        if (typeof cargarResumenPlaneaciones === 'function') cargarResumenPlaneaciones(true);
+        if (typeof cargarResumenBitacoras === 'function') cargarResumenBitacoras(true);
     } else if (subvista === 'nannystar') {
         if (vStar) vStar.style.display = 'block';
     } else if (subvista === 'plantilla') {
@@ -5094,9 +8595,9 @@ function irSubVistaSupervision(subvista) {
     }
 
     // Actualizar botones nav
-    document.querySelectorAll('#nav-supervision button').forEach(b => b.classList.remove('activo'));
+    document.querySelectorAll('#nav-supervision button').forEach(b => b.classList.remove('activo', 'active'));
     const btn = document.getElementById('snav-' + subvista);
-    if (btn) btn.classList.add('activo');
+    if (btn) btn.classList.add('activo', 'active');
 }
 window.irSubVistaSupervision = irSubVistaSupervision;
 
@@ -5250,14 +8751,111 @@ async function editarPerfilCliente() {
     if (d) d.style.display = 'none';
     if (o) o.style.display = 'block';
 
+    // Descongelar y habilitar inmediatamente el botón de guardar
+    const btnGuardar = document.getElementById('btnGuardarCliente');
+    if (btnGuardar) {
+        btnGuardar.textContent = 'Guardar y Continuar';
+        btnGuardar.disabled = false;
+    }
+
     try {
-        const perf = await api('getProfile', { email: SESION.email });
+        let perf = null;
+
+        // 1. Intentar cargar directamente desde Supabase
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        if (client && SESION && SESION.email) {
+            try {
+                const { data: supaCliente, error: supaErr } = await client
+                    .from('clientes')
+                    .select('*')
+                    .eq('email', SESION.email)
+                    .maybeSingle();
+
+                if (!supaErr && supaCliente) {
+                    console.log("⚡ [Editar Perfil] Perfil obtenido desde Supabase para:", SESION.email);
+                    perf = {
+                        nombre: supaCliente.nombre,
+                        rol: supaCliente.rol,
+                        direccion: supaCliente.direccion,
+                        ubicacion: supaCliente.ubicacion,
+                        telefono: supaCliente.telefono,
+                        'no._de_emergencia': supaCliente.emergencia,
+                        'no._de_mascotas': supaCliente.mascotas,
+                        // Peque 1
+                        nombre_del_peque: supaCliente.peque_nombre,
+                        peque_nombre: supaCliente.peque_nombre,
+                        fecha_de_nacimiento: supaCliente.peque_nacimiento,
+                        peque_nacimiento: supaCliente.peque_nacimiento,
+                        edad_del_peque: supaCliente.peque_edad,
+                        peque_edad: supaCliente.peque_edad,
+                        alergias: supaCliente.alergias,
+                        condicion_medica: supaCliente.condicion_medica,
+                        condicion: supaCliente.condicion_medica,
+                        'condición_médica_o_especificaciones_adicionales': supaCliente.condicion_medica,
+                        salud_actual: supaCliente.salud_actual,
+                        salud: supaCliente.salud_actual,
+                        estado_de_sal_actual: supaCliente.salud_actual,
+                        estado_de_salud_actual: supaCliente.salud_actual,
+                        preferencias: supaCliente.preferencias,
+                        preferencias_o_actividades_favoritas: supaCliente.preferencias,
+                        'políticas_de_contratación': supaCliente.politicas_contratacion,
+
+                        // Peque 2
+                        nombre_del_peque_2: supaCliente.peque_nombre_2,
+                        peque_nombre_2: supaCliente.peque_nombre_2,
+                        fecha_de_nacimiento_2: supaCliente.peque_nacimiento_2,
+                        peque_nacimiento_2: supaCliente.peque_nacimiento_2,
+                        peque_nac_2: supaCliente.peque_nacimiento_2,
+                        edad_del_peque_2: supaCliente.peque_edad_2,
+                        peque_edad_2: supaCliente.peque_edad_2,
+                        alergias_2: supaCliente.alergias_2,
+                        condicion_medica_2: supaCliente.condicion_medica_2,
+                        condicion_2: supaCliente.condicion_medica_2,
+                        'condición_médica_o_especificaciones_adicionales_2': supaCliente.condicion_medica_2,
+                        salud_actual_2: supaCliente.salud_actual_2,
+                        salud_2: supaCliente.salud_actual_2,
+                        estado_de_salud_actual_2: supaCliente.salud_actual_2,
+                        preferencias_2: supaCliente.preferencias_2,
+                        preferencias_o_actividades_favoritas_2: supaCliente.preferencias_2,
+
+                        // Peque 3
+                        nombre_del_peque_3: supaCliente.peque_nombre_3,
+                        peque_nombre_3: supaCliente.peque_nombre_3,
+                        fecha_de_nacimiento_3: supaCliente.peque_nacimiento_3,
+                        peque_nacimiento_3: supaCliente.peque_nacimiento_3,
+                        peque_nac_3: supaCliente.peque_nacimiento_3,
+                        edad_del_peque_3: supaCliente.peque_edad_3,
+                        peque_edad_3: supaCliente.peque_edad_3,
+                        alergias_3: supaCliente.alergias_3,
+                        condicion_medica_3: supaCliente.condicion_medica_3,
+                        condicion_3: supaCliente.condicion_medica_3,
+                        'condición_médica_o_especificaciones_adicionales_3': supaCliente.condicion_medica_3,
+                        salud_actual_3: supaCliente.salud_actual_3,
+                        salud_3: supaCliente.salud_actual_3,
+                        estado_de_salud_actual_3: supaCliente.salud_actual_3,
+                        preferencias_3: supaCliente.preferencias_3,
+                        preferencias_o_actividades_favoritas_3: supaCliente.preferencias_3
+                    };
+                }
+            } catch (errSup) {
+                console.warn("No se pudo leer de Supabase en editarPerfilCliente:", errSup);
+            }
+        }
+
+        // 2. Si no hubo perfil en Supabase, recurrir a GAS
+        if (!perf) {
+            try {
+                perf = await api('getProfile', { email: SESION.email });
+            } catch (errApi) {
+                console.warn("No se pudo obtener perfil de GAS en editarPerfilCliente:", errApi);
+            }
+        }
+
         if (perf) {
-            //Datos comunes
+            // Datos comunes
             if (document.getElementById('reg_nombre')) {
                 const inputNombre = document.getElementById('reg_nombre');
                 inputNombre.value = perf.nombre || '';
-                // Bloquear si ya tiene nombre (evitar errores de sistema)
                 if (perf.nombre && perf.nombre.trim() !== "") {
                     inputNombre.readOnly = true;
                     inputNombre.style.background = "#f1f5f9";
@@ -5272,55 +8870,75 @@ async function editarPerfilCliente() {
             if (document.getElementById('reg_ubicacion')) document.getElementById('reg_ubicacion').value = perf.ubicación || perf.ubicacion || '';
             if (document.getElementById('reg_tel')) document.getElementById('reg_tel').value = perf.telefono || perf.teléfono || '';
             if (document.getElementById('reg_emergencia')) document.getElementById('reg_emergencia').value = perf['no._de_emergencia'] || '';
+            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf['no._de_mascotas'] || perf.mascotas || '';
 
-            //Helper para fechas en inputs
+            // Helper para fechas en inputs
             const setFecha = (id, fecha) => {
                 if (!fecha) return;
                 try {
+                    if (typeof fecha === 'string' && /^\d{4}-\d{2}-\d{2}/.test(fecha.trim())) {
+                        document.getElementById(id).value = fecha.trim().slice(0, 10);
+                        return;
+                    }
                     const d = new Date(fecha);
                     if (!isNaN(d)) document.getElementById(id).value = d.toISOString().split('T')[0];
+                    else document.getElementById(id).value = fecha;
                 } catch (e) { }
             };
 
-            //Peque 1
-            if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || '';
-            setFecha('reg_peque_nac', perf.fecha_de_nacimiento);
+            // Peque 1
+            if (document.getElementById('reg_peque_nombre')) document.getElementById('reg_peque_nombre').value = perf.nombre_del_peque || perf.peque_nombre || '';
+            setFecha('reg_peque_nac', perf.fecha_de_nacimiento || perf.peque_nacimiento);
+            if (typeof actualizarEdadEnFormulario === 'function') actualizarEdadEnFormulario('reg_peque_nac', 'reg_peque_edad_badge');
             if (document.getElementById('reg_alergias')) document.getElementById('reg_alergias').value = perf.alergias || '';
-            if (document.getElementById('reg_condicion')) document.getElementById('reg_condicion').value = perf['condición_médica_o_especificaciones_adicionales'] || '';
-            if (document.getElementById('reg_salud')) document.getElementById('reg_salud').value = perf.estado_de_salud_actual || '';
-            if (document.getElementById('reg_preferencias')) document.getElementById('reg_preferencias').value = perf.preferencias_o_actividades_favoritas || '';
-            if (document.getElementById('reg_mascotas')) document.getElementById('reg_mascotas').value = perf['no._de_mascotas'] || '';
+            if (document.getElementById('reg_condicion')) document.getElementById('reg_condicion').value = perf.condicion_medica || perf['condición_médica_o_especificaciones_adicionales'] || perf.condicion || '';
+            if (document.getElementById('reg_salud')) document.getElementById('reg_salud').value = perf.salud_actual || perf.estado_de_salud_actual || perf.estado_de_sal_actual || perf.salud || '';
+            if (document.getElementById('reg_preferencias')) document.getElementById('reg_preferencias').value = perf.preferencias || perf.preferencias_o_actividades_favoritas || '';
 
-            //Peque 2
-            if (perf.nombre_del_peque_2) {
-                document.getElementById('section-peque-2').style.display = 'block';
-                if (document.getElementById('reg_peque_nombre_2')) document.getElementById('reg_peque_nombre_2').value = perf.nombre_del_peque_2;
-                setFecha('reg_peque_nac_2', perf.fecha_de_nacimiento_2);
+            // Peque 2
+            const tieneP2 = perf.nombre_del_peque_2 || perf.peque_nombre_2;
+            if (tieneP2) {
+                const s2 = document.getElementById('section-peque-2');
+                if (s2) s2.style.display = 'block';
+                if (document.getElementById('reg_peque_nombre_2')) document.getElementById('reg_peque_nombre_2').value = tieneP2;
+                setFecha('reg_peque_nac_2', perf.fecha_de_nacimiento_2 || perf.peque_nacimiento_2 || perf.peque_nac_2);
+                if (typeof actualizarEdadEnFormulario === 'function') actualizarEdadEnFormulario('reg_peque_nac_2', 'reg_peque_edad_badge_2');
                 if (document.getElementById('reg_alergias_2')) document.getElementById('reg_alergias_2').value = perf.alergias_2 || '';
-                if (document.getElementById('reg_condicion_2')) document.getElementById('reg_condicion_2').value = perf['condición_médica_o_especificaciones_adicionales_2'] || '';
-                if (document.getElementById('reg_salud_2')) document.getElementById('reg_salud_2').value = perf.estado_de_salud_actual_2 || '';
-                if (document.getElementById('reg_preferencias_2')) document.getElementById('reg_preferencias_2').value = perf.preferencias_o_actividades_favoritas_2 || '';
+                if (document.getElementById('reg_condicion_2')) document.getElementById('reg_condicion_2').value = perf.condicion_medica_2 || perf['condición_médica_o_especificaciones_adicionales_2'] || perf.condicion_2 || '';
+                if (document.getElementById('reg_salud_2')) document.getElementById('reg_salud_2').value = perf.salud_actual_2 || perf.estado_de_salud_actual_2 || perf.salud_2 || '';
+                if (document.getElementById('reg_preferencias_2')) document.getElementById('reg_preferencias_2').value = perf.preferencias_2 || perf.preferencias_o_actividades_favoritas_2 || '';
+            } else {
+                const s2 = document.getElementById('section-peque-2');
+                if (s2) s2.style.display = 'none';
             }
 
-            //Peque 3
-            if (perf.nombre_del_peque_3) {
-                document.getElementById('section-peque-3').style.display = 'block';
-                document.getElementById('btn-agregar-peque').style.display = 'none';
-                if (document.getElementById('reg_peque_nombre_3')) document.getElementById('reg_peque_nombre_3').value = perf.nombre_del_peque_3;
-                setFecha('reg_peque_nac_3', perf.fecha_de_nacimiento_3);
+            // Peque 3
+            const tieneP3 = perf.nombre_del_peque_3 || perf.peque_nombre_3;
+            if (tieneP3) {
+                const s3 = document.getElementById('section-peque-3');
+                if (s3) s3.style.display = 'block';
+                const btnAgregar = document.getElementById('btn-agregar-peque');
+                if (btnAgregar) btnAgregar.style.display = 'none';
+                if (document.getElementById('reg_peque_nombre_3')) document.getElementById('reg_peque_nombre_3').value = tieneP3;
+                setFecha('reg_peque_nac_3', perf.fecha_de_nacimiento_3 || perf.peque_nacimiento_3 || perf.peque_nac_3);
+                if (typeof actualizarEdadEnFormulario === 'function') actualizarEdadEnFormulario('reg_peque_nac_3', 'reg_peque_edad_badge_3');
                 if (document.getElementById('reg_alergias_3')) document.getElementById('reg_alergias_3').value = perf.alergias_3 || '';
-                if (document.getElementById('reg_condicion_3')) document.getElementById('reg_condicion_3').value = perf['condición_médica_o_especificaciones_adicionales_3'] || '';
-                if (document.getElementById('reg_salud_3')) document.getElementById('reg_salud_3').value = perf.estado_de_salud_actual_3 || '';
-                if (document.getElementById('reg_preferencias_3')) document.getElementById('reg_preferencias_3').value = perf.preferencias_o_actividades_favoritas_3 || '';
+                if (document.getElementById('reg_condicion_3')) document.getElementById('reg_condicion_3').value = perf.condicion_medica_3 || perf['condición_médica_o_especificaciones_adicionales_3'] || perf.condicion_3 || '';
+                if (document.getElementById('reg_salud_3')) document.getElementById('reg_salud_3').value = perf.salud_actual_3 || perf.estado_de_salud_actual_3 || perf.salud_3 || '';
+                if (document.getElementById('reg_preferencias_3')) document.getElementById('reg_preferencias_3').value = perf.preferencias_3 || perf.preferencias_o_actividades_favoritas_3 || '';
+            } else {
+                const s3 = document.getElementById('section-peque-3');
+                if (s3) s3.style.display = 'none';
+                const btnAgregar = document.getElementById('btn-agregar-peque');
+                if (btnAgregar && !tieneP3) btnAgregar.style.display = 'block';
             }
 
-            // Verificar si las políticas ya fueron aceptadas
-            const politicasAceptadas = perf['políticas_de_contratación'] || '';
+            // Verificar políticas
+            const politicasAceptadas = perf['políticas_de_contratación'] || perf.politicas_contratacion || '';
             const btnPoliticas = document.getElementById('btn_aceptar_politicas');
             const hiddenPoliticas = document.getElementById('reg_politicas_aceptadas');
 
             if (politicasAceptadas && politicasAceptadas !== '—') {
-                // Ya están aceptadas, mostrar botón verde y deshabilitado
                 if (hiddenPoliticas) hiddenPoliticas.value = politicasAceptadas;
                 if (btnPoliticas) {
                     btnPoliticas.textContent = '✓ Aceptado';
@@ -5329,7 +8947,6 @@ async function editarPerfilCliente() {
                     btnPoliticas.style.cursor = 'not-allowed';
                 }
             } else {
-                // No aceptadas, resetear botón
                 if (hiddenPoliticas) hiddenPoliticas.value = '';
                 if (btnPoliticas) {
                     btnPoliticas.textContent = 'Aceptar';
@@ -5339,7 +8956,7 @@ async function editarPerfilCliente() {
                 }
             }
 
-            // Pre-seleccionar Rol en edición
+            // Rol
             if (perf.rol) seleccionarRol(perf.rol);
         }
     } catch (e) {
@@ -5354,6 +8971,11 @@ async function cargarServiciosCliente(force = false) {
     const msg = document.getElementById('msg-cal-cliente');
     if (!calActual || !calSig) return;
 
+    // Suscribir al realtime de servicios si no está suscrito
+    if (typeof suscribirRealtimePortalServicios === 'function') {
+        suscribirRealtimePortalServicios();
+    }
+
     // --- FIX: Limpiar caché de bitácoras si es una recarga forzada (botón actualizar) ---
     if (force) {
         BITACORA_CACHE = {};
@@ -5366,40 +8988,126 @@ async function cargarServiciosCliente(force = false) {
         return;
     }
 
-    calActual.innerHTML = '';
-    calSig.innerHTML = '';
-    msg.textContent = 'Cargando servicios...';
+    if (msg && (!calActual.children.length)) msg.textContent = 'Cargando servicios...';
 
-    try {
-        // Calcular fecha de inicio: Lunes de la semana actual
-        const hoy = new Date();
-        const diaSemana = hoy.getDay();
-        const diasDesdeLunes = (diaSemana + 6) % 7;
-        const lunes = new Date(hoy);
-        lunes.setDate(hoy.getDate() - diasDesdeLunes);
-        const fechaInicioISO = toISO(lunes);
+    let serviciosCargados = false;
+    const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
 
-        // --- CARGA PARALELA (Servicios + Saldo) ---
-        // Optimizamos para que ambos carguen al mismo tiempo
-        const [res, resSaldo] = await Promise.all([
-            api('getServiciosCliente', {
+    if (client) {
+        try {
+            const hoy = new Date();
+            const lunesActual = typeof getMondayISO_Safe === 'function' ? getMondayISO_Safe(hoy) : (() => {
+                const d = (hoy.getDay() + 6) % 7;
+                const l = new Date(hoy);
+                l.setDate(hoy.getDate() - d);
+                return l.toISOString().slice(0, 10);
+            })();
+            const lunesSiguiente = typeof addWeeksToISO_Safe === 'function' ? addWeeksToISO_Safe(lunesActual, 1) : (() => {
+                const p = lunesActual.split('-').map(Number);
+                const d = new Date(p[0], p[1] - 1, p[2] + 7);
+                return d.toISOString().slice(0, 10);
+            })();
+
+            // Obtener información de cliente para enriquecer direcciones y contactos
+            const mapaClientes = {};
+            try {
+                let qCli = client.from('clientes').select('*');
+                const cleanEmail = (SESION?.email || '').trim().toLowerCase();
+                if (cleanEmail) {
+                    qCli = qCli.ilike('email', cleanEmail);
+                }
+                const { data: dbClientes } = await qCli;
+                if (dbClientes && Array.isArray(dbClientes)) {
+                    dbClientes.forEach(c => {
+                        const kEmail = (c.email || '').trim().toLowerCase();
+                        const kNom = (c.nombre || '').trim().toLowerCase();
+                        const kNomNorm = normalizarTexto(kNom);
+                        if (kEmail) mapaClientes[kEmail] = c;
+                        if (kNom) mapaClientes[kNom] = c;
+                        if (kNomNorm) mapaClientes[kNomNorm] = c;
+                    });
+                }
+            } catch (errClientes) {
+                console.warn("[cargarServiciosCliente] Aviso al cargar clientes para mapa:", errClientes);
+            }
+
+            // Consultar filas en control_servicios filtradas para el cliente
+            let qFilas = client
+                .from('control_servicios')
+                .select('*');
+
+            const emailCli = (SESION?.email || '').trim().toLowerCase();
+            const nomCli = (SESION?.nombre || '').trim().toLowerCase();
+            if (emailCli && nomCli) {
+                qFilas = qFilas.or(`cliente_email.ilike.${emailCli},cliente_nombre.ilike.%${nomCli}%`);
+            } else if (emailCli) {
+                qFilas = qFilas.ilike('cliente_email', emailCli);
+            } else {
+                qFilas = qFilas.in('semana_iso', [lunesActual, lunesSiguiente]);
+            }
+
+            const { data: filas, error: errFilas } = await qFilas;
+
+            if (!errFilas && filas) {
+                const svcs = transformarFilasControlServicios(filas, 'cliente', SESION, mapaClientes);
+                CACHE_CLIENTE.servicios = svcs;
+                if (window.ClienteServicios) {
+                    window.ClienteServicios._servicios = svcs;
+                    if (typeof window.ClienteServicios.renderMetricas === 'function') window.ClienteServicios.renderMetricas();
+                    if (typeof window.ClienteServicios.renderCalendarStrip === 'function') window.ClienteServicios.renderCalendarStrip();
+                    if (typeof window.ClienteServicios.renderServiciosList === 'function') window.ClienteServicios.renderServiciosList();
+                    if (typeof window.ClienteServicios.renderBitacora === 'function') window.ClienteServicios.renderBitacora();
+                }
+                renderServiciosCliente(svcs);
+                serviciosCargados = true;
+                if (typeof actualizarVisibilidadPestanasCliente === 'function') {
+                    actualizarVisibilidadPestanasCliente(svcs);
+                }
+                if (msg) msg.textContent = '';
+            }
+        } catch (eSupa) {
+            console.error("Error al cargar servicios de cliente desde Supabase:", eSupa);
+        }
+    }
+
+    // Saldo (siempre intentar si tiene token GAS)
+    if (SESION.token) {
+        api('getSaldoCliente', { email: SESION.email })
+            .then(resSaldo => renderSaldoCliente(resSaldo))
+            .catch(e => console.error("Error al cargar saldo:", e));
+    }
+
+    // Fallback a Google Apps Script solo si no se cargaron de Supabase y tiene token
+    if (!serviciosCargados && SESION.token) {
+        try {
+            const hoy = new Date();
+            const diaSemana = hoy.getDay();
+            const diasDesdeLunes = (diaSemana + 6) % 7;
+            const lunes = new Date(hoy);
+            lunes.setDate(hoy.getDate() - diasDesdeLunes);
+            const fechaInicioISO = toISO(lunes);
+
+            const res = await api('getServiciosCliente', {
                 email: SESION.email,
                 fecha_inicio: fechaInicioISO
-            }),
-            api('getSaldoCliente', { email: SESION.email }).catch(e => {
-                console.error("Error al cargar saldo:", e);
-                return null;
-            })
-        ]);
+            });
 
-        CACHE_CLIENTE.servicios = Array.isArray(res) ? res : [];
-        renderServiciosCliente(CACHE_CLIENTE.servicios);
-        renderSaldoCliente(resSaldo);
-
+            CACHE_CLIENTE.servicios = Array.isArray(res) ? res : [];
+            if (window.ClienteServicios) {
+                window.ClienteServicios._servicios = CACHE_CLIENTE.servicios;
+                if (typeof window.ClienteServicios.renderMetricas === 'function') window.ClienteServicios.renderMetricas();
+                if (typeof window.ClienteServicios.renderCalendarStrip === 'function') window.ClienteServicios.renderCalendarStrip();
+                if (typeof window.ClienteServicios.renderServiciosList === 'function') window.ClienteServicios.renderServiciosList();
+                if (typeof window.ClienteServicios.renderBitacora === 'function') window.ClienteServicios.renderBitacora();
+            }
+            renderServiciosCliente(CACHE_CLIENTE.servicios);
+            if (msg) msg.textContent = '';
+        } catch (err) {
+            console.error('Error fallback cargarServiciosCliente:', err);
+            if (msg) msg.innerHTML = `<span class="err">${err.message}</span>`;
+        }
+    } else if (!serviciosCargados && !client) {
         if (msg) msg.textContent = '';
-    } catch (err) {
-        console.error('Error cargarServiciosCliente:', err);
-        msg.innerHTML = `<span class="err">${err.message}</span>`;
     }
 }
 
@@ -5409,22 +9117,14 @@ function renderServiciosCliente(svcs) {
     const msg = document.getElementById('msg-cal-cliente');
     if (!calActual || !calSig) return;
 
-    calActual.innerHTML = '';
-    calSig.innerHTML = '';
-
-    if (!svcs || svcs.length === 0) {
-        calActual.innerHTML = '<div style="grid-column: 1 /-1; text-align:center; padding: 40px 20px;">' +
-            '<h2 style="color:var(--pink-main); margin-bottom:10px;">✨</h2>' +
-            '<h3 style="margin-bottom:10px;">Aún no hay servicios programados</h3>' +
-            '<p class="muted">Cuando agendes tu primer servicio, aparecerá aquí.</p>' +
-            '</div>';
-        return;
-    }
-
-    renderCalendarioCliente(svcs);
+    renderCalendarioCliente(svcs || []);
     if (msg) {
-        msg.textContent = `Se encontraron ${svcs.length} servicios próximamente.`;
-        setTimeout(() => { if (msg.textContent.includes('servicios')) msg.textContent = ''; }, 3000);
+        if (svcs && svcs.length > 0) {
+            msg.textContent = `Se encontraron ${svcs.length} servicios próximamente.`;
+            setTimeout(() => { if (msg && msg.textContent.includes('servicios')) msg.textContent = ''; }, 3000);
+        } else {
+            msg.textContent = '';
+        }
     }
 }
 
@@ -5573,12 +9273,8 @@ function renderCalendarioCliente(svcs) {
 window.renderCalendarioCliente = renderCalendarioCliente;
 window.cargarServiciosCliente = cargarServiciosCliente;
 
-async function confirmarSemana(isCurrentWeek) {
-    if (!confirm("¿Deseas confirmar todos los servicios de esta semana?")) {
-        return;
-    }
-
-    const btn = event?.currentTarget;
+async function confirmarSemana(isCurrentWeek, btnElement = null) {
+    const btn = btnElement || event?.currentTarget;
     const originalText = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
@@ -5586,32 +9282,58 @@ async function confirmarSemana(isCurrentWeek) {
     }
 
     try {
-        // Calcular fecha inicio de la semana objetivo
         const hoy = new Date();
-        const diaSemana = hoy.getDay();
-        const diasDesdeLunes = (diaSemana + 6) % 7;
+        const lunesActual = typeof getMondayISO_Safe === 'function' ? getMondayISO_Safe(hoy) : (() => {
+            const d = (hoy.getDay() + 6) % 7;
+            const l = new Date(hoy);
+            l.setDate(hoy.getDate() - d);
+            return l.toISOString().slice(0, 10);
+        })();
 
-        const lunesActual = new Date(hoy);
-        lunesActual.setDate(hoy.getDate() - diasDesdeLunes);
-        lunesActual.setHours(0, 0, 0, 0);
+        const fechaInicioISO = isCurrentWeek ? lunesActual : (
+            typeof addWeeksToISO_Safe === 'function' ? addWeeksToISO_Safe(lunesActual, 1) : (() => {
+                const parts = lunesActual.split('-').map(Number);
+                const d = new Date(parts[0], parts[1] - 1, parts[2] + 7);
+                return d.toISOString().slice(0, 10);
+            })()
+        );
 
-        let targetDate = new Date(lunesActual);
-        if (!isCurrentWeek) {
-            targetDate.setDate(targetDate.getDate() + 7);
+        // 1. Confirmar en Supabase si está disponible
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        if (client) {
+            try {
+                const emailCliente = (SESION?.email || '').trim().toLowerCase();
+                const nombreCliente = (SESION?.nombre || '').trim().toLowerCase();
+
+                let q = client.from('control_servicios')
+                    .update({ ok_cliente: true })
+                    .eq('semana_iso', fechaInicioISO);
+
+                if (emailCliente) {
+                    q = q.ilike('cliente_email', emailCliente);
+                } else if (nombreCliente) {
+                    q = q.ilike('cliente_nombre', `%${nombreCliente}%`);
+                }
+
+                const { error: errUpdate } = await q;
+                if (errUpdate) console.warn("Aviso al actualizar ok_cliente en Supabase:", errUpdate);
+            } catch (eSupaConf) {
+                console.error("Error al confirmar semana en Supabase:", eSupaConf);
+            }
         }
 
-        const fechaInicioISO = toISO(targetDate);
-
-        // Llamar API
-        await api('confirmarSemana', {
-            email: SESION.email,
-            fechaInicio: fechaInicioISO, // Backend usará esto para filtrar la semana
-            timestamp: new Date().toISOString()
-        });
+        // 2. Llamar API GAS si hay token
+        if (SESION?.token) {
+            await api('confirmarSemana', {
+                email: SESION.email,
+                fechaInicio: fechaInicioISO,
+                timestamp: new Date().toISOString()
+            }).catch(e => console.warn("Aviso GAS al confirmar semana:", e));
+        }
 
         mostrarToast("✅ ¡Semana confirmada con éxito!");
 
-        // Recargar servicios para ver cambios visuales (si el backend colorea o cambia estado)
+        // Recargar servicios para actualizar estado visual
         await cargarServiciosCliente(true);
 
     } catch (e) {
@@ -5629,131 +9351,65 @@ window.confirmarSemana = confirmarSemana;
 function mostrarDetalleServicioCliente(s) {
     if (!s) return;
 
-    //Formatear fecha con día de semana y mes en español
+    // Formatear fecha con día de semana y mes en español
     const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
     const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
         'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
-    const fechaObj = new Date(s.Fecha + 'T00:00:00');
-    const diaSemana = diasSemana[fechaObj.getDay()];
-    const dia = fechaObj.getDate();
-    const mes = meses[fechaObj.getMonth()];
-    const fechaFormateada = `${diaSemana} ${dia} de ${mes} `;
+    const fStr = String(s.Fecha || s.fecha || '').split('T')[0];
+    let fechaFormateada = '—';
+    if (fStr) {
+        const partes = fStr.split('-');
+        if (partes.length === 3) {
+            const fechaObj = new Date(parseInt(partes[0], 10), parseInt(partes[1], 10) - 1, parseInt(partes[2], 10));
+            if (!isNaN(fechaObj.getTime())) {
+                const diaSemana = diasSemana[fechaObj.getDay()] || '';
+                const dia = fechaObj.getDate();
+                const mes = meses[fechaObj.getMonth()] || '';
+                fechaFormateada = `${diaSemana} ${dia} de ${mes}`;
+            }
+        }
+    }
 
-    //Llenar el modal con la información
-    document.getElementById('mClienteFecha').textContent = fechaFormateada;
-    document.getElementById('mClienteHorario').textContent = s.Horario || '—';
-    document.getElementById('mClienteDireccion').textContent = s.Direccion || 'Por confirmar';
-    document.getElementById('mClienteNinera').textContent = s['Nombre de la niñera'] || 'Por asignar';
+    // Llenar el modal con la información
+    const elFecha = document.getElementById('mClienteFecha');
+    if (elFecha) elFecha.textContent = fechaFormateada;
 
-    //Manejar ubicación (link o texto vacío)
+    const elHorario = document.getElementById('mClienteHorario');
+    const horarioTxt = s.Horario || (s.hora_inicio ? `${s.hora_inicio}${s.hora_fin ? ' – ' + s.hora_fin : ''}` : '—');
+    if (elHorario) elHorario.textContent = horarioTxt;
+
+    const elDireccion = document.getElementById('mClienteDireccion');
+    if (elDireccion) elDireccion.textContent = s.Direccion || s.direccion || 'Por confirmar';
+
+    const elNinera = document.getElementById('mClienteNinera');
+    if (elNinera) elNinera.textContent = s['Nombre de la niñera'] || s.nombre_ninera || 'Por asignar';
+
+    // Manejar ubicación (link o texto vacío)
     const ubicacionLink = document.getElementById('mClienteUbicacion');
     const ubicacionVacio = document.getElementById('mClienteUbicacionVacio');
+    const linkCliente = (s.Ubicacion || s.ubicacion || s.ubicacion_link || '').trim();
 
-    if (s.Ubicacion && s.Ubicacion.trim()) {
-        ubicacionLink.href = s.Ubicacion;
-        ubicacionLink.style.display = 'block';
-        ubicacionVacio.style.display = 'none';
-    } else {
-        ubicacionLink.style.display = 'none';
-        ubicacionVacio.style.display = 'block';
-    }
-
-    // --- LÓGICA DE EDICIÓN DE HORARIO ---
-    window._currentSvcCliente = s;
-    cancelarEdicionHorario(); // Resetear estado previo
-
-    const btnEdit = document.getElementById('btnEditarHorario');
-    if (btnEdit) {
-        // Mostrar botón editar solo si NO tiene confirmado_en (pill amarilla)
-        const isPending = !s.confirmado_en || String(s.confirmado_en).trim() === '';
-        btnEdit.style.display = isPending ? 'block' : 'none';
-    }
-
-    //Mostrar el modal
-    document.getElementById('modalServicioCliente').style.display = 'flex';
-}
-
-/**
- * Habilita los campos de edición en el modal de cliente
- */
-function habilitarEdicionHorario() {
-    const s = window._currentSvcCliente;
-    if (!s) return;
-
-    document.getElementById('mClienteHorarioCont').style.display = 'none';
-    document.getElementById('mClienteEditHorario').style.display = 'flex';
-    document.getElementById('btnEditarHorario').style.display = 'none';
-
-    const inputHora = document.getElementById('mClienteInputHora');
-    const inputHoraFin = document.getElementById('mClienteInputHoraFin');
-
-    if (s.hora_inicio) {
-        inputHora.value = s.hora_inicio;
-    }
-    if (s.hora_fin) {
-        inputHoraFin.value = s.hora_fin;
-    }
-}
-
-/**
- * Cancela la edición y vuelve al estado normal
- */
-function cancelarEdicionHorario() {
-    const contNormal = document.getElementById('mClienteHorarioCont');
-    const contEdit = document.getElementById('mClienteEditHorario');
-    if (contNormal) contNormal.style.display = 'block';
-    if (contEdit) contEdit.style.display = 'none';
-
-    const s = window._currentSvcCliente;
-    if (s) {
-        const isPending = !s.confirmado_en || String(s.confirmado_en).trim() === '';
-        const btnEdit = document.getElementById('btnEditarHorario');
-        if (btnEdit) btnEdit.style.display = isPending ? 'block' : 'none';
-    }
-}
-
-/**
- * Envía la edición al backend
- */
-async function guardarEdicionHorario() {
-    const s = window._currentSvcCliente;
-    if (!s) return;
-
-    const nuevaHora = document.getElementById('mClienteInputHora').value;
-    const nuevaHoraFin = document.getElementById('mClienteInputHoraFin').value;
-
-    if (!nuevaHora || !nuevaHoraFin) {
-        mostrarToast('Por favor selecciona ambos horarios (inicio y fin)');
-        return;
-    }
-
-    try {
-        mostrarCargando(true, 'Actualizando horario...');
-        const res = await api('editarServicioCliente', {
-            fecha: s.fecha,
-            horaInicio: nuevaHora,
-            horaFin: nuevaHoraFin
-        });
-
-        if (res.ok) {
-            mostrarToast('¡Horario actualizado correctamente!');
-            cerrarModalCliente();
-            if (typeof cargarServiciosCliente === 'function') await cargarServiciosCliente(true);
+    if (ubicacionLink && ubicacionVacio) {
+        if (linkCliente) {
+            ubicacionLink.href = linkCliente;
+            ubicacionLink.style.display = 'block';
+            ubicacionVacio.style.display = 'none';
         } else {
-            mostrarToast('Error: ' + (res.mensaje || 'No se pudo actualizar el horario'));
+            ubicacionLink.style.display = 'none';
+            ubicacionVacio.style.display = 'block';
         }
-    } catch (e) {
-        console.error(e);
-        mostrarToast('Error: ' + (e.message || 'No se pudo procesar la solicitud'));
-    } finally {
-        mostrarCargando(false);
     }
+
+    // Mostrar el modal
+    const modalEl = document.getElementById('modalServicioCliente');
+    if (modalEl) modalEl.style.display = 'flex';
 }
 window.mostrarDetalleServicioCliente = mostrarDetalleServicioCliente;
 
 function cerrarModalCliente() {
-    document.getElementById('modalServicioCliente').style.display = 'none';
+    const modalEl = document.getElementById('modalServicioCliente');
+    if (modalEl) modalEl.style.display = 'none';
 }
 window.cerrarModalCliente = cerrarModalCliente;
 
@@ -5786,6 +9442,8 @@ function mostrarPortalFamilia() {
 window.mostrarPortalFamilia = mostrarPortalFamilia;
 
 function volverSeleccion() {
+    document.body.classList.remove('en-control-servicios');
+    document.documentElement.classList.remove('en-control-servicios');
     document.getElementById('paso-seleccion').style.display = 'block';
     document.getElementById('paso-login').style.display = 'none';
     document.getElementById('paso-registro-cliente').style.display = 'none';
@@ -5798,37 +9456,76 @@ async function cargarActividadesCliente(force = false) {
     const contSiguiente = document.getElementById('lista-actividades-siguiente');
     if (!contActual || !contSiguiente) return;
 
-    if (!force && CACHE_CLIENTE.actividades) {
-        renderActividadesCliente(CACHE_CLIENTE.actividades);
-        return;
+    if (contActual && (!CACHE_CLIENTE.actividades || force)) {
+        contActual.innerHTML = '<div class="card" style="text-align:center; padding:30px; border-radius:18px;"><p class="muted">Cargando actividades y planeaciones...</p></div>';
     }
 
-    contActual.innerHTML = '<p class="muted">Buscando actividades...</p>';
-    contSiguiente.innerHTML = '';
-
     try {
-        const res = await api('getActividadesClientePlanificadas', { email: SESION.email });
+        const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+        let res = null;
+
+        if (client && typeof obtenerActividadesClienteSupabase === 'function') {
+            res = await obtenerActividadesClienteSupabase(SESION.email, SESION.nombre);
+        } else {
+            res = await api('getActividadesClientePlanificadas', { email: SESION.email });
+        }
+
         if (!res) throw new Error('No se recibió respuesta del servidor');
 
         CACHE_CLIENTE.actividades = res;
         renderActividadesCliente(res);
     } catch (err) {
-        contActual.innerHTML = `<span class="err">${err.message}</span>`;
-        console.error(err);
+        contActual.innerHTML = `<div class="act-empty-state"><span class="act-empty-icon">⚠️</span><h4 class="act-empty-title">Error al consultar actividades</h4><p class="act-empty-desc">${err.message || 'No se pudieron sincronizar las actividades en este momento.'}</p><button type="button" class="act-empty-action-btn" onclick="cargarActividadesCliente(true)">Intentar de nuevo</button></div>`;
+        console.error("Error al cargar actividades cliente:", err);
     }
 }
+
+function cambiarSemanaActividadesCliente(semana) {
+    const secActual = document.getElementById('container-semana-actual');
+    const secSiguiente = document.getElementById('container-semana-siguiente');
+    const tabActual = document.getElementById('act-tab-actual');
+    const tabSiguiente = document.getElementById('act-tab-siguiente');
+
+    if (semana === 'siguiente') {
+        if (secActual) secActual.style.display = 'none';
+        if (secSiguiente) secSiguiente.style.display = 'block';
+        if (tabActual) tabActual.classList.remove('active');
+        if (tabSiguiente) tabSiguiente.classList.add('active');
+    } else {
+        if (secActual) secActual.style.display = 'block';
+        if (secSiguiente) secSiguiente.style.display = 'none';
+        if (tabActual) tabActual.classList.add('active');
+        if (tabSiguiente) tabSiguiente.classList.remove('active');
+    }
+}
+window.cambiarSemanaActividadesCliente = cambiarSemanaActividadesCliente;
 
 function renderActividadesCliente(res) {
     const contActual = document.getElementById('lista-actividades-actual');
     const contSiguiente = document.getElementById('lista-actividades-siguiente');
+    const badgeActual = document.getElementById('act-count-actual');
+    const badgeSiguiente = document.getElementById('act-count-siguiente');
     if (!contActual || !contSiguiente || !res) return;
+
+    const actualList = Array.isArray(res.actual) ? res.actual : [];
+    const siguienteList = Array.isArray(res.siguiente) ? res.siguiente : [];
+
+    if (badgeActual) badgeActual.textContent = actualList.length;
+    if (badgeSiguiente) badgeSiguiente.textContent = siguienteList.length;
 
     contActual.innerHTML = '';
     contSiguiente.innerHTML = '';
 
-    const renderLista = (lista, container) => {
+    const renderLista = (lista, container, tipoSemana) => {
         if (!lista || lista.length === 0) {
-            container.innerHTML = '<div class="card" style="text-align:center; padding:20px; border:1px dashed #cbd5e1;"><p class="muted">No hay planeaciones para esta semana.</p></div>';
+            container.innerHTML = `
+                <div class="act-empty-state">
+                    <span class="act-empty-icon">🧸</span>
+                    <h4 class="act-empty-title">Aún no hay planeaciones para esta semana</h4>
+                    <p class="act-empty-desc">Tu niñera cargará las actividades pedagógicas y dinámicas estimulativas preparadas especialmente para tu peque.</p>
+                    <button type="button" class="act-empty-action-btn" onclick="cargarActividadesCliente(true)">🔄 Actualizar</button>
+                </div>
+            `;
             return;
         }
 
@@ -5840,55 +9537,101 @@ function renderActividadesCliente(res) {
         });
 
         let html = '';
-        lista.forEach(p => {
-            const area = normalizarTexto(p['area de desarrollo'] || '');
-            let emoji = '✨';
-            if (area.includes('motriz')) emoji = '🏃';
-            else if (area.includes('cognitivo')) emoji = '🧠';
-            else if (area.includes('lenguaje')) emoji = '🗣️';
-            else if (area.includes('socio')) emoji = '🤝';
-            else if (area.includes('sensorial')) emoji = '👂';
+        lista.forEach((p, idx) => {
+            const areaRaw = p['area de desarrollo'] || p.area_desarrollo || '';
+            const areaNorm = typeof normalizarTexto === 'function' ? normalizarTexto(areaRaw) : areaRaw.toLowerCase();
 
-            const fechaStr = toISO(new Date(p.fecha));
-            const diaNombre = new Date(fechaStr + 'T00:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' });
+            let emoji = '✨';
+            let pillClass = 'sensorial';
+            if (areaNorm.includes('motriz')) { emoji = '🏃‍♂️'; pillClass = 'motriz'; }
+            else if (areaNorm.includes('cognitivo')) { emoji = '🧠'; pillClass = 'cognitivo'; }
+            else if (areaNorm.includes('lenguaje')) { emoji = '🗣️'; pillClass = 'lenguaje'; }
+            else if (areaNorm.includes('socio')) { emoji = '🤝'; pillClass = 'socioemocional'; }
+            else if (areaNorm.includes('sensorial') || areaNorm.includes('creativ')) { emoji = '🎨'; pillClass = 'sensorial'; }
+
+            const fechaStr = typeof toISO === 'function' ? toISO(new Date(p.fecha)) : String(p.fecha).slice(0, 10);
+            let diaNombre = 'Día de actividad';
+            try {
+                diaNombre = new Date(fechaStr + 'T12:00:00').toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'short' });
+            } catch (e) { }
+
+            const revState = (p.estado_revision || 'pendiente').toLowerCase();
+            const esRevisada = revState === 'revisada';
+            const statusHtml = esRevisada
+                ? `<span class="act-status-badge revisada">✅ Aprobada por Supervisión</span>`
+                : `<span class="act-status-badge pendiente">📋 Planificada</span>`;
+
+            const imgUrls = (p.imagen || '').split(',').map(img => img.trim()).filter(Boolean);
+            const galleryHtml = imgUrls.length > 0 ? `
+                <div class="act-gallery">
+                    ${imgUrls.map(src => `<img src="${src}" class="act-img" loading="lazy" referrerpolicy="no-referrer" alt="Material de actividad" onclick="window.open('${src}', '_blank')">`).join('')}
+                </div>
+            ` : '';
+
+            const objTexto = p.objetivo ? p.objetivo.trim() : 'Estimulación y desarrollo continuo';
+            const descTexto = p.descripcion ? p.descripcion.trim() : '';
+            const matTexto = p.materiales ? p.materiales.trim() : '';
+            const nannyNom = p['nombre de ninera'] || p.nombre_ninera || 'Niñera';
+            const detailId = `act-detail-${tipoSemana}-${idx}`;
 
             html += `
-                    <div class="activity-card">
-                        <span class="activity-label-pink">${diaNombre.toUpperCase()}</span>
-                        <div class="activity-area-title">${emoji} ${p['area de desarrollo'] || 'Actividad'}</div>
-                        <div class="activity-detail-summary">
-                            <b>Objetivo:</b> ${p.objetivo || 'Por definir'}
-                        </div>
-                        
-                        <details>
-                            <summary class="activity-details-link">Ver descripción y materiales ▽</summary>
-                            <div class="activity-expanded-content">
-                                <p style="margin-bottom:10px;"><b>Descripción:</b><br>${p.descripcion || '—'}</p>
-                                <p style="margin-bottom:10px;"><b>Materiales:</b><br>${p.materiales || '—'}</p>
-                                
-                                <div class="activity-gallery">
-                                    ${(p.imagen || '').split(',').map(img => {
-                const src = img.trim();
-                if (!src) return '';
-                return `<img src="${src}" class="activity-img" loading="lazy" referrerpolicy="no-referrer" onclick="window.open('${src}', '_blank')">`;
-            }).join('')}
-                                </div>
+                <div class="act-card">
+                    <div class="act-card-top-row">
+                        <span class="act-day-chip">📅 ${diaNombre.toUpperCase()}</span>
+                        <span class="act-area-pill ${pillClass}">${emoji} ${areaRaw || 'Estimulación'}</span>
+                    </div>
 
-                                <div style="font-size:11px; color:#94a3b8; margin-top:15px; border-top:1px solid #f1f5f9; padding-top:8px;">
-                                    Niñera: ${p['nombre de ninera'] || '—'}
-                                </div>
+                    <h3 class="act-title">${areaRaw || 'Actividad Pedagógica'}</h3>
+
+                    <div class="act-objective-box">
+                        <b>🎯 Objetivo:</b> ${objTexto}
+                    </div>
+
+                    ${(descTexto || matTexto || galleryHtml) ? `
+                        <details id="${detailId}">
+                            <summary class="act-details-toggle">
+                                <span>Ver detalles de la actividad y materiales</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </summary>
+                            <div class="act-expanded-section">
+                                ${descTexto ? `
+                                    <div class="act-desc-block">
+                                        <strong>📝 Dinámica y Desarrollo:</strong>
+                                        <p style="margin:0;">${descTexto}</p>
+                                    </div>
+                                ` : ''}
+                                
+                                ${matTexto ? `
+                                    <div class="act-materials-block">
+                                        <strong>🎒 Materiales Sugeridos:</strong>
+                                        <p style="margin:0;">${matTexto}</p>
+                                    </div>
+                                ` : ''}
+
+                                ${galleryHtml}
                             </div>
                         </details>
+                    ` : ''}
+
+                    <div class="act-card-footer">
+                        <div class="act-nanny-badge">
+                            <span>👩‍👧 Niñera:</span> <strong>${nannyNom}</strong>
+                        </div>
+                        <div>
+                            ${statusHtml}
+                        </div>
                     </div>
-                `;
+                </div>
+            `;
         });
         container.innerHTML = html;
     };
 
-    renderLista(res.actual, contActual);
-    renderLista(res.siguiente, contSiguiente);
+    renderLista(actualList, contActual, 'act');
+    renderLista(siguienteList, contSiguiente, 'sig');
 }
 window.cargarActividadesCliente = cargarActividadesCliente;
+window.renderActividadesCliente = renderActividadesCliente;
 
 
 
@@ -5953,7 +9696,7 @@ function abrirCredencialNanny() {
     const uploadUI = document.getElementById('cred_upload_ui');
     const fotoUrl = perf.foto || perf.imagen;
 
-    if (fotoUrl && fotoUrl.startsWith('http')) {
+    if (fotoUrl && (fotoUrl.startsWith('http') || fotoUrl.startsWith('data:image/'))) {
         imgPrincipal.src = fotoUrl;
         imgPrincipal.style.display = 'block';
         if (uploadUI) uploadUI.style.display = 'none';
@@ -5964,8 +9707,8 @@ function abrirCredencialNanny() {
 
     // Manejar avatar circular
     const credAvatar = document.getElementById('cred_avatar');
-    if (perf.imagen && perf.imagen.startsWith('http')) {
-        credAvatar.innerHTML = `<img src="${perf.imagen}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+    if (fotoUrl && (fotoUrl.startsWith('http') || fotoUrl.startsWith('data:image/'))) {
+        credAvatar.innerHTML = `<img src="${fotoUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
     } else {
         credAvatar.textContent = esNanny ? '🍼' : '👨‍👩‍👧‍👦';
     }
@@ -5993,60 +9736,60 @@ document.addEventListener('change', async (e) => {
 
         console.log("Archivo seleccionado para credencial:", file.name, file.size);
 
-        // Validar tamaño (máx 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            alert("La imagen es muy pesada. Máximo 5MB.");
-            return;
-        }
-
-        // Usar alert simple si mostrarLoading no existe
         if (typeof mostrarLoading === 'function') {
-            mostrarLoading(true, "Subiendo foto oficial...");
+            mostrarLoading(true, "Optimizando y subiendo foto oficial...");
         } else {
-            console.log("Subiendo foto oficial...");
+            console.log("Optimizando y subiendo foto oficial...");
         }
 
         try {
-            const reader = new FileReader();
-            reader.onload = async (evt) => {
-                try {
-                    const base64 = evt.target.result;
-                    console.log("Enviando foto al servidor...");
-                    const res = await api('uploadProfilePhoto', {
-                        imagen_base64: base64
-                    });
+            let uploadPayload;
+            if (typeof comprimirImagen === 'function') {
+                const comp = await comprimirImagen(file, { maxWidth: 800, maxHeight: 800, quality: 0.82 });
+                uploadPayload = comp.blob || comp.base64;
+            } else {
+                uploadPayload = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => resolve(evt.target.result);
+                    reader.onerror = (err) => reject(err);
+                    reader.readAsDataURL(file);
+                });
+            }
 
-                    console.log("Respuesta del servidor:", res);
+            console.log("☁️ Subiendo foto de perfil a Supabase Storage (bucket: perfiles)...");
+            if (typeof subirImagenSupabaseStorage !== 'function') {
+                throw new Error("El módulo de subida a Supabase Storage no está disponible.");
+            }
+            const fileName = `PERFIL_${(SESION.email || 'usuario').replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.jpg`;
+            const photoUrl = await subirImagenSupabaseStorage(uploadPayload, fileName, "perfiles");
+            if (!photoUrl || typeof photoUrl !== 'string' || !photoUrl.startsWith('http')) {
+                throw new Error("No se pudo obtener el enlace público de Supabase Storage para la foto.");
+            }
+            console.log("✅ [Perfil] Foto guardada en Supabase Storage:", photoUrl);
 
-                    if (res && res.url) {
-                        // Actualizar caché local
-                        if (CACHE_CLIENTE.profile) {
-                            CACHE_CLIENTE.profile.foto = res.url;
-                            localStorage.setItem('nyp_profile_cache', JSON.stringify(CACHE_CLIENTE.profile));
-                        }
-                        // Refrescar vista de la credencial
-                        abrirCredencialNanny();
-                        mostrarToast("✅ ¡Foto actualizada con éxito!");
-                    } else {
-                        throw new Error("No se recibió la URL de la imagen correctamente.");
-                    }
-                } catch (innerErr) {
-                    console.error("Error procesando respuesta de subida:", innerErr);
-                    alert("Error al procesar la subida: " + innerErr.message);
-                } finally {
-                    if (typeof mostrarLoading === 'function') mostrarLoading(false);
-                }
-            };
-            reader.onerror = (error) => {
-                console.error("Error en FileReader:", error);
-                alert("Error al leer el archivo.");
-                if (typeof mostrarLoading === 'function') mostrarLoading(false);
-            };
-            reader.readAsDataURL(file);
-        } catch (err) {
-            console.error("Error en flujo de subida:", err);
-            alert("Error al iniciar la subida: " + err.message);
+            // 2. Actualizar caché local
+            if (window.CACHE_CLIENTE && window.CACHE_CLIENTE.profile) {
+                window.CACHE_CLIENTE.profile.foto = photoUrl;
+                window.CACHE_CLIENTE.profile.imagen = photoUrl;
+                localStorage.setItem('nyp_profile_cache', JSON.stringify(window.CACHE_CLIENTE.profile));
+            }
+
+            // 3. Sincronizar en tabla Supabase (nannys o clientes)
+            const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+            if (client && SESION.email) {
+                const targetTable = SESION.cliente ? 'clientes' : 'nannys';
+                await client.from(targetTable).update({ foto: photoUrl, actualizado_en: new Date().toISOString() }).eq('email', SESION.email);
+            }
+
+            // 4. Refrescar vista de la credencial
+            if (typeof abrirCredencialNanny === 'function') abrirCredencialNanny();
+            mostrarToast("✅ ¡Foto actualizada con éxito!");
+        } catch (innerErr) {
+            console.error("Error procesando subida de foto de perfil:", innerErr);
+            alert("Error al procesar la subida: " + innerErr.message);
+        } finally {
             if (typeof mostrarLoading === 'function') mostrarLoading(false);
+            e.target.value = '';
         }
     }
 });

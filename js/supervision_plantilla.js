@@ -919,6 +919,7 @@ function renderPlantillaEtapa(etapa) {
 
       hitos.forEach((hitoObj, hitoIndex) => {
         const titulo = typeof hitoObj === 'string' ? hitoObj : hitoObj.titulo;
+        const safeTitulo = typeof escapeHTML === 'function' ? escapeHTML(titulo) : titulo;
 
         const hitoCard = document.createElement("div");
         hitoCard.style.cssText = `background: white; border-radius: 12px; padding: 14px 16px; font-size: 13px; color: var(--text-main); border-left: 4px solid ${colorStyle.border}; box-shadow: 0 2px 8px rgba(0,0,0,0.03); transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; line-height: 1.5; font-weight: 500; position: relative;`;
@@ -930,7 +931,7 @@ function renderPlantillaEtapa(etapa) {
           this.style.transform = 'none';
           this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.03)';
         };
-        hitoCard.innerHTML = `${titulo} <span style="position: absolute; right: 10px; bottom: 10px; opacity: 0.3; font-size: 16px;">➔</span>`;
+        hitoCard.innerHTML = `${safeTitulo} <span style="position: absolute; right: 10px; bottom: 10px; opacity: 0.3; font-size: 16px;">➔</span>`;
 
         // Agregar evento para abrir modal
         hitoCard.onclick = () => abrirModalHito(etapa, area, subarea, hitoIndex);
@@ -1015,11 +1016,17 @@ function renderizarActividades(actividades, etapa, area, subarea, indexHito) {
       `;
     }
 
+    const safeActTitulo = typeof escapeHTML === 'function' ? escapeHTML(act.titulo) : (act.titulo || '');
+    const safeActMaterial = typeof escapeHTML === 'function' ? escapeHTML(act.material) : (act.material || 'N/A');
+    const safeActDesc = typeof escapeHTML === 'function' ? escapeHTML(act.descripcion) : (act.descripcion || '');
+    const safeActTiempo = typeof escapeHTML === 'function' ? escapeHTML(act.tiempo) : (act.tiempo || '');
+    const safeActArea = typeof escapeHTML === 'function' ? escapeHTML(act.area || area) : (act.area || area);
+
     actContainer.innerHTML += `
       <div style="background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05); display: flex; flex-direction: column; height: fit-content;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
           <h5 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text-main); line-height: 1.4;">
-      <span style="color: var(--pink-main);">${act.numeroActividad || act.id || '★'}.</span> ${act.titulo}
+      <span style="color: var(--pink-main);">${act.numeroActividad || act.id || '★'}.</span> ${safeActTitulo}
           </h5>
           <button onclick="abrirModalEditarActividad('${act._fbId || act.id}')" 
             style="background: #f1f5f9; border: none; color: var(--blue-main); padding: 5px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; cursor: pointer; transition: all 0.2s; white-space: nowrap; margin-left: 10px;"
@@ -1029,7 +1036,7 @@ function renderizarActividades(actividades, etapa, area, subarea, indexHito) {
         </div>
         
         <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
-          <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">🧩 ${act.area || area}</span>
+          <span style="background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;">🧩 ${safeActArea}</span>
         </div>
 
         <div style="margin-bottom: 15px;">
@@ -1346,17 +1353,28 @@ async function guardarActividadFirebase(event) {
 
     for (const file of files) {
       try {
-        const base64Data = await convertFileToBase64(file);
-        const res = await api('uploadMediaPlantilla', { fileData: base64Data, fileName: file.name, mimeType: file.type });
-        if (res && res.url) {
+        let base64Data = '';
+        if (file.type && file.type.startsWith('image/') && typeof comprimirImagen === 'function') {
+          const comp = await comprimirImagen(file, { maxWidth: 1280, maxHeight: 1280, quality: 0.78 });
+          base64Data = comp.base64;
+        } else {
+          base64Data = await convertFileToBase64(file);
+        }
+
+        let storageUrl = '';
+        if (typeof subirImagenSupabaseStorage === 'function') {
+          storageUrl = await subirImagenSupabaseStorage(base64Data, file.name, "planeaciones");
+        }
+        if (storageUrl) {
           uploadedMedia.push({
-            id: res.fileId,
-            url: res.url,
+            id: storageUrl,
+            url: storageUrl,
             type: file.type.startsWith('video') ? 'video' : 'image'
           });
         }
       } catch (mediaErr) {
-        console.warn('Error subiendo uno de los archivos:', mediaErr);
+        console.warn('Error subiendo a Supabase Storage uno de los archivos:', mediaErr);
+        alert(`Error al subir ${file.name} a Supabase Storage: ${mediaErr.message}`);
       }
     }
     btn.innerHTML = '⏳ Guardando...';
@@ -1414,14 +1432,26 @@ async function manejarSubidaMedia(input, etapa, area, subarea, indexHito, activi
   try {
     const uploadedMedia = [];
     for (const file of files) {
-      const base64Data = await convertFileToBase64(file);
-      const res = await api('uploadMediaPlantilla', { fileData: base64Data, fileName: file.name, mimeType: file.type });
-      if (res && res.url) {
+      let base64Data = '';
+      if (file.type && file.type.startsWith('image/') && typeof comprimirImagen === 'function') {
+        const comp = await comprimirImagen(file, { maxWidth: 1280, maxHeight: 1280, quality: 0.78 });
+        base64Data = comp.base64;
+      } else {
+        base64Data = await convertFileToBase64(file);
+      }
+
+      let storageUrl = '';
+      if (typeof subirImagenSupabaseStorage === 'function') {
+        storageUrl = await subirImagenSupabaseStorage(base64Data, file.name, "planeaciones");
+      }
+      if (storageUrl) {
         uploadedMedia.push({
-          id: res.fileId,
-          url: res.url,
+          id: storageUrl,
+          url: storageUrl,
           type: file.type.startsWith('video') ? 'video' : 'image'
         });
+      } else {
+        throw new Error(`No se pudo subir ${file.name} a Supabase Storage.`);
       }
     }
 

@@ -12,6 +12,7 @@ let _unsubProgresoPeque = null;
 let _dataProgresoPeque = { hitos: {}, seguimiento_diario: {} };
 
 let estChart = null;
+let _radarNeedsRender = false;
 let currentPequeId = null;
 let progresoActual = {};
 let respuestasHitos = {};
@@ -49,28 +50,53 @@ function obtenerNombreEtapaHumano(etapaId) {
     return mapa[etapaId] || etapaId || "Sin evaluar";
 }
 
+let _activeDocIdOverride = null;
+let _activeEmailOverride = null;
+
+function _obtenerEmailClienteActivo() {
+    if (_activeEmailOverride && _activeEmailOverride.includes('@')) {
+        return _activeEmailOverride.trim().toLowerCase();
+    }
+    let email = document.getElementById("dropdown-cliente")?.dataset?.value;
+    if (email && email.includes('@')) return email.trim().toLowerCase();
+    if (window._EST_CLIENTES_MAP && email && window._EST_CLIENTES_MAP.has(email)) {
+        const cData = window._EST_CLIENTES_MAP.get(email);
+        if (cData && cData.email && cData.email.includes('@')) return cData.email.trim().toLowerCase();
+    }
+    if (window.SESION && window.SESION.cliente && window.SESION.email) return window.SESION.email.trim().toLowerCase();
+    if (window._EST_CLIENTES_MAP && window._EST_CLIENTES_MAP.size > 0) {
+        for (const [k, v] of window._EST_CLIENTES_MAP.entries()) {
+            if (v && v.email && v.email.includes('@')) return v.email.trim().toLowerCase();
+            if (k && k.includes('@')) return k.trim().toLowerCase();
+        }
+    }
+    return (window.SESION?.email || '').trim().toLowerCase();
+}
+
+function _obtenerDocIdEstimulacion(nombrePeque) {
+    const nombre = String(nombrePeque || currentPequeId || '').trim();
+    if (_activeDocIdOverride && (!nombrePeque || nombrePeque === currentPequeId)) {
+        return _activeDocIdOverride;
+    }
+    const email = _obtenerEmailClienteActivo();
+    return btoa(`${email}_${nombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+}
+
 /**
  * Carga dinámica de los módulos de Firebase
  */
 async function cargarFirebaseEstimulacion() {
     if (_db) {
-        // Si la base de datos ya cargó, pero no está autenticado aún, re-intentar autenticación rápida
         try {
-            const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
-            const auth = firebaseAuthModule.getAuth(_db.app);
-            if (typeof auth.authStateReady === 'function') {
-                await auth.authStateReady();
-            }
-            if (!auth.currentUser && window.SESION && window.SESION.firebaseToken) {
-                await firebaseAuthModule.signInWithCustomToken(auth, window.SESION.firebaseToken);
-            }
+            const { asegurarAutenticacionFirebase } = await import('./firebase-config.js');
+            await asegurarAutenticacionFirebase(null, window.SESION?.email);
         } catch (e) {
             console.warn("Error validando autenticación en db en caché:", e);
         }
         return _db;
     }
     try {
-        const { db } = await import('./firebase-config.js');
+        const { db, asegurarAutenticacionFirebase } = await import('./firebase-config.js');
         _db = db;
         const firestore = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
         fb_doc = firestore.doc;
@@ -85,22 +111,7 @@ async function cargarFirebaseEstimulacion() {
         fb_where = firestore.where;
 
         // 🔐 Asegurar que Firebase Auth esté autenticado antes de consultar Firestore
-        const firebaseAuthModule = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js");
-        const auth = firebaseAuthModule.getAuth(_db.app);
-
-        if (typeof auth.authStateReady === 'function') {
-            await auth.authStateReady();
-        }
-
-        if (!auth.currentUser && window.SESION && window.SESION.firebaseToken) {
-            console.log("⏳ Autenticando Firebase en Estimulación...");
-            try {
-                await firebaseAuthModule.signInWithCustomToken(auth, window.SESION.firebaseToken);
-                console.log("✅ Firebase autenticado en Estimulación.");
-            } catch (authErr) {
-                console.warn("⚠️ Error en signInWithCustomToken en Estimulación:", authErr.message);
-            }
-        }
+        await asegurarAutenticacionFirebase(null, window.SESION?.email);
 
         return _db;
     } catch (e) {
@@ -109,36 +120,361 @@ async function cargarFirebaseEstimulacion() {
     }
 }
 
-async function initEstimulacion() {
-    if (isEstimulacionInitialized) return;
+async function initEstimulacion(force = false, silent = false) {
+    if (isEstimulacionInitialized && !force) return;
     isEstimulacionInitialized = true;
 
     if (!SESION || !SESION.email) return;
 
+    if (typeof suscribirRealtimePortalServicios === 'function') {
+        suscribirRealtimePortalServicios();
+    }
+
     const clientesMap = new Map();
+    let tieneNeuronannyValido = false;
 
     if (SESION.cliente) {
-        const perf = (typeof CACHE_CLIENTE !== 'undefined' && CACHE_CLIENTE.profile) ? CACHE_CLIENTE.profile : {};
+        let perf = (typeof CACHE_CLIENTE !== 'undefined' && CACHE_CLIENTE.profile) ? CACHE_CLIENTE.profile : {};
+
+        // Respaldo desde localStorage si la caché en memoria aún no tiene el perfil
+        if (!perf.nombre_del_peque && !perf.peque_nombre) {
+            try {
+                const cachedProfileStr = localStorage.getItem('nyp_profile_cache');
+                if (cachedProfileStr) {
+                    const parsedProfile = JSON.parse(cachedProfileStr);
+                    if (parsedProfile && typeof parsedProfile === 'object') {
+                        perf = { ...parsedProfile, ...perf };
+                    }
+                }
+            } catch (eLoc) {}
+        }
+
+        // Respaldo directo a Supabase si la caché aún no contiene los datos del peque
+        if (!perf.nombre_del_peque && !perf.peque_nombre) {
+            try {
+                const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+                if (client && SESION.email) {
+                    const { data: supaCliente } = await client
+                        .from('clientes')
+                        .select('*')
+                        .ilike('email', SESION.email)
+                        .maybeSingle();
+
+                    if (supaCliente) {
+                        perf = {
+                            ...(perf || {}),
+                            nombre_del_peque: supaCliente.peque_nombre || supaCliente.nombre_del_peque,
+                            fecha_de_nacimiento: supaCliente.peque_nacimiento || supaCliente.fecha_de_nacimiento || supaCliente.fecha_de_nacimiento_del_peque,
+                            nombre_del_peque_2: supaCliente.peque_nombre_2 || supaCliente.nombre_del_peque_2,
+                            fecha_de_nacimiento_2: supaCliente.peque_nacimiento_2 || supaCliente.fecha_de_nacimiento_2 || supaCliente.fecha_de_nacimiento_del_peque_2,
+                            nombre_del_peque_3: supaCliente.peque_nombre_3 || supaCliente.nombre_del_peque_3,
+                            fecha_de_nacimiento_3: supaCliente.peque_nacimiento_3 || supaCliente.fecha_de_nacimiento_3 || supaCliente.fecha_de_nacimiento_del_peque_3
+                        };
+                        if (typeof CACHE_CLIENTE !== 'undefined') {
+                            CACHE_CLIENTE.profile = { ...(CACHE_CLIENTE.profile || {}), ...perf };
+                        }
+                    }
+                }
+            } catch (eCliSup) {
+                console.warn("⚠️ No se pudo consultar perfil de cliente en Supabase para estimulación:", eCliSup);
+            }
+        }
+
         const peques = [];
-        if (perf.nombre_del_peque) peques.push({ nombre: perf.nombre_del_peque, nacimiento: perf.fecha_de_nacimiento || perf.fecha_de_nacimiento_del_peque });
-        if (perf.nombre_del_peque_2) peques.push({ nombre: perf.nombre_del_peque_2, nacimiento: perf.fecha_de_nacimiento_2 || perf.fecha_de_nacimiento_del_peque_2 });
-        if (perf.nombre_del_peque_3) peques.push({ nombre: perf.nombre_del_peque_3, nacimiento: perf.fecha_de_nacimiento_3 || perf.fecha_de_nacimiento_del_peque_3 });
+        const p1 = perf.nombre_del_peque || perf.peque_nombre;
+        const nac1 = perf.fecha_de_nacimiento || perf.fecha_de_nacimiento_del_peque || perf.peque_nacimiento;
+        if (p1) peques.push({ nombre: p1, nacimiento: nac1 });
+
+        const p2 = perf.nombre_del_peque_2 || perf.peque_nombre_2;
+        const nac2 = perf.fecha_de_nacimiento_2 || perf.fecha_de_nacimiento_del_peque_2 || perf.peque_nacimiento_2;
+        if (p2) peques.push({ nombre: p2, nacimiento: nac2 });
+
+        const p3 = perf.nombre_del_peque_3 || perf.peque_nombre_3;
+        const nac3 = perf.fecha_de_nacimiento_3 || perf.fecha_de_nacimiento_del_peque_3 || perf.peque_nacimiento_3;
+        if (p3) peques.push({ nombre: p3, nacimiento: nac3 });
 
         clientesMap.set(SESION.email, {
             nombre: SESION.nombre || 'Mi Familia',
             peques: peques
         });
     } else {
-        (CAL_SERVICIOS || []).forEach(s => {
-            const clientEmail = s.email || s.correo_cliente;
-            const clientName = s.cliente || s.nombre_cliente;
-            if (clientEmail && !clientesMap.has(clientEmail)) {
-                clientesMap.set(clientEmail, {
-                    nombre: clientName,
-                    peques: s.peques_lista || []
-                });
+        const hoy = new Date();
+        const lunesActual = typeof getMondayISO_Safe === 'function'
+            ? getMondayISO_Safe(hoy)
+            : (typeof getMondayISO === 'function' ? getMondayISO(hoy) : (() => {
+                const d = new Date(hoy);
+                const day = d.getDay();
+                const diff = (day === 0 ? -6 : 1) - day;
+                d.setDate(d.getDate() + diff);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            })());
+
+        const dLunes = new Date(lunesActual + 'T12:00:00');
+        dLunes.setDate(dLunes.getDate() + 6);
+        const domingoActual = `${dLunes.getFullYear()}-${String(dLunes.getMonth() + 1).padStart(2, '0')}-${String(dLunes.getDate()).padStart(2, '0')}`;
+
+        const esNinera = !!(SESION && !SESION.cliente && !SESION.admin && !SESION.supervision && !SESION.rh);
+        tieneNeuronannyValido = false;
+
+        const _normStr = (str) => String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+        const _cleanStr = (str) => String(str || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9\s]/g, ' ')
+            .toLowerCase()
+            .trim();
+
+        const _esTipoNeuronanny = (tipoRaw) => {
+            const t = _normStr(tipoRaw);
+            if (!t) return false;
+            if (t.includes('miss nanny') || t.includes('bitacora') || t.includes('bitácora')) return false;
+            return t.includes('neuro') || t.includes('educativa') || t.includes('estimulacion') || t.includes('pedagogic');
+        };
+
+        const _coincideNanny = (rowNom, rowEmail, sesNom, sesEmail) => {
+            const sEm = (sesEmail || '').trim().toLowerCase();
+            const rEm = (rowEmail || '').trim().toLowerCase();
+            if (sEm && rEm && sEm === rEm) return true;
+
+            const sN = _cleanStr(sesNom);
+            const rN = _cleanStr(rowNom);
+            if (!sN || !rN) return false;
+            if (sN === rN || sN.includes(rN) || rN.includes(sN)) return true;
+
+            const sWords = sN.split(/\s+/).filter(w => w.length >= 3 && !['las', 'los', 'del', 'san', 'sta', 'nanny', 'miss'].includes(w));
+            const rWords = rN.split(/\s+/).filter(w => w.length >= 3 && !['las', 'los', 'del', 'san', 'sta', 'nanny', 'miss'].includes(w));
+            if (sWords.length > 0 && rWords.length > 0) {
+                return sWords.some(sw => rWords.some(rw => rw === sw || rw.includes(sw) || sw.includes(rw)));
             }
-        });
+            return false;
+        };
+
+        const _esOkNanny = (val) => {
+            if (val === true || val === 1 || val === '1') return true;
+            if (typeof val === 'string') {
+                const v = val.trim().toLowerCase();
+                return v === 'true' || v === 'si' || v === 'sí' || v === 'checked' || v === 'ok';
+            }
+            return false;
+        };
+
+        let consultoSupabaseExitosamente = false;
+        let mapaClientesInfo = {};
+        let clientesListRaw = [];
+
+        // 1. Obtener catálogo de clientes en Supabase para enriquecer emails y datos de peques
+        try {
+            const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+            if (client) {
+                const { data: clientesList } = await client.from('clientes').select('*');
+                if (Array.isArray(clientesList)) {
+                    clientesListRaw = clientesList;
+                    clientesList.forEach(c => {
+                        const em = (c.email || '').trim().toLowerCase();
+                        const nom = (c.nombre || '').trim();
+                        const nomNorm = _normStr(nom);
+                        const nomClean = _cleanStr(nom);
+                        if (em) mapaClientesInfo[em] = c;
+                        if (nom) mapaClientesInfo[nom] = c;
+                        if (nomNorm) mapaClientesInfo[nomNorm] = c;
+                        if (nomClean) mapaClientesInfo[nomClean] = c;
+                    });
+                }
+            }
+        } catch (eCliMap) {
+            console.warn("⚠️ Error cargando mapa de clientes para estimulación:", eCliMap);
+        }
+
+        const _buscarInfoCliente = (rCliEmail, rCliNom) => {
+            const rEm = (rCliEmail || '').trim().toLowerCase();
+            if (rEm && mapaClientesInfo[rEm]) return mapaClientesInfo[rEm];
+            const rNom = (rCliNom || '').trim();
+            if (rNom && mapaClientesInfo[rNom]) return mapaClientesInfo[rNom];
+            if (rNom && mapaClientesInfo[_normStr(rNom)]) return mapaClientesInfo[_normStr(rNom)];
+            if (rNom && mapaClientesInfo[_cleanStr(rNom)]) return mapaClientesInfo[_cleanStr(rNom)];
+
+            if (!Array.isArray(clientesListRaw) || clientesListRaw.length === 0) return {};
+
+            if (rEm && rEm.includes('@')) {
+                const fEm = clientesListRaw.find(c => (c.email || '').trim().toLowerCase() === rEm);
+                if (fEm) return fEm;
+            }
+
+            const rClean = _cleanStr(rNom);
+            if (!rClean) return {};
+
+            let found = clientesListRaw.find(c => {
+                const cClean = _cleanStr(c.nombre);
+                return cClean && (cClean.includes(rClean) || rClean.includes(cClean));
+            });
+            if (found) return found;
+
+            const rWords = rClean.split(/\s+/).filter(w => w.length >= 3 && !['las', 'los', 'del', 'san', 'sta', 'nanny', 'miss', 'familia'].includes(w));
+            if (rWords.length > 0) {
+                found = clientesListRaw.find(c => {
+                    const cClean = _cleanStr(c.nombre);
+                    const cWords = cClean.split(/\s+/).filter(w => w.length >= 3 && !['las', 'los', 'del', 'san', 'sta', 'nanny', 'miss', 'familia'].includes(w));
+                    return rWords.some(rw => cWords.some(cw => cw === rw || cw.includes(rw) || rw.includes(cw)));
+                });
+                if (found) return found;
+            }
+
+            return {};
+        };
+
+        const _extraerEmailDeServicioOTexto = (s, infoCli) => {
+            let em = (s?.cliente_email || s?.correo_cliente || s?.email || infoCli?.email || '').trim().toLowerCase();
+            if (em && em.includes('@')) return em;
+
+            const obs = s?.observaciones || '';
+            if (typeof obs === 'string' && obs.length > 0) {
+                const mTag = obs.match(/<!--cliente_email:(.*?)-->/);
+                if (mTag && mTag[1] && mTag[1].includes('@')) return mTag[1].trim().toLowerCase();
+
+                const mRegex = obs.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+                if (mRegex && mRegex[1]) return mRegex[1].trim().toLowerCase();
+            }
+            return '';
+        };
+
+        const _extraerPequesDeCliente = (infoCli, pequesExistentes = []) => {
+            if (Array.isArray(pequesExistentes) && pequesExistentes.length > 0) return pequesExistentes;
+            const peques = [];
+            if (!infoCli) return peques;
+            const p1 = infoCli.peque_nombre || infoCli.nombre_del_peque;
+            const n1 = infoCli.peque_nacimiento || infoCli.fecha_de_nacimiento || infoCli.fecha_de_nacimiento_del_peque;
+            if (p1) peques.push({ nombre: p1, nacimiento: n1 });
+
+            const p2 = infoCli.peque_nombre_2 || infoCli.nombre_del_peque_2;
+            const n2 = infoCli.peque_nacimiento_2 || infoCli.fecha_de_nacimiento_2 || infoCli.fecha_de_nacimiento_del_peque_2;
+            if (p2) peques.push({ nombre: p2, nacimiento: n2 });
+
+            const p3 = infoCli.peque_nombre_3 || infoCli.nombre_del_peque_3;
+            const n3 = infoCli.peque_nacimiento_3 || infoCli.fecha_de_nacimiento_3 || infoCli.fecha_de_nacimiento_del_peque_3;
+            if (p3) peques.push({ nombre: p3, nacimiento: n3 });
+            return peques;
+        };
+
+        // 2. Si es niñera, consultar directamente Supabase control_servicios
+        if (esNinera) {
+            try {
+                const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+                if (client) {
+                    const semanasConsultar = [
+                        lunesActual,
+                        (typeof addWeeksToISO_Safe === 'function' ? addWeeksToISO_Safe(lunesActual, -1) : lunesActual),
+                        (typeof addWeeksToISO_Safe === 'function' ? addWeeksToISO_Safe(lunesActual, 1) : lunesActual),
+                        (typeof addWeeksToISO_Safe === 'function' ? addWeeksToISO_Safe(lunesActual, -2) : lunesActual),
+                        (typeof addWeeksToISO_Safe === 'function' ? addWeeksToISO_Safe(lunesActual, 2) : lunesActual)
+                    ];
+
+                    const { data: rowsDirectas, error: errRows } = await client
+                        .from('control_servicios')
+                        .select('*')
+                        .in('semana_iso', semanasConsultar);
+
+                    if (!errRows && Array.isArray(rowsDirectas)) {
+                        consultoSupabaseExitosamente = true;
+                        rowsDirectas.forEach(r => {
+                            if (!r) return;
+                            // Excluir bloques internos de administración
+                            let bId = (r.bloque || '').trim().toLowerCase();
+                            if (!bId && r.observaciones && typeof r.observaciones === 'string' && r.observaciones.includes('<!--bloque:')) {
+                                const mB = r.observaciones.match(/<!--bloque:(.*?)-->/);
+                                if (mB) bId = mB[1].trim().toLowerCase();
+                            }
+                            const BLOQUES_SOLO_ADMIN = ['proximos_servicios', 'clientes_espera', 'clientes_potenciales'];
+                            if (BLOQUES_SOLO_ADMIN.includes(bId)) return;
+
+                            const coincide = _coincideNanny(r.nanny_nombre, r.nanny_email, SESION.nombre, SESION.email);
+                            if (!coincide) return;
+
+                            const tipoRaw = r.tipo_servicio || r.servicio || '';
+                            const esNeuronanny = _esTipoNeuronanny(tipoRaw);
+                            const tieneOkNanny = _esOkNanny(r.ok_nanny);
+
+                            // REGLA: Debe ser servicio Neuronanny/Educativa Y tener la casilla "ok nanny" marcada
+                            if (esNeuronanny && tieneOkNanny) {
+                                tieneNeuronannyValido = true;
+                                const rCliEmail = (r.cliente_email || '').trim().toLowerCase();
+                                const rCliNom = r.cliente_nombre || '';
+                                const infoCli = _buscarInfoCliente(rCliEmail, rCliNom);
+
+                                const clientEmail = _extraerEmailDeServicioOTexto(r, infoCli);
+                                const clientName = rCliNom || infoCli.nombre || 'Familia';
+                                const clientKey = clientEmail || _normStr(clientName);
+                                const peques = _extraerPequesDeCliente(infoCli, Array.isArray(r.peques_lista) ? r.peques_lista : []);
+
+                                if (clientKey && !clientesMap.has(clientKey)) {
+                                    clientesMap.set(clientKey, {
+                                        email: clientEmail,
+                                        nombre: clientName,
+                                        peques: peques
+                                    });
+                                } else if (clientKey && clientesMap.has(clientKey)) {
+                                    const cur = clientesMap.get(clientKey);
+                                    if ((!cur.peques || cur.peques.length === 0) && peques.length > 0) {
+                                        cur.peques = peques;
+                                    }
+                                    if (!cur.email && clientEmail) {
+                                        cur.email = clientEmail;
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            } catch (eDirectaSvc) {
+                console.warn("⚠️ Consulta directa de control_servicios en estimulación:", eDirectaSvc);
+            }
+        }
+
+        // 3. Revisar también CAL_SERVICIOS / CACHE_NINERA / NannyInicio / CACHE_CLIENTE para asegurar máxima fiabilidad
+        const serviciosFuente = [
+            ...(Array.isArray(CAL_SERVICIOS) ? CAL_SERVICIOS : []),
+            ...(typeof CACHE_NINERA !== 'undefined' && Array.isArray(CACHE_NINERA?.servicios) ? CACHE_NINERA.servicios : []),
+            ...(window.NannyInicio && Array.isArray(window.NannyInicio._servicios) ? window.NannyInicio._servicios : []),
+            ...(window.CACHE_CLIENTE && Array.isArray(window.CACHE_CLIENTE.servicios) ? window.CACHE_CLIENTE.servicios : [])
+        ];
+
+        if (Array.isArray(serviciosFuente)) {
+            serviciosFuente.forEach(s => {
+                if (s.ver === false) return;
+
+                const tipoRaw = s.tipo_servicio || s.servicio || s.tipo || '';
+                const esNeuronanny = _esTipoNeuronanny(tipoRaw);
+                const tieneOkNanny = _esOkNanny(s.ok_nanny);
+
+                if (esNeuronanny && tieneOkNanny) {
+                    tieneNeuronannyValido = true;
+                    const sEmail = (s.email || s.correo_cliente || s.cliente_email || '').trim().toLowerCase();
+                    const sName = s.cliente || s.nombre_cliente || s.cliente_nombre || '';
+                    const infoCli = _buscarInfoCliente(sEmail, sName);
+
+                    const clientEmail = _extraerEmailDeServicioOTexto(s, infoCli);
+                    const clientName = sName || infoCli.nombre || 'Familia';
+                    const clientKey = clientEmail || _normStr(clientName) || 'familia_estimulacion';
+                    const peques = _extraerPequesDeCliente(infoCli, Array.isArray(s.peques_lista) ? s.peques_lista : []);
+
+                    if (clientKey && !clientesMap.has(clientKey)) {
+                        clientesMap.set(clientKey, {
+                            email: clientEmail,
+                            nombre: clientName,
+                            peques: peques
+                        });
+                    } else if (clientKey && clientesMap.has(clientKey)) {
+                        const cur = clientesMap.get(clientKey);
+                        if ((!cur.peques || cur.peques.length === 0) && peques.length > 0) {
+                            cur.peques = peques;
+                        }
+                        if (!cur.email && clientEmail) {
+                            cur.email = clientEmail;
+                        }
+                    }
+                }
+            });
+        }
     }
 
     const optionsCliente = document.getElementById("options-cliente-est");
@@ -155,25 +491,187 @@ async function initEstimulacion() {
         const containerCliente = document.getElementById("container-select-cliente");
         if (containerCliente) containerCliente.style.display = (SESION.cliente || clientesMap.size <= 1) ? 'none' : 'flex';
 
-        const firstEmail = clientesMap.keys().next().value;
-        const firstData = clientesMap.get(firstEmail);
-        if (firstEmail) {
-            document.getElementById("label-cliente-est").textContent = firstData.nombre;
-            document.getElementById("dropdown-cliente").dataset.value = firstEmail;
-            llenarSelectorPeques(firstData.peques);
+        // Mantener cliente seleccionado si sigue existiendo en el mapa
+        const currentSelectedEmail = document.getElementById("dropdown-cliente")?.dataset?.value;
+        if (currentSelectedEmail && clientesMap.has(currentSelectedEmail)) {
+            const curData = clientesMap.get(currentSelectedEmail);
+            document.getElementById("label-cliente-est").textContent = curData.nombre;
+            llenarSelectorPeques(curData.peques, silent);
+        } else {
+            const firstEmail = clientesMap.keys().next().value;
+            const firstData = clientesMap.get(firstEmail);
+            if (firstEmail) {
+                document.getElementById("label-cliente-est").textContent = firstData.nombre;
+                document.getElementById("dropdown-cliente").dataset.value = firstEmail;
+                llenarSelectorPeques(firstData.peques, silent);
+            } else {
+                document.getElementById("label-cliente-est").textContent = "Sin familias asignadas";
+                document.getElementById("dropdown-cliente").dataset.value = "";
+                llenarSelectorPeques([], silent);
+                limpiarVistaEstimulacion();
+            }
         }
+    }
+
+    // Aplicar o remover bloqueo difuminado: SOLO para niñera
+    const esCliente = !!(SESION && SESION.cliente);
+    const esAdminOSup = !!(SESION && (SESION.admin || SESION.supervision || SESION.rh));
+    const esNineraFinal = !esCliente && !esAdminOSup;
+
+    const tieneAccesoValido = esNineraFinal ? (tieneNeuronannyValido || clientesMap.size > 0) : true;
+    window._nannyTieneNeuronannyValido = tieneAccesoValido;
+
+    if (esNineraFinal) {
+        verificarBloqueoEstimulacionNinera(tieneAccesoValido);
+    } else {
+        verificarBloqueoEstimulacionNinera(true);
     }
 
     window._EST_CLIENTES_MAP = clientesMap;
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-dropdown')) {
-            document.querySelectorAll('.custom-dropdown-options').forEach(el => el.classList.remove('active'));
-        }
-    });
+    if (!window._estClickAttached) {
+        window._estClickAttached = true;
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-dropdown')) {
+                document.querySelectorAll('.custom-dropdown-options').forEach(el => el.classList.remove('active'));
+            }
+        });
+    }
 
     renderDaySelector();
     setTimeout(() => cargarFirebaseEstimulacion().catch(e => { }), 1000);
+}
+
+function verificarBloqueoEstimulacionNinera(tieneNeuronanny) {
+    const vista = document.getElementById("vista-estimulacion");
+    const overlay = document.getElementById("est-nanny-locked-overlay");
+    const esCliente = !!(window.SESION && window.SESION.cliente) || document.body.classList.contains("cliente");
+    const esAdminOSup = !!(window.SESION && (window.SESION.admin || window.SESION.supervision || window.SESION.rh)) ||
+        document.body.classList.contains("admin") ||
+        document.body.classList.contains("supervision") ||
+        document.body.classList.contains("rh");
+
+    // Si es cliente, admin, supervisión o rh: JAMÁS bloquear, asegurar vista limpia
+    if (esCliente || esAdminOSup) {
+        if (vista) vista.classList.remove("est-bloqueada-ninera");
+        if (overlay) {
+            overlay.style.display = "none";
+            overlay.style.setProperty("display", "none", "important");
+        }
+        return;
+    }
+
+    // Determinar si niñera tiene acceso permitido
+    const acceso = (typeof tieneNeuronanny === 'boolean')
+        ? tieneNeuronanny
+        : (typeof window._nannyTieneNeuronannyValido === 'boolean' ? window._nannyTieneNeuronannyValido : false);
+
+    console.log("🔒 [Estimulación Niñera] Estado de acceso:", acceso ? "DESBLOQUEADO" : "BLOQUEADO");
+
+    // Para niñera: desbloquear solo si tiene servicio Neuronanny/Educativa con ok_nanny activo esta semana
+    if (acceso) {
+        if (vista) vista.classList.remove("est-bloqueada-ninera");
+        if (overlay) {
+            overlay.style.display = "none";
+            overlay.style.setProperty("display", "none", "important");
+        }
+    } else {
+        if (vista) vista.classList.add("est-bloqueada-ninera");
+        if (overlay) {
+            overlay.style.display = "flex";
+            overlay.style.setProperty("display", "flex", "important");
+        }
+    }
+}
+window.verificarBloqueoEstimulacionNinera = verificarBloqueoEstimulacionNinera;
+
+function limpiarVistaEstimulacion() {
+    if (_unsubEstPeques) {
+        _unsubEstPeques();
+        _unsubEstPeques = null;
+    }
+    if (_unsubProgresoPeque) {
+        _unsubProgresoPeque();
+        _unsubProgresoPeque = null;
+    }
+
+    currentPequeId = null;
+    activeEtapaId = null;
+    progresoActual = {};
+    respuestasHitos = {};
+    respuestasHitosInicial = {};
+    nivelesTeoricos = {};
+    nivelesFinales = null;
+    _dataProgresoPeque = { hitos: {}, seguimiento_diario: {} };
+    window._activePequeData = null;
+
+    // Destruir gráfica radar y limpiar canvas
+    if (estChart) {
+        estChart.destroy();
+        estChart = null;
+    }
+    const ctx = document.getElementById('estRadarChart');
+    if (ctx) {
+        const context = ctx.getContext('2d');
+        if (context) context.clearRect(0, 0, ctx.width, ctx.height);
+    }
+
+    // Ocultar controles de etapa y alertas
+    const stageNav = document.getElementById('stage-navigation-controls');
+    if (stageNav) stageNav.style.display = 'none';
+
+    const alerta = document.getElementById('alerta-cambio-etapa');
+    if (alerta) {
+        alerta.style.display = 'none';
+        alerta.innerHTML = '';
+    }
+
+    // Limpiar botones de evaluación
+    const evalBtns = document.getElementById('eval-buttons-container');
+    if (evalBtns) evalBtns.innerHTML = '';
+
+    // Limpiar lista de hitos
+    const milestonesList = document.getElementById("est-milestones-list");
+    if (milestonesList) {
+        milestonesList.innerHTML = `
+            <div class="milestone-placeholder" style="color:rgba(255,255,255,0.7); font-size:12px; padding:10px; border:1px dashed rgba(255,255,255,0.3); border-radius:12px;">
+                Sin pequeños seleccionados.
+            </div>
+        `;
+    }
+
+    // Limpiar lista de actividades del día
+    const actContainer = document.getElementById("actividades-lista-container");
+    if (actContainer) {
+        actContainer.innerHTML = `
+            <div class="eval-prompt-card" style="text-align:center; padding:40px 20px; background:white; border-radius:24px; border:2px dashed #e2e8f0; margin-top:20px; grid-column: 1 / -1;">
+                <div style="font-size:40px; margin-bottom:10px;">🍼</div>
+                <h3 style="color:var(--est-text); margin-bottom:6px; font-size:16px;">Sin servicios activos</h3>
+                <p style="color:var(--est-text-muted); font-size:13px; max-width:350px; margin-inline:auto;">No hay familias asignadas actualmente en la matriz de servicios.</p>
+            </div>
+        `;
+    }
+
+    // Limpiar lista de materiales
+    const matList = document.getElementById("est-materials-list");
+    if (matList) {
+        matList.innerHTML = `
+            <div class="milestone-placeholder" style="color:var(--text-muted); font-size:12px; padding:15px; border:1px dashed #cbd5e1; border-radius:12px; text-align:center;">
+                Sin materiales registrados.
+            </div>
+        `;
+    }
+
+    // Resetear labels y datasets de peques
+    const labelPeque = document.getElementById("label-peque-est");
+    if (labelPeque) labelPeque.textContent = "Sin pequeños";
+    const dropPeque = document.getElementById("dropdown-peque");
+    if (dropPeque) {
+        dropPeque.dataset.value = "";
+        dropPeque.dataset.nacimiento = "";
+    }
+    const avatar = document.getElementById("est-current-avatar");
+    if (avatar) avatar.textContent = "🍼";
 }
 
 function toggleEstDropdown(type) {
@@ -183,7 +681,7 @@ function toggleEstDropdown(type) {
     if (list) list.classList.toggle('active');
 }
 
-function llenarSelectorPeques(peques) {
+function llenarSelectorPeques(peques, silent = false, forceReload = false) {
     const optionsPeque = document.getElementById("options-peque-est");
     const labelPeque = document.getElementById("label-peque-est");
     if (!optionsPeque) return;
@@ -191,8 +689,13 @@ function llenarSelectorPeques(peques) {
     optionsPeque.innerHTML = '';
     if (!peques || peques.length === 0) {
         optionsPeque.innerHTML = '<div class="custom-option">Sin pequeños</div>';
-        labelPeque.textContent = "Sin pequeños";
-        document.getElementById("dropdown-peque").dataset.value = "";
+        if (labelPeque) labelPeque.textContent = "Sin pequeños";
+        const dropPeque = document.getElementById("dropdown-peque");
+        if (dropPeque) {
+            dropPeque.dataset.value = "";
+            dropPeque.dataset.nacimiento = "";
+        }
+        limpiarVistaEstimulacion();
     } else {
         peques.forEach(p => {
             const nombre = (typeof p === 'object') ? p.nombre : p;
@@ -204,12 +707,24 @@ function llenarSelectorPeques(peques) {
             optionsPeque.appendChild(div);
         });
 
-        const p0 = peques[0];
+        // Si el peque seleccionado sigue presente en la lista Y no se fuerza recarga Y ya tenemos datos cargados, mantenerlo
+        const curSelected = document.getElementById("dropdown-peque")?.dataset?.value;
+        const found = peques.find(p => ((typeof p === 'object') ? p.nombre : p) === curSelected);
+        if (found && !forceReload && window._activePequeData) {
+            const fNom = (typeof found === 'object') ? found.nombre : found;
+            const fNac = (typeof found === 'object') ? found.nacimiento : null;
+            labelPeque.textContent = fNom;
+            document.getElementById("dropdown-peque").dataset.value = fNom;
+            document.getElementById("dropdown-peque").dataset.nacimiento = fNac;
+            return;
+        }
+
+        const p0 = found || peques[0];
         const n0 = (typeof p0 === 'object') ? p0.nombre : p0;
         const nac0 = (typeof p0 === 'object') ? p0.nacimiento : null;
         labelPeque.textContent = n0;
         document.getElementById("dropdown-peque").dataset.value = n0;
-        selectPequeEstimulacion(n0, nac0);
+        selectPequeEstimulacion(n0, nac0, silent);
     }
 }
 
@@ -217,98 +732,121 @@ function cambioClienteEstimulacion(email, nombre) {
     document.getElementById("label-cliente-est").textContent = nombre;
     document.getElementById("dropdown-cliente").dataset.value = email;
     document.getElementById("options-cliente-est").classList.remove('active');
-    const data = window._EST_CLIENTES_MAP.get(email);
-    if (data) llenarSelectorPeques(data.peques);
+    const data = window._EST_CLIENTES_MAP ? window._EST_CLIENTES_MAP.get(email) : null;
+    if (data) llenarSelectorPeques(data.peques, false, true);
 }
 
-async function selectPequeEstimulacion(nombre, nacimiento) {
+async function selectPequeEstimulacion(nombre, nacimiento, silent = false) {
     currentPequeId = nombre;
-    const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-    document.getElementById("dropdown-peque").dataset.nacimiento = nacimiento;
+    _activeDocIdOverride = null;
+    _activeEmailOverride = null;
+
+    // Resolver correo del cliente de manera segura y confiable
+    let email = document.getElementById("dropdown-cliente")?.dataset?.value;
+    if (!email) {
+        if (SESION.cliente) {
+            email = SESION.email;
+        } else if (window._EST_CLIENTES_MAP && window._EST_CLIENTES_MAP.size > 0) {
+            email = window._EST_CLIENTES_MAP.keys().next().value;
+            if (email && document.getElementById("dropdown-cliente")) {
+                document.getElementById("dropdown-cliente").dataset.value = email;
+            }
+        } else {
+            email = SESION.email;
+        }
+    }
+
+    // Si nacimiento no fue provisto, recuperarlo del mapa de clientes
+    if (!nacimiento && window._EST_CLIENTES_MAP) {
+        for (const [k, clientData] of window._EST_CLIENTES_MAP.entries()) {
+            const matchP = (clientData.peques || []).find(p => ((typeof p === 'object') ? p.nombre : p) === nombre);
+            if (matchP && typeof matchP === 'object' && matchP.nacimiento) {
+                nacimiento = matchP.nacimiento;
+                break;
+            }
+        }
+    }
+
+    document.getElementById("dropdown-peque").dataset.nacimiento = nacimiento || '';
     document.getElementById("label-peque-est").textContent = nombre;
     document.getElementById("options-peque-est")?.classList.remove('active');
 
-    mostrarCargandoEstimulacion(true);
-
-    // Resetear datos para evitar fugas entre peques
-    activeEtapaId = null;
+    // Inicializar etapa preliminar según fecha de nacimiento para respuesta instantánea
+    activeEtapaId = obtenerEtapaId(calcularMeses(nacimiento));
     progresoActual = {};
     respuestasHitos = {};
     _dataProgresoPeque = { hitos: {}, seguimiento_diario: {} };
+    actualizarControlesNavegacionEtapa();
+    renderRadarChart();
+    renderDashboard();
+    renderEvaluationButtons();
 
     try {
         await cargarFirebaseEstimulacion();
         if (CATALOGO_ACTIVIDADES.length === 0) await cargarCatalogoActividades();
 
-        const docId = btoa(`${email}_${nombre}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+        const docId = _obtenerDocIdEstimulacion(nombre);
 
         if (_unsubEstPeques) _unsubEstPeques();
         if (_unsubProgresoPeque) _unsubProgresoPeque();
 
-        _unsubEstPeques = fb_onSnapshot(fb_doc(_db, "estimulacion_peques", docId), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                window._activePequeData = data;
+        const procesarSnapshotData = (data) => {
+            window._activePequeData = data;
 
-                const meses = calcularMeses(nacimiento);
-                const currentEtapaId = obtenerEtapaId(meses);
-                const isTrans = esMesDeTransicion(meses, currentEtapaId);
-                const nextEtapaId = isTrans ? obtenerSiguienteEtapa(currentEtapaId) : null;
+            const meses = calcularMeses(nacimiento || data.nacimiento);
+            const currentEtapaId = obtenerEtapaId(meses);
+            const isTrans = esMesDeTransicion(meses, currentEtapaId);
+            const nextEtapaId = isTrans ? obtenerSiguienteEtapa(currentEtapaId) : null;
 
-                const historial = data.historial_evaluaciones || {};
+            const historial = data.historial_evaluaciones || {};
 
-                // Priorizar la última evaluación realizada al cargar por primera vez
-                if (!activeEtapaId) {
-                    activeEtapaId = obtenerUltimaEvaluacionRealizada(data, currentEtapaId);
-                } else {
-                    // Si ya hay un activeEtapaId, nos aseguramos de que siga siendo válido
-                    const etapasPermitidas = obtenerEtapasPermitidas();
-                    if (!etapasPermitidas.includes(activeEtapaId)) {
-                        activeEtapaId = obtenerUltimaEvaluacionRealizada(data, currentEtapaId);
-                    }
+            // Priorizar la última evaluación realizada al cargar por primera vez
+            activeEtapaId = obtenerUltimaEvaluacionRealizada(data, currentEtapaId);
+
+            if (historial[activeEtapaId]) {
+                progresoActual = historial[activeEtapaId].niveles || {};
+                respuestasHitos = historial[activeEtapaId].hitos_detalle || {};
+                respuestasHitosInicial = historial[activeEtapaId].hitos_inicial_detalle || historial[activeEtapaId].hitos_detalle || {};
+                nivelesFinales = historial[activeEtapaId].niveles_finales || null;
+            } else if (data.etapa_actual === activeEtapaId || (data.niveles && Object.keys(data.niveles).length > 0)) {
+                if (data.etapa_actual && data.etapa_actual !== activeEtapaId && !historial[activeEtapaId]) {
+                    activeEtapaId = data.etapa_actual;
                 }
-
-                if (historial[activeEtapaId]) {
-                    progresoActual = historial[activeEtapaId].niveles || {};
-                    respuestasHitos = historial[activeEtapaId].hitos_detalle || {};
-                    respuestasHitosInicial = historial[activeEtapaId].hitos_inicial_detalle || historial[activeEtapaId].hitos_detalle || {};
-                    nivelesFinales = historial[activeEtapaId].niveles_finales || null;
-                } else if (data.etapa_actual === activeEtapaId) {
-                    progresoActual = data.niveles || {};
-                    respuestasHitos = data.hitos_detalle || {};
-                    respuestasHitosInicial = data.hitos_inicial_detalle || data.hitos_detalle || {};
-                    nivelesFinales = data.niveles_finales || null;
+                progresoActual = data.niveles || {};
+                respuestasHitos = data.hitos_detalle || {};
+                respuestasHitosInicial = data.hitos_inicial_detalle || data.hitos_detalle || {};
+                nivelesFinales = data.niveles_finales || null;
+            } else if (Object.keys(historial).length > 0) {
+                const primerEtapa = Object.keys(historial).find(k => historial[k] && historial[k].niveles && Object.keys(historial[k].niveles).length > 0);
+                if (primerEtapa) {
+                    activeEtapaId = primerEtapa;
+                    progresoActual = historial[primerEtapa].niveles || {};
+                    respuestasHitos = historial[primerEtapa].hitos_detalle || {};
+                    respuestasHitosInicial = historial[primerEtapa].hitos_inicial_detalle || historial[primerEtapa].hitos_detalle || {};
+                    nivelesFinales = historial[primerEtapa].niveles_finales || null;
                 } else {
                     progresoActual = {};
                     respuestasHitos = {};
                     respuestasHitosInicial = {};
                     nivelesFinales = null;
                 }
-
-                calcularAvanceTeorico();
-                renderRadarChart();
-                renderDashboard();
-                renderActividadesDelDia();
-                verificarAlertaCambioEtapa();
-                renderEvaluationButtons();
-                actualizarControlesNavegacionEtapa();
             } else {
-                window._activePequeData = null;
-                activeEtapaId = obtenerEtapaId(calcularMeses(nacimiento));
                 progresoActual = {};
                 respuestasHitos = {};
                 respuestasHitosInicial = {};
-                nivelesTeoricos = {};
                 nivelesFinales = null;
-                renderRadarChart();
-                renderDashboard();
-                renderPromptEvaluacion(nombre);
-                renderEvaluationButtons();
-                actualizarControlesNavegacionEtapa();
             }
-        }, (err) => {
-            // Error silencioso: ocurre cuando el documento aún no existe para un peque nuevo
-            console.warn(`[Estimulación] Sin acceso a evaluación de ${nombre}:`, err.code || err.message);
+
+            calcularAvanceTeorico();
+            renderRadarChart();
+            renderDashboard();
+            renderActividadesDelDia();
+            verificarAlertaCambioEtapa();
+            renderEvaluationButtons();
+            actualizarControlesNavegacionEtapa();
+        };
+
+        const renderVistaVacia = () => {
             window._activePequeData = null;
             activeEtapaId = obtenerEtapaId(calcularMeses(nacimiento));
             progresoActual = {};
@@ -321,13 +859,78 @@ async function selectPequeEstimulacion(nombre, nacimiento) {
             renderPromptEvaluacion(nombre);
             renderEvaluationButtons();
             actualizarControlesNavegacionEtapa();
+        };
+
+        _unsubEstPeques = fb_onSnapshot(fb_doc(_db, "estimulacion_peques", docId), async (docSnap) => {
+            if (docSnap.exists()) {
+                procesarSnapshotData(docSnap.data());
+            } else {
+                // Fallback: intentar buscar por nombre de peque en estimulacion_peques
+                try {
+                    const q = fb_query(fb_collection(_db, "estimulacion_peques"), fb_where("peque", "==", nombre));
+                    const querySnap = await fb_getDocs(q);
+                    let matchedDoc = null;
+                    if (!querySnap.empty) {
+                        const clientEmail = _obtenerEmailClienteActivo();
+                        querySnap.forEach(d => {
+                            const dData = d.data();
+                            if (!matchedDoc) matchedDoc = d;
+                            else if (clientEmail && dData.email && dData.email.toLowerCase() === clientEmail.toLowerCase()) {
+                                matchedDoc = d;
+                            }
+                        });
+                    }
+                    if (matchedDoc) {
+                        _activeDocIdOverride = matchedDoc.id;
+                        if (matchedDoc.data().email) _activeEmailOverride = matchedDoc.data().email;
+                        procesarSnapshotData(matchedDoc.data());
+                        return;
+                    }
+                } catch (eFallback) {
+                    console.warn("⚠️ Fallback query estimulacion_peques:", eFallback);
+                }
+                renderVistaVacia();
+            }
+        }, async (err) => {
+            console.warn(`[Estimulación] Sin acceso directo a ${docId}:`, err.code || err.message);
+            try {
+                const q = fb_query(fb_collection(_db, "estimulacion_peques"), fb_where("peque", "==", nombre));
+                const querySnap = await fb_getDocs(q);
+                let matchedDoc = null;
+                if (!querySnap.empty) {
+                    querySnap.forEach(d => {
+                        if (!matchedDoc) matchedDoc = d;
+                    });
+                }
+                if (matchedDoc) {
+                    _activeDocIdOverride = matchedDoc.id;
+                    if (matchedDoc.data().email) _activeEmailOverride = matchedDoc.data().email;
+                    procesarSnapshotData(matchedDoc.data());
+                    return;
+                }
+            } catch (eFallback2) {}
+            renderVistaVacia();
         });
 
-        _unsubProgresoPeque = fb_onSnapshot(fb_doc(_db, "progreso_peque", docId), (snap) => {
-            _dataProgresoPeque = snap.exists() ? snap.data() : { hitos: {}, seguimiento_diario: {} };
+        _unsubProgresoPeque = fb_onSnapshot(fb_doc(_db, "progreso_peque", _activeDocIdOverride || docId), async (snap) => {
+            if (snap.exists()) {
+                _dataProgresoPeque = snap.data();
+            } else {
+                try {
+                    const qP = fb_query(fb_collection(_db, "progreso_peque"), fb_where("peque", "==", nombre));
+                    const qSnap = await fb_getDocs(qP);
+                    if (!qSnap.empty) {
+                        _dataProgresoPeque = qSnap.docs[0].data();
+                    } else {
+                        _dataProgresoPeque = { hitos: {}, seguimiento_diario: {} };
+                    }
+                } catch (eProg) {
+                    _dataProgresoPeque = { hitos: {}, seguimiento_diario: {} };
+                }
+            }
 
             // Re-renderizar la lista y radar si ya hay evaluación
-            if (Object.keys(respuestasHitos).length > 0) {
+            if (Object.keys(respuestasHitos).length > 0 || (_dataProgresoPeque && _dataProgresoPeque.hitos && Object.keys(_dataProgresoPeque.hitos).length > 0)) {
                 calcularAvanceTeorico();
                 renderRadarChart();
                 renderActividadesDelDia();
@@ -357,14 +960,18 @@ async function selectPequeEstimulacion(nombre, nacimiento) {
                 }
             }
         }, (err) => {
-            // Error silencioso: ocurre cuando el documento aún no existe para un peque nuevo
             console.warn(`[Estimulación] Sin acceso a progreso de ${nombre}:`, err.code || err.message);
             _dataProgresoPeque = { hitos: {}, seguimiento_diario: {} };
         });
     } catch (e) {
-        console.error(e);
-    } finally {
-        mostrarCargandoEstimulacion(false);
+        console.error("Error al cargar datos de estimulación de Firebase:", e);
+        window._activePequeData = null;
+        if (!activeEtapaId) activeEtapaId = obtenerEtapaId(calcularMeses(nacimiento));
+        renderRadarChart();
+        renderDashboard();
+        renderPromptEvaluacion(nombre);
+        renderEvaluationButtons();
+        actualizarControlesNavegacionEtapa();
     }
 }
 
@@ -762,8 +1369,7 @@ function actualizarEtapaVista(etapaId) {
 }
 
 async function verOEditarEvaluacion(etapaId, isReadOnly = false) {
-    const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-    const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+    const docId = _obtenerDocIdEstimulacion(currentPequeId);
     mostrarCargandoEstimulacion(true);
     try {
         const docSnap = await fb_getDoc(fb_doc(_db, "estimulacion_peques", docId));
@@ -873,8 +1479,8 @@ async function guardarEvaluacionInicial() {
     btn.textContent = "Guardando...";
 
     try {
-        const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+        const email = _obtenerEmailClienteActivo();
+        const docId = _obtenerDocIdEstimulacion(currentPequeId);
 
         const updateData = {
             email, peque: currentPequeId,
@@ -992,8 +1598,7 @@ async function verResultadosEvaluacion() {
         const isReadOnly = SESION.cliente ? true : false;
         await verOEditarEvaluacion(activeEtapaId, isReadOnly);
     } else {
-        const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+        const docId = _obtenerDocIdEstimulacion(currentPequeId);
         mostrarCargandoEstimulacion(true);
         try {
             const docSnap = await fb_getDoc(fb_doc(_db, "estimulacion_peques", docId));
@@ -1067,9 +1672,44 @@ async function cargarCatalogoActividades(force = false, etapa = null) {
     return CATALOGO_ACTIVIDADES;
 }
 
+function resetRadarVisual() {
+    const canvas = document.getElementById('estRadarChart');
+    if (canvas) {
+        canvas.style.transition = 'none';
+        canvas.style.opacity = '0';
+    }
+    if (estChart && typeof estChart.reset === 'function') {
+        try {
+            estChart.reset();
+        } catch (e) { }
+    }
+}
+window.resetRadarVisual = resetRadarVisual;
+
 function renderRadarChart() {
     const ctx = document.getElementById('estRadarChart');
     if (!ctx) return;
+
+    const vista = document.getElementById("vista-estimulacion");
+    const isVisible = vista && (vista.classList.contains("activa") || vista.style.display === "block" || window.getComputedStyle(vista).display !== "none");
+    if (!isVisible) {
+        _radarNeedsRender = true;
+        return;
+    }
+    _radarNeedsRender = false;
+
+    ctx.style.transition = 'opacity 0.25s ease';
+    ctx.style.opacity = '1';
+
+    if (!currentPequeId) {
+        if (estChart) {
+            estChart.destroy();
+            estChart = null;
+        }
+        const context = ctx.getContext('2d');
+        if (context) context.clearRect(0, 0, ctx.width, ctx.height);
+        return;
+    }
 
     // Consolidar las 8 subáreas en los 5 grupos principales
     const configGrupos = [
@@ -1156,37 +1796,106 @@ function renderRadarChart() {
     }
 
     if (estChart) {
-        estChart.data.labels = labels;
-        estChart.data.datasets = datasets;
-        estChart.update();
-        return;
+        estChart.destroy();
+        estChart = null;
     }
+
+    // Guardar los datos originales para poder reutilizarlos siempre
+    datasets.forEach(ds => {
+        ds._originalData = [...ds.data];
+    });
+
+    // Inicializar datasets en 0 para garantizar que la expansión siempre florezca desde el centro hacia afuera
+    const datasetsEnCero = datasets.map(ds => ({
+        ...ds,
+        data: ds.data.map(() => 0)
+    }));
 
     estChart = new Chart(ctx, {
         type: 'radar',
         data: {
             labels: labels,
-            datasets: datasets
+            datasets: datasetsEnCero
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutCubic'
+            },
+            layout: {
+                padding: { top: 6, bottom: 6, left: 6, right: 6 }
+            },
             scales: {
                 r: {
+                    beginAtZero: true,
+                    min: 0,
+                    max: 10,
+                    ticks: { display: false, stepSize: 2 },
                     angleLines: { color: 'rgba(0,0,0,0.05)' },
                     grid: { color: 'rgba(0,0,0,0.05)' },
-                    suggestedMin: 0,
-                    suggestedMax: 10,
-                    ticks: { display: false, stepSize: 2 },
                     pointLabels: {
-                        font: { family: 'Plus Jakarta Sans', size: 10, weight: 'bold' },
-                        color: '#191C1E'
+                        font: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' },
+                        color: '#191C1E',
+                        padding: 6
                     }
                 }
             },
             plugins: { legend: { display: false } }
         }
     });
+    window.estChart = estChart;
+
+    // Disparar la transición animada desde 0 hacia los valores reales
+    setTimeout(() => {
+        if (!estChart) return;
+        estChart.data.datasets.forEach((ds, idx) => {
+            if (datasets[idx] && datasets[idx]._originalData) {
+                ds.data = [...datasets[idx]._originalData];
+            }
+        });
+        estChart.update();
+    }, 50);
+}
+
+let _animarRadarTimeout = null;
+function animarRadarChart() {
+    // Resetear y ocultar visualmente de inmediato para erradicar cualquier flashazo de la gráfica previa
+    resetRadarVisual();
+
+    if (_animarRadarTimeout) clearTimeout(_animarRadarTimeout);
+    _animarRadarTimeout = setTimeout(() => {
+        const vista = document.getElementById("vista-estimulacion");
+        if (!vista) return;
+        const isVisible = vista.classList.contains("activa") || vista.style.display === "block" || window.getComputedStyle(vista).display !== "none";
+        if (!isVisible) return;
+
+        const canvas = document.getElementById('estRadarChart');
+        if (canvas) {
+            canvas.style.transition = 'opacity 0.25s ease';
+            canvas.style.opacity = '1';
+        }
+
+        if (estChart && typeof estChart.update === 'function' && estChart.data && estChart.data.datasets && estChart.data.datasets.length > 0 && !_radarNeedsRender) {
+            const finalData = estChart.data.datasets.map(ds => [...(ds._originalData || ds.data)]);
+            estChart.data.datasets.forEach(ds => {
+                ds.data = ds.data.map(() => 0);
+            });
+            estChart.update('none');
+
+            setTimeout(() => {
+                if (!estChart) return;
+                estChart.data.datasets.forEach((ds, idx) => {
+                    ds.data = finalData[idx];
+                });
+                estChart.update();
+            }, 50);
+        } else if (typeof renderRadarChart === 'function') {
+            _radarNeedsRender = false;
+            renderRadarChart();
+        }
+    }, 100);
 }
 
 function renderDashboard() {
@@ -1472,8 +2181,6 @@ async function renderActividadesDelDia() {
     const container = document.getElementById("actividades-lista-container");
     if (!container) return;
 
-    mostrarCargandoEstimulacion(true);
-
     try {
         if (CATALOGO_ACTIVIDADES.length === 0) {
             await cargarCatalogoActividades();
@@ -1484,8 +2191,7 @@ async function renderActividadesDelDia() {
             return;
         }
 
-        const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+        const docId = _obtenerDocIdEstimulacion(currentPequeId);
 
         const nacimiento = document.getElementById("dropdown-peque").dataset.nacimiento;
         const etapaId = activeEtapaId || obtenerEtapaId(calcularMeses(nacimiento));
@@ -1828,8 +2534,6 @@ async function renderActividadesDelDia() {
     } catch (e) {
         console.error("Error en renderActividades:", e);
         container.innerHTML = '<div class="no-data">Error al cargar la ruta diaria.</div>';
-    } finally {
-        mostrarCargandoEstimulacion(false);
     }
 }
 
@@ -1952,8 +2656,7 @@ function renderMaterialesSemanales() {
 async function toggleMaterialListo(m) {
     if (!currentPequeId) return;
     try {
-        const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+        const docId = _obtenerDocIdEstimulacion(currentPequeId);
         const ref = fb_doc(_db, "progreso_peque", docId);
 
         const data = _dataProgresoPeque || {};
@@ -2061,8 +2764,7 @@ async function marcarEstadoActividad(status) {
     if (!_actividadAbierta) return;
 
     const act = _actividadAbierta;
-    const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-    const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+    const docId = _obtenerDocIdEstimulacion(currentPequeId);
     const hoy = _fechaSeleccionadaEst;
 
     try {
@@ -2103,8 +2805,11 @@ async function marcarEstadoActividad(status) {
             data.seguimiento_diario[hoy][act.firebaseId] = valorAGuardar;
             if (!data.seguimiento_diario_metadata) data.seguimiento_diario_metadata = {};
             if (!data.seguimiento_diario_metadata[hoy]) data.seguimiento_diario_metadata[hoy] = {};
+
+            const prevMeta = data.seguimiento_diario_metadata[hoy][act.firebaseId] || {};
             data.seguimiento_diario_metadata[hoy][act.firebaseId] = {
-                fecha_registro: new Date().toISOString()
+                ...prevMeta,
+                fecha_registro: prevMeta.fecha_registro || new Date().toISOString()
             };
         }
 
@@ -2121,6 +2826,7 @@ async function marcarEstadoActividad(status) {
         }
 
         await fb_setDoc(fb_doc(_db, "progreso_peque", docId), data);
+        _dataProgresoPeque = data;
 
         let msg = "Entendido, la guardamos para después.";
         if (status === "realizada") msg = "¡Genial! Actividad lograda 🌟";
@@ -2296,8 +3002,8 @@ function renderEvidenciaSeccion() {
     const id = _actividadAbierta.firebaseId;
     const progData = _dataProgresoPeque || {};
     const hoy = _fechaSeleccionadaEst;
-    const meta = (progData.seguimiento_diario_metadata && progData.seguimiento_diario_metadata[hoy] && progData.seguimiento_diario_metadata[hoy][id]) 
-        ? progData.seguimiento_diario_metadata[hoy][id] 
+    const meta = (progData.seguimiento_diario_metadata && progData.seguimiento_diario_metadata[hoy] && progData.seguimiento_diario_metadata[hoy][id])
+        ? progData.seguimiento_diario_metadata[hoy][id]
         : null;
 
     let evidencias = [];
@@ -2310,17 +3016,20 @@ function renderEvidenciaSeccion() {
         }
     }
 
+    const esCliente = (typeof SESION !== 'undefined' && !!SESION.cliente);
     let html = "";
 
     if (evidencias.length > 0) {
         html += `<div class="evidencia-gallery">`;
         evidencias.forEach((url, idx) => {
             html += `
-                <div class="evidencia-thumb-container">
-                    <img src="${url}" alt="Evidencia ${idx + 1}" onclick="abrirVisualizador('${url}')">
-                    <button class="evidencia-delete-btn" onclick="eliminarEvidenciaActividad(${idx}, event)">
+                <div class="evidencia-thumb-container" onclick="abrirVisualizador('${url}', this)" title="Ver evidencia ampliada">
+                    <img src="${url}" alt="Evidencia ${idx + 1}" loading="lazy" onerror="if (typeof manejarErrorImagenEvidencia === 'function') manejarErrorImagenEvidencia(this, '${url}')">
+                    ${!esCliente ? `
+                    <button class="evidencia-delete-btn" onclick="eliminarEvidenciaActividad(${idx}, event)" title="Eliminar evidencia">
                         <span class="material-symbols-outlined" style="font-size:16px;">delete</span>
                     </button>
+                    ` : ''}
                 </div>
             `;
         });
@@ -2341,7 +3050,30 @@ function renderEvidenciaSeccion() {
 }
 
 /**
- * Procesa la imagen seleccionada, la redimensiona y la sube al backend (Drive)
+ * Sube una evidencia directamente a Supabase Storage (Bucket 'evidencias').
+ * Si falla, arroja un error claro para notificar al usuario.
+ */
+async function _subirEvidenciaSegura(file, base64, nombreArchivo, docId) {
+    if (typeof subirImagenSupabaseStorage !== 'function') {
+        throw new Error("El módulo de subida a Supabase Storage no está cargado.");
+    }
+
+    console.log("☁️ [Evidencia] Subiendo a Supabase Storage...");
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Tiempo de espera agotado al conectar con Supabase Storage (15s)")), 15000)
+    );
+    const uploadPromise = subirImagenSupabaseStorage(base64, nombreArchivo, "evidencias");
+    const publicUrl = await Promise.race([uploadPromise, timeoutPromise]);
+
+    if (publicUrl && typeof publicUrl === 'string' && publicUrl.startsWith('http')) {
+        console.log("✅ [Evidencia] Subida a Supabase Storage exitosa:", publicUrl);
+        return publicUrl;
+    }
+    throw new Error("Supabase Storage no devolvió una URL pública válida.");
+}
+
+/**
+ * Procesa la imagen seleccionada, la redimensiona y la sube de forma segura
  */
 async function procesarYSubirEvidencia(event) {
     const file = event.target.files[0];
@@ -2358,28 +3090,27 @@ async function procesarYSubirEvidencia(event) {
         container.innerHTML = `
             <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; gap: 10px;">
                 <div style="width: 30px; height: 30px; border: 3px solid rgba(2, 132, 199, 0.1); border-top-color: #0284c7; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">Subiendo evidencia a Drive...</span>
+                <span style="font-size: 13px; color: var(--text-muted); font-weight: 500;">Procesando y guardando evidencia...</span>
             </div>
         `;
     }
 
     try {
-        // 1. Redimensionar imagen para evitar excesos de tamaño en Drive API (GAS)
-        const base64 = await _redimensionarImagen(file, 1024);
-
-        // 2. Subir imagen a Drive mediante la API de Google Apps Script
+        const docId = _obtenerDocIdEstimulacion(currentPequeId);
+        const hoy = _fechaSeleccionadaEst;
         const nombreArchivo = `evidencia_${_actividadAbierta.firebaseId}_${Date.now()}.jpg`;
-        const driveUrl = await api('guardarEvidenciaDrive', { base64: base64, nombreArchivo: nombreArchivo });
 
-        if (!driveUrl) {
-            throw new Error("No se pudo obtener el enlace público del archivo.");
+        // 1. Redimensionar imagen para optimizar peso
+        const base64 = await _redimensionarImagen(file, 960, 0.75);
+
+        // 2. Subir imagen con soporte multiplataforma
+        const evidenciaUrl = await _subirEvidenciaSegura(file, base64, nombreArchivo, docId);
+
+        if (!evidenciaUrl) {
+            throw new Error("No se pudo procesar la evidencia correctamente.");
         }
 
         // 3. Guardar URL en Firestore
-        const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
-        const hoy = _fechaSeleccionadaEst;
-
         const snap = await fb_getDoc(fb_doc(_db, "progreso_peque", docId));
         let data = snap.exists() ? snap.data() : { hitos: {}, seguimiento_diario: {} };
 
@@ -2393,7 +3124,7 @@ async function procesarYSubirEvidencia(event) {
         if (!currentStatus || !currentStatus.startsWith("realizada")) {
             const valorAGuardar = (typeof SESION !== 'undefined' && SESION.cliente) ? "realizada_familia" : "realizada_ninera";
             data.seguimiento_diario[hoy][_actividadAbierta.firebaseId] = valorAGuardar;
-            
+
             // Avanzar hito correspondiente
             if (_actividadAbierta.hitoRelacionado) {
                 if (!data.hitos) data.hitos = {};
@@ -2414,7 +3145,7 @@ async function procesarYSubirEvidencia(event) {
             evidencias = [meta.evidencia];
         }
 
-        evidencias.push(driveUrl);
+        evidencias.push(evidenciaUrl);
 
         // Guardar estructura limpia
         data.seguimiento_diario_metadata[hoy][_actividadAbierta.firebaseId] = {
@@ -2428,7 +3159,11 @@ async function procesarYSubirEvidencia(event) {
         }
 
         await fb_setDoc(fb_doc(_db, "progreso_peque", docId), data);
+
+        // Actualizar caché en memoria y re-renderizar galería de inmediato
+        _dataProgresoPeque = data;
         mostrarToast("¡Evidencia cargada con éxito! 🌟");
+        renderEvidenciaSeccion();
     } catch (e) {
         console.error("Error en procesarYSubirEvidencia:", e);
         mostrarToast("Error al subir evidencia: " + e.message);
@@ -2441,7 +3176,7 @@ async function procesarYSubirEvidencia(event) {
 /**
  * Redimensiona y comprime una imagen local a través de Canvas
  */
-function _redimensionarImagen(file, maxDimension) {
+function _redimensionarImagen(file, maxDimension, quality = 0.8) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = function (e) {
@@ -2463,12 +3198,12 @@ function _redimensionarImagen(file, maxDimension) {
                 }
 
                 const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
+                canvas.width = Math.round(width);
+                canvas.height = Math.round(height);
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-                resolve(canvas.toDataURL('image/jpeg', 0.8));
+                resolve(canvas.toDataURL('image/jpeg', quality));
             };
             img.onerror = reject;
             img.src = e.target.result;
@@ -2479,12 +3214,149 @@ function _redimensionarImagen(file, maxDimension) {
 }
 
 /**
+ * Muestra un modal de confirmación con diseño premium corporativo y microanimaciones
+ */
+function mostrarModalConfirmacion({
+    titulo = "¿Estás seguro?",
+    mensaje = "Esta acción no se puede deshacer.",
+    icono = "delete_forever",
+    textoConfirmar = "Sí, eliminar",
+    textoCancelar = "Cancelar",
+    colorBoton = "linear-gradient(135deg, #e11d48 0%, #be123c 100%)",
+    colorSombra = "rgba(225, 29, 72, 0.35)",
+    colorIconoBg = "linear-gradient(135deg, #fee2e2 0%, #fecdd3 100%)",
+    colorIcono = "#e11d48"
+} = {}) {
+    return new Promise((resolve) => {
+        const prev = document.getElementById("nyp-custom-confirm-modal");
+        if (prev) prev.remove();
+
+        const modalOverlay = document.createElement("div");
+        modalOverlay.id = "nyp-custom-confirm-modal";
+        modalOverlay.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10000005;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            box-sizing: border-box;
+        `;
+
+        modalOverlay.innerHTML = `
+            <div style="
+                background: #ffffff;
+                width: 100%;
+                max-width: 350px;
+                border-radius: 24px;
+                padding: 28px 22px 22px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0,0,0,0.05);
+                text-align: center;
+                transform: scale(0.92) translateY(8px);
+                transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+                box-sizing: border-box;
+                font-family: inherit;
+            ">
+                <div style="
+                    width: 60px;
+                    height: 60px;
+                    margin: 0 auto 16px;
+                    border-radius: 50%;
+                    background: ${colorIconoBg};
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: ${colorIcono};
+                    box-shadow: 0 10px 20px -5px ${colorSombra};
+                ">
+                    <span class="material-symbols-outlined" style="font-size: 32px;">${icono}</span>
+                </div>
+                <h4 style="margin: 0 0 8px; font-size: 18px; font-weight: 800; color: #0f172a; letter-spacing: -0.3px;">${titulo}</h4>
+                <p style="margin: 0 0 24px; font-size: 13.5px; color: #64748b; line-height: 1.5;">${mensaje}</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="nyp-confirm-btn-cancel" style="
+                        flex: 1;
+                        padding: 12px 14px;
+                        border-radius: 14px;
+                        border: 1.5px solid #e2e8f0;
+                        background: #f8fafc;
+                        color: #475569;
+                        font-weight: 700;
+                        font-size: 13.5px;
+                        cursor: pointer;
+                        transition: background 0.15s;
+                    ">${textoCancelar}</button>
+                    <button id="nyp-confirm-btn-ok" style="
+                        flex: 1;
+                        padding: 12px 14px;
+                        border-radius: 14px;
+                        border: none;
+                        background: ${colorBoton};
+                        color: #ffffff;
+                        font-weight: 700;
+                        font-size: 13.5px;
+                        cursor: pointer;
+                        box-shadow: 0 8px 20px -4px ${colorSombra};
+                        transition: transform 0.15s, opacity 0.15s;
+                    ">${textoConfirmar}</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modalOverlay);
+
+        requestAnimationFrame(() => {
+            modalOverlay.style.opacity = "1";
+            const card = modalOverlay.querySelector("div");
+            if (card) card.style.transform = "scale(1) translateY(0)";
+        });
+
+        const cleanup = (confirmed) => {
+            modalOverlay.style.opacity = "0";
+            const card = modalOverlay.querySelector("div");
+            if (card) card.style.transform = "scale(0.92) translateY(8px)";
+            setTimeout(() => {
+                modalOverlay.remove();
+                resolve(confirmed);
+            }, 200);
+        };
+
+        modalOverlay.querySelector("#nyp-confirm-btn-cancel").addEventListener("click", () => cleanup(false));
+        modalOverlay.querySelector("#nyp-confirm-btn-ok").addEventListener("click", () => cleanup(true));
+        modalOverlay.addEventListener("click", (e) => {
+            if (e.target === modalOverlay) cleanup(false);
+        });
+    });
+}
+
+/**
  * Elimina una imagen de evidencia específica del arreglo
  */
 async function eliminarEvidenciaActividad(index, event) {
     if (event) event.stopPropagation();
 
-    if (!confirm("¿Estás seguro de que deseas eliminar esta imagen de evidencia?")) {
+    // Bloquear si la acción es solicitada desde un perfil de cliente
+    const esCliente = (typeof SESION !== 'undefined' && !!SESION.cliente);
+    if (esCliente) {
+        mostrarToast("Solo la niñera puede gestionar la eliminación de evidencias.");
+        return;
+    }
+
+    const confirmado = await mostrarModalConfirmacion({
+        titulo: "¿Eliminar evidencia?",
+        mensaje: "Esta fotografía se removerá de la bitácora de actividades del peque. ¿Deseas continuar?",
+        icono: "delete_forever",
+        textoConfirmar: "Sí, eliminar",
+        textoCancelar: "Cancelar"
+    });
+
+    if (!confirmado) {
         return;
     }
 
@@ -2500,8 +3372,7 @@ async function eliminarEvidenciaActividad(index, event) {
 
     try {
         const id = _actividadAbierta.firebaseId;
-        const email = document.getElementById("dropdown-cliente").dataset.value || SESION.email;
-        const docId = btoa(`${email}_${currentPequeId}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+        const docId = _obtenerDocIdEstimulacion(currentPequeId);
         const hoy = _fechaSeleccionadaEst;
 
         const snap = await fb_getDoc(fb_doc(_db, "progreso_peque", docId));
@@ -2526,6 +3397,8 @@ async function eliminarEvidenciaActividad(index, event) {
                 }
 
                 await fb_setDoc(fb_doc(_db, "progreso_peque", docId), data);
+                _dataProgresoPeque = data;
+                renderEvidenciaSeccion();
                 mostrarToast("Evidencia eliminada.");
             }
         }
@@ -2539,12 +3412,20 @@ async function eliminarEvidenciaActividad(index, event) {
 /**
  * Abre el visualizador a pantalla completa para una imagen
  */
-function abrirVisualizador(url) {
+function abrirVisualizador(url, sourceEl) {
+    let actualSrc = url;
+    if (sourceEl) {
+        const img = sourceEl.tagName === 'IMG' ? sourceEl : sourceEl.querySelector('img');
+        if (img && img.src && !img.src.endsWith('/null') && img.style.display !== 'none') {
+            actualSrc = img.src;
+        }
+    }
     const viewer = document.getElementById("fullscreenViewer");
     const viewerImg = document.getElementById("fullscreenViewerImg");
     if (viewer && viewerImg) {
-        viewerImg.src = url;
+        viewerImg.src = actualSrc;
         viewer.style.display = "flex";
+        document.body.style.overflow = "hidden";
     }
 }
 
@@ -2555,6 +3436,7 @@ function cerrarVisualizador() {
     const viewer = document.getElementById("fullscreenViewer");
     if (viewer) {
         viewer.style.display = "none";
+        document.body.style.overflow = "";
     }
 }
 
@@ -2575,5 +3457,40 @@ window.renderEvaluationButtons = renderEvaluationButtons;
 window.renderEvidenciaSeccion = renderEvidenciaSeccion;
 window.procesarYSubirEvidencia = procesarYSubirEvidencia;
 window.eliminarEvidenciaActividad = eliminarEvidenciaActividad;
+window.mostrarModalConfirmacion = mostrarModalConfirmacion;
 window.abrirVisualizador = abrirVisualizador;
 window.cerrarVisualizador = cerrarVisualizador;
+window.animarRadarChart = animarRadarChart;
+window.renderRadarChart = renderRadarChart;
+window.actualizarClientesEstimulacion = async function (silent = true) {
+    if (typeof initEstimulacion === 'function') {
+        await initEstimulacion(true, silent);
+    }
+};
+
+// ⚡ Escucha instantánea multi-pestaña por BroadcastChannel y Storage Events
+if (typeof window !== 'undefined' && !window._estBcSyncAttached) {
+    window._estBcSyncAttached = true;
+    if (typeof BroadcastChannel !== 'undefined') {
+        try {
+            const bc = new BroadcastChannel('nyp_admin_sync_channel');
+            bc.onmessage = (e) => {
+                if (e.data && (e.data.type === 'control_servicios_update' || e.data.type === 'cambio_servicio_matriz')) {
+                    console.log("⚡ [Estimulación Sync] Cambio de servicio detectado vía BroadcastChannel:", e.data);
+                    if (typeof initEstimulacion === 'function') {
+                        initEstimulacion(true, true);
+                    }
+                }
+            };
+        } catch (eBc) { }
+    }
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'nyp_servicios_sync_trigger') {
+            console.log("⚡ [Estimulación Sync] Cambio de servicio detectado vía StorageEvent");
+            if (typeof initEstimulacion === 'function') {
+                initEstimulacion(true, true);
+            }
+        }
+    });
+}
+

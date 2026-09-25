@@ -1,6 +1,19 @@
 # Helper scripts and backend backups (Sensible)
 backend_code.js
 
+# Environment and Secret variables
+.dev.vars
+.dev.vars.*
+.env
+.env.*
+*.secrets.json
+
+# .NET Build outputs
+bin/
+obj/
+**/bin/
+**/obj/
+
 # OS generated files
 Thumbs.db
 Desktop.ini
@@ -12,7 +25,9 @@ yarn-error.log*
 
 # Node modules (if using npm locally)
 node_modules/
+**/node_modules/
 
 # Agent/AI temp files
 .gemini/
 .agent/
+

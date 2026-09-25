@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nannys-pwa-v19'; // Increment version to v19
+const CACHE_NAME = 'nannys-pwa-v63'; // Increment version to v63
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -13,7 +13,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
-    })
+    }).catch(() => {})
   );
   self.skipWaiting();
 });
@@ -26,7 +26,7 @@ self.addEventListener('activate', (event) => {
           return caches.delete(key);
         }
       }));
-    })
+    }).catch(() => {})
   );
   self.clients.claim();
 });
@@ -37,7 +37,7 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // No interceptar peticiones externas (Firebase, Google APIs, Drive, etc.)
+  // No interceptar peticiones externas (Firebase, Google APIs, Drive, Supabase, etc.)
   const externalHosts = [
     'firestore.googleapis.com',
     'firebase.googleapis.com',
@@ -49,15 +49,16 @@ self.addEventListener('fetch', (event) => {
     'script.google.com',
     'gstatic.com',
     'onesignal.com',
+    'supabase.co'
   ];
   if (externalHosts.some(host => url.hostname.includes(host))) return;
 
-  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname === '/') {
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname === '/') {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
           const clonedResponse = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clonedResponse));
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clonedResponse).catch(() => {})).catch(() => {});
           return response;
         })
         .catch(() => caches.match(event.request))
@@ -68,7 +69,7 @@ self.addEventListener('fetch', (event) => {
       caches.match(event.request).then((response) => {
         return response || fetch(event.request).then((res) => {
           const cloned = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned).catch(() => {})).catch(() => {});
           return res;
         });
       })

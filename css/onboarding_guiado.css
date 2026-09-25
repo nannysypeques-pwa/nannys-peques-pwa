@@ -1,0 +1,364 @@
+/**
+ * ============================================================================
+ * ONBOARDING INTERACTIVO GUIADO - CLIENTE Y NIÑERA
+ * Nannys y Peques - Modern UX/UI
+ * ============================================================================
+ */
+
+/* --- Botón Header "Tutorial" --- */
+.ci-tutorial-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #FFF0F6 0%, #FFE4F0 100%);
+  border: 1.5px solid #FFB8DA;
+  color: #E6007E;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(230, 0, 126, 0.12);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ci-tutorial-btn:hover,
+.ci-tutorial-btn:active {
+  transform: translateY(-2px) scale(1.03);
+  background: linear-gradient(135deg, #E6007E 0%, #D80070 100%);
+  color: #ffffff;
+  border-color: #E6007E;
+  box-shadow: 0 6px 16px rgba(230, 0, 126, 0.28);
+}
+
+.ci-tutorial-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* --- Capa de Fondo y Contenedor Principal del Onboarding --- */
+.nyp-onboarding-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000000;
+  pointer-events: auto;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  overflow: hidden;
+}
+
+.nyp-onboarding-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Máscara oscura translúcida */
+.nyp-onboarding-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  transition: background 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+/* Modo modal centrado (Bienvenida / Despedida) */
+.nyp-onboarding-overlay.has-centered-modal .nyp-onboarding-backdrop {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Modo spotlight: Sin desenfoque, el box-shadow del spotlight oscurece todo excepto el elemento */
+.nyp-onboarding-overlay.has-spotlight .nyp-onboarding-backdrop {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Foco de luz / Spotlight sobre el elemento */
+.nyp-onboarding-spotlight {
+  position: fixed;
+  border-radius: 20px;
+  background: transparent;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.78),
+              0 0 0 3.5px #E6007E,
+              0 0 24px 6px rgba(230, 0, 126, 0.45);
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  pointer-events: none;
+  z-index: 1000001;
+}
+
+/* --- Tarjeta Flotante con el Avatar Oficial y Contenido --- */
+.nyp-onboarding-card {
+  position: fixed;
+  z-index: 1000002;
+  width: calc(100% - 28px);
+  max-width: 440px;
+  background: #ffffff;
+  border-radius: 22px;
+  padding: 16px 18px;
+  box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.4),
+              0 0 0 1px rgba(230, 0, 126, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0;
+  transform: translateY(12px) scale(0.97);
+  transition: all 0.3s cubic-bezier(0.34, 1.3, 0.64, 1);
+  pointer-events: auto;
+  box-sizing: border-box;
+}
+
+.nyp-onboarding-card.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Modal centrado para Inicio y Despedida */
+.nyp-onboarding-card.centered {
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) scale(0.95);
+}
+
+.nyp-onboarding-card.centered.visible {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Flechas indicadoras de dirección hacia el elemento enfocado */
+.nyp-onboarding-arrow {
+  display: none;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: #ffffff;
+  transform: rotate(45deg);
+  left: calc(50% - 8px);
+  z-index: 1;
+}
+
+.nyp-onboarding-card.arrow-up .nyp-onboarding-arrow {
+  display: block;
+  top: -8px;
+  border-left: 1.5px solid rgba(230, 0, 126, 0.2);
+  border-top: 1.5px solid rgba(230, 0, 126, 0.2);
+}
+
+.nyp-onboarding-card.arrow-down .nyp-onboarding-arrow {
+  display: block;
+  bottom: -8px;
+  border-right: 1.5px solid rgba(230, 0, 126, 0.2);
+  border-bottom: 1.5px solid rgba(230, 0, 126, 0.2);
+}
+
+/* Botón cerrar X */
+.nyp-onboarding-close-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: #F1F5F9;
+  color: #64748B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  z-index: 2;
+}
+
+.nyp-onboarding-close-btn:hover {
+  background: #FFE4F0;
+  color: #E6007E;
+  transform: rotate(90deg);
+}
+
+/* Cuerpo principal: Avatar + Textos */
+.nyp-onboarding-body {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+/* Contenedor del Avatar Oficial */
+.nyp-onboarding-avatar-wrap {
+  width: 80px;
+  min-width: 80px;
+  height: 105px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  filter: drop-shadow(0 6px 12px rgba(230, 0, 126, 0.2));
+}
+
+.nyp-onboarding-avatar-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  animation: avatarBounce 3s ease-in-out infinite;
+}
+
+@keyframes avatarBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Textos informativos */
+.nyp-onboarding-text-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nyp-onboarding-step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #FFF0F6;
+  color: #E6007E;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2.5px 8px;
+  border-radius: 12px;
+  width: fit-content;
+}
+
+.nyp-onboarding-title {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.25;
+}
+
+.nyp-onboarding-desc {
+  margin: 0;
+  font-size: 12.8px;
+  color: #475569;
+  line-height: 1.4;
+}
+
+/* Barra de progreso inferior */
+.nyp-onboarding-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid #F1F5F9;
+  gap: 10px;
+}
+
+/* Indicadores de bolitas */
+.nyp-onboarding-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+
+.nyp-onboarding-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #E2E8F0;
+  transition: all 0.25s ease;
+}
+
+.nyp-onboarding-dot.active {
+  width: 20px;
+  border-radius: 10px;
+  background: #E6007E;
+}
+
+/* Botones de acción */
+.nyp-onboarding-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.nyp-btn-onb {
+  padding: 7px 12px;
+  border-radius: 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nyp-btn-onb-ghost {
+  background: transparent;
+  color: #64748B;
+}
+
+.nyp-btn-onb-ghost:hover {
+  background: #F1F5F9;
+  color: #0F172A;
+}
+
+.nyp-btn-onb-secondary {
+  background: #F1F5F9;
+  color: #334155;
+}
+
+.nyp-btn-onb-secondary:hover {
+  background: #E2E8F0;
+}
+
+.nyp-btn-onb-primary {
+  background: linear-gradient(135deg, #E6007E 0%, #FF2E93 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(230, 0, 126, 0.3);
+}
+
+.nyp-btn-onb-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(230, 0, 126, 0.4);
+}
+
+/* Ajustes Responsive en pantallas móviles */
+@media (max-width: 480px) {
+  .nyp-onboarding-card {
+    width: calc(100% - 20px);
+    padding: 14px 15px;
+    border-radius: 20px;
+  }
+  
+  .nyp-onboarding-avatar-wrap {
+    width: 70px;
+    min-width: 70px;
+    height: 95px;
+  }
+  
+  .nyp-onboarding-title {
+    font-size: 14.5px;
+  }
+  
+  .nyp-onboarding-desc {
+    font-size: 12.2px;
+  }
+}

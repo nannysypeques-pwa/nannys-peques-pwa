@@ -109,7 +109,7 @@ function getNormalizedName(name) {
 // Fallback de Datos Mockeados en caso de que falle la carga del Sheets
 const NANNIES_MOCK = {
     fijas: [
-        { nombre: 'PruebaGera', tipo: 'Fija' },
+        { nombre: 'Mariana Gomez', tipo: 'Fija' },
         { nombre: 'Ana Karen', tipo: 'Fija' },
         { nombre: 'Victoria Ruiz', tipo: 'Fija' }
     ],

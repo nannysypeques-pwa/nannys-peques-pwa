@@ -1040,23 +1040,206 @@ const Convenios = {
         }
 
         return filtrados.map(c => `
-            <div class="convenio-card">
-                <img src="${c.imagen}" class="convenio-img">
+            <div class="convenio-card" onclick="Convenios.mostrarDetalleModal(${c.id})">
+                <img src="${c.imagen}" class="convenio-img" alt="${c.nombre}" onerror="this.onerror=null; this.src='assets/img/avatar/avatar_hero_servicio.png';">
                 <div class="convenio-info">
                     <div class="convenio-tag">${c.categoria}</div>
                     <h4 class="convenio-nombre">${c.nombre}</h4>
                     ${c.cedula ? `<p class="convenio-cedula">Cédula Prof: ${c.cedula}</p>` : ''}
                     <p class="convenio-desc">${c.descripcion}</p>
                     <div class="convenio-benefit">🎁 ${c.beneficio}</div>
-                    <div class="convenio-actions">
-                        <a href="${c.maps}" target="_blank" class="btn-action-small maps">📍 Maps</a>
-                        ${c.whatsapp ? `<a href="${c.whatsapp}" target="_blank" class="btn-action-small whatsapp">💬 WhatsApp</a>` : ''}
+                    <div class="convenio-actions" onclick="event.stopPropagation()">
+                        ${c.maps ? `<a href="${c.maps}" target="_blank" rel="noopener noreferrer" class="btn-action-small maps">📍 Maps</a>` : ''}
+                        ${c.whatsapp ? `<a href="${c.whatsapp}" target="_blank" rel="noopener noreferrer" class="btn-action-small whatsapp">💬 WhatsApp</a>` : ''}
                         ${c.telefono ? `<a href="tel:${c.telefono}" class="btn-action-small">📞 Llamar</a>` : ''}
                     </div>
                 </div>
             </div>
         `).join('');
+    },
+
+    obtenerConveniosPorCiudad: function (ciudad) {
+        const cNorm = (ciudad || 'Puebla').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const datos = (this.estado && Array.isArray(this.estado.datos)) ? this.estado.datos : [];
+        let filtrados = datos.filter(c => {
+            const itemNorm = (c.ciudad || '').trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            return itemNorm === cNorm;
+        });
+
+        if (filtrados.length === 0) {
+            filtrados = datos.filter(c => (c.ciudad || '').toLowerCase().includes('puebla'));
+            if (filtrados.length === 0) filtrados = datos;
+        }
+        return filtrados;
+    },
+
+    obtenerResumenBeneficio: function (beneficioHtml) {
+        if (!beneficioHtml) return 'Beneficio exclusivo para la comunidad Nannys y Peques';
+        const textoLimpio = beneficioHtml
+            .replace(/<br\s*[\/]?>/gi, ' · ')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .trim();
+
+        const partes = textoLimpio.split('·').map(p => p.trim()).filter(Boolean);
+        if (partes.length > 0) {
+            let res = partes[0];
+            if (res.length < 35 && partes.length > 1) {
+                res += ' · ' + partes[1];
+            }
+            return res.length > 95 ? res.slice(0, 92) + '...' : res;
+        }
+        return textoLimpio.length > 95 ? textoLimpio.slice(0, 92) + '...' : textoLimpio;
+    },
+
+    mostrarDetalleModal: function (convenioId) {
+        const datos = (this.estado && Array.isArray(this.estado.datos)) ? this.estado.datos : [];
+        const c = datos.find(item => item.id === Number(convenioId) || String(item.id) === String(convenioId));
+        if (!c) return;
+
+        let modalEl = document.getElementById('nyp-modal-convenio-detalle');
+        if (!modalEl) {
+            modalEl = document.createElement('div');
+            modalEl.id = 'nyp-modal-convenio-detalle';
+            modalEl.className = 'nyp-convenio-modal-overlay';
+            modalEl.onclick = function (e) {
+                if (e.target === modalEl) Convenios.cerrarModalDetalle();
+            };
+            document.body.appendChild(modalEl);
+        }
+
+        const beneficioFormateado = c.beneficio ? c.beneficio.replace(/\n/g, '<br>') : 'Beneficio exclusivo disponible en sucursal con credencial de Nannys y Peques.';
+
+        modalEl.innerHTML = `
+            <div class="nyp-convenio-modal-card" onclick="event.stopPropagation()">
+                <!-- Header con botón cerrar -->
+                <div class="nyp-modal-convenio-header">
+                    <div class="nyp-modal-badges">
+                        <span class="nyp-modal-tag-city">📍 ${c.ciudad}</span>
+                        <span class="nyp-modal-tag-cat">${c.categoria}</span>
+                    </div>
+                    <button type="button" class="nyp-modal-close-btn" onclick="Convenios.cerrarModalDetalle()" aria-label="Cerrar">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Imagen destacada y título -->
+                <div class="nyp-modal-convenio-hero">
+                    <div class="nyp-modal-img-wrapper">
+                        <img src="${c.imagen}" alt="${c.nombre}" class="nyp-modal-img" onerror="this.onerror=null; this.src='assets/img/avatar/avatar_hero_servicio.png';">
+                    </div>
+                    <div class="nyp-modal-title-group">
+                        <h3 class="nyp-modal-nombre">${c.nombre}</h3>
+                        ${c.cedula ? `<p class="nyp-modal-cedula">🎓 Cédula Profesional: <strong>${c.cedula}</strong></p>` : ''}
+                        <div class="nyp-modal-aliado-badge">
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
+                                <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+                            </svg>
+                            <span>Aliado Oficial Nannys y Peques</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenido con scroll -->
+                <div class="nyp-modal-convenio-body">
+                    <!-- Descripción -->
+                    <div class="nyp-modal-section">
+                        <h4 class="nyp-modal-section-title">
+                            <span class="nyp-section-icon">ℹ️</span>
+                            <span>Acerca del Aliado</span>
+                        </h4>
+                        <p class="nyp-modal-desc">${c.descripcion}</p>
+                    </div>
+
+                    <!-- Caja Destacada del Beneficio -->
+                    <div class="nyp-modal-benefit-box">
+                        <div class="nyp-modal-benefit-header">
+                            <span class="nyp-benefit-gift-icon">🎁</span>
+                            <span class="nyp-benefit-title">Beneficio Exclusivo</span>
+                        </div>
+                        <div class="nyp-modal-benefit-content">
+                            ${beneficioFormateado}
+                        </div>
+                        <div class="nyp-modal-benefit-note">
+                            💡 Presenta tu membresía o menciona que eres parte de la comunidad Nannys y Peques al agendar tu cita o servicio.
+                        </div>
+                    </div>
+
+                    <!-- Botones de Acción Directa -->
+                    <div class="nyp-modal-actions-grid">
+                        ${c.whatsapp ? `
+                            <a href="${c.whatsapp}" target="_blank" rel="noopener noreferrer" class="nyp-modal-btn whatsapp">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                    <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2z"/>
+                                </svg>
+                                <span>WhatsApp</span>
+                            </a>
+                        ` : ''}
+
+                        ${c.maps ? `
+                            <a href="${c.maps}" target="_blank" rel="noopener noreferrer" class="nyp-modal-btn maps">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                <span>Ubicación</span>
+                            </a>
+                        ` : ''}
+
+                        ${c.telefono ? `
+                            <a href="tel:${c.telefono}" class="nyp-modal-btn call">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                                <span>Llamar</span>
+                            </a>
+                        ` : ''}
+                    </div>
+
+                    <!-- Enlace para ver todos los convenios -->
+                    <div style="text-align: center; margin-top: 14px;">
+                        <button type="button" class="nyp-modal-link-btn" onclick="Convenios.irATodos('${c.ciudad}')">
+                            <span>Ver todos los convenios en ${c.ciudad}</span>
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        modalEl.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    },
+
+    cerrarModalDetalle: function () {
+        const modalEl = document.getElementById('nyp-modal-convenio-detalle');
+        if (modalEl) {
+            modalEl.style.display = 'none';
+        }
+        document.body.style.overflow = '';
+    },
+
+    irATodos: function (ciudad) {
+        this.cerrarModalDetalle();
+        if (ciudad) {
+            this.estado.ciudadSeleccionada = ciudad;
+            this.estado.categoriaSeleccionada = null;
+        }
+        if (typeof window.irVista === 'function') {
+            window.irVista('convenios');
+        }
+        this.render();
     }
 };
 
 window.Convenios = Convenios;
+window.mostrarModalDetalleConvenio = function (id) {
+    if (window.Convenios && typeof window.Convenios.mostrarDetalleModal === 'function') {
+        window.Convenios.mostrarDetalleModal(id);
+    }
+};

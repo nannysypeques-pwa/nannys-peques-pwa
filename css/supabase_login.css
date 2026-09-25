@@ -1,0 +1,606 @@
+/* ==========================================================================
+   NANNYS Y PEQUES - LOGIN SUPABASE (DISEÑO CONTEMPORÁNEO SIN DEGRADADOS)
+   ========================================================================== */
+
+/* --- SWITCHER CONTROLLER --- */
+.login-mode-switcher-container {
+    width: 100%;
+    max-width: 440px;
+    margin: 0 auto 16px auto;
+    padding: 4px;
+    background: #F8FAFC;
+    border-radius: 16px;
+    border: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: center;
+    position: relative;
+    z-index: 100;
+}
+
+.login-mode-switcher {
+    display: flex;
+    width: 100%;
+    gap: 4px;
+}
+
+.login-switch-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: #64748B;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    outline: none;
+}
+
+.login-switch-btn.active {
+    background: #FFFFFF;
+    color: #0F172A;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    border: 1px solid #E2E8F0;
+}
+
+.login-switch-btn .badge-new {
+    background: #E84C9A;
+    color: #FFFFFF;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* --- TARJETA DE LOGIN CONTEMPORÁNEA --- */
+.supabase-login-card {
+    width: 100%;
+    max-width: 440px;
+    background: #FFFFFF;
+    border-radius: 28px;
+    border: 1px solid #F1F5F9;
+    box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.07), 0 0 0 1px rgba(15, 23, 42, 0.03);
+    padding: 36px 30px;
+    margin: auto;
+    position: relative;
+    perspective: 1000px;
+}
+
+/* BRAND HEADER */
+.supa-brand-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.supa-brand-logo {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 12px auto;
+    background: #FFF0F5;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+.supa-title {
+    font-family: 'Quicksand', 'Plus Jakarta Sans', sans-serif;
+    font-size: 28px;
+    font-weight: 800;
+    color: #E84C9A;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+}
+
+.supa-subtitle {
+    font-family: 'Nunito Sans', sans-serif;
+    font-size: 14px;
+    color: #64748B;
+    font-weight: 500;
+    margin: 0;
+}
+
+/* --- PASO 1: TARJETAS DE SELECCIÓN DE ROL (NANNY / FAMILIA) --- */
+.supa-role-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 24px;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.supa-role-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: #FFFFFF;
+    border: 1.5px solid #F1F5F9;
+    border-radius: 22px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+    text-align: left;
+}
+
+.supa-role-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 24px -6px rgba(15, 23, 42, 0.08);
+}
+
+.supa-role-card[data-role="nanny"]:hover {
+    border-color: #E84C9A;
+    background: #FDF2F8;
+}
+
+.supa-role-card[data-role="familia"]:hover {
+    border-color: #3BB6C4;
+    background: #F0FDFA;
+}
+
+.supa-role-icon-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+}
+
+.supa-role-card[data-role="nanny"] .supa-role-icon-box {
+    background: #FCE7F3;
+}
+
+.supa-role-card[data-role="familia"] .supa-role-icon-box {
+    background: #CCFBF1;
+}
+
+.supa-role-info {
+    flex: 1;
+}
+
+.supa-role-title {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    margin-bottom: 2px;
+}
+
+.supa-role-card[data-role="nanny"] .supa-role-title {
+    color: #E84C9A;
+}
+
+.supa-role-card[data-role="familia"] .supa-role-title {
+    color: #3BB6C4;
+}
+
+.supa-role-desc {
+    font-size: 12px;
+    color: #64748B;
+    font-weight: 500;
+}
+
+.supa-role-arrow {
+    color: #CBD5E1;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s, color 0.2s;
+}
+
+.supa-role-card:hover .supa-role-arrow {
+    transform: translateX(4px);
+    color: #0F172A;
+}
+
+/* STAFF LINK (NOTA INFERIOR SUTIL) */
+.supa-staff-note {
+    text-align: center;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #F1F5F9;
+}
+
+.supa-staff-link {
+    background: none;
+    border: none;
+    color: #64748B;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s;
+}
+
+.supa-staff-link:hover {
+    color: #0F172A;
+}
+
+/* --- PASO 2: FORMULARIO CON GRAN ANIMACIÓN DE TRANSICIÓN --- */
+.supa-form-container {
+    display: none;
+    animation: supaFormSlideIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes supaFormSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(16px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* HEADER DEL FORMULARIO */
+.supa-form-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #F1F5F9;
+}
+
+.supa-back-btn {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #475569;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+}
+
+.supa-back-btn:hover {
+    background: #F1F5F9;
+    color: #0F172A;
+}
+
+.supa-selected-role-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.supa-selected-role-badge.nanny {
+    background: #FCE7F3;
+    color: #E84C9A;
+}
+
+.supa-selected-role-badge.familia {
+    background: #CCFBF1;
+    color: #0D9488;
+}
+
+.supa-selected-role-badge.staff {
+    background: #F1F5F9;
+    color: #334155;
+}
+
+/* CAMPOS DE ENTRADA */
+.supa-form-group {
+    margin-bottom: 18px;
+    text-align: left;
+}
+
+.supa-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.supa-input-wrapper {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
+
+.supa-input-icon {
+    position: absolute !important;
+    left: 14px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #94A3B8 !important;
+    width: 20px !important;
+    height: 20px !important;
+    pointer-events: none !important;
+    transition: color 0.2s !important;
+    z-index: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Selector de alta especificidad para sobrescribir reglas globales de styles.css */
+input.supa-input,
+.supa-input-wrapper input.supa-input,
+.supa-input {
+    width: 100% !important;
+    height: 48px !important;
+    padding-left: 48px !important;
+    padding-right: 48px !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    background: #F8FAFC !important;
+    border: 1.5px solid #E2E8F0 !important;
+    border-radius: 14px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    color: #0F172A !important;
+    transition: all 0.2s ease !important;
+    outline: none !important;
+    box-sizing: border-box !important;
+}
+
+input.supa-input:focus,
+.supa-input-wrapper input.supa-input:focus,
+.supa-input:focus {
+    border-color: #E84C9A !important;
+    background: #FFFFFF !important;
+    box-shadow: 0 0 0 3px rgba(232, 76, 154, 0.12) !important;
+}
+
+.supa-input:focus + .supa-input-icon,
+.supa-input-wrapper:focus-within .supa-input-icon {
+    color: #E84C9A !important;
+}
+
+.supa-toggle-pass {
+    position: absolute !important;
+    right: 12px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    background: none !important;
+    border: none !important;
+    color: #94A3B8 !important;
+    cursor: pointer !important;
+    padding: 4px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: color 0.2s !important;
+    z-index: 2 !important;
+}
+
+.supa-toggle-pass:hover {
+    color: #0F172A !important;
+}
+
+.supa-toggle-icon-wrap {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 20px !important;
+    height: 20px !important;
+    color: inherit !important;
+}
+
+/* BOTÓN DE ENTRADA PRINCIPAL (SÓLIDO SIN DEGRADADO) */
+.supa-btn-submit {
+    width: 100%;
+    height: 50px;
+    margin-top: 10px;
+    background: #E84C9A;
+    border: none;
+    border-radius: 14px;
+    color: #FFFFFF;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px rgba(232, 76, 154, 0.25);
+    transition: all 0.2s ease;
+}
+
+.supa-btn-submit.familia-theme {
+    background: #3BB6C4;
+    box-shadow: 0 4px 14px rgba(59, 182, 196, 0.25);
+}
+
+.supa-btn-submit.staff-theme {
+    background: #0F172A;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+}
+
+.supa-btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(232, 76, 154, 0.35);
+}
+
+.supa-btn-submit.familia-theme:hover {
+    box-shadow: 0 8px 20px rgba(59, 182, 196, 0.35);
+}
+
+.supa-btn-submit:active {
+    transform: translateY(0);
+}
+
+.supa-btn-submit.loading {
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/* FEEDBACK Y MENSAGES */
+.supa-msg {
+    margin-top: 14px;
+    font-size: 13px;
+    font-weight: 700;
+    min-height: 20px;
+    text-align: center;
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+.supa-msg.err {
+    color: #DC2626;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+}
+
+.supa-msg.success {
+    color: #059669;
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+}
+
+/* FOOTER ENLACES */
+.supa-footer-links {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+}
+
+.supa-link-btn {
+    background: none;
+    border: none;
+    color: #64748B;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s;
+    text-decoration: none;
+}
+
+.supa-link-btn:hover {
+    color: #0F172A;
+    text-decoration: underline;
+}
+
+/* RESPONSIVE */
+@media (max-width: 480px) {
+    .supabase-login-card {
+        padding: 28px 20px;
+        border-radius: 22px;
+    }
+    .supa-title {
+        font-size: 24px;
+    }
+}
+
+/* ANIMACIÓN DE SACUDIDA ANTE ERROR */
+@keyframes supaShake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+/* =========================================================
+   REGLAS VISUALES DE SEGURIDAD DE CONTRASEÑA EN TIEMPO REAL
+   ========================================================= */
+.pwd-rule-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748B;
+    transition: all 0.25s ease;
+}
+
+.pwd-rule-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #E2E8F0;
+    color: #94A3B8;
+    font-size: 11px;
+    font-weight: 800;
+    transition: all 0.25s ease;
+}
+
+.pwd-rule-item.valid {
+    color: #059669 !important;
+}
+
+.pwd-rule-item.valid .pwd-rule-icon {
+    background: #10B981 !important;
+    color: #FFFFFF !important;
+    transform: scale(1.08);
+}
+
+.pwd-strength-bar {
+    height: 6px;
+    width: 100%;
+    background: #E2E8F0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.pwd-strength-fill {
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease, background-color 0.3s ease;
+    border-radius: 4px;
+}
+
+/* INPUT OTP DE 6 DÍGITOS ESTILIZADO */
+.supa-input.supa-otp-input {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: 6px;
+    font-family: 'Plus Jakarta Sans', monospace, sans-serif;
+    color: #0F172A;
+    background: #F8FAFC;
+    border: 2px solid #CBD5E1;
+    border-radius: 14px;
+    padding: 12px 16px;
+    transition: all 0.25s ease;
+}
+
+.supa-input.supa-otp-input:focus {
+    border-color: #3BB6C4;
+    background: #FFFFFF;
+    box-shadow: 0 0 0 4px rgba(59, 182, 196, 0.15);
+}
+
+

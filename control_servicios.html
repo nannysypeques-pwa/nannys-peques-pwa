@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Servicios | Panel de Ventas - Nannys & Peques</title>
+  <!-- SECURITY: CSP & Referrer Policy (OWASP ASVS 5.0) -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' https://cdn.onesignal.com https://onesignal.com https://api.onesignal.com https://*.jsdelivr.net https://*.gstatic.com;
+    style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
+    font-src 'self' https://fonts.gstatic.com https://fonts.googleapis.com;
+    img-src 'self' data: blob: https://drive.google.com https://lh3.googleusercontent.com https://blogger.googleusercontent.com https://*.googleusercontent.com https://images.unsplash.com https://*.supabase.co;
+    media-src 'self' data: blob: https://drive.google.com https://*.googleusercontent.com;
+    connect-src 'self' https://script.google.com https://*.googleusercontent.com https://onesignal.com https://*.onesignal.com https://onesignal.com/api/v1/notifications https://*.firebaseio.com https://*.googleapis.com https://*.gstatic.com https://*.jsdelivr.net https://script.googleusercontent.com https://*.supabase.co wss://*.supabase.co;
+    frame-src 'self' https://script.google.com https://drive.google.com;
+  ">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="css/control_servicios.css?v=107">
+</head>
+
+<body class="cs-wrapper">
+
+  <!-- Top Floating Header -->
+  <header class="cs-header">
+    <div class="cs-header-left">
+      <div class="cs-title-group">
+        <h1>
+          <span>✨ Control de Servicios</span>
+          <span class="cs-title-badge">Panel de Ventas</span>
+        </h1>
+      </div>
+
+      <!-- Selector de Ciudad Matriz -->
+      <div class="cs-city-selector-pills" id="csCitySelectorPills" role="tablist" aria-label="Selector de Ciudad">
+        <button type="button" class="cs-city-pill active" id="btnCiudadPuebla" data-ciudad="Puebla" onclick="cambiarCiudadMatriz('Puebla')" title="Servicios de Puebla">
+          <span class="cs-city-icon">📍</span>
+          <span class="cs-city-name">Puebla</span>
+        </button>
+        <button type="button" class="cs-city-pill" id="btnCiudadXalapa" data-ciudad="Xalapa" onclick="cambiarCiudadMatriz('Xalapa')" title="Servicios de Xalapa">
+          <span class="cs-city-icon">📍</span>
+          <span class="cs-city-name">Xalapa</span>
+        </button>
+        <button type="button" class="cs-city-pill" id="btnCiudadQueretaro" data-ciudad="Querétaro" onclick="cambiarCiudadMatriz('Querétaro')" title="Servicios de Querétaro">
+          <span class="cs-city-icon">📍</span>
+          <span class="cs-city-name">Querétaro</span>
+        </button>
+        <button type="button" class="cs-city-pill" id="btnCiudadCDMX" data-ciudad="CDMX" onclick="cambiarCiudadMatriz('CDMX')" title="Servicios de CDMX">
+          <span class="cs-city-icon">🏛️</span>
+          <span class="cs-city-name">CDMX</span>
+        </button>
+      </div>
+
+      <!-- Week Selector Navigator con Calendario y Botón Hoy -->
+      <div class="cs-week-navigator" id="csWeekNavigatorWrapper">
+        <button class="cs-nav-btn" id="csBtnSemanaAnterior" onclick="cambiarSemanaMatriz(-1)"
+          title="Semana anterior">◀</button>
+        <button type="button" class="cs-btn-cal-icon" id="csBtnCalendarToggle" onclick="toggleCalendarioSemanas(event)"
+          title="Abrir calendario de meses">📅</button>
+        <span class="cs-week-label" id="csWeekLabel" onclick="toggleCalendarioSemanas(event)"
+          title="Clic para seleccionar semana en el calendario">Semana</span>
+        <button class="cs-nav-btn" id="csBtnSemanaSiguiente" onclick="cambiarSemanaMatriz(1)"
+          title="Semana siguiente">▶</button>
+        <button type="button" class="cs-btn-hoy" id="csBtnHoy" onclick="irSemanaActual()"
+          title="Ir a la semana actual">✨ Hoy</button>
+
+        <!-- Dropdown Flotante del Calendario de Semanas -->
+        <div class="cs-calendar-dropdown" id="csCalendarDropdown" style="display:none;"
+          onclick="event.stopPropagation()">
+          <div class="cs-cal-header">
+            <button type="button" class="cs-cal-nav-btn" onclick="cambiarMesCalendario(-1)"
+              title="Mes anterior">◀</button>
+            <div class="cs-cal-month-title" id="csCalMonthTitle">Septiembre 2026</div>
+            <button type="button" class="cs-cal-nav-btn" onclick="cambiarMesCalendario(1)"
+              title="Mes siguiente">▶</button>
+          </div>
+          <div class="cs-cal-weekdays">
+            <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+          </div>
+          <div class="cs-cal-weeks-body" id="csCalWeeksBody"></div>
+          <div class="cs-cal-footer">
+            <button type="button" class="cs-cal-today-btn" onclick="irSemanaActual()">📍 Ir a Semana Actual</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controles de Deshacer / Rehacer (Ctrl+Z / Ctrl+Y) -->
+      <div class="cs-history-controls" title="Historial de cambios (Ctrl+Z / Ctrl+Y)">
+        <button type="button" class="cs-history-btn" id="csBtnUndo" onclick="deshacerUltimoCambio()"
+          title="Deshacer último cambio (Ctrl + Z)" disabled>
+          <span class="cs-history-icon">↩️</span>
+          <span class="cs-history-text">Deshacer</span>
+        </button>
+        <button type="button" class="cs-history-btn" id="csBtnRedo" onclick="rehacerUltimoCambio()"
+          title="Rehacer cambio (Ctrl + Y / Ctrl + Shift + Z)" disabled>
+          <span class="cs-history-icon">↪️</span>
+          <span class="cs-history-text">Rehacer</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="cs-header-right">
+      <!-- Search Box -->
+      <div class="cs-search-box">
+        <span class="cs-search-icon">🔍</span>
+        <input type="text" id="csSearchInput" placeholder="Buscar cliente, niñera, zona...">
+      </div>
+
+      <!-- Filter Chips -->
+      <div class="cs-filter-chips">
+        <button class="cs-chip active">Todos (0)</button>
+        <button class="cs-chip">Sin Confirmar (0)</button>
+        <button class="cs-chip" data-filter="alertas">Alertas (0)</button>
+      </div>
+
+      <!-- Zoom Control para la Matriz -->
+      <div class="cs-zoom-control" title="Zoom de la matriz (o usa Ctrl + Rueda del ratón)">
+        <button type="button" class="cs-zoom-btn" onclick="cambiarZoomMatriz(-0.1)" title="Alejar (Zoom -)">−</button>
+        <span class="cs-zoom-level" id="csZoomLevel" onclick="resetZoomMatriz()"
+          title="Clic para restablecer a 100%">100%</span>
+        <button type="button" class="cs-zoom-btn" onclick="cambiarZoomMatriz(0.1)" title="Acercar (Zoom +)">＋</button>
+      </div>
+
+      <!-- Servicios Base Dropdown Button -->
+      <div class="cs-dropdown-servicios-base" id="csDropdownServiciosBase">
+        <button type="button" class="cs-btn-servicios-base" id="csBtnServiciosBase" onclick="toggleMenuServiciosBase(event)" title="Servicios base (Plantilla fija)">
+          📋 <span>Servicios base</span> <span class="cs-arrow-down">▾</span>
+        </button>
+        <div class="cs-servicios-base-menu" id="csMenuServiciosBase" style="display:none;" onclick="event.stopPropagation()">
+          <button type="button" class="cs-sb-menu-item" onclick="insertarServiciosBaseEnSemanaActual()">
+            📥 <span>Insertar</span>
+          </button>
+          <button type="button" class="cs-sb-menu-item" onclick="abrirModalServiciosBase()">
+            ✏️ <span>Editar</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Botón Saldos Semanales -->
+      <button type="button" class="cs-btn-saldos" id="csBtnSaldos" onclick="abrirModalSaldosSemana()" title="Cálculo y visibilidad de saldos semanales (Clientes y Niñeras)">
+        💰 <span>Saldos</span>
+      </button>
+
+      <!-- Cotizador Quick Button (Future trigger) -->
+      <button class="cs-btn-cotizador" onclick="alert('Cotizador será abierto desde aquí')">
+        🧮 <span>Cotizador</span>
+      </button>
+
+      <!-- Botón de Cerrar Sesión integrado -->
+      <button type="button" class="cs-btn-logout" onclick="confirmarLogout()" title="Cerrar sesión">
+        🚪 <span>Salir</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- VISTA 1: CONTROL DE SERVICIOS -->
+  <main id="panelServicios" class="cs-grid-container cs-view-panel">
+    <table class="cs-table">
+      <thead>
+        <!-- Day Headers (Upper Group Row) -->
+        <tr id="csHeaderDaysRow">
+          <th rowspan="2" class="col-total-hours" data-col="total_horas" style="top: 0;" title="Sumatoria de horas semanales">Horas</th>
+          <th colspan="2" class="header-day-group" id="csThDay0" data-col="lun" data-day-col="lun">Lunes</th>
+          <th colspan="2" class="header-day-group" id="csThDay1" data-col="mar" data-day-col="mar">Martes</th>
+          <th colspan="2" class="header-day-group" id="csThDay2" data-col="mie" data-day-col="mie">Miércoles</th>
+          <th colspan="2" class="header-day-group" id="csThDay3" data-col="jue" data-day-col="jue">Jueves</th>
+          <th colspan="2" class="header-day-group" id="csThDay4" data-col="vie" data-day-col="vie">Viernes</th>
+          <th colspan="2" class="header-day-group" id="csThDay5" data-col="sab" data-day-col="sab">Sábado</th>
+          <th colspan="2" class="header-day-group" id="csThDay6" data-col="dom" data-day-col="dom">Domingo</th>
+          <th rowspan="2" class="col-service-type" data-col="service_type" style="top: 0;">Tipo de Servicio</th>
+          <th rowspan="2" class="col-email" data-col="email" style="top: 0;">Email</th>
+          <th rowspan="2" class="col-client" data-col="client" style="top: 0;">Cliente</th>
+          <th rowspan="2" class="col-compact-check" data-col="ok_cli" style="top: 0;" title="OK Cliente">OK Cli</th>
+          <th rowspan="2" class="col-zone" data-col="zone" style="top: 0;">Zona</th>
+          <th rowspan="2" class="col-nanny" data-col="nanny" style="top: 0;">Nombre de Niñera</th>
+          <th rowspan="2" class="col-compact-check" data-col="ok_nan" style="top: 0;" title="OK Niñera">OK Nan</th>
+          <th rowspan="2" class="col-compact-rate" data-col="rate_cli" style="top: 0;">$ Cli</th>
+          <th rowspan="2" class="col-compact-rate" data-col="rate_nan" style="top: 0;">$ Nan</th>
+          <th rowspan="2" class="col-compact-rate" data-col="saldo_cli" style="top: 0;">Saldo</th>
+          <th rowspan="2" class="col-compact-rate" data-col="pago_nan" style="top: 0;">Pago</th>
+          <th rowspan="2" class="col-alerts" data-col="alertas" style="top: 0;">Alertas</th>
+          <th rowspan="2" class="col-obs" data-col="obs" style="top: 0;">Observaciones</th>
+        </tr>
+        <!-- Sub-Headers (Hora Inicio / Hora Fin) -->
+        <tr>
+          <th class="header-sub" data-col="lun_ini" data-day-col="lun">Inicio</th>
+          <th class="header-sub" data-col="lun_fin" data-day-col="lun">Fin</th>
+          <th class="header-sub" data-col="mar_ini" data-day-col="mar">Inicio</th>
+          <th class="header-sub" data-col="mar_fin" data-day-col="mar">Fin</th>
+          <th class="header-sub" data-col="mie_ini" data-day-col="mie">Inicio</th>
+          <th class="header-sub" data-col="mie_fin" data-day-col="mie">Fin</th>
+          <th class="header-sub" data-col="jue_ini" data-day-col="jue">Inicio</th>
+          <th class="header-sub" data-col="jue_fin" data-day-col="jue">Fin</th>
+          <th class="header-sub" data-col="vie_ini" data-day-col="vie">Inicio</th>
+          <th class="header-sub" data-col="vie_fin" data-day-col="vie">Fin</th>
+          <th class="header-sub" data-col="sab_ini" data-day-col="sab">Inicio</th>
+          <th class="header-sub" data-col="sab_fin" data-day-col="sab">Fin</th>
+          <th class="header-sub" data-col="dom_ini" data-day-col="dom">Inicio</th>
+          <th class="header-sub" data-col="dom_fin" data-day-col="dom">Fin</th>
+        </tr>
+      </thead>
+      <tbody id="csTableBody">
+      </tbody>
+    </table>
+  </main>
+
+  <!-- VISTA 2: BASE DE DATOS DE CLIENTES (Directo de Supabase) -->
+  <main id="panelClientes" class="cs-view-panel hidden">
+    <!-- Toolbar de Búsqueda y Control de Clientes -->
+    <div class="cs-subpanel-toolbar">
+      <div class="cs-subpanel-left">
+        <!-- Switcher Fijos / Eventuales -->
+        <div class="cs-client-type-switcher">
+          <button type="button" class="cs-client-type-btn active" id="btnSubTabClientesFijos" onclick="switchClientesSubTab('fijos')" title="Clientes con servicios fijos recurrentes">
+            <span>📌</span> Fijos
+          </button>
+          <button type="button" class="cs-client-type-btn" id="btnSubTabClientesEventuales" onclick="switchClientesSubTab('eventuales')" title="Clientes de servicios temporales y eventuales">
+            <span>🎈</span> Eventuales
+          </button>
+        </div>
+
+        <div class="cs-subpanel-search">
+          <span>🔍</span>
+          <input type="text" id="csSearchClientes" placeholder="Buscar cliente por nombre, email, teléfono, zona o peque..." oninput="filtrarClientesSupabase()">
+        </div>
+        <!-- Dropdown Ciudad Clientes -->
+        <div class="cs-custom-dropdown" id="ddFiltroCiudadClientes">
+          <button type="button" class="cs-dropdown-trigger" onclick="toggleCsDropdown('ddFiltroCiudadClientes', event)" title="Filtrar por ciudad">
+            <span class="cs-dd-icon">📍</span>
+            <span class="cs-dd-label">Todas las ciudades</span>
+            <svg class="cs-dd-arrow" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <div class="cs-dropdown-menu">
+            <div class="cs-dropdown-item active" data-value="" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', '', 'Todas las ciudades', '📍', 'clientes')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">🏢</span>
+                <span class="cs-item-label">Todas las ciudades</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="Puebla" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'Puebla', 'Puebla', '📍', 'clientes')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">📍</span>
+                <span class="cs-item-label">Puebla</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="Xalapa" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'Xalapa', 'Xalapa', '📍', 'clientes')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">📍</span>
+                <span class="cs-item-label">Xalapa</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="Querétaro" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'Querétaro', 'Querétaro', '📍', 'clientes')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">📍</span>
+                <span class="cs-item-label">Querétaro</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="CDMX" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'CDMX', 'CDMX', '🏛️', 'clientes')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">🏛️</span>
+                <span class="cs-item-label">CDMX</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="sin_ciudad" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'sin_ciudad', 'Sin ciudad asignada', '❓', 'clientes')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">❓</span>
+                <span class="cs-item-label">Sin ciudad asignada</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+          </div>
+          <select id="csFiltroCiudadClientes" style="display:none;" onchange="filtrarClientesSupabase()">
+            <option value="">Todas las ciudades</option>
+            <option value="Puebla">Puebla</option>
+            <option value="Xalapa">Xalapa</option>
+            <option value="Querétaro">Querétaro</option>
+            <option value="CDMX">CDMX</option>
+            <option value="sin_ciudad">Sin ciudad asignada</option>
+          </select>
+        </div>
+
+        <!-- Dropdown Status Clientes -->
+        <div class="cs-custom-dropdown" id="ddFiltroStatusClientes">
+          <button type="button" class="cs-dropdown-trigger" onclick="toggleCsDropdown('ddFiltroStatusClientes', event)" title="Filtrar por status">
+            <span class="cs-dd-icon">⚡</span>
+            <span class="cs-dd-label">Todos los status</span>
+            <svg class="cs-dd-arrow" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+            </svg>
+          </button>
+          <div class="cs-dropdown-menu">
+            <div class="cs-dropdown-item active" data-value="" onclick="selectCsDropdownItem('ddFiltroStatusClientes', 'csFiltroStatusClientes', '', 'Todos los status', '⚡', 'clientes')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">⚡</span>
+                <span class="cs-item-label">Todos los status</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="activo" onclick="selectCsDropdownItem('ddFiltroStatusClientes', 'csFiltroStatusClientes', 'activo', 'Solo activos', '🟢', 'clientes')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">🟢</span>
+                <span class="cs-item-label">Solo activos</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="inactivo" onclick="selectCsDropdownItem('ddFiltroStatusClientes', 'csFiltroStatusClientes', 'inactivo', 'Inactivos', '⚪', 'clientes')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">⚪</span>
+                <span class="cs-item-label">Inactivos</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+          </div>
+          <select id="csFiltroStatusClientes" style="display:none;" onchange="filtrarClientesSupabase()">
+            <option value="">Todos los status</option>
+            <option value="activo">🟢 Solo activos</option>
+            <option value="inactivo">⚪ Inactivos</option>
+          </select>
+        </div>
+        <span id="csClientesCount" class="cs-subpanel-count">0 clientes</span>
+      </div>
+      <div class="cs-subpanel-right">
+        <button type="button" class="cs-subpanel-btn" onclick="if(_subTabClientesActual === 'eventuales'){ cargarClientesEventualesSupabase(true); } else { cargarClientesSupabase(true); }" title="Recargar lista de clientes">
+          <span style="font-size: 14px;">🔄</span> <span>Actualizar</span>
+        </button>
+        <button type="button" class="cs-subpanel-btn cs-btn-new-client" onclick="abrirModalNuevoClienteAdmin()" title="Registrar nuevo cliente" style="background: #3BB6C4 !important; color: #ffffff !important; font-weight: 700 !important; box-shadow: 0 3px 10px rgba(59, 182, 196, 0.35) !important; border: none !important;">
+          <span style="font-size: 14px;">➕</span> <span style="font-weight: 700;">Nuevo cliente</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- TABLA 1: CLIENTES FIJOS -->
+    <div id="csGridClientesFijos" class="cs-grid-container">
+      <table class="cs-table">
+        <thead>
+          <tr>
+            <th data-col="cli_cliente">Cliente</th>
+            <th data-col="cli_status">Status</th>
+            <th data-col="cli_ciudad">Ciudad 📍</th>
+            <th data-col="cli_creado">Fecha Creación</th>
+            <th data-col="cli_tel">Teléfono</th>
+            <th data-col="cli_emergencia">Emergencia</th>
+            <th data-col="cli_politicas">Políticas Contratación</th>
+            <th data-col="cli_edicion_peque">Edición Peques</th>
+            <th data-col="cli_peques">Peques (Clic para ver ficha)</th>
+            <th data-col="cli_zona">Zona / Dirección</th>
+            <th data-col="cli_mascotas">Mascotas</th>
+          </tr>
+        </thead>
+        <tbody id="csClientesTableBody">
+          <tr class="cs-loading-row">
+            <td colspan="11">Cargando clientes desde Supabase... ⏳</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TABLA 2: CLIENTES EVENTUALES (Segunda BD) -->
+    <div id="csGridClientesEventuales" class="cs-grid-container" style="display:none;">
+      <table class="cs-table">
+        <thead>
+          <tr>
+            <th data-col="cli_ev_cliente">Cliente</th>
+            <th data-col="cli_ev_ciudad">Ciudad 📍</th>
+            <th data-col="cli_ev_creado">Fecha Creación</th>
+            <th data-col="cli_ev_tel">Teléfono</th>
+            <th data-col="cli_ev_dir">Dirección</th>
+            <th data-col="cli_ev_ubi">Ubicación</th>
+            <th data-col="cli_ev_edad">Edad del Peque</th>
+            <th data-col="cli_ev_notas">Notas</th>
+          </tr>
+        </thead>
+        <tbody id="csClientesEventualesTableBody">
+          <tr class="cs-loading-row">
+            <td colspan="8">Cargando clientes eventuales desde Supabase... ⏳</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- VISTA 3: BASE DE DATOS DE NIÑERAS (Directo de Supabase) -->
+  <main id="panelNanny" class="cs-view-panel hidden">
+    <!-- Toolbar de Búsqueda y Control de Niñeras -->
+    <div class="cs-subpanel-toolbar">
+      <div class="cs-subpanel-left">
+        <div class="cs-subpanel-search">
+          <span>🔍</span>
+          <input type="text" id="csSearchNannys"
+            placeholder="Buscar niñera por nombre, email, teléfono, ciudad o zona..."
+            oninput="filtrarNannysSupabase()">
+        </div>
+        <!-- Dropdown Ciudad Niñeras -->
+        <div class="cs-custom-dropdown" id="ddFiltroCiudadNannys">
+          <button type="button" class="cs-dropdown-trigger"
+            onclick="toggleCsDropdown('ddFiltroCiudadNannys', event)" title="Filtrar por ciudad">
+            <span class="cs-dd-icon">📍</span>
+            <span class="cs-dd-label">Todas las ciudades</span>
+            <svg class="cs-dd-arrow" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clip-rule="evenodd" />
+            </svg>
+          </button>
+          <div class="cs-dropdown-menu">
+            <div class="cs-dropdown-item active" data-value=""
+              onclick="selectCsDropdownItem('ddFiltroCiudadNannys', 'csFiltroCiudadNannys', '', 'Todas las ciudades', '📍', 'nannys')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">🏢</span>
+                <span class="cs-item-label">Todas las ciudades</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="Puebla"
+              onclick="selectCsDropdownItem('ddFiltroCiudadNannys', 'csFiltroCiudadNannys', 'Puebla', 'Puebla', '📍', 'nannys')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">📍</span>
+                <span class="cs-item-label">Puebla</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="Xalapa"
+              onclick="selectCsDropdownItem('ddFiltroCiudadNannys', 'csFiltroCiudadNannys', 'Xalapa', 'Xalapa', '📍', 'nannys')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">📍</span>
+                <span class="cs-item-label">Xalapa</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="Querétaro"
+              onclick="selectCsDropdownItem('ddFiltroCiudadNannys', 'csFiltroCiudadNannys', 'Querétaro', 'Querétaro', '📍', 'nannys')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">📍</span>
+                <span class="cs-item-label">Querétaro</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="CDMX"
+              onclick="selectCsDropdownItem('ddFiltroCiudadNannys', 'csFiltroCiudadNannys', 'CDMX', 'CDMX', '🏛️', 'nannys')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">🏛️</span>
+                <span class="cs-item-label">CDMX</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="sin_ciudad"
+              onclick="selectCsDropdownItem('ddFiltroCiudadNannys', 'csFiltroCiudadNannys', 'sin_ciudad', 'Sin ciudad asignada', '❓', 'nannys')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">❓</span>
+                <span class="cs-item-label">Sin ciudad asignada</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+          </div>
+          <select id="csFiltroCiudadNannys" style="display:none;" onchange="filtrarNannysSupabase()">
+            <option value="">Todas las ciudades</option>
+            <option value="Puebla">Puebla</option>
+            <option value="Xalapa">Xalapa</option>
+            <option value="Querétaro">Querétaro</option>
+            <option value="CDMX">CDMX</option>
+            <option value="sin_ciudad">Sin ciudad asignada</option>
+          </select>
+        </div>
+
+        <!-- Dropdown Status Niñeras -->
+        <div class="cs-custom-dropdown" id="ddFiltroStatusNannys">
+          <button type="button" class="cs-dropdown-trigger"
+            onclick="toggleCsDropdown('ddFiltroStatusNannys', event)" title="Filtrar por status">
+            <span class="cs-dd-icon">⚡</span>
+            <span class="cs-dd-label">Todos los status</span>
+            <svg class="cs-dd-arrow" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clip-rule="evenodd" />
+            </svg>
+          </button>
+          <div class="cs-dropdown-menu">
+            <div class="cs-dropdown-item active" data-value=""
+              onclick="selectCsDropdownItem('ddFiltroStatusNannys', 'csFiltroStatusNannys', '', 'Todos los status', '⚡', 'nannys')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">⚡</span>
+                <span class="cs-item-label">Todos los status</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="activo"
+              onclick="selectCsDropdownItem('ddFiltroStatusNannys', 'csFiltroStatusNannys', 'activo', 'Solo activas', '🟢', 'nannys')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">🟢</span>
+                <span class="cs-item-label">Solo activas</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+            <div class="cs-dropdown-item" data-value="inactivo"
+              onclick="selectCsDropdownItem('ddFiltroStatusNannys', 'csFiltroStatusNannys', 'inactivo', 'Inactivas', '⚪', 'nannys')">
+              <div class="cs-item-main">
+                <span class="cs-item-icon">⚪</span>
+                <span class="cs-item-label">Inactivas</span>
+              </div>
+              <span class="cs-item-check">✓</span>
+            </div>
+          </div>
+          <select id="csFiltroStatusNannys" style="display:none;" onchange="filtrarNannysSupabase()">
+            <option value="">Todos los status</option>
+            <option value="activo">🟢 Solo activas</option>
+            <option value="inactivo">⚪ Inactivas</option>
+          </select>
+        </div>
+        <span id="csNannysCount" class="cs-subpanel-count">0 niñeras</span>
+      </div>
+      <div class="cs-subpanel-right">
+        <button type="button" class="cs-subpanel-btn" onclick="cargarNannysSupabase(true)" title="Recargar lista de niñeras">
+          <span style="font-size: 14px;">🔄</span> <span>Actualizar</span>
+        </button>
+        <button type="button" class="cs-subpanel-btn cs-btn-new-nanny" onclick="abrirModalNuevaNannyAdmin()"
+          title="Registrar nueva niñera" style="background: #3BB6C4 !important; color: #ffffff !important; font-weight: 700 !important; box-shadow: 0 3px 10px rgba(59, 182, 196, 0.35) !important; border: none !important;">
+          <span style="font-size: 14px;">➕</span> <span style="font-weight: 700;">Nueva nanny</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="cs-grid-container">
+      <table class="cs-table">
+        <thead>
+          <tr>
+            <th data-col="nan_ninera">Niñera</th>
+            <th data-col="nan_status">Status</th>
+            <th data-col="nan_ciudad">Ciudad 📍</th>
+            <th data-col="nan_creado">Fecha Creación</th>
+            <th data-col="nan_tel">Teléfono</th>
+            <th data-col="nan_emergencia">Emergencia</th>
+            <th data-col="nan_dir">Dirección y Maps</th>
+            <th data-col="nan_edades">Rango Edades</th>
+          </tr>
+        </thead>
+        <tbody id="csNannysTableBody">
+          <tr class="cs-loading-row">
+            <td colspan="8">Cargando niñeras desde Supabase... ⏳</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Zona Sensible para Hover del Menú Flotante -->
+  <div class="cs-bottom-sensor"></div>
+
+  <!-- Menú Flotante Inferior (Aparece al pasar el cursor por la parte inferior) -->
+  <nav class="cs-floating-nav">
+    <button class="cs-nav-tab-btn active" id="tabBtnServicios" onclick="switchMainTab('servicios')">
+      🏠 <span>Servicios</span>
+    </button>
+    <button class="cs-nav-tab-btn" id="tabBtnClientes" onclick="switchMainTab('clientes')">
+      👥 <span>Clientes</span>
+    </button>
+    <button class="cs-nav-tab-btn" id="tabBtnNanny" onclick="switchMainTab('nanny')">
+      👩‍👧 <span>Niñeras</span>
+    </button>
+  </nav>
+
+  <!-- Datalists para Autocompletado de Clientes y Niñeras -->
+  <datalist id="csListaClientesActivos"></datalist>
+  <datalist id="csListaNannys"></datalist>
+
+  <!-- MODAL FULLSCREEN: PLANTILLA DE SERVICIOS BASE (SERVICIOS FIJOS) -->
+  <div id="modalServiciosBase" class="cs-sb-modal-overlay" style="display: none;" onclick="if(event.target === this) cerrarModalServiciosBase()">
+    <div class="cs-sb-modal-container" onclick="event.stopPropagation()">
+      <!-- Header del Modal -->
+      <div class="cs-sb-modal-header">
+        <div class="cs-sb-modal-title-group">
+          <div>
+            <h2>
+              <span>✨ Servicios Base</span>
+              <span class="cs-sb-badge">Servicios Fijos</span>
+              <span class="cs-sb-badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; padding:2px 8px; border-radius:999px; display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981;"></span> Multiusuario en vivo</span>
+            </h2>
+            <p class="cs-sb-modal-subtitle">Plantilla de servicios fijos que se repiten semana a semana. Al hacer clic en "Insertar", se copiarán a la semana activa.</p>
+          </div>
+        </div>
+        <div class="cs-sb-modal-toolbar" id="csSbNormalToolbar">
+          <button type="button" class="cs-sb-btn cs-sb-btn-nuevo-cliente" onclick="agregarFilaServiciosBase()" title="Agregar nuevo servicio en la plantilla">
+            <span>➕</span> <span>Nuevo cliente</span>
+          </button>
+          <button type="button" class="cs-sb-btn cs-sb-btn-cliente-perdido" onclick="abrirClientePerdidoServiciosBase()" title="Gestionar cliente perdido">
+            <span>📉</span> <span>Cliente perdido</span>
+          </button>
+          <button type="button" class="cs-sb-btn cs-sb-btn-guardar" onclick="guardarPlantillaServiciosBase()" title="Guardar plantilla de servicios base">
+            <span>💾</span> <span>Guardar</span>
+          </button>
+          <button type="button" class="cs-sb-btn cs-sb-btn-cerrar" onclick="cerrarModalServiciosBase()" title="Cerrar ventana">
+            <span>✕</span> <span>Cerrar</span>
+          </button>
+        </div>
+        <!-- Toolbar de Multi-selección para Cliente Perdido -->
+        <div class="cs-sb-selection-toolbar" id="csSbSelectionToolbar" style="display: none;">
+          <div class="cs-sb-selection-info">
+            <span class="cs-sb-selection-badge">📉 Modo Selección: Cliente Perdido</span>
+            <span id="csSbSelectionCount" class="cs-sb-selection-count">0 seleccionados</span>
+          </div>
+          <div class="cs-sb-selection-actions">
+            <button type="button" class="cs-sb-btn cs-sb-btn-confirm-loss" onclick="confirmarBajaClientesPerdidos()">
+              <span>📉 Confirmar baja</span>
+            </button>
+            <button type="button" class="cs-sb-btn cs-sb-btn-cancel-loss" onclick="cancelarModoClientePerdido()">
+              <span>✕ Cancelar selección</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cuerpo del Modal: Matriz Idéntica a Servicios Fijos -->
+      <div class="cs-sb-modal-body cs-grid-container">
+        <table class="cs-table cs-sb-table">
+          <thead>
+            <!-- Fila superior: Días de la semana agrupados -->
+            <tr>
+              <th rowspan="2" class="col-total-hours" data-col="total_horas" style="top: 0;" title="Sumatoria de horas semanales">Horas</th>
+              <th colspan="2" class="header-day-group" data-col="lun" data-day-col="lun">Lunes</th>
+              <th colspan="2" class="header-day-group" data-col="mar" data-day-col="mar">Martes</th>
+              <th colspan="2" class="header-day-group" data-col="mie" data-day-col="mie">Miércoles</th>
+              <th colspan="2" class="header-day-group" data-col="jue" data-day-col="jue">Jueves</th>
+              <th colspan="2" class="header-day-group" data-col="vie" data-day-col="vie">Viernes</th>
+              <th colspan="2" class="header-day-group" data-col="sab" data-day-col="sab">Sábado</th>
+              <th colspan="2" class="header-day-group" data-col="dom" data-day-col="dom">Domingo</th>
+              <th rowspan="2" class="col-service-type" data-col="service_type" style="top: 0;">Tipo de Servicio</th>
+              <th rowspan="2" class="col-email" data-col="email" style="top: 0;">Email</th>
+              <th rowspan="2" class="col-client" data-col="client" style="top: 0;">Cliente</th>
+              <th rowspan="2" class="col-compact-check" data-col="ok_cli" style="top: 0;" title="OK Cliente">OK Cli</th>
+              <th rowspan="2" class="col-zone" data-col="zone" style="top: 0;">Zona</th>
+              <th rowspan="2" class="col-nanny" data-col="nanny" style="top: 0;">Nombre de Niñera</th>
+              <th rowspan="2" class="col-compact-check" data-col="ok_nan" style="top: 0;" title="OK Niñera">OK Nan</th>
+              <th rowspan="2" class="col-compact-rate" data-col="rate_cli" style="top: 0;">$ Cli</th>
+              <th rowspan="2" class="col-compact-rate" data-col="rate_nan" style="top: 0;">$ Nan</th>
+              <th rowspan="2" class="col-compact-rate" data-col="saldo_cli" style="top: 0;">Saldo</th>
+              <th rowspan="2" class="col-compact-rate" data-col="pago_nan" style="top: 0;">Pago</th>
+              <th rowspan="2" class="col-alerts" data-col="alertas" style="top: 0;">Alertas</th>
+              <th rowspan="2" class="col-obs" data-col="obs" style="top: 0;">Observaciones</th>
+              <th rowspan="2" style="top: 0; width: 44px; min-width: 44px; text-align: center;" data-col="actions" title="Eliminar fila">✕</th>
+            </tr>
+            <!-- Sub-Headers: Inicio y Fin -->
+            <tr>
+              <th class="header-sub" data-col="lun_ini" data-day-col="lun">Inicio</th>
+              <th class="header-sub" data-col="lun_fin" data-day-col="lun">Fin</th>
+              <th class="header-sub" data-col="mar_ini" data-day-col="mar">Inicio</th>
+              <th class="header-sub" data-col="mar_fin" data-day-col="mar">Fin</th>
+              <th class="header-sub" data-col="mie_ini" data-day-col="mie">Inicio</th>
+              <th class="header-sub" data-col="mie_fin" data-day-col="mie">Fin</th>
+              <th class="header-sub" data-col="jue_ini" data-day-col="jue">Inicio</th>
+              <th class="header-sub" data-col="jue_fin" data-day-col="jue">Fin</th>
+              <th class="header-sub" data-col="vie_ini" data-day-col="vie">Inicio</th>
+              <th class="header-sub" data-col="vie_fin" data-day-col="vie">Fin</th>
+              <th class="header-sub" data-col="sab_ini" data-day-col="sab">Inicio</th>
+              <th class="header-sub" data-col="sab_fin" data-day-col="sab">Fin</th>
+              <th class="header-sub" data-col="dom_ini" data-day-col="dom">Inicio</th>
+              <th class="header-sub" data-col="dom_fin" data-day-col="dom">Fin</th>
+            </tr>
+          </thead>
+          <tbody id="csSbTableBody">
+            <!-- Filas dinámicas de la plantilla de servicios base -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Footer del Modal -->
+      <div class="cs-sb-modal-footer">
+        <div id="csSbTotalFilas">0 servicios base configurados</div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="cs-sb-btn cs-sb-btn-cerrar" onclick="cerrarModalServiciosBase()">Cancelar</button>
+          <button type="button" class="cs-sb-btn cs-sb-btn-guardar" onclick="guardarPlantillaServiciosBase(true)">💾 Guardar y Salir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SELECCIÓN INDIVIDUAL DE SERVICIOS BASE A INSERTAR -->
+  <div id="modalSeleccionServiciosBase" class="cs-sel-sb-modal-overlay" style="display: none;" onclick="if(event.target === this) cerrarModalSeleccionServiciosBase()">
+    <div class="cs-sel-sb-modal-container" onclick="event.stopPropagation()">
+      <!-- Header -->
+      <div class="cs-sel-sb-header">
+        <div class="cs-sel-sb-title-group">
+          <div class="cs-sel-sb-icon-box">📋</div>
+          <div>
+            <h3 class="cs-sel-sb-title">Insertar Servicios Base</h3>
+            <p class="cs-sel-sb-subtitle">Selecciona los clientes que deseas ingresar al bloque de Servicios Fijos de esta semana.</p>
+          </div>
+        </div>
+        <button type="button" class="cs-sel-sb-close-btn" onclick="cerrarModalSeleccionServiciosBase()" title="Cerrar ventana">✕</button>
+      </div>
+
+      <!-- Toolbar de búsqueda y acciones rápidas -->
+      <div class="cs-sel-sb-toolbar">
+        <div class="cs-sel-sb-search-wrap">
+          <span class="cs-sel-sb-search-icon">🔍</span>
+          <input type="text" id="csSelSbSearchInput" class="cs-sel-sb-search-input" placeholder="Buscar por cliente, niñera o zona..." oninput="filtrarListaSeleccionServiciosBase(this.value)">
+        </div>
+        <div class="cs-sel-sb-actions">
+          <button type="button" class="cs-sel-sb-btn-quick" onclick="toggleSeleccionarTodosServiciosBase(true)">☑️ Todos</button>
+          <button type="button" class="cs-sel-sb-btn-quick" onclick="toggleSeleccionarTodosServiciosBase(false)">⬜ Ninguno</button>
+          <span id="csSelSbCounterBadge" class="cs-sel-sb-counter-badge">0 seleccionados</span>
+        </div>
+      </div>
+
+      <!-- Lista de clientes/servicios -->
+      <div class="cs-sel-sb-body" id="csSelSbListBody">
+        <!-- Renderizado dinámico de tarjetas -->
+      </div>
+
+      <!-- Footer -->
+      <div class="cs-sel-sb-footer">
+        <button type="button" class="cs-sel-sb-btn-cancel" onclick="cerrarModalSeleccionServiciosBase()">Cancelar</button>
+        <button type="button" id="csSelSbBtnInsertar" class="cs-sel-sb-btn-insert" onclick="confirmarInsercionServiciosBaseSeleccionados()">
+          <span>📥</span> <span>Insertar seleccionados</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DETALLES DE CONTACTO Y UBICACIÓN DEL SERVICIO (ZONA) -->
+  <div id="modalDetallesServicioAdmin" class="cs-details-modal-overlay" style="display:none;" onclick="handleModalDetallesOverlayClick(event)">
+    <div class="cs-details-modal-card" role="dialog" aria-modal="true" aria-labelledby="csModalDetallesTitulo">
+      <!-- Header -->
+      <div class="cs-details-modal-header">
+        <div class="cs-details-modal-header-left">
+          <div class="cs-details-modal-icon">📍</div>
+          <div>
+            <h3 id="csModalDetallesTitulo" class="cs-details-modal-title">Datos del Servicio</h3>
+            <span id="csModalDetallesSubtitulo" class="cs-details-modal-subtitle">Contacto y Ubicación</span>
+          </div>
+        </div>
+        <button type="button" class="cs-details-modal-close" onclick="cerrarModalDetallesServicio()" title="Cerrar">✕</button>
+      </div>
+
+      <!-- Info Banner -->
+      <div class="cs-details-modal-banner">
+        <span class="cs-details-modal-banner-icon">💡</span>
+        <div class="cs-details-modal-banner-text">
+          Esta información se sincroniza automáticamente con la ficha del cliente en <strong>Clientes &gt; Eventuales</strong> y la verá la niñera en su agenda.
+        </div>
+      </div>
+
+      <!-- Form Body -->
+      <div class="cs-details-modal-body">
+        <div class="cs-details-field-group">
+          <label for="csDetalleNumeroContacto" class="cs-details-label">
+            <span>📞</span> Número de Contacto
+          </label>
+          <input type="tel" id="csDetalleNumeroContacto" class="cs-details-input" placeholder="Ej: 222 123 4567" maxlength="12" autocomplete="off" oninput="this.value = formatearTelefono10Digitos(this.value)">
+        </div>
+
+        <div class="cs-details-field-group">
+          <label for="csDetalleDireccion" class="cs-details-label">
+            <span>📍</span> Dirección
+          </label>
+          <input type="text" id="csDetalleDireccion" class="cs-details-input" placeholder="Ej: Lomas de Angelópolis, Cluster 444, Calle 2 #15" autocomplete="off">
+        </div>
+
+        <div class="cs-details-field-group">
+          <label for="csDetalleUbicacion" class="cs-details-label">
+            <span>🗺️</span> Ubicación (Link de Google Maps o referencia)
+          </label>
+          <input type="text" id="csDetalleUbicacion" class="cs-details-input" placeholder="Ej: https://maps.app.goo.gl/... o referencia" autocomplete="off">
+        </div>
+
+        <div class="cs-details-field-group">
+          <label for="csDetalleEdadPeque" class="cs-details-label">
+            <span>👶</span> Edad del Peque
+          </label>
+          <input type="text" id="csDetalleEdadPeque" class="cs-details-input" placeholder="Ej: 2 años 3 meses" autocomplete="off">
+        </div>
+
+        <div class="cs-details-field-group">
+          <label for="csDetalleNotas" class="cs-details-label">
+            <span>📝</span> Notas
+          </label>
+          <textarea id="csDetalleNotas" class="cs-details-textarea" rows="3" placeholder="Instrucciones especiales para la niñera, rutinas, especificaciones, etc."></textarea>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="cs-details-modal-footer">
+        <button type="button" class="cs-details-btn cs-details-btn-cancel" onclick="cerrarModalDetallesServicio()">Cancelar</button>
+        <button type="button" class="cs-details-btn cs-details-btn-save" onclick="guardarModalDetallesServicio()">💾 Guardar datos</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: REGISTRAR Y AUTORIZAR NUEVA NANNY (ADMIN) -->
+  <div id="modalNuevaNannyAdmin" class="modal-backdrop"
+    style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; z-index: 9999999; align-items: center; justify-content: center; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(5px);"
+    onclick="if(event.target===this) cerrarModalNuevaNannyAdmin()">
+    <div class="modal-card"
+      style="max-width: 620px; width: 94%; border-radius: 20px; overflow: hidden; background: #ffffff; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); padding: 0; position: relative;">
+
+      <!-- Modal Header (Azul Corporativo Marca) -->
+      <div
+        style="background: #3BB6C4; color: white; padding: 22px 26px; display: flex; justify-content: space-between; align-items: center; position: relative; overflow: hidden;">
+        <div
+          style="position: absolute; right: -25px; top: -35px; width: 140px; height: 140px; background: rgba(255, 255, 255, 0.12); border-radius: 50%; pointer-events: none;">
+        </div>
+        <div
+          style="position: absolute; right: 90px; bottom: -45px; width: 100px; height: 100px; background: rgba(255, 255, 255, 0.08); border-radius: 50%; pointer-events: none;">
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px; position: relative; z-index: 2;">
+          <div
+            style="width: 46px; height: 46px; border-radius: 14px; background: rgba(255, 255, 255, 0.25); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.4); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);">
+            👩‍🍼
+          </div>
+          <div>
+            <h3
+              style="margin: 0; color: #ffffff; font-family: 'DM Serif Display', 'Quicksand', sans-serif; font-size: 1.35rem; font-weight: 700; letter-spacing: 0.3px;">
+              Nueva Nanny</h3>
+            <span style="font-size: 0.84rem; color: rgba(255, 255, 255, 0.95); font-weight: 500;">Registra y autoriza a la niñera para acceder a la app</span>
+          </div>
+        </div>
+
+        <button type="button" onclick="cerrarModalNuevaNannyAdmin()"
+          style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; width: 34px; height: 34px; border-radius: 50%; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; position: relative; z-index: 2;"
+          onmouseover="this.style.background='rgba(255,255,255,0.35)';"
+          onmouseout="this.style.background='rgba(255,255,255,0.2)';">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div style="padding: 24px; max-height: 75vh; overflow-y: auto;">
+        <form id="formNuevaNannyAdmin" onsubmit="event.preventDefault(); guardarNuevaNannyAdmin();">
+
+          <!-- SECCIÓN 1: DATOS BÁSICOS -->
+          <div style="margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 18px;">
+            <div
+              style="font-size: 0.82rem; font-weight: 800; color: #0891b2; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 14px; display:flex; align-items:center; gap:8px;">
+              <span
+                style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; background:#e0f7fa; font-size:13px;">📌</span>
+              <span>Datos de Acceso y Perfil</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label
+                  style="font-weight: 600; font-size: 0.85rem; color: #1e293b; display: flex; justify-content: space-between;">
+                  <span>Nombre completo</span>
+                  <span style="color: #ef4444; font-size: 0.75rem;">* Obligatorio</span>
+                </label>
+                <input id="admin_nan_nombre" type="text" placeholder="Ej. Mariana López Pérez" required
+                  style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.9rem;">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label
+                  style="font-weight: 600; font-size: 0.85rem; color: #1e293b; display: flex; justify-content: space-between;">
+                  <span>Correo Electrónico</span>
+                  <span style="color: #ef4444; font-size: 0.75rem;">* Obligatorio</span>
+                </label>
+                <input id="admin_nan_email" type="email" placeholder="nanny@correo.com" required
+                  style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.9rem;">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0; grid-column: 1 / -1;">
+                <label
+                  style="font-weight: 600; font-size: 0.85rem; color: #1e293b; display: flex; justify-content: space-between;">
+                  <span>Ciudad 📍</span>
+                  <span style="color: #ef4444; font-size: 0.75rem;">* Obligatorio</span>
+                </label>
+                <select id="admin_nan_ciudad" required
+                  style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.9rem; background:white;">
+                  <option value="">— Seleccionar ciudad —</option>
+                  <option value="Puebla">Puebla</option>
+                  <option value="Xalapa">Xalapa</option>
+                  <option value="Querétaro">Querétaro</option>
+                  <option value="CDMX">CDMX</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN 2: EDADES CON LAS QUE TIENE EXPERIENCIA -->
+          <div style="margin-bottom: 20px;">
+            <div
+              style="font-size: 0.82rem; font-weight: 800; color: #0891b2; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px; display:flex; align-items:center; justify-content:space-between;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span
+                  style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; background:#e0f7fa; font-size:13px;">👶</span>
+                <span>Edades con las que tiene experiencia</span>
+              </div>
+              <span id="admin_nan_rango_preview"
+                style="font-size:0.8rem; font-weight:700; color:#0284c7; background:#e0f7fa; padding:3px 10px; border-radius:12px; border:1px solid #b9e6ed;">
+                Todas las edades (0 a 12+ años)
+              </span>
+            </div>
+
+            <!-- Botones rápidos de selección de edad -->
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+              <button type="button" class="admin-age-chip"
+                onclick="seleccionarRangoEdadesNanny(0, 2, this)"
+                style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #475569; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;">
+                👶 0 a 2 años (Bebés)
+              </button>
+              <button type="button" class="admin-age-chip"
+                onclick="seleccionarRangoEdadesNanny(2, 5, this)"
+                style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #475569; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;">
+                🎨 2 a 5 años (Maternal/Preescolar)
+              </button>
+              <button type="button" class="admin-age-chip"
+                onclick="seleccionarRangoEdadesNanny(6, 12, this)"
+                style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #475569; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;">
+                🎒 6 a 12 años (Escolares)
+              </button>
+              <button type="button" class="admin-age-chip"
+                onclick="seleccionarRangoEdadesNanny(0, 12, this)"
+                style="padding: 6px 12px; border-radius: 8px; border: 1px solid #3bb6c4; background: #e0f7fa; color: #00838f; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s;">
+                ⭐ Todas las edades (0 a 12+ años)
+              </button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-weight: 600; font-size: 0.85rem; color: #1e293b;">Edad mínima (años)</label>
+                <input id="admin_nan_min_edad" type="number" min="0" max="18" value="0"
+                  oninput="actualizarPreviewEdadesNanny()" onchange="actualizarPreviewEdadesNanny()"
+                  style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.9rem;">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 0;">
+                <label style="font-weight: 600; font-size: 0.85rem; color: #1e293b;">Edad máxima (años)</label>
+                <input id="admin_nan_max_edad" type="number" min="0" max="18" value="12"
+                  oninput="actualizarPreviewEdadesNanny()" onchange="actualizarPreviewEdadesNanny()"
+                  style="width:100%; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:0.9rem;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensaje de estado -->
+          <div id="adminNanMsg" style="margin-bottom:12px; font-size:0.9rem; font-weight:600;"></div>
+
+          <!-- Footer Buttons -->
+          <div
+            style="display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid #f1f5f9;">
+            <button type="button" onclick="cerrarModalNuevaNannyAdmin()"
+              style="padding:11px 20px; border-radius:12px; font-weight:600; color:#64748B; background:#F8FAFC; border:1px solid #E2E8F0; cursor:pointer; transition:all 0.2s;"
+              onmouseover="this.style.background='#F1F5F9'; this.style.color='#1E293B';"
+              onmouseout="this.style.background='#F8FAFC'; this.style.color='#64748B';">
+              Cancelar
+            </button>
+            <button id="btnGuardarNuevaNannyAdmin" type="submit"
+              style="padding:12px 28px; border-radius:12px; background:#3BB6C4; color:#ffffff; border:none; font-weight:700; font-size:0.94rem; box-shadow:0 4px 14px rgba(59,182,196,0.35); cursor:pointer; display:flex; align-items:center; gap:8px; transition:all 0.2s;"
+              onmouseover="this.style.background='#32a3b0'; this.style.transform='translateY(-1px)'; this.style.boxShadow='0 6px 18px rgba(59,182,196,0.45)';"
+              onmouseout="this.style.background='#3BB6C4'; this.style.transform='none'; this.style.boxShadow='0 4px 14px rgba(59,182,196,0.35)';">
+              <span>Guardar Niñera</span>
+              <span style="font-size:15px;">✨</span>
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/supabase_auth.js"></script>
+  <script src="js/control_servicios_ui.js?v=114"></script>
+</body>
+
+</html>

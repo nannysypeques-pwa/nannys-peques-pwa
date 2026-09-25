@@ -1,0 +1,897 @@
+/* ==========================================================================
+   VISTA PERFIL (MODERNO / NIÑERA - NANNY) - NANNYS Y PEQUES
+   Réplica 100% del diseño UI/UX mobile
+   ========================================================================== */
+
+#vista-nanny-perfil {
+  background: transparent !important;
+  min-height: 100vh;
+  padding: 10px 14px 110px 14px;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  color: #0F172A;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+#vista-nanny-perfil h1,
+#vista-nanny-perfil h2,
+#vista-nanny-perfil h3,
+#vista-nanny-perfil h4,
+h1.np-header-title,
+h2.np-hero-name,
+h3.np-card-title,
+.np-header-title,
+.np-hero-name,
+.np-card-title,
+.np-hero-tag,
+.np-hero-subtitle,
+.np-card-subtitle,
+.np-item-label,
+.np-item-value,
+.np-badge,
+.np-recommend-desc,
+.np-btn-smart-credential,
+.np-btn-edit-main,
+.np-logout-link {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, Arial, Helvetica, sans-serif !important;
+}
+
+.np-quote-text {
+  font-family: 'Caveat', 'Dancing Script', cursive, sans-serif !important;
+}
+
+/* Encabezado */
+.np-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-top: 6px;
+  margin-bottom: 16px;
+}
+
+.np-header-title {
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  color: #0F172A !important;
+  margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+
+.np-header-subtitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748B;
+  margin: 4px 0 0 0;
+}
+
+.np-bell-btn {
+  display: none !important;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #1E293B;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.np-bell-btn:active {
+  transform: scale(0.94);
+}
+
+.np-bell-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #E84C9A;
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: 2px solid #FFFFFF;
+}
+
+/* ==========================================================================
+   1. TARJETA HERO NIÑERA (RÉPLICA EXACTA DEL MOCKUP)
+   ========================================================================== */
+.np-hero-card {
+  background: #FFF7FA;
+  border-radius: 26px;
+  padding: 0;
+  border: 1px solid #FFE2EC;
+  box-shadow: 0 8px 24px rgba(232, 76, 154, 0.05), 0 2px 6px rgba(15, 23, 42, 0.02);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: stretch;
+  box-sizing: border-box;
+  min-height: 195px;
+}
+
+/* Manchas orgánicas de fondo */
+.np-hero-blob {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.np-blob-left {
+  left: 0;
+  bottom: 0;
+  top: 0;
+  width: 190px;
+  height: 100%;
+}
+
+.np-blob-left svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.np-blob-right {
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 60%;
+  height: 100%;
+}
+
+.np-blob-right svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Avatar a la izquierda (Alineado al fondo) */
+.np-hero-illustration {
+  position: relative;
+  z-index: 2;
+  width: 44%;
+  max-width: 175px;
+  min-width: 130px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-shrink: 0;
+  padding-left: 6px;
+  margin-bottom: 0;
+}
+
+.np-hero-img {
+  width: 100%;
+  max-height: 188px;
+  object-fit: contain;
+  object-position: bottom center;
+  display: block;
+  filter: drop-shadow(0 4px 10px rgba(232, 76, 154, 0.08));
+  user-select: none;
+  pointer-events: none;
+  margin-bottom: 0;
+}
+
+/* Contenido de la derecha */
+.np-hero-info {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  padding: 18px 16px 18px 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Cita manuscrita en esquina superior derecha */
+.np-hero-quote-box {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  text-align: right;
+  z-index: 3;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.np-quote-text {
+  font-family: 'Caveat', 'Dancing Script', 'Segoe Script', cursive, sans-serif;
+  font-size: 15px;
+  line-height: 1.05;
+  color: #597184;
+  font-weight: 700;
+  transform: rotate(-4deg);
+  display: block;
+  letter-spacing: -0.2px;
+}
+
+.np-quote-heart {
+  display: inline-block;
+  margin-top: 3px;
+  margin-right: 4px;
+  transform: rotate(-6deg);
+}
+
+/* Badge NANNY */
+.np-hero-tag {
+  display: inline-block;
+  align-self: flex-start;
+  background: #FFE4EC;
+  color: #E84C9A;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 12px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 4px;
+}
+
+/* Nombre Nanny */
+.np-hero-name {
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  color: #0F172A !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  margin: 0;
+  line-height: 1.15;
+  letter-spacing: -0.4px;
+  word-break: break-word;
+}
+
+/* Subtítulo */
+.np-hero-subtitle {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #64748B;
+  margin: 3px 0 10px 0;
+}
+
+/* Badges de estado */
+.np-hero-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  align-items: flex-start;
+}
+
+.np-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+/* Badge Perfil Verificado */
+.np-badge.teal {
+  background: #E8F9FA;
+  border: 1px solid #D1F3F5;
+  color: #008793;
+}
+
+.np-badge-check-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #008793;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Badge Disponibilidad Activa */
+.np-badge.green {
+  background: #ECF8E9;
+  border: 1px solid #D6F3CF;
+  color: #268E37;
+}
+
+.np-badge-dot-green {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #268E37;
+  display: inline-block;
+  box-shadow: 0 0 0 2px rgba(38, 142, 55, 0.2);
+  flex-shrink: 0;
+}
+
+/* ==========================================================================
+   2. TARJETA GENÉRICA ESTILO PREMIUM
+   ========================================================================== */
+.np-card {
+  background: #FFFFFF;
+  border-radius: 24px;
+  padding: 20px 20px;
+  border: 1px solid #F1F5F9;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.03);
+  margin-bottom: 18px;
+  box-sizing: border-box;
+}
+
+.np-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.np-card-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #FCE7F3;
+  color: #E84C9A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.np-card-title-col {
+  flex: 1;
+}
+
+.np-card-title {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  color: #0F172A !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.np-card-subtitle {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748B;
+  margin-top: 3px;
+}
+
+/* ==========================================================================
+   3. GRID DE DATOS DE CONTACTO (2 COLUMNAS)
+   ========================================================================== */
+.np-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 14px;
+}
+
+@media (max-width: 380px) {
+  .np-contact-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+.np-contact-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.np-contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.np-item-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #FFF1F6;
+  color: #E84C9A;
+  border: 1px solid #FCE7F3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.np-item-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.np-item-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: capitalize;
+  margin-bottom: 2px;
+}
+
+.np-item-value {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #0F172A;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.np-item-link {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0098A6;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  display: inline-block;
+}
+
+.np-item-link:hover {
+  text-decoration: underline;
+  opacity: 0.85;
+}
+
+/* Botón inteligente de credencial (Degradado rosa a cian idéntico al mockup) */
+.np-credencial-box {
+  align-items: flex-start;
+}
+
+.np-btn-smart-credential {
+  background: linear-gradient(90deg, #E82A7A 0%, #15B8C7 100%) !important;
+  color: #FFFFFF !important;
+  border: none;
+  border-radius: 999px !important;
+  padding: 10px 18px !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(232, 42, 122, 0.28) !important;
+  transition: all 0.2s ease;
+  margin-top: 2px;
+}
+
+.np-btn-smart-credential:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(232, 76, 154, 0.35);
+}
+
+.np-btn-smart-credential:active {
+  transform: scale(0.96);
+}
+
+/* ==========================================================================
+   4. TARJETA RECOMENDAR NANNYS y PEQUES
+   ========================================================================== */
+.np-recommend-card {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 20px;
+}
+
+.np-recommend-blob {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 140px;
+  height: 90px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.np-recommend-blob svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.np-recommend-content {
+  position: relative;
+  z-index: 2;
+}
+
+.np-recommend-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.np-recommend-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.np-recommend-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748B;
+  font-weight: 500;
+  margin: 0 auto;
+  max-width: 320px;
+  text-align: center;
+}
+
+.np-recommend-qr-box {
+  background: #FFFFFF;
+  border-radius: 24px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+  border: 1.5px solid #E2E8F0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-top: 4px;
+}
+
+.np-recommend-qr-box:hover {
+  transform: scale(1.03);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.1);
+}
+
+.np-qr-inner {
+  width: 170px;
+  height: 170px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.np-qr-inner img,
+.np-qr-inner canvas,
+.np-qr-inner svg {
+  width: 170px !important;
+  height: 170px !important;
+  display: block;
+  border-radius: 12px;
+}
+
+/* ==========================================================================
+   5. BOTONES INFERIORES
+   ========================================================================== */
+.np-btn-edit-main {
+  width: 100%;
+  height: 52px;
+  border-radius: 999px;
+  background: #22A7B8;
+  color: #FFFFFF;
+  border: none;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(34, 167, 184, 0.28);
+  transition: all 0.2s ease;
+  margin-top: 4px;
+}
+
+.np-btn-edit-main:hover {
+  background: #1D95A5;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(34, 167, 184, 0.35);
+}
+
+.np-btn-edit-main:active {
+  transform: scale(0.98);
+}
+
+.np-logout-link {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #EF4444;
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: center;
+  padding: 14px 0 10px 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.np-logout-link:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+/* ==========================================================================
+   6. MODAL EDITAR PERFIL NIÑERA (PREMIUM DESIGN)
+   ========================================================================== */
+.np-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: rgba(15, 23, 42, 0.72) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  z-index: 9999999 !important;
+  display: none;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  animation: npFadeIn 0.25s ease-out;
+}
+
+.np-modal-overlay.activo,
+.np-modal-overlay.active {
+  display: flex !important;
+}
+
+@keyframes npFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.np-modal-container {
+  background: #FFFFFF;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+  animation: npSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes npSlideUp {
+  from { transform: translateY(24px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.np-modal-header {
+  background: linear-gradient(135deg, #E84C9A 0%, #06B6D4 100%);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  color: #FFFFFF;
+}
+
+.np-modal-avatar-wrapper {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  padding: 2.5px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.np-modal-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.np-modal-header-info {
+  flex: 1;
+}
+
+.np-modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.np-modal-subtitle {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.92);
+  margin: 3px 0 0 0;
+  font-weight: 500;
+}
+
+.np-modal-close-btn {
+  background: rgba(255, 255, 255, 0.22);
+  border: none;
+  color: #FFFFFF;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
+
+.np-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.38);
+  transform: scale(1.06);
+}
+
+.np-modal-container form {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.np-modal-body {
+  padding: 20px;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: calc(85vh - 130px) !important;
+}
+
+.np-modal-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.np-modal-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 440px) {
+  .np-modal-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.np-modal-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.np-modal-label svg {
+  color: #06B6D4;
+}
+
+.np-badge-lock {
+  font-size: 10px;
+  text-transform: none;
+  font-weight: 600;
+  color: #64748B;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-left: auto;
+  letter-spacing: 0;
+}
+
+.np-modal-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1.5px solid #E2E8F0;
+  background: #F8FAFC;
+  font-size: 14px;
+  color: #0F172A;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.np-modal-input:focus {
+  outline: none;
+  border-color: #06B6D4;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3.5px rgba(6, 182, 212, 0.15);
+}
+
+.np-modal-input.np-readonly {
+  background: #F1F5F9;
+  color: #64748B;
+  cursor: not-allowed;
+  border-color: #CBD5E1;
+}
+
+.np-modal-textarea {
+  height: 64px;
+  padding: 10px 14px;
+  resize: vertical;
+}
+
+.np-modal-footer {
+  padding: 14px 20px 20px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #F1F5F9;
+  background: #FFFFFF;
+}
+
+.np-modal-btn-cancel {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1.5px solid #CBD5E1;
+  background: #FFFFFF;
+  color: #64748B;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.np-modal-btn-cancel:hover {
+  background: #F8FAFC;
+  color: #334155;
+  border-color: #94A3B8;
+}
+
+.np-modal-btn-save {
+  height: 44px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #06B6D4 0%, #0EA5E9 100%);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.3);
+  transition: all 0.2s ease;
+}
+
+.np-modal-btn-save:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(6, 182, 212, 0.4);
+}
+
+.np-modal-btn-save:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}

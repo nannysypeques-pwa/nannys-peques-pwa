@@ -660,6 +660,26 @@ const RHPanel = {
                             <label for="rh-form-date">Fecha *</label>
                             <input type="date" id="rh-form-date" class="rh-input" required>
                         </div>
+
+                        <div class="rh-form-group">
+                            <label for="rh-form-modalidad">Modalidad *</label>
+                            <select id="rh-form-modalidad" class="rh-input" required onchange="RHPanel.toggleModalidadCiudad(this.value)">
+                                <option value="En línea" selected>En línea</option>
+                                <option value="Híbrida">Híbrida</option>
+                                <option value="Presencial">Presencial</option>
+                            </select>
+                        </div>
+                        
+                        <div class="rh-form-group" id="rh-form-group-ciudad" style="display: none;">
+                            <label for="rh-form-ciudad">Ciudad *</label>
+                            <select id="rh-form-ciudad" class="rh-input">
+                                <option value="" disabled selected>Selecciona una ciudad...</option>
+                                <option value="Puebla">Puebla</option>
+                                <option value="Xalapa">Xalapa</option>
+                                <option value="Querétaro">Querétaro</option>
+                                <option value="CDMX">CDMX</option>
+                            </select>
+                        </div>
                         
                         <div class="rh-form-group" style="margin-bottom: 25px;">
                             <label>Horario *</label>
@@ -768,10 +788,10 @@ const RHPanel = {
         inscDiv.className = 'rh-modal-overlay';
         inscDiv.style.display = 'none';
         inscDiv.innerHTML = `
-            <div class="rh-modal-card" style="max-width:600px;">
+            <div class="rh-modal-card" style="max-width: 840px; width: 95%;">
                 <div class="rh-modal-header" style="flex-direction:column; align-items:flex-start; gap:4px;">
                     <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                        <h3 style="margin:0; font-family:'DM Serif Display',serif; font-size:20px; color:white;">Listado de Inscritas</h3>
+                        <h3 style="margin:0; font-family:'DM Serif Display',serif; font-size:20px; color:white;">Listado de Participantes Inscritos</h3>
                         <button class="rh-modal-close" onclick="RHPanel.cerrarInscritasModal()">✕</button>
                     </div>
                     <p id="rh-modal-inscritas-subtitle" style="margin:0; font-size:12px; opacity:0.85; font-weight:normal; color:#e0f2fe;"></p>
@@ -1096,6 +1116,9 @@ const RHPanel = {
                             <p class="rh-course-item-desc">${RHPanel.escapeHtml(c.descripcion || 'Sin descripción.')}</p>
                             
                             <div class="rh-course-item-meta">
+                                <span style="background: ${c.modalidad === 'Presencial' ? '#dcfce7' : c.modalidad === 'Híbrida' ? '#f3e8ff' : '#ffe4e6'}; color: ${c.modalidad === 'Presencial' ? '#166534' : c.modalidad === 'Híbrida' ? '#6b21a8' : '#be123c'}; padding: 3px 8px; border-radius: 6px; font-weight: 800; font-size: 11px;">
+                                    ${RHPanel.escapeHtml(c.modalidad || 'En línea')}${c.ciudad ? ` (${RHPanel.escapeHtml(c.ciudad)})` : ''}
+                                </span>
                                 <span>📅 <b>Fecha:</b> ${RHPanel.escapeHtml(c.fecha)}</span>
                                 <span>⏰ <b>Horario:</b> ${RHPanel.escapeHtml(c.horario || 'Por definir')}</span>
                                 <span>💰 <b>Costo:</b> ${RHPanel.escapeHtml(c.costo ? ('$' + c.costo) : 'Gratuito')}</span>
@@ -1117,6 +1140,26 @@ const RHPanel = {
                     </div>
                 `;
             }).join('');
+        }
+    },
+
+    toggleModalidadCiudad: function (modalidad) {
+        const ciudadGroup = document.getElementById('rh-form-group-ciudad');
+        const ciudadSelect = document.getElementById('rh-form-ciudad');
+        if (!ciudadGroup) return;
+
+        if (modalidad === 'Presencial') {
+            ciudadGroup.style.display = 'block';
+            if (ciudadSelect) ciudadSelect.required = true;
+        } else if (modalidad === 'Híbrida') {
+            ciudadGroup.style.display = 'block';
+            if (ciudadSelect) ciudadSelect.required = false;
+        } else {
+            ciudadGroup.style.display = 'none';
+            if (ciudadSelect) {
+                ciudadSelect.required = false;
+                ciudadSelect.value = '';
+            }
         }
     },
 
@@ -1154,6 +1197,10 @@ const RHPanel = {
         document.getElementById('rh-form-id').value = '';
         document.getElementById('rh-modal-form-title').textContent = 'Programar Capacitación';
         
+        const modalidadEl = document.getElementById('rh-form-modalidad');
+        if (modalidadEl) modalidadEl.value = 'En línea';
+        this.toggleModalidadCiudad('En línea');
+
         this.actualizarDropdownTemplates();
 
         if (dateStr) {
@@ -1172,6 +1219,15 @@ const RHPanel = {
         document.getElementById('rh-modal-form-title').textContent = 'Editar Programación';
         document.getElementById('rh-form-id').value = cap.id;
         document.getElementById('rh-form-date').value = cap.fecha || '';
+
+        const modalidadVal = cap.modalidad || 'En línea';
+        const modalidadEl = document.getElementById('rh-form-modalidad');
+        if (modalidadEl) modalidadEl.value = modalidadVal;
+
+        const ciudadEl = document.getElementById('rh-form-ciudad');
+        if (ciudadEl) ciudadEl.value = cap.ciudad || '';
+
+        this.toggleModalidadCiudad(modalidadVal);
 
         // Separar horario guardado en inicio y fin (formato "HH:MM - HH:MM")
         const horarioParts = (cap.horario || '').split('-').map(s => s.trim());
@@ -1251,9 +1307,22 @@ const RHPanel = {
         const id = document.getElementById('rh-form-id').value;
         const templateId = document.getElementById('rh-form-template-select').value;
         const fecha = document.getElementById('rh-form-date').value;
+        const modalidad = document.getElementById('rh-form-modalidad')?.value || 'En línea';
+        const ciudad = (modalidad === 'Presencial' || modalidad === 'Híbrida') 
+            ? (document.getElementById('rh-form-ciudad')?.value || '') 
+            : '';
         const horarioInicio = document.getElementById('rh-form-time-start').value;
         const horarioFin = document.getElementById('rh-form-time-end').value;
         const horario = horarioInicio && horarioFin ? `${horarioInicio} - ${horarioFin}` : (horarioInicio || horarioFin || '');
+
+        if (modalidad === 'Presencial' && !ciudad) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Ciudad requerida',
+                text: 'Por favor, selecciona la ciudad donde se impartirá la capacitación presencial.'
+            });
+            return;
+        }
 
         let titulo = '';
         let descripcion = '';
@@ -1332,6 +1401,8 @@ const RHPanel = {
                 titulo,
                 descripcion,
                 fecha,
+                modalidad,
+                ciudad,
                 horario,
                 costo,
                 imagen,
@@ -1738,6 +1809,118 @@ const RHPanel = {
         }
     },
 
+    obtenerCiudadParticipante: async function (ins) {
+        if (!ins) return '—';
+        const emailClean = (ins.nannyEmail || '').trim().toLowerCase();
+        const nameClean = (ins.nannyNombre || '').trim().toLowerCase();
+        const esCliente = ins.esCliente === true || (ins.rol || '').toLowerCase() === 'cliente';
+
+        const esCiudadValida = (v) => {
+            if (!v || typeof v !== 'string') return false;
+            const t = v.trim();
+            if (!t || t === '—' || t === '-' || t === 'null' || t === 'undefined' || t === 'Consultando...' || t === 'Cargando...') return false;
+            if (t.startsWith('http://') || t.startsWith('https://') || t.includes('maps') || t.includes('.gl/') || t.includes('/')) return false;
+            return true;
+        };
+
+        // 1. Si ya tiene ciudad válida en el objeto de inscripción (que NO sea una URL de mapa)
+        if (esCiudadValida(ins.nannyCiudad)) {
+            return ins.nannyCiudad;
+        }
+
+        // 2. Si es Cliente, buscar primero en caché de Clientes
+        if (esCliente) {
+            const cacheClientes = window._cacheClientesCS || (typeof _cacheClientesCS !== 'undefined' ? _cacheClientesCS : []);
+            if (Array.isArray(cacheClientes) && cacheClientes.length > 0) {
+                const foundC = cacheClientes.find(c => 
+                    (c.email && c.email.toLowerCase().trim() === emailClean) ||
+                    (nameClean && c.nombre && c.nombre.toLowerCase().trim() === nameClean)
+                );
+                if (foundC && esCiudadValida(foundC.ciudad)) {
+                    return foundC.ciudad;
+                }
+            }
+        } else {
+            // Si es Niñera, buscar en caché de Niñeras
+            const cacheNannys = window._cacheNannysCS || (typeof _cacheNannysCS !== 'undefined' ? _cacheNannysCS : []);
+            if (Array.isArray(cacheNannys) && cacheNannys.length > 0) {
+                const foundN = cacheNannys.find(n => 
+                    (n.email && n.email.toLowerCase().trim() === emailClean) ||
+                    (nameClean && n.nombre && n.nombre.toLowerCase().trim() === nameClean)
+                );
+                if (foundN && esCiudadValida(foundN.ciudad)) {
+                    return foundN.ciudad;
+                }
+            }
+        }
+
+        // 3. Consultar directamente a Supabase la columna 'ciudad' de la tabla correspondiente
+        let client = null;
+        if (typeof getSupabaseClient === 'function') {
+            client = getSupabaseClient();
+        } else if (typeof window.getSupabaseClient === 'function') {
+            client = window.getSupabaseClient();
+        } else if (typeof supabase !== 'undefined' && supabase.createClient) {
+            const url = window.CONFIG?.SUPABASE_URL || 'https://tcysqleovtfpdzlsgdqm.supabase.co';
+            const key = window.CONFIG?.SUPABASE_ANON_KEY || 'sb_publishable_Axs3rWyxt8-RxcyIU6XBVA_LNMDypeS';
+            client = supabase.createClient(url, key);
+        }
+
+        if (client) {
+            try {
+                if (esCliente) {
+                    // Consulta tabla 'clientes'
+                    if (emailClean) {
+                        const { data: cByEmail } = await client
+                            .from('clientes')
+                            .select('ciudad')
+                            .ilike('email', emailClean)
+                            .maybeSingle();
+                        if (cByEmail && esCiudadValida(cByEmail.ciudad)) {
+                            return cByEmail.ciudad;
+                        }
+                    }
+                    if (nameClean) {
+                        const { data: cByName } = await client
+                            .from('clientes')
+                            .select('ciudad')
+                            .ilike('nombre', nameClean)
+                            .maybeSingle();
+                        if (cByName && esCiudadValida(cByName.ciudad)) {
+                            return cByName.ciudad;
+                        }
+                    }
+                } else {
+                    // Consulta tabla 'nannys'
+                    if (emailClean) {
+                        const { data: nByEmail } = await client
+                            .from('nannys')
+                            .select('ciudad')
+                            .ilike('email', emailClean)
+                            .maybeSingle();
+                        if (nByEmail && esCiudadValida(nByEmail.ciudad)) {
+                            return nByEmail.ciudad;
+                        }
+                    }
+                    if (nameClean) {
+                        const { data: nByName } = await client
+                            .from('nannys')
+                            .select('ciudad')
+                            .ilike('nombre', nameClean)
+                            .maybeSingle();
+                        if (nByName && esCiudadValida(nByName.ciudad)) {
+                            return nByName.ciudad;
+                        }
+                    }
+                }
+            } catch (errSupa) {
+                console.warn("⚠️ [RH] Error consultando ciudad en Supabase:", errSupa);
+            }
+        }
+
+        return '—';
+    },
+
     verInscritas: function (capacitacionId, titulo) {
         this.state.currentInscritasCapId = capacitacionId;
         this.state.currentInscritasTitulo = titulo;
@@ -1755,29 +1938,65 @@ const RHPanel = {
         if (list.length === 0) {
             cont.innerHTML = `
                 <div class="rh-no-courses" style="margin: 10px 0;">
-                    No hay niñeras inscritas a esta capacitación todavía.
+                    No hay participantes inscritos a esta capacitación todavía.
                 </div>
             `;
         } else {
             cont.innerHTML = `
-                <div style="overflow: hidden auto; max-height: 400px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-                    <table class="rh-table" style="width: 100%;">
+                <div style="overflow-x: auto; overflow-y: auto; max-height: 420px; -webkit-overflow-scrolling: touch; width: 100%; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+                    <table class="rh-table" style="width: 100%; min-width: 680px; border-collapse: collapse; white-space: nowrap;">
                         <thead>
                             <tr>
                                 <th style="padding: 10px 8px;">Nombre</th>
+                                <th style="padding: 10px 8px; text-align: center;">Ciudad</th>
+                                <th style="padding: 10px 8px; text-align: center;">Rol</th>
                                 <th style="padding: 10px 8px; text-align: center;">Asistencia</th>
                                 <th style="padding: 10px 8px; text-align: center;">Constancia</th>
-                                <th style="padding: 10px 8px;">Ciudad</th>
                                 <th style="padding: 10px 8px; white-space: nowrap;">Inscripción</th>
                                 <th style="padding: 10px 16px 10px 8px; text-align: center; width: 100px;">Acción</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${list.map(ins => {
+                            ${list.map((ins, idx) => {
                                 const fechaStr = ins.fecha_inscripcion ? new Date(ins.fecha_inscripcion).toLocaleDateString('es-MX', {day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'}) : '—';
+                                const esCliente = ins.esCliente === true || (ins.rol || '').toLowerCase() === 'cliente';
+                                const rolBadge = esCliente
+                                    ? `<span style="background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">Cliente 👨‍👩‍👧</span>`
+                                    : `<span style="background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 3px 8px; border-radius: 999px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;">Niñera 👩‍⚕️</span>`;
+                                
+                                // Resolución síncrona inmediata desde memoria si existe
+                                let ciudadInicial = ins.nannyCiudad;
+                                const emailClean = (ins.nannyEmail || '').trim().toLowerCase();
+                                const nameClean = (ins.nannyNombre || '').trim().toLowerCase();
+
+                                if (!ciudadInicial || ciudadInicial === '—' || ciudadInicial === 'Consultando...' || ciudadInicial === 'Cargando...') {
+                                    const cacheN = window._cacheNannysCS || (typeof _cacheNannysCS !== 'undefined' ? _cacheNannysCS : []);
+                                    const foundN = Array.isArray(cacheN) ? cacheN.find(n => (n.email && n.email.toLowerCase().trim() === emailClean) || (n.nombre && n.nombre.toLowerCase().trim() === nameClean)) : null;
+                                    if (foundN && foundN.ciudad) {
+                                        ciudadInicial = foundN.ciudad;
+                                        ins.nannyCiudad = foundN.ciudad;
+                                    } else {
+                                        const cacheC = window._cacheClientesCS || (typeof _cacheClientesCS !== 'undefined' ? _cacheClientesCS : []);
+                                        const foundC = Array.isArray(cacheC) ? cacheC.find(c => (c.email && c.email.toLowerCase().trim() === emailClean) || (c.nombre && c.nombre.toLowerCase().trim() === nameClean)) : null;
+                                        if (foundC && foundC.ciudad) {
+                                            ciudadInicial = foundC.ciudad;
+                                            ins.nannyCiudad = foundC.ciudad;
+                                        }
+                                    }
+                                }
+
+                                const tieneCiudad = ciudadInicial && ciudadInicial !== '—' && ciudadInicial !== 'Consultando...' && ciudadInicial !== 'Cargando...';
+                                const displayCiudad = tieneCiudad ? ciudadInicial : 'Consultando...';
+                                const ciudadColor = tieneCiudad ? '#0f766e' : '#94a3b8';
+                                const ciudadWeight = tieneCiudad ? '700' : '600';
+                                
                                 return `
-                                    <tr data-nanny-email="${RHPanel.escapeHtml(ins.nannyEmail)}">
+                                    <tr data-nanny-idx="${idx}" data-nanny-email="${RHPanel.escapeHtml(ins.nannyEmail)}">
                                         <td style="padding: 10px 8px;"><b>${RHPanel.escapeHtml(ins.nannyNombre)}</b></td>
+                                        <td class="nanny-ciudad-cell" style="padding: 10px 8px; font-size:12px; font-weight:${ciudadWeight}; color:${ciudadColor}; text-align: center;">
+                                            ${RHPanel.escapeHtml(displayCiudad)}
+                                        </td>
+                                        <td style="padding: 10px 8px; text-align: center;">${rolBadge}</td>
                                         <td style="padding: 10px 8px; text-align: center;">
                                             ${ins.asistio === true 
                                                 ? `<span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block;">Presente ✅</span>`
@@ -1789,7 +2008,6 @@ const RHPanel = {
                                                 ${ins.amerita_constancia === true ? 'checked' : ''} 
                                                 onchange="RHPanel.cambiarAmeritaConstancia('${ins.capacitacionId}', '${RHPanel.escapeHtml(ins.nannyEmail)}', this.checked)">
                                         </td>
-                                        <td class="nanny-ciudad-cell" style="padding: 10px 8px; font-size:12px; font-weight:600; color:#475569;">${RHPanel.escapeHtml(ins.nannyCiudad || 'Cargando...')}</td>
                                         <td style="padding: 10px 8px; font-size:12px; color: var(--text-muted); white-space: nowrap;">${fechaStr}</td>
                                         <td style="padding: 10px 16px 10px 8px; text-align: center; width: 100px;">
                                             <button class="rh-btn rh-btn-danger rh-btn-small" style="padding: 5px 10px; font-size:11px; border-radius:8px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;" onclick="RHPanel.eliminarInscrita('${ins.capacitacionId}', '${RHPanel.escapeHtml(ins.nannyEmail)}')">
@@ -1804,25 +2022,36 @@ const RHPanel = {
                 </div>
             `;
 
-            // Cargar ciudades de forma asíncrona si no vienen en la inscripción (registros antiguos)
-            list.forEach(async (ins) => {
-                if (!ins.nannyCiudad) {
-                    try {
-                        const perf = await api('getProfile', { email: ins.nannyEmail });
-                        const ciudadVal = perf.ciudad || perf.sucursal || perf.ciudad_sucursal || '—';
-                        const rows = cont.querySelectorAll(`tr[data-nanny-email="${ins.nannyEmail.replace(/"/g, '\\"')}"] .nanny-ciudad-cell`);
-                        rows.forEach(cell => {
+            // Cargar y sincronizar ciudades de forma asíncrona
+            list.forEach(async (ins, idx) => {
+                try {
+                    const ciudadVal = await this.obtenerCiudadParticipante(ins);
+                    ins.nannyCiudad = ciudadVal;
+
+                    // Actualizar celda en el DOM
+                    const row = cont.querySelector(`tr[data-nanny-idx="${idx}"]`);
+                    if (row) {
+                        const cell = row.querySelector('.nanny-ciudad-cell');
+                        if (cell) {
                             cell.textContent = ciudadVal;
-                        });
-                    } catch (err) {
-                        console.warn(`Error al cargar ciudad para ${ins.nannyEmail}:`, err);
-                        const rows = cont.querySelectorAll(`tr[data-nanny-email="${ins.nannyEmail.replace(/"/g, '\\"')}"] .nanny-ciudad-cell`);
-                        rows.forEach(cell => {
-                            if (cell.textContent === 'Cargando...') {
-                                cell.textContent = '—';
-                            }
-                        });
+                            cell.style.color = ciudadVal !== '—' ? '#0f766e' : '#94a3b8';
+                            cell.style.fontWeight = ciudadVal !== '—' ? '700' : '600';
+                        }
                     }
+
+                    // Si se resolvió la ciudad real, actualizar en Firestore
+                    if (ciudadVal && ciudadVal !== '—') {
+                        try {
+                            const { db } = await import('./firebase-config.js');
+                            const { doc, updateDoc } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
+                            const docId = `${ins.capacitacionId}_${ins.nannyEmail.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                            await updateDoc(doc(db, 'inscripciones_capacitaciones', docId), {
+                                nannyCiudad: ciudadVal
+                            });
+                        } catch (fsErr) {}
+                    }
+                } catch (err) {
+                    console.warn(`Error al cargar ciudad para ${ins.nannyEmail}:`, err);
                 }
             });
         }
@@ -1885,6 +2114,11 @@ const RHPanel = {
             await updateDoc(doc(db, 'inscripciones_capacitaciones', docId), {
                 amerita_constancia: checked
             });
+
+            if (this.state.inscripciones[capacitacionId]) {
+                const item = this.state.inscripciones[capacitacionId].find(i => (i.nannyEmail || '').toLowerCase() === (nannyEmail || '').toLowerCase());
+                if (item) item.amerita_constancia = checked;
+            }
         } catch (err) {
             console.error("Error al actualizar amerita_constancia:", err);
             Swal.fire({

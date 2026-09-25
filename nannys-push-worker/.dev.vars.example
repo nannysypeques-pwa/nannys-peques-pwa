@@ -1,0 +1,6 @@
+# Variables de entorno requeridas para el Cloudflare Push & Auth Worker
+# En producción, configurar con `wrangler secret put <NOMBRE>`
+FIREBASE_SA_KEY=TU_CLAVE_PRIVADA_PKCS8_BASE64_DE_GOOGLE_SERVICE_ACCOUNT
+FIREBASE_SA_EMAIL=firebase-token-generator@nyp-estimulacion.iam.gserviceaccount.com
+SUPABASE_URL=https://tcysqleovtfpdzlsgdqm.supabase.co
+SUPABASE_ANON_KEY=sb_publishable_Axs3rWyxt8-RxcyIU6XBVA_LNMDypeS

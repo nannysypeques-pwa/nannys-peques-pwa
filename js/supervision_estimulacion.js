@@ -185,21 +185,24 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
         </div>
     `;
 
-    // Mostrar loader estético en ambos
-    container.innerHTML = loaderHtml;
-    if (containerAnterior) {
-        containerAnterior.innerHTML = loaderHtml;
+    // Mostrar loader solo si no hay contenido previo o si se fuerza la recarga manual
+    const hasExistingContent = container.children.length > 0 && !container.querySelector('.loader-spinner');
+    if (!hasExistingContent || force) {
+        container.innerHTML = loaderHtml;
+        if (containerAnterior) {
+            containerAnterior.innerHTML = loaderHtml;
+        }
     }
 
     try {
-        // 1. Obtener planeaciones consolidado de las semanas
+        // 1. Obtener servicios de las semanas (Actual y Anterior) desde Supabase
         let data = null;
-        if (!force) {
-            const cached = localStorage.getItem('CACHE_PLANEACIONES_SUP_' + SESION.email);
+        if (!force && window.SESION?.email) {
+            const cached = localStorage.getItem('CACHE_PLANEACIONES_SUP_' + window.SESION.email);
             if (cached) {
                 try {
                     const parsed = JSON.parse(cached);
-                    if (parsed && parsed.anterior) {
+                    if (parsed && parsed.actual && parsed.anterior) {
                         data = parsed;
                     }
                 } catch (e) {
@@ -208,28 +211,29 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
             }
         }
 
-        if (!data) {
+        if (!data || !data.actual || !data.anterior) {
             try {
-                data = await api('getResumenPlaneacionesDosSemanas', { email: SESION.email });
-                if (data) {
-                    localStorage.setItem('CACHE_PLANEACIONES_SUP_' + SESION.email, JSON.stringify(data));
-                }
-            } catch (netErr) {
-                console.warn("⚠️ Fallo temporal de red en consulta de planeaciones, reintentando...", netErr);
-                try {
-                    await new Promise(r => setTimeout(r, 800));
-                    data = await api('getResumenPlaneacionesDosSemanas', { email: SESION.email });
-                    if (data) {
-                        localStorage.setItem('CACHE_PLANEACIONES_SUP_' + SESION.email, JSON.stringify(data));
+                if (typeof obtenerResumenServiciosSugeridorSupabase === 'function') {
+                    data = await obtenerResumenServiciosSugeridorSupabase();
+                } else if (typeof obtenerResumenPlaneacionesDosSemanasSupabase === 'function') {
+                    const resMulti = await obtenerResumenPlaneacionesDosSemanasSupabase();
+                    if (resMulti && resMulti.actual && resMulti.anterior) {
+                        data = resMulti;
+                    } else if (typeof calcularLunesSemanasSupervision === 'function') {
+                        const { isoActual, isoAnterior } = calcularLunesSemanasSupervision();
+                        const [act, ant] = await Promise.all([
+                            obtenerResumenPlaneacionesSemanaSupabase(isoActual, null),
+                            obtenerResumenPlaneacionesSemanaSupabase(isoAnterior, null)
+                        ]);
+                        data = { actual: act, anterior: ant };
                     }
-                } catch (retryErr) {
-                    console.warn("⚠️ Reintento de red falló, usando datos en caché de respaldo...", retryErr);
-                    const backupCached = localStorage.getItem('CACHE_PLANEACIONES_SUP_' + SESION.email);
-                    if (backupCached) {
-                        try { data = JSON.parse(backupCached); } catch (e) {}
-                    }
-                    if (!data) throw retryErr;
                 }
+
+                if (data && window.SESION?.email) {
+                    localStorage.setItem('CACHE_PLANEACIONES_SUP_' + window.SESION.email, JSON.stringify(data));
+                }
+            } catch (supErr) {
+                console.error("❌ [Supervisión Estimulación] Error consultando servicios en Supabase:", supErr);
             }
         }
 
@@ -345,7 +349,11 @@ async function cargarAvanceEstimulacionSupervision(force = false) {
 
                 const serviciosAvanceAnterior = calcularAvances(serviciosEstimulacionAnterior, diasSemanaAnteriorISO);
                 renderTarjetasAvance(serviciosAvanceAnterior, "lista-avance-estimulacion-anterior", "anterior");
-            }, 100);
+
+                if (typeof actualizarModalDetalleDiaAvanceSiAbierto === 'function') {
+                    actualizarModalDetalleDiaAvanceSiAbierto();
+                }
+            }, 60);
         };
 
         const todosServicios = [...serviciosEstimulacion, ...serviciosEstimulacionAnterior];
@@ -489,9 +497,178 @@ function renderTarjetasAvance(servicios, containerId, prefix) {
         return a.localeCompare(b);
     });
 
-    let html = '';
     const nombresDiasSemana = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     const nombresDiasCompletos = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+    // Helper para generar el contenido dinámico de una fila
+    function generarContenidoFila(s) {
+        const emailNorm = s.email || 'sin_email';
+        const pequeNorm = s.pequeNombre || '';
+        const docId = btoa(`${emailNorm}_${pequeNorm}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+
+        // Estatus Badge
+        let statusBadge = '';
+        if (s.evaluado) {
+            const etapaActual = s.evalData ? s.evalData.etapa_actual : '';
+            const nombreEtapa = obtenerNombreEtapaHumano(etapaActual);
+            statusBadge = `
+                <span style="background: var(--success-bg); color: var(--success-text); padding: 2px 6px; border-radius: 6px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2px; display: inline-block;">Evaluado</span>
+                <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px; font-weight: 600; line-height: 1.2;">${nombreEtapa}</div>
+            `;
+        } else {
+            statusBadge = `<span style="background: var(--warning-bg); color: var(--warning-text); padding: 2px 6px; border-radius: 6px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2px; display: inline-block;">Sin Evaluar</span>`;
+        }
+
+        // Progreso Semanal
+        let progresoCol = '';
+        if (!s.evaluado) {
+            progresoCol = `<span style="color: var(--text-muted); font-size: 11.5px; font-style: italic; font-weight: 500;">Pendiente</span>`;
+        } else {
+            let barColor = 'linear-gradient(90deg, #ff9a9e 0%, #ec008c 100%)';
+            if (s.porcentaje >= 80) {
+                barColor = 'linear-gradient(90deg, #10b981 0%, #059669 100%)';
+            } else if (s.porcentaje >= 50) {
+                barColor = 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)';
+            } else if (s.porcentaje > 0) {
+                barColor = 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)';
+            }
+
+            progresoCol = `
+                <div style="padding-right: 8px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; margin-bottom: 3px; font-family: 'Outfit', sans-serif;">
+                        <span style="color: var(--pink-main);">${s.totalCompletadas} / ${s.totalPlaneadas}</span>
+                        <span style="color: var(--text-muted);">${s.porcentaje}%</span>
+                    </div>
+                    <div style="width: 100%; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                        <div style="width: ${s.porcentaje}%; height: 100%; background: ${barColor}; border-radius: 3px; transition: width 0.6s ease;"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Timeline de los 7 días (Avance Diario)
+        let timelineHtml = `<div style="display: flex; gap: 4px; justify-content: center; align-items: center;">`;
+
+        s.diasDetalle.forEach((d, index) => {
+            const diaLetter = nombresDiasSemana[index].substring(0, 1);
+            const diaCompleto = nombresDiasCompletos[index];
+            let dotStyle = '';
+            let titleAttr = '';
+
+            if (d.estado === 'sin_servicio') {
+                dotStyle = 'background: #f1f5f9; color: #94a3b8; border: 1px dashed #cbd5e1;';
+                titleAttr = `${diaCompleto}: Sin servicio programado`;
+            } else if (d.estado === 'sin_evaluacion') {
+                dotStyle = 'background: #cbd5e1; color: #475569; border: 1px solid #94a3b8; font-weight: 800; cursor: help;';
+                titleAttr = `${diaCompleto}: Día de servicio (Evaluación inicial pendiente)`;
+            } else if (d.estado === 'azul') {
+                dotStyle = 'background: #e0f2fe; color: #0369a1; border: 1px solid #0ea5e9; font-weight: 800; cursor: pointer;';
+                titleAttr = `${diaCompleto}: Todas completadas por la niñera (${d.completadas}/${d.planeadas} actividades). Haz clic para ver detalles.`;
+            } else if (d.estado === 'verde') {
+                dotStyle = 'background: #d1fae5; color: #065f46; border: 1px solid #10b981; font-weight: 800; cursor: pointer;';
+                titleAttr = `${diaCompleto}: Realizadas 2 a 4 por la niñera (${d.completadas}/${d.planeadas} actividades). Haz clic para ver detalles.`;
+            } else if (d.estado === 'amarillo') {
+                dotStyle = 'background: #fef3c7; color: #d97706; border: 1px solid #f59e0b; font-weight: 800; cursor: pointer;';
+                titleAttr = `${diaCompleto}: Realizada 1 por la niñera (${d.completadas}/${d.planeadas} actividades). Haz clic para ver detalles.`;
+            } else if (d.estado === 'rojo') {
+                dotStyle = 'background: #fee2e2; color: #b91c1c; border: 1px solid #ef4444; font-weight: 800; cursor: pointer;';
+                titleAttr = `${diaCompleto}: Pendiente por la niñera (0/${d.planeadas} actividades). Haz clic para ver detalles.`;
+            }
+
+            let onclickAttr = '';
+            if (d.esDiaServicio && s.evaluado) {
+                const nameEsc = (s.pequeNombre || '').replace(/'/g, "\\'");
+                const emailEsc = (s.email || '').replace(/'/g, "\\'");
+                const nacimientoEsc = (s.nacimiento || '').replace(/'/g, "\\'");
+                onclickAttr = `onclick="abrirModalDetalleDiaAvance('${nameEsc}', '${emailEsc}', '${d.fecha}', '${nacimientoEsc}')"`;
+            }
+
+            timelineHtml += `
+                <div ${onclickAttr} title="${titleAttr}" style="width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 800; font-family: 'Outfit', sans-serif; transition: background 0.3s ease, border-color 0.3s ease; ${dotStyle}">
+                    ${diaLetter}
+                </div>
+            `;
+        });
+
+        timelineHtml += `</div>`;
+
+        const rev = s.revisionSemana || {};
+        const isChecked = !!rev.revisado;
+        
+        let tooltipText = "Sin revisar";
+        if (isChecked) {
+            let fechaFormateada = "";
+            if (rev.fecha_revision) {
+                try {
+                    const dRev = new Date(rev.fecha_revision);
+                    fechaFormateada = dRev.toLocaleString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' hs';
+                } catch(e) {
+                    fechaFormateada = rev.fecha_revision;
+                }
+            }
+            tooltipText = `Revisado por: ${rev.usuario || 'Supervisor'}\nFecha: ${fechaFormateada}`;
+        }
+
+        const nameEsc = (s.pequeNombre || '').replace(/'/g, "\\'");
+        const emailEsc = (s.email || '').replace(/'/g, "\\'");
+        const lunesEsc = (s.lunesISO || '').replace(/'/g, "\\'");
+
+        const checkboxHtml = `
+            <label class="custom-checkbox-container" title="${tooltipText}" style="display: inline-block; position: relative; cursor: pointer; user-select: none; width: 20px; height: 20px; vertical-align: middle;">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSupervisionRevision('${nameEsc}', '${emailEsc}', '${lunesEsc}', this.checked)" style="position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0;">
+                <span class="custom-checkmark" style="position: absolute; top: 0; left: 0; height: 20px; width: 20px; background-color: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 6px; transition: all 0.2s ease;"></span>
+            </label>
+        `;
+
+        return { docId, statusBadge, progresoCol, timelineHtml, checkboxHtml };
+    }
+
+    // Verificar si se puede realizar una actualización en el lugar (in-place) para evitar parpadeos
+    let canUpdateInPlace = true;
+    if (container.children.length === 0 || container.querySelector('.no-data') || container.querySelector('.loader-spinner')) {
+        canUpdateInPlace = false;
+    } else {
+        for (let i = 0; i < servicios.length; i++) {
+            const s = servicios[i];
+            const emailNorm = s.email || 'sin_email';
+            const docId = btoa(`${emailNorm}_${s.pequeNombre || ''}`).replace(/=/g, "").replace(/\//g, "_").replace(/\+/g, "-");
+            if (!document.getElementById(`row-${prefix}-${docId}`)) {
+                canUpdateInPlace = false;
+                break;
+            }
+        }
+    }
+
+    if (canUpdateInPlace) {
+        // Actualización fluida y silenciosa en tiempo real (sin recrear DOM ni parpadeo)
+        servicios.forEach(s => {
+            const { docId, statusBadge, progresoCol, timelineHtml, checkboxHtml } = generarContenidoFila(s);
+
+            const statusCell = document.getElementById(`status-cell-${prefix}-${docId}`);
+            if (statusCell && statusCell.innerHTML.trim() !== statusBadge.trim()) {
+                statusCell.innerHTML = statusBadge;
+            }
+
+            const progCell = document.getElementById(`prog-cell-${prefix}-${docId}`);
+            if (progCell && progCell.innerHTML.trim() !== progresoCol.trim()) {
+                progCell.innerHTML = progresoCol;
+            }
+
+            const timelineCell = document.getElementById(`timeline-cell-${prefix}-${docId}`);
+            if (timelineCell && timelineCell.innerHTML.trim() !== timelineHtml.trim()) {
+                timelineCell.innerHTML = timelineHtml;
+            }
+
+            const revCell = document.getElementById(`rev-cell-${prefix}-${docId}`);
+            if (revCell && revCell.innerHTML.trim() !== checkboxHtml.trim()) {
+                revCell.innerHTML = checkboxHtml;
+            }
+        });
+        return;
+    }
+
+    // Si la estructura no existe aún o cambió, construimos el HTML completo limpiamente sin animación fadeIn
+    let html = '';
 
     ciudadesOrdenadas.forEach(ciudad => {
         const serviciosDeCiudad = gruposPorCiudad[ciudad];
@@ -518,7 +695,7 @@ function renderTarjetasAvance(servicios, containerId, prefix) {
         const arrowChar = estaExpandido ? '▼' : '▶';
 
         html += `
-            <div class="ciudad-seccion" style="margin-bottom: 8px; animation: fadeIn 0.4s ease-out;">
+            <div class="ciudad-seccion" style="margin-bottom: 8px;">
                 <h3 onclick="toggleSeccionCiudad('${fullCiudadId}')" style="cursor: pointer; user-select: none; font-family: 'DM Serif Display', serif; font-size: 15.5px; color: var(--pink-main); margin: 8px 0 4px 0; border-left: 4px solid var(--pink-main); padding-left: 8px; display: flex; align-items: center; gap: 8px; font-weight: 700;">
                     <span>📍 ${ciudad}</span>
                     <span style="font-size: 11px; font-family: 'Outfit', sans-serif; font-weight: 500; color: var(--text-muted); background: rgba(232, 76, 154, 0.06); padding: 1px 6px; border-radius: 8px;">${serviciosDeCiudad.length} peques</span>
@@ -543,125 +720,10 @@ function renderTarjetasAvance(servicios, containerId, prefix) {
             const isLastRow = sIdx === serviciosDeCiudad.length - 1;
             const borderStyle = isLastRow ? '' : 'border-bottom: 1px solid rgba(232, 76, 154, 0.05);';
             const rowBg = sIdx % 2 === 1 ? 'background: rgba(255, 255, 255, 0.25);' : '';
-
-            // Estatus Badge
-            let statusBadge = '';
-            if (s.evaluado) {
-                const etapaActual = s.evalData ? s.evalData.etapa_actual : '';
-                const nombreEtapa = obtenerNombreEtapaHumano(etapaActual);
-                statusBadge = `
-                    <span style="background: var(--success-bg); color: var(--success-text); padding: 2px 6px; border-radius: 6px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2px; display: inline-block;">Evaluado</span>
-                    <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px; font-weight: 600; line-height: 1.2;">${nombreEtapa}</div>
-                `;
-            } else {
-                statusBadge = `<span style="background: var(--warning-bg); color: var(--warning-text); padding: 2px 6px; border-radius: 6px; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2px; display: inline-block;">Sin Evaluar</span>`;
-            }
-
-            // Progreso Semanal
-            let progresoCol = '';
-            if (!s.evaluado) {
-                progresoCol = `<span style="color: var(--text-muted); font-size: 11.5px; font-style: italic; font-weight: 500;">Pendiente</span>`;
-            } else {
-                let barColor = 'linear-gradient(90deg, #ff9a9e 0%, #ec008c 100%)';
-                if (s.porcentaje >= 80) {
-                    barColor = 'linear-gradient(90deg, #10b981 0%, #059669 100%)';
-                } else if (s.porcentaje >= 50) {
-                    barColor = 'linear-gradient(90deg, #f59e0b 0%, #d97706 100%)';
-                } else if (s.porcentaje > 0) {
-                    barColor = 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)';
-                }
-
-                progresoCol = `
-                    <div style="padding-right: 8px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 10.5px; font-weight: 700; margin-bottom: 3px; font-family: 'Outfit', sans-serif;">
-                            <span style="color: var(--pink-main);">${s.totalCompletadas} / ${s.totalPlaneadas}</span>
-                            <span style="color: var(--text-muted);">${s.porcentaje}%</span>
-                        </div>
-                        <div style="width: 100%; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                            <div style="width: ${s.porcentaje}%; height: 100%; background: ${barColor}; border-radius: 3px; transition: width 0.6s ease;"></div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Timeline de los 7 días (Avance Diario)
-            let timelineHtml = `<div style="display: flex; gap: 4px; justify-content: center; align-items: center;">`;
-
-            s.diasDetalle.forEach((d, index) => {
-                const diaLetter = nombresDiasSemana[index].substring(0, 1);
-                const diaCompleto = nombresDiasCompletos[index];
-                let dotStyle = '';
-                let titleAttr = '';
-
-                if (d.estado === 'sin_servicio') {
-                    dotStyle = 'background: #f1f5f9; color: #94a3b8; border: 1px dashed #cbd5e1;';
-                    titleAttr = `${diaCompleto}: Sin servicio programado`;
-                } else if (d.estado === 'sin_evaluacion') {
-                    dotStyle = 'background: #cbd5e1; color: #475569; border: 1px solid #94a3b8; font-weight: 800; cursor: help;';
-                    titleAttr = `${diaCompleto}: Día de servicio (Evaluación inicial pendiente)`;
-                } else if (d.estado === 'azul') {
-                    dotStyle = 'background: #e0f2fe; color: #0369a1; border: 1px solid #0ea5e9; font-weight: 800; cursor: pointer;';
-                    titleAttr = `${diaCompleto}: Todas completadas por la niñera (${d.completadas}/${d.planeadas} actividades). Haz clic para ver detalles.`;
-                } else if (d.estado === 'verde') {
-                    dotStyle = 'background: #d1fae5; color: #065f46; border: 1px solid #10b981; font-weight: 800; cursor: pointer;';
-                    titleAttr = `${diaCompleto}: Realizadas 2 a 4 por la niñera (${d.completadas}/${d.planeadas} actividades). Haz clic para ver detalles.`;
-                } else if (d.estado === 'amarillo') {
-                    dotStyle = 'background: #fef3c7; color: #d97706; border: 1px solid #f59e0b; font-weight: 800; cursor: pointer;';
-                    titleAttr = `${diaCompleto}: Realizada 1 por la niñera (${d.completadas}/${d.planeadas} actividades). Haz clic para ver detalles.`;
-                } else if (d.estado === 'rojo') {
-                    dotStyle = 'background: #fee2e2; color: #b91c1c; border: 1px solid #ef4444; font-weight: 800; cursor: pointer;';
-                    titleAttr = `${diaCompleto}: Pendiente por la niñera (0/${d.planeadas} actividades). Haz clic para ver detalles.`;
-                }
-
-                let onclickAttr = '';
-                if (d.esDiaServicio && s.evaluado) {
-                    const nameEsc = (s.pequeNombre || '').replace(/'/g, "\\'");
-                    const emailEsc = (s.email || '').replace(/'/g, "\\'");
-                    const nacimientoEsc = (s.nacimiento || '').replace(/'/g, "\\'");
-                    onclickAttr = `onclick="abrirModalDetalleDiaAvance('${nameEsc}', '${emailEsc}', '${d.fecha}', '${nacimientoEsc}')"`;
-                }
-
-                timelineHtml += `
-                    <div ${onclickAttr} title="${titleAttr}" style="width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8.5px; font-weight: 800; font-family: 'Outfit', sans-serif; ${dotStyle}">
-                        ${diaLetter}
-                    </div>
-                `;
-            });
-
-            timelineHtml += `</div>`;
-
-            const rev = s.revisionSemana || {};
-            const isChecked = !!rev.revisado;
-            
-            let tooltipText = "Sin revisar";
-            if (isChecked) {
-                let fechaFormateada = "";
-                if (rev.fecha_revision) {
-                    try {
-                        const dRev = new Date(rev.fecha_revision);
-                        fechaFormateada = dRev.toLocaleString('es-ES', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' hs';
-                    } catch(e) {
-                        fechaFormateada = rev.fecha_revision;
-                    }
-                }
-                tooltipText = `Revisado por: ${rev.usuario || 'Supervisor'}\nFecha: ${fechaFormateada}`;
-            }
-
-            const nameEsc = (s.pequeNombre || '').replace(/'/g, "\\'");
-            const emailEsc = (s.email || '').replace(/'/g, "\\'");
-            const lunesEsc = (s.lunesISO || '').replace(/'/g, "\\'");
-
-            const checkboxHtml = `
-                <td style="padding: 6px 12px; vertical-align: middle; text-align: center;">
-                    <label class="custom-checkbox-container" title="${tooltipText}" style="display: inline-block; position: relative; cursor: pointer; user-select: none; width: 20px; height: 20px; vertical-align: middle;">
-                        <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleSupervisionRevision('${nameEsc}', '${emailEsc}', '${lunesEsc}', this.checked)" style="position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0;">
-                        <span class="custom-checkmark" style="position: absolute; top: 0; left: 0; height: 20px; width: 20px; background-color: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 6px; transition: all 0.2s ease;"></span>
-                    </label>
-                </td>
-            `;
+            const { docId, statusBadge, progresoCol, timelineHtml, checkboxHtml } = generarContenidoFila(s);
 
             html += `
-                <tr style="${rowBg} ${borderStyle} transition: background-color 0.15s;" onmouseover="this.style.backgroundColor='rgba(232, 76, 154, 0.02)';" onmouseout="this.style.backgroundColor='';">
+                <tr id="row-${prefix}-${docId}" style="${rowBg} ${borderStyle} transition: background-color 0.15s;" onmouseover="this.style.backgroundColor='rgba(232, 76, 154, 0.02)';" onmouseout="this.style.backgroundColor='';">
                     <td style="padding: 6px 12px; vertical-align: middle;">
                         <div style="font-weight: 700; color: var(--text-main); font-family: 'Outfit', sans-serif; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;" title="${s.cliente}">
                             Familia: ${s.cliente || 'Sin registrar'}
@@ -673,16 +735,18 @@ function renderTarjetasAvance(servicios, containerId, prefix) {
                     <td style="padding: 6px 12px; vertical-align: middle; font-weight: 600; color: var(--text-main); font-family: 'Outfit', sans-serif;">
                         👩‍🏫 ${s.nanny}
                     </td>
-                    <td style="padding: 6px 12px; vertical-align: middle; text-align: center;">
+                    <td id="status-cell-${prefix}-${docId}" style="padding: 6px 12px; vertical-align: middle; text-align: center;">
                         ${statusBadge}
                     </td>
-                    <td style="padding: 6px 12px; vertical-align: middle;">
+                    <td id="prog-cell-${prefix}-${docId}" style="padding: 6px 12px; vertical-align: middle;">
                         ${progresoCol}
                     </td>
-                    <td style="padding: 6px 12px; vertical-align: middle; text-align: center;">
+                    <td id="timeline-cell-${prefix}-${docId}" style="padding: 6px 12px; vertical-align: middle; text-align: center;">
                         ${timelineHtml}
                     </td>
-                    ${checkboxHtml}
+                    <td id="rev-cell-${prefix}-${docId}" style="padding: 6px 12px; vertical-align: middle; text-align: center;">
+                        ${checkboxHtml}
+                    </td>
                 </tr>
             `;
         });
@@ -850,7 +914,152 @@ function obtenerActividadesPlaneadasParaDia(evalData, dateStr, nacimiento) {
     return list;
 }
 
+function renderizarContenidoModalActividades(actividadesPlaneadas, segHoy, dateStr, fechaHumana, progData) {
+    let countNinera = 0;
+    let countFamilia = 0;
+
+    if (actividadesPlaneadas.length === 0) {
+        return {
+            listHtml: `<div class="no-data" style="padding: 20px; text-align: center; color: var(--text-muted);">No hay actividades planeadas para este día.</div>`,
+            countNinera: 0,
+            countFamilia: 0
+        };
+    }
+
+    let listHtml = `<div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">`;
+    actividadesPlaneadas.forEach(act => {
+        const status = segHoy[act.firebaseId];
+        const realizada = status && status.startsWith("realizada");
+        
+        let statusText = "Pendiente";
+        let statusColor = "var(--error-text)";
+        let statusBg = "var(--error-bg)";
+        let semaforoColor = "#ef4444";
+        
+        if (realizada) {
+            if (status === "realizada_familia") {
+                statusText = "Realizada por Familia";
+                statusColor = "#0369a1";
+                statusBg = "#e0f2fe";
+                semaforoColor = "#0ea5e9";
+                countFamilia++;
+            } else if (status === "realizada_ninera") {
+                statusText = "Realizada por Niñera";
+                statusColor = "#9d174d";
+                statusBg = "#fce7f3";
+                semaforoColor = "#e84c9a";
+                countNinera++;
+            } else {
+                statusText = "Realizada";
+                statusColor = "var(--success-text)";
+                statusBg = "var(--success-bg)";
+                semaforoColor = "#10b981";
+                countNinera++;
+            }
+        }
+
+        const meta = (progData && progData.seguimiento_diario_metadata && progData.seguimiento_diario_metadata[dateStr] && progData.seguimiento_diario_metadata[dateStr][act.firebaseId])
+            ? progData.seguimiento_diario_metadata[dateStr][act.firebaseId]
+            : null;
+        
+        let fechaRegistroText = fechaHumana;
+        if (realizada && meta && meta.fecha_registro) {
+            try {
+                const regDate = new Date(meta.fecha_registro);
+                const opcionesLoc = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+                fechaRegistroText = regDate.toLocaleString('es-ES', opcionesLoc) + ' hs';
+            } catch(e) {
+                fechaRegistroText = fechaHumana;
+            }
+        }
+
+        let evidencias = [];
+        if (meta) {
+            if (Array.isArray(meta.evidencias)) {
+                evidencias = meta.evidencias;
+            } else if (typeof meta.evidencia === 'string' && meta.evidencia.trim() !== '') {
+                evidencias = [meta.evidencia];
+            }
+        }
+
+        listHtml += `
+            <div style="background: rgba(232, 76, 154, 0.02); border: 1px solid rgba(232, 76, 154, 0.08); border-radius: 12px; padding: 14px; display: flex; align-items: flex-start; gap: 12px;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: ${semaforoColor}; flex-shrink: 0; margin-top: 5px; box-shadow: 0 0 8px ${semaforoColor}4d;"></div>
+                <div style="flex-grow: 1;">
+                    <h4 style="margin: 0 0 6px 0; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; color: var(--text-main); line-height: 1.4;">
+                        ${act.titulo}
+                    </h4>
+                    <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 500; margin-bottom: 6px;">
+                        Área: ${act.hitoTexto}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+                        <span style="background: ${statusBg}; color: ${statusColor}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase;">
+                            ${statusText}
+                        </span>
+                        ${realizada ? `
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
+                                📅 Registrado el: ${fechaRegistroText}
+                            </span>
+                        ` : ''}
+                    </div>
+                    ${realizada && evidencias.length > 0 ? `
+                        <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                            ${evidencias.map((url, idx) => `
+                                <div style="position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); cursor: zoom-in; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;" 
+                                     onclick="abrirVisualizador('${url}', this)"
+                                     onmouseover="this.style.transform='scale(1.05)'"
+                                     onmouseout="this.style.transform='scale(1)'">
+                                    <img src="${url}" alt="Evidencia ${idx + 1}" loading="lazy" onerror="if (typeof manejarErrorImagenEvidencia === 'function') manejarErrorImagenEvidencia(this, '${url}')" style="width: 100%; height: 100%; object-fit: cover;">
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    });
+    listHtml += `</div>`;
+
+    return { listHtml, countNinera, countFamilia };
+}
+
+window.actualizarModalDetalleDiaAvanceSiAbierto = function() {
+    if (!window._MODAL_AVANCE_ACTUAL) return;
+    const modal = document.getElementById("modal-detalle-dia-avance");
+    if (!modal || modal.style.display !== "flex") return;
+
+    const { pequeNombre, email, dateStr, nacimiento } = window._MODAL_AVANCE_ACTUAL;
+    const key = `${email}|${pequeNombre}`;
+    const fbData = window._CACHE_FB_SUPERVISION[key] || { eval: null, prog: null };
+    const evalData = fbData.eval;
+    const progData = fbData.prog;
+    if (!evalData) return;
+
+    const actividadesPlaneadas = obtenerActividadesPlaneadasParaDia(evalData, dateStr, nacimiento);
+    const segHoy = (progData && progData.seguimiento_diario && progData.seguimiento_diario[dateStr]) 
+        ? progData.seguimiento_diario[dateStr] 
+        : {};
+
+    const parts = dateStr.split('-');
+    const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+    const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const fechaHumana = dateObj.toLocaleDateString('es-ES', opciones);
+
+    const { listHtml, countNinera, countFamilia } = renderizarContenidoModalActividades(actividadesPlaneadas, segHoy, dateStr, fechaHumana, progData);
+
+    const badgeNinera = modal.querySelector("#modal-count-ninera");
+    if (badgeNinera) badgeNinera.innerHTML = `👩‍🏫 Niñera: ${countNinera}`;
+    const badgeFamilia = modal.querySelector("#modal-count-familia");
+    if (badgeFamilia) badgeFamilia.innerHTML = `🏠 Familia: ${countFamilia}`;
+
+    const listContainer = modal.querySelector("#modal-detalle-lista-actividades");
+    if (listContainer) {
+        listContainer.innerHTML = listHtml;
+    }
+};
+
 window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimiento) {
+    window._MODAL_AVANCE_ACTUAL = { pequeNombre, email, dateStr, nacimiento };
     const key = `${email}|${pequeNombre}`;
     const fbData = window._CACHE_FB_SUPERVISION[key] || { eval: null, prog: null };
     const evalData = fbData.eval;
@@ -866,22 +1075,12 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
         ? progData.seguimiento_diario[dateStr] 
         : {};
 
-    // Contabilizar actividades realizadas por rol
-    let countNinera = 0;
-    let countFamilia = 0;
-    actividadesPlaneadas.forEach(act => {
-        const status = segHoy[act.firebaseId];
-        if (status === "realizada_ninera" || status === "realizada") {
-            countNinera++;
-        } else if (status === "realizada_familia") {
-            countFamilia++;
-        }
-    });
-
     const parts = dateStr.split('-');
     const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
     const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const fechaHumana = dateObj.toLocaleDateString('es-ES', opciones);
+
+    const { listHtml, countNinera, countFamilia } = renderizarContenidoModalActividades(actividadesPlaneadas, segHoy, dateStr, fechaHumana, progData);
 
     // Asegurar animación scaleUp para el modal
     if (!document.getElementById("style-modal-scaleup")) {
@@ -908,102 +1107,6 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
         document.body.appendChild(modal);
     }
 
-    let listHtml = "";
-    if (actividadesPlaneadas.length === 0) {
-        listHtml = `<div class="no-data" style="padding: 20px; text-align: center; color: var(--text-muted);">No hay actividades planeadas para este día.</div>`;
-    } else {
-        listHtml = `<div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">`;
-        actividadesPlaneadas.forEach(act => {
-            const status = segHoy[act.firebaseId];
-            const realizada = status && status.startsWith("realizada");
-            
-            let statusText = "Pendiente";
-            let statusColor = "var(--error-text)";
-            let statusBg = "var(--error-bg)";
-            let semaforoColor = "#ef4444";
-            
-            if (realizada) {
-                if (status === "realizada_familia") {
-                    statusText = "Realizada por Familia";
-                    statusColor = "#0369a1";
-                    statusBg = "#e0f2fe";
-                    semaforoColor = "#0ea5e9";
-                } else if (status === "realizada_ninera") {
-                    statusText = "Realizada por Niñera";
-                    statusColor = "#9d174d";
-                    statusBg = "#fce7f3";
-                    semaforoColor = "#e84c9a";
-                } else {
-                    statusText = "Realizada";
-                    statusColor = "var(--success-text)";
-                    statusBg = "var(--success-bg)";
-                    semaforoColor = "#10b981";
-                }
-            }
-
-            const meta = (progData && progData.seguimiento_diario_metadata && progData.seguimiento_diario_metadata[dateStr] && progData.seguimiento_diario_metadata[dateStr][act.firebaseId])
-                ? progData.seguimiento_diario_metadata[dateStr][act.firebaseId]
-                : null;
-            
-            let fechaRegistroText = fechaHumana;
-            if (realizada && meta && meta.fecha_registro) {
-                try {
-                    const regDate = new Date(meta.fecha_registro);
-                    const opcionesLoc = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
-                    fechaRegistroText = regDate.toLocaleString('es-ES', opcionesLoc) + ' hs';
-                } catch(e) {
-                    fechaRegistroText = fechaHumana;
-                }
-            }
-
-            let evidencias = [];
-            if (meta) {
-                if (Array.isArray(meta.evidencias)) {
-                    evidencias = meta.evidencias;
-                } else if (typeof meta.evidencia === 'string' && meta.evidencia.trim() !== '') {
-                    evidencias = [meta.evidencia];
-                }
-            }
-
-            listHtml += `
-                <div style="background: rgba(232, 76, 154, 0.02); border: 1px solid rgba(232, 76, 154, 0.08); border-radius: 12px; padding: 14px; display: flex; align-items: flex-start; gap: 12px;">
-                    <div style="width: 12px; height: 12px; border-radius: 50%; background: ${semaforoColor}; flex-shrink: 0; margin-top: 5px; box-shadow: 0 0 8px ${semaforoColor}4d;"></div>
-                    <div style="flex-grow: 1;">
-                        <h4 style="margin: 0 0 6px 0; font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600; color: var(--text-main); line-height: 1.4;">
-                            ${act.titulo}
-                        </h4>
-                        <div style="font-size: 11.5px; color: var(--text-muted); font-weight: 500; margin-bottom: 6px;">
-                            Área: ${act.hitoTexto}
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
-                            <span style="background: ${statusBg}; color: ${statusColor}; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase;">
-                                ${statusText}
-                            </span>
-                            ${realizada ? `
-                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">
-                                    📅 Registrado el: ${fechaRegistroText}
-                                </span>
-                            ` : ''}
-                        </div>
-                        ${realizada && evidencias.length > 0 ? `
-                            <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
-                                ${evidencias.map((url, idx) => `
-                                    <div style="position: relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); cursor: zoom-in; box-shadow: 0 2px 4px rgba(0,0,0,0.05); transition: transform 0.2s;" 
-                                         onclick="abrirVisualizador('${url}')"
-                                         onmouseover="this.style.transform='scale(1.05)'"
-                                         onmouseout="this.style.transform='scale(1)'">
-                                        <img src="${url}" alt="Evidencia ${idx + 1}" style="width: 100%; height: 100%; object-fit: cover;">
-                                    </div>
-                                `).join('')}
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        });
-        listHtml += `</div>`;
-    }
-
     modal.innerHTML = `
         <div class="modal-content" style="max-width: 480px; padding: 25px; border-radius: 24px; animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 20px 50px rgba(232, 76, 154, 0.15); border: 1px solid rgba(232, 76, 154, 0.15);">
             <button onclick="cerrarModalDetalleDiaAvance()" style="position: absolute; top: 18px; right: 18px; background: #f1f5f9; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); font-weight: 700; font-size: 14px; transition: background 0.2s;">
@@ -1018,16 +1121,16 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
                     ${fechaHumana}
                 </p>
                 <div style="display: flex; justify-content: center; gap: 12px; margin-top: 8px; font-size: 11px; font-weight: 700;">
-                    <span style="background: #fce7f3; color: #9d174d; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(232, 76, 154, 0.15); display: flex; align-items: center; gap: 4px;">
+                    <span id="modal-count-ninera" style="background: #fce7f3; color: #9d174d; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(232, 76, 154, 0.15); display: flex; align-items: center; gap: 4px;">
                         👩‍🏫 Niñera: ${countNinera}
                     </span>
-                    <span style="background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(14, 165, 233, 0.15); display: flex; align-items: center; gap: 4px;">
+                    <span id="modal-count-familia" style="background: #e0f2fe; color: #0369a1; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(14, 165, 233, 0.15); display: flex; align-items: center; gap: 4px;">
                         🏠 Familia: ${countFamilia}
                     </span>
                 </div>
             </div>
             
-            <div style="max-height: 50vh; overflow-y: auto; padding-right: 4px;">
+            <div id="modal-detalle-lista-actividades" style="max-height: 50vh; overflow-y: auto; padding-right: 4px;">
                 ${listHtml}
             </div>
             
@@ -1043,6 +1146,7 @@ window.abrirModalDetalleDiaAvance = function(pequeNombre, email, dateStr, nacimi
 };
 
 window.cerrarModalDetalleDiaAvance = function() {
+    window._MODAL_AVANCE_ACTUAL = null;
     const modal = document.getElementById("modal-detalle-dia-avance");
     if (modal) {
         modal.style.display = "none";

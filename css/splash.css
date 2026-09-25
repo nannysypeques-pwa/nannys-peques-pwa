@@ -15,7 +15,7 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 10000;
+    z-index: 1000000 !important;
     transition: opacity 0.8s ease-out, transform 0.8s ease-out;
 }
 
@@ -24,15 +24,51 @@
     animation: floatUp 1s ease-out forwards;
 }
 
+/* Contenedor del logo splash con halo GPU */
+.splash-logo-container {
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 20px auto;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Halo resplandeciente sutil detrás del logo (Compositor Thread) */
+.splash-logo-container::before {
+    content: '';
+    position: absolute;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232, 76, 154, 0.40) 0%, rgba(232, 76, 154, 0.16) 50%, rgba(232, 76, 154, 0) 72%);
+    pointer-events: none;
+    z-index: 0;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+    animation: breathingHalo 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 .splash-logo {
     width: 180px;
     height: 180px;
     background: white;
     border-radius: 30px;
     padding: 15px;
-    box-shadow: 0 10px 30px rgba(232, 76, 154, 0.2);
+    box-shadow: 0 10px 28px rgba(232, 76, 154, 0.25);
     margin-bottom: 20px;
-    animation: pulseLogo 5s infinite ease-in-out;
+    position: relative;
+    z-index: 1;
+    transform: translateZ(0);
+    will-change: transform;
+    animation: breathingScale 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.splash-logo-container .splash-logo {
+    width: 100%;
+    height: 100%;
+    margin-bottom: 0;
 }
 
 .splash-title {
@@ -63,23 +99,6 @@
     to {
         opacity: 1;
         transform: translateY(0);
-    }
-}
-
-@keyframes pulseLogo {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 10px 30px rgba(232, 76, 154, 0.2);
-    }
-
-    50% {
-        transform: scale(1.05);
-        box-shadow: 0 15px 40px rgba(232, 76, 154, 0.4);
-    }
-
-    100% {
-        transform: scale(1);
-        box-shadow: 0 10px 30px rgba(232, 76, 154, 0.2);
     }
 }
 
@@ -115,7 +134,7 @@
     /* Oculto por defecto, se activa via JS */
     justify-content: center;
     align-items: center;
-    z-index: 10001;
+    z-index: 1000001 !important;
     /* Encima de todo */
     transition: opacity 1s ease-out;
 }
@@ -128,16 +147,34 @@
     justify-content: center;
     align-items: center;
     position: relative;
-    /* Sin máscara, animación directa al logo */
+}
+
+/* Halo resplandeciente animado 100% en GPU (Compositor Thread) */
+.preloader-logo-container::before {
+    content: '';
+    position: absolute;
+    width: 170px;
+    height: 170px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232, 76, 154, 0.42) 0%, rgba(232, 76, 154, 0.15) 50%, rgba(232, 76, 154, 0) 72%);
+    pointer-events: none;
+    z-index: 0;
+    transform: translateZ(0);
+    will-change: transform, opacity;
+    animation: breathingHalo 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .preloader-logo {
     width: 100%;
     height: 100%;
     object-fit: contain;
-    /* Sombra base suave */
-    filter: drop-shadow(0 0 15px rgba(232, 76, 154, 0.3));
-    animation: breathingGlow 3s ease-in-out infinite;
+    position: relative;
+    z-index: 1;
+    /* Sombra base estática calculada una sola vez por hardware */
+    filter: drop-shadow(0 6px 20px rgba(232, 76, 154, 0.32));
+    transform: translateZ(0);
+    will-change: transform;
+    animation: breathingScale 3.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
 .loader-spinner {
@@ -148,30 +185,95 @@
     border: 3px solid rgba(232, 76, 154, 0.1);
     border-top: 3px solid var(--pink-main);
     border-radius: 50%;
+    transform: translateZ(0);
+    will-change: transform;
     animation: spin 1s linear infinite;
     opacity: 0.8;
+    z-index: 2;
 }
 
 /* 
-   ANIMACIÓN BREATHING GLOW (Respiración Luminosa)
-   Efecto de latido suave con resplandor
+   ANIMACIONES GPU-ACCELERATED (Respiración Fluida 60/120 FPS)
+   Solo animan transform y opacity en capas promovidas (translateZ),
+   inmunes a cargas intensas de JavaScript en el Main Thread.
+   Curva biológica de respiración: Inhalación suave, pausa en la cúspide, 
+   exhalación relajante y micro-pausa de reposo.
 */
+@keyframes breathingScale {
+    0% {
+        transform: scale(1) translateZ(0);
+    }
+    45% {
+        transform: scale(1.08) translateZ(0);
+    }
+    55% {
+        transform: scale(1.08) translateZ(0);
+    }
+    90% {
+        transform: scale(1) translateZ(0);
+    }
+    100% {
+        transform: scale(1) translateZ(0);
+    }
+}
+
+@keyframes breathingHalo {
+    0% {
+        transform: scale(0.85) translateZ(0);
+        opacity: 0.30;
+    }
+    45% {
+        transform: scale(1.28) translateZ(0);
+        opacity: 0.85;
+    }
+    55% {
+        transform: scale(1.28) translateZ(0);
+        opacity: 0.85;
+    }
+    90% {
+        transform: scale(0.85) translateZ(0);
+        opacity: 0.30;
+    }
+    100% {
+        transform: scale(0.85) translateZ(0);
+        opacity: 0.30;
+    }
+}
+
+/* Compatibilidad total para preloader-modal y llamadas legacy */
 @keyframes breathingGlow {
     0% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 15px rgba(232, 76, 154, 0.3));
+        transform: scale(1) translateZ(0);
     }
-
-    50% {
-        transform: scale(1.08);
-        /* Crece un 8% */
-        filter: drop-shadow(0 0 30px rgba(232, 76, 154, 0.6));
-        /* Resplandor intenso */
+    45% {
+        transform: scale(1.08) translateZ(0);
     }
-
+    55% {
+        transform: scale(1.08) translateZ(0);
+    }
+    90% {
+        transform: scale(1) translateZ(0);
+    }
     100% {
-        transform: scale(1);
-        filter: drop-shadow(0 0 15px rgba(232, 76, 154, 0.3));
+        transform: scale(1) translateZ(0);
+    }
+}
+
+@keyframes pulseLogo {
+    0% {
+        transform: scale(1) translateZ(0);
+    }
+    45% {
+        transform: scale(1.08) translateZ(0);
+    }
+    55% {
+        transform: scale(1.08) translateZ(0);
+    }
+    90% {
+        transform: scale(1) translateZ(0);
+    }
+    100% {
+        transform: scale(1) translateZ(0);
     }
 }
 
