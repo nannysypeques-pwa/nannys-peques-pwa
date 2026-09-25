@@ -74,9 +74,14 @@ function cambiarCiudadMatriz(ciudad) {
   // Si hay cambios pendientes, guardarlos antes de cambiar
   flushPendingRowSaves();
 
-  // Recargar la matriz para la semana actual con la nueva ciudad seleccionada
-  const semIso = _currentSemanaMatrizIso || (typeof getMondayISO === 'function' ? getMondayISO(new Date()) : null);
-  cargarMatrizServiciosSupabase(semIso);
+  // Renderizar instantáneamente desde la caché en memoria si ya se tienen los datos de la semana
+  if (Array.isArray(_cacheServiciosSemanaCompleta) && _cacheServiciosSemanaCompleta.length > 0) {
+    renderizarMatrizServicios(_cacheServiciosSemanaCompleta);
+  } else {
+    // Si no está en memoria, cargar desde Supabase para la semana actual
+    const semIso = _currentSemanaMatrizIso || (typeof getMondayISO === 'function' ? getMondayISO(new Date()) : null);
+    cargarMatrizServiciosSupabase(semIso);
+  }
 }
 window.cambiarCiudadMatriz = cambiarCiudadMatriz;
 
@@ -5602,6 +5607,12 @@ async function sincronizarAsistenciaMatrizEnVivo(forceFullRender = false) {
       return;
     }
 
+    // Si la tabla en pantalla está vacía y la base de datos tiene filas para la ciudad activa
+    if (existingRows.length === 0 && rowsCiudad.length > 0) {
+      renderizarMatrizServicios(rowsDecoded);
+      return;
+    }
+
     const dbRowIds = new Set(rowsCiudad.map(r => r.id));
     const domRowMap = new Map();
     existingRows.forEach(tr => {
@@ -5651,12 +5662,17 @@ async function sincronizarAsistenciaMatrizEnVivo(forceFullRender = false) {
     });
 
     // 2. Eliminar filas del DOM que fueron eliminadas en la base de datos por otro administrador
-    existingRows.forEach(tr => {
-      const trId = tr.getAttribute('data-id');
-      if (trId && !dbRowIds.has(trId) && (!activeEl || !tr.contains(activeEl))) {
-        tr.remove();
-      }
-    });
+    // Solo proceder si Supabase devolvió registros para esta ciudad y la fila no está en proceso de guardado local
+    if (rowsCiudad.length > 0) {
+      existingRows.forEach(tr => {
+        const trId = tr.getAttribute('data-id');
+        if (trId && !dbRowIds.has(trId) && (!activeEl || !tr.contains(activeEl))) {
+          if (!_pendingRowSaves.has(tr)) {
+            tr.remove();
+          }
+        }
+      });
+    }
 
     actualizarContadoresSecciones();
     actualizarContadoresFiltros();
@@ -6665,26 +6681,8 @@ async function cargarMatrizServiciosSupabase(semanaIso) {
       localStorage.setItem('nyp_admin_servicios_matriz_' + semanaIso, JSON.stringify(rows));
     } catch (e) { }
 
-    // Auto-selección inteligente: Si la ciudad activa por defecto (Puebla) tiene 0 servicios,
-    // pero otra ciudad (ej. Xalapa) sí tiene servicios registrados en esta semana cargada desde Supabase,
-    // y el admin NO ha hecho una selección manual forzada en esta sesión, auto-enfocar la ciudad con datos.
-    if (rows.length > 0 && typeof sessionStorage !== 'undefined' && !sessionStorage.getItem('nyp_admin_manual_ciudad_selected')) {
-      const cNormActual = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(_currentCiudadMatriz || 'Puebla') : (_currentCiudadMatriz || 'Puebla').toLowerCase();
-      const serviciosEnCiudadActual = rows.filter(r => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(r.ciudad || 'Puebla') : (r.ciudad || 'Puebla').toLowerCase()) === cNormActual && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(r))).length;
-      if (serviciosEnCiudadActual === 0) {
-        const ciudades = ['Xalapa', 'Puebla', 'Querétaro', 'CDMX'];
-        const ciudadConServicios = ciudades.find(c => {
-          const cn = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(c) : c.toLowerCase();
-          return rows.some(r => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(r.ciudad || 'Puebla') : (r.ciudad || 'Puebla').toLowerCase()) === cn && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(r)));
-        });
-        if (ciudadConServicios) {
-          console.log(`🏙️ [Control de Servicios] Auto-enfocando ciudad con datos activos (${ciudadConServicios})`);
-          _currentCiudadMatriz = ciudadConServicios;
-          try { localStorage.setItem('nyp_admin_current_ciudad', ciudadConServicios); } catch (_) { }
-        }
-      }
-    }
-
+    _cacheServiciosSemanaCompleta = rows;
+    actualizarSelectorCiudadUI();
     renderizarMatrizServicios(rows);
     suscribirRealtimeMatrizServicios(semanaIso);
     actualizarBotonesDeshacerRehacer();
