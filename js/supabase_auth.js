@@ -530,25 +530,41 @@ async function generarCuentaCliente() {
             throw new Error("No hay conexión con el servidor Supabase.");
         }
 
-        // 1. Revisar si el email está registrado en la base de datos pública correspondiente
-        const { data: usuarioDb, error: dbErr } = await client
-            .from(targetTable)
-            .select('*')
-            .ilike('email', email)
-            .maybeSingle();
-
-        if (dbErr) {
-            console.warn("Aviso consultando base de datos:", dbErr.message);
+        // 1. Revisar de forma segura si el email está registrado mediante RPC
+        let estadoCuenta = null;
+        try {
+            const { data: rpcData, error: rpcErr } = await client.rpc('verificar_estado_cuenta_auth', {
+                email_param: email,
+                rol_param: targetRole
+            });
+            if (!rpcErr && rpcData) {
+                estadoCuenta = rpcData;
+            }
+        } catch (rpcEx) {
+            console.warn("Aviso llamando a verificar_estado_cuenta_auth:", rpcEx.message);
         }
 
-        if (!usuarioDb) {
+        // Fallback por compatibilidad con RPC previa si fuera necesario
+        if (!estadoCuenta) {
+            try {
+                const { data: existeRecup, error: recupErr } = await client.rpc('verificar_cuenta_para_recuperacion', {
+                    email_param: email,
+                    rol_param: esNanny ? 'nanny' : 'cliente'
+                });
+                if (!recupErr && typeof existeRecup === 'boolean') {
+                    estadoCuenta = { existe: existeRecup, activo: true, tiene_auth: false, nombre: '' };
+                }
+            } catch (e) {}
+        }
+
+        if (!estadoCuenta || estadoCuenta.existe === false) {
             const mensajeNoEncontrado = esNanny
                 ? "Este correo no se encuentra registrado en nuestra base de datos de niñeras. Por favor, solicita a la administración de Nannys y Peques que registre tus datos primero."
                 : "Este correo no se encuentra registrado en nuestra base de datos. Por favor, solicita a la administración de Nannys y Peques que registre tus datos primero.";
             throw new Error(mensajeNoEncontrado);
         }
 
-        if (usuarioDb.activo === false) {
+        if (estadoCuenta.activo === false) {
             const mensajeInactivo = esNanny
                 ? "Tu cuenta de niñera se encuentra inactiva. Por favor comunícate con la administración de Nannys y Peques."
                 : "Tu cuenta de cliente se encuentra inactiva. Por favor comunícate con la administración.";
@@ -560,12 +576,12 @@ async function generarCuentaCliente() {
         // 2. Crear credenciales en Supabase Auth
         let supaUser = null;
         const { data: signUpData, error: signUpErr } = await client.auth.signUp({
-            email: usuarioDb.email,
+            email: email,
             password: pass,
             options: {
                 data: {
                     role: targetRole,
-                    nombre: usuarioDb.nombre || (esNanny ? 'Nanny' : 'Familia')
+                    nombre: estadoCuenta.nombre || (esNanny ? 'Nanny' : 'Familia')
                 }
             }
         });
@@ -575,7 +591,7 @@ async function generarCuentaCliente() {
             if (errMsg.includes('already registered') || errMsg.includes('already exists') || errMsg.includes('user already')) {
                 // Si ya existe en auth.users, probar si las credenciales coinciden
                 const { data: signData, error: signErr } = await client.auth.signInWithPassword({
-                    email: usuarioDb.email,
+                    email: email,
                     password: pass
                 });
 
@@ -592,13 +608,24 @@ async function generarCuentaCliente() {
 
         // 3. Vincular auth_user_id en la fila correspondiente en Supabase
         if (supaUser?.id) {
-            await client
-                .from(targetTable)
-                .update({ 
-                    auth_user_id: supaUser.id,
-                    actualizado_en: new Date().toISOString()
-                })
-                .eq('id', usuarioDb.id);
+            try {
+                await client.rpc('vincular_auth_user_perfil', {
+                    email_param: email,
+                    rol_param: targetRole,
+                    user_uid: supaUser.id
+                });
+            } catch (vincErr) {
+                console.warn("Aviso vinculando auth_user_id vía RPC:", vincErr.message);
+                try {
+                    await client
+                        .from(targetTable)
+                        .update({ 
+                            auth_user_id: supaUser.id,
+                            actualizado_en: new Date().toISOString()
+                        })
+                        .eq('email', email);
+                } catch (e) {}
+            }
         }
 
         // 4. Iniciar sesión automáticamente
@@ -607,7 +634,7 @@ async function generarCuentaCliente() {
 
         const mainEmail = document.getElementById('supaEmailInput');
         const mainPass = document.getElementById('supaPassInput');
-        if (mainEmail) mainEmail.value = usuarioDb.email;
+        if (mainEmail) mainEmail.value = email;
         if (mainPass) mainPass.value = pass;
 
         currentSelectedRole = targetRole;
@@ -865,13 +892,22 @@ async function enviarOTPSupabase(isResend = false) {
         const client = getSupabaseClient();
         if (!client) throw new Error("No hay conexión con el servidor Supabase.");
 
-        // 1. Validar cuenta mediante RPC de seguridad o verificación Supabase Auth
+        // 1. Validar estado completo de la cuenta (Existe, Activa, Rol y si ya tiene Auth)
+        let estadoCuenta = null;
         try {
-            const { data: cuentaValida, error: rpcErr } = await client.rpc('verificar_cuenta_para_recuperacion', {
+            const { data: rpcData, error: rpcErr } = await client.rpc('verificar_estado_cuenta_auth', {
                 email_param: email,
                 rol_param: esStaff ? 'staff' : (esNanny ? 'nanny' : 'cliente')
             });
-            if (!rpcErr && cuentaValida === false) {
+            if (!rpcErr && rpcData) {
+                estadoCuenta = rpcData;
+            }
+        } catch (rpcEx) {
+            console.warn("Aviso llamando a verificar_estado_cuenta_auth:", rpcEx.message);
+        }
+
+        if (estadoCuenta) {
+            if (estadoCuenta.existe === false) {
                 const mensajeNoEncontrado = esNanny
                     ? "Este correo no se encuentra registrado en nuestra base de datos de niñeras. Por favor contacta a administración."
                     : (esStaff
@@ -879,13 +915,55 @@ async function enviarOTPSupabase(isResend = false) {
                         : "Este correo no se encuentra registrado en nuestra base de datos de clientes.");
                 throw new Error(mensajeNoEncontrado);
             }
-        } catch (checkErr) {
-            if (checkErr.message && checkErr.message.includes('no se encuentra registrado')) {
-                throw checkErr;
+
+            if (estadoCuenta.activo === false) {
+                throw new Error(esNanny
+                    ? "Tu cuenta de niñera se encuentra inactiva. Por favor comunícate con administración."
+                    : "Tu cuenta se encuentra inactiva. Por favor comunícate con administración.");
+            }
+
+            // SI LA CUENTA EXISTE EN LA EMPRESA PERO AÚN NO TIENE CONTRASEÑA EN AUTH.USERS:
+            // Evitar enviar un OTP fantasma que Supabase nunca va a mandar, y llevarla directamente a crearla
+            if (estadoCuenta.tiene_auth === false) {
+                msgEl.className = 'supa-msg success';
+                msgEl.textContent = '✨ Tu cuenta está registrada y activa. Redirigiendo para que crees tu contraseña inicial...';
+                
+                setTimeout(() => {
+                    volverDeOlvide();
+                    mostrarCrearCuentaCliente();
+                    const crearEmailInput = document.getElementById('supaCrearEmailInput');
+                    if (crearEmailInput) {
+                        crearEmailInput.value = email;
+                        if (typeof validarSeguridadPassword === 'function') validarSeguridadPassword();
+                        const crearPassInput = document.getElementById('supaCrearPassInput');
+                        if (crearPassInput) setTimeout(() => crearPassInput.focus(), 150);
+                    }
+                }, 1000);
+                return;
+            }
+        } else {
+            // Fallback con la RPC previa
+            try {
+                const { data: cuentaValida, error: rpcErr } = await client.rpc('verificar_cuenta_para_recuperacion', {
+                    email_param: email,
+                    rol_param: esStaff ? 'staff' : (esNanny ? 'nanny' : 'cliente')
+                });
+                if (!rpcErr && cuentaValida === false) {
+                    const mensajeNoEncontrado = esNanny
+                        ? "Este correo no se encuentra registrado en nuestra base de datos de niñeras. Por favor contacta a administración."
+                        : (esStaff
+                            ? "Este correo no se encuentra registrado como personal Staff autorizado."
+                            : "Este correo no se encuentra registrado en nuestra base de datos de clientes.");
+                    throw new Error(mensajeNoEncontrado);
+                }
+            } catch (checkErr) {
+                if (checkErr.message && checkErr.message.includes('no se encuentra registrado')) {
+                    throw checkErr;
+                }
             }
         }
 
-        // 2. Solicitar restablecimiento / OTP a Supabase Auth nativo
+        // 2. Solicitar restablecimiento / OTP a Supabase Auth nativo (aquí ya está garantizado que tiene auth)
         const { data, error } = await client.auth.resetPasswordForEmail(email);
         if (error) {
             throw error;
@@ -1203,31 +1281,53 @@ async function loginSupabase() {
             }
         }
 
-        // 2. VALIDAR / SINCRONIZAR CON BACKEND (Google Sheets para obtener token de operaciones si existe)
+        // 2. SI NO AUTENTICÓ EN SUPABASE AUTH, DIAGNOSTICAR Y VALIDAR CON BACKEND TRADICIONAL
         let res = null;
-        try {
-            const rolBackend = selectedRole === 'familia' ? 'cliente' : (selectedRole === 'nanny' ? 'nanny' : 'staff');
-            const loginPromise = api('login', { 
-                email, 
-                contrasena: pass, 
-                rol: rolBackend 
-            });
+        let estadoCuenta = null;
 
-            // Timeout ágil para no frenar a usuarios que ya están validados en Supabase
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('El servidor tardó en responder.')), 6000)
-            );
+        if (!supaUser && client) {
+            try {
+                const { data: rpcData } = await client.rpc('verificar_estado_cuenta_auth', {
+                    email_param: email,
+                    rol_param: selectedRole
+                });
+                if (rpcData) estadoCuenta = rpcData;
+            } catch (e) {}
 
-            res = await Promise.race([loginPromise, timeoutPromise]);
-            console.log("✅ [Backend OK] Credenciales sincronizadas con backend tradicional.");
-        } catch (apiErr) {
-            console.warn("ℹ️ [Backend Sync Nota]:", apiErr.message);
-            // Si el usuario NO existe en Supabase y el backend tradicional también falló,
-            // entonces las credenciales son realmente inválidas.
-            if (!supaUser) {
+            // Si la cuenta existe en la empresa pero NUNCA ha creado su contraseña en Auth:
+            if (estadoCuenta && estadoCuenta.existe && estadoCuenta.tiene_auth === false) {
+                const rolTxt = selectedRole === 'nanny' ? 'de niñera' : 'de cliente';
+                throw new Error(`Tu cuenta ${rolTxt} está registrada pero aún no has creado tu contraseña. Pulsa abajo en 'Crear cuenta' para activarla.`);
+            }
+        }
+
+        // Si es Staff o Familia, intentar sincronización con backend tradicional (Google Sheets)
+        if (!supaUser) {
+            try {
+                const rolBackend = selectedRole === 'familia' ? 'cliente' : (selectedRole === 'nanny' ? 'nanny' : 'staff');
+                const loginPromise = api('login', { 
+                    email, 
+                    contrasena: pass, 
+                    rol: rolBackend 
+                });
+
+                // Timeout de 8 segundos para backend tradicional
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('El servidor tardó en responder.')), 8000)
+                );
+
+                res = await Promise.race([loginPromise, timeoutPromise]);
+                console.log("✅ [Backend OK] Credenciales sincronizadas con backend tradicional.");
+            } catch (apiErr) {
+                console.warn("ℹ️ [Backend Sync Nota]:", apiErr.message);
+                if (estadoCuenta && estadoCuenta.existe && estadoCuenta.tiene_auth) {
+                    throw new Error('Contraseña incorrecta. Si no la recuerdas, pulsa en "¿Olvidaste tu contraseña?".');
+                }
+                if (apiErr.message && apiErr.message.includes('Credenciales')) {
+                    throw new Error('Correo o contraseña incorrectos.');
+                }
                 throw new Error(apiErr.message || 'Correo o contraseña incorrectos.');
             }
-            console.info("⚡ Usuario autenticado directamente con credenciales de Supabase Auth.");
         }
 
         // Si falló tanto en Supabase como en el backend tradicional:

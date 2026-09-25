@@ -1269,8 +1269,161 @@ CREATE INDEX IF NOT EXISTS idx_nannys_nombre ON public.nannys(nombre);
 CREATE INDEX IF NOT EXISTS idx_nannys_ciudad ON public.nannys(ciudad);
 
 -- =========================================================================
--- 11. FUNCIÓN RPC PARA RECUPERACIÓN SEGURA DE CONTRASEÑA
+-- 11. FUNCIONES RPC PARA AUTENTICACIÓN, CREACIÓN Y RECUPERACIÓN SEGURA
 -- =========================================================================
+
+-- Diagnóstico y validación integral del estado de una cuenta (Existe, Activa, Rol, Tiene Auth)
+CREATE OR REPLACE FUNCTION public.verificar_estado_cuenta_auth(email_param TEXT, rol_param TEXT DEFAULT 'nanny')
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+    clean_email TEXT := LOWER(TRIM(email_param));
+    clean_rol TEXT := LOWER(TRIM(COALESCE(rol_param, 'nanny')));
+    cuenta_record RECORD;
+    existe_en_db BOOLEAN := FALSE;
+    cuenta_activa BOOLEAN := TRUE;
+    nombre_usuario TEXT := '';
+    tiene_auth_users BOOLEAN := FALSE;
+    auth_uid UUID := NULL;
+BEGIN
+    IF clean_email IS NULL OR clean_email = '' THEN
+        RETURN jsonb_build_object(
+            'ok', false,
+            'existe', false,
+            'mensaje', 'Por favor ingresa un correo electrónico válido.'
+        );
+    END IF;
+
+    -- 1. Buscar en la tabla correspondiente al rol
+    IF clean_rol = 'staff' THEN
+        SELECT id, auth_user_id, nombre, COALESCE(activo, true) as activo
+        INTO cuenta_record
+        FROM public.staff
+        WHERE LOWER(email) = clean_email
+        LIMIT 1;
+    ELSIF clean_rol = 'nanny' THEN
+        SELECT id, auth_user_id, nombre, COALESCE(activo, true) as activo
+        INTO cuenta_record
+        FROM public.nannys
+        WHERE LOWER(email) = clean_email
+        LIMIT 1;
+    ELSE
+        SELECT id, auth_user_id, nombre, COALESCE(activo, true) as activo
+        INTO cuenta_record
+        FROM public.clientes
+        WHERE LOWER(email) = clean_email
+        LIMIT 1;
+    END IF;
+
+    IF cuenta_record.id IS NOT NULL THEN
+        existe_en_db := TRUE;
+        cuenta_activa := (cuenta_record.activo IS NOT FALSE);
+        nombre_usuario := COALESCE(cuenta_record.nombre, '');
+        auth_uid := cuenta_record.auth_user_id;
+    END IF;
+
+    -- 2. Verificar si existe en auth.users
+    SELECT EXISTS (
+        SELECT 1 FROM auth.users 
+        WHERE LOWER(email) = clean_email
+    ) INTO tiene_auth_users;
+
+    -- 3. Si no se encontró en la tabla específica del rol, buscar en otras tablas
+    IF NOT existe_en_db THEN
+        IF clean_rol <> 'nanny' THEN
+            SELECT id, auth_user_id, nombre, COALESCE(activo, true) as activo
+            INTO cuenta_record
+            FROM public.nannys
+            WHERE LOWER(email) = clean_email
+            LIMIT 1;
+            IF cuenta_record.id IS NOT NULL THEN
+                existe_en_db := TRUE;
+                cuenta_activa := (cuenta_record.activo IS NOT FALSE);
+                nombre_usuario := COALESCE(cuenta_record.nombre, '');
+                clean_rol := 'nanny';
+            END IF;
+        END IF;
+
+        IF NOT existe_en_db AND clean_rol <> 'cliente' AND clean_rol <> 'familia' THEN
+            SELECT id, auth_user_id, nombre, COALESCE(activo, true) as activo
+            INTO cuenta_record
+            FROM public.clientes
+            WHERE LOWER(email) = clean_email
+            LIMIT 1;
+            IF cuenta_record.id IS NOT NULL THEN
+                existe_en_db := TRUE;
+                cuenta_activa := (cuenta_record.activo IS NOT FALSE);
+                nombre_usuario := COALESCE(cuenta_record.nombre, '');
+                clean_rol := 'cliente';
+            END IF;
+        END IF;
+
+        IF NOT existe_en_db AND clean_rol <> 'staff' THEN
+            SELECT id, auth_user_id, nombre, COALESCE(activo, true) as activo
+            INTO cuenta_record
+            FROM public.staff
+            WHERE LOWER(email) = clean_email
+            LIMIT 1;
+            IF cuenta_record.id IS NOT NULL THEN
+                existe_en_db := TRUE;
+                cuenta_activa := (cuenta_record.activo IS NOT FALSE);
+                nombre_usuario := COALESCE(cuenta_record.nombre, '');
+                clean_rol := 'staff';
+            END IF;
+        END IF;
+    END IF;
+
+    RETURN jsonb_build_object(
+        'ok', true,
+        'existe', existe_en_db OR tiene_auth_users,
+        'activo', cuenta_activa,
+        'tiene_auth', tiene_auth_users,
+        'nombre', nombre_usuario,
+        'rol', clean_rol
+    );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.verificar_estado_cuenta_auth(TEXT, TEXT) TO anon, authenticated;
+
+-- Función para vinculación segura de auth_user_id
+CREATE OR REPLACE FUNCTION public.vincular_auth_user_perfil(email_param TEXT, rol_param TEXT, user_uid UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+    clean_email TEXT := LOWER(TRIM(email_param));
+    clean_rol TEXT := LOWER(TRIM(COALESCE(rol_param, 'nanny')));
+BEGIN
+    IF clean_email IS NULL OR clean_email = '' OR user_uid IS NULL THEN
+        RETURN FALSE;
+    END IF;
+
+    IF clean_rol = 'nanny' THEN
+        UPDATE public.nannys 
+        SET auth_user_id = user_uid, actualizado_en = timezone('utc'::text, now())
+        WHERE LOWER(email) = clean_email;
+    ELSIF clean_rol = 'staff' THEN
+        UPDATE public.staff 
+        SET auth_user_id = user_uid, actualizado_en = timezone('utc'::text, now())
+        WHERE LOWER(email) = clean_email;
+    ELSE
+        UPDATE public.clientes 
+        SET auth_user_id = user_uid, actualizado_en = timezone('utc'::text, now())
+        WHERE LOWER(email) = clean_email;
+    END IF;
+
+    RETURN TRUE;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.vincular_auth_user_perfil(TEXT, TEXT, UUID) TO anon, authenticated;
+
 CREATE OR REPLACE FUNCTION public.verificar_cuenta_para_recuperacion(email_param TEXT, rol_param TEXT DEFAULT 'staff')
 RETURNS BOOLEAN
 LANGUAGE plpgsql
