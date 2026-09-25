@@ -41,6 +41,16 @@ const CONFIG = {
 window.escapeHTML = function (val) {
     if (val === null || val === undefined) return '';
     if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+    if (typeof val === 'string') {
+        const trimmed = val.trim().toLowerCase();
+        if (trimmed === 'undefined' || trimmed === 'null') return '';
+        return val
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
     if (typeof val === 'object') {
         try {
             val = JSON.stringify(val);
@@ -48,7 +58,9 @@ window.escapeHTML = function (val) {
             val = String(val);
         }
     }
-    return String(val)
+    const str = String(val);
+    if (str.trim().toLowerCase() === 'undefined' || str.trim().toLowerCase() === 'null') return '';
+    return str
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')

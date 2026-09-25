@@ -7,8 +7,10 @@
 // Helper global de escape y sanitización XSS (OWASP ASVS V5.3)
 function _csEscapeHTML(str) {
   if (str === null || str === undefined) return '';
-  if (typeof window.escapeHTML === 'function') return window.escapeHTML(str);
-  return String(str)
+  const s = String(str);
+  if (s.trim().toLowerCase() === 'undefined' || s.trim().toLowerCase() === 'null') return '';
+  if (typeof window.escapeHTML === 'function') return window.escapeHTML(s);
+  return s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -948,27 +950,30 @@ const CS_CAMPOS_LABELS = {
  */
 function extraerColoresDeObservaciones(observaciones) {
   if (!observaciones || typeof observaciones !== 'string') {
-    return { colores: {}, obsLimpia: observaciones || '' };
+    return { colores: {}, obsLimpia: '' };
   }
-  const match = observaciones.match(/<!--colores:(.*?)-->/);
-  if (!match) {
-    return { colores: {}, obsLimpia: observaciones };
+  let obs = observaciones;
+  const match = obs.match(/<!--colores:(.*?)-->/);
+  let colores = {};
+  if (match) {
+    try {
+      const raw = decodeURIComponent(match[1]);
+      const parsed = JSON.parse(raw);
+      colores = (parsed && typeof parsed === 'object') ? parsed : {};
+    } catch (err) {
+      colores = {};
+    }
+    obs = obs.replace(/<!--colores:.*?-->/g, '').trim();
   }
-  try {
-    const raw = decodeURIComponent(match[1]);
-    const parsed = JSON.parse(raw);
-    const obsLimpia = observaciones.replace(/<!--colores:.*?-->/g, '').trim();
-    return { colores: (parsed && typeof parsed === 'object') ? parsed : {}, obsLimpia };
-  } catch (err) {
-    return { colores: {}, obsLimpia: observaciones };
-  }
+  obs = obs.replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
+  return { colores, obsLimpia: obs };
 }
 
 /**
  * Inyecta los colores de celdas dentro de observaciones como comentario seguro
  */
 function inyectarColoresEnObservaciones(obsBase, colores) {
-  let obs = String(obsBase || '').replace(/<!--colores:.*?-->/g, '').trim();
+  let obs = String(obsBase || '').replace(/<!--colores:.*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
   if (colores && typeof colores === 'object' && Object.keys(colores).length > 0) {
     const encoded = encodeURIComponent(JSON.stringify(colores));
     return `<!--colores:${encoded}--> ${obs}`.trim();
@@ -1055,6 +1060,7 @@ function limpiarMetadatosObservaciones(obs) {
   if (!obs || typeof obs !== 'string') return '';
   return obs
     .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\b(undefined|null)\b/gi, '')
     .trim();
 }
 
@@ -1090,20 +1096,23 @@ function extraerColoresDeFilaDom(row) {
  */
 function extraerNotasDeObservaciones(observaciones) {
   if (!observaciones || typeof observaciones !== 'string') {
-    return { notas: {}, obsLimpia: observaciones || '' };
+    return { notas: {}, obsLimpia: '' };
   }
-  const match = observaciones.match(/<!--notas_celdas:(.*?)-->/);
-  if (!match) {
-    return { notas: {}, obsLimpia: observaciones };
+  let obs = observaciones;
+  const match = obs.match(/<!--notas_celdas:(.*?)-->/);
+  let notas = {};
+  if (match) {
+    try {
+      const raw = decodeURIComponent(match[1]);
+      const parsed = JSON.parse(raw);
+      notas = (parsed && typeof parsed === 'object') ? parsed : {};
+    } catch (err) {
+      notas = {};
+    }
+    obs = obs.replace(/<!--notas_celdas:.*?-->/g, '').trim();
   }
-  try {
-    const raw = decodeURIComponent(match[1]);
-    const parsed = JSON.parse(raw);
-    const obsLimpia = observaciones.replace(/<!--notas_celdas:.*?-->/g, '').trim();
-    return { notas: (parsed && typeof parsed === 'object') ? parsed : {}, obsLimpia };
-  } catch (err) {
-    return { notas: {}, obsLimpia: observaciones };
-  }
+  obs = obs.replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
+  return { notas, obsLimpia: obs };
 }
 
 /**
@@ -1555,9 +1564,12 @@ function renderCeldasFilaServicioHtml(servicio) {
   if (!tagAsist && servicio.id && window._cacheAsistenciaServicios && window._cacheAsistenciaServicios[servicio.id]) {
     tagAsist = `<!--asistencia_nanny:${JSON.stringify(window._cacheAsistenciaServicios[servicio.id])}-->`;
   }
-  const obsParaMostrar = (typeof limpiarMetadatosObservaciones === 'function')
+  let obsParaMostrar = (typeof limpiarMetadatosObservaciones === 'function')
     ? limpiarMetadatosObservaciones(obsLimpia)
-    : obsLimpia.replace(/<!--bloque:.*?-->/g, '').replace(/<!--asistencia_nanny:.*?-->/g, '').replace(/<!--pid:.*?-->/g, '').replace(/<!--nuevo_cliente:.*?-->/g, '').replace(/<!--notas_celdas:.*?-->/g, '').trim();
+    : String(obsLimpia || '').replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
+  if (obsParaMostrar.trim().toLowerCase() === 'undefined' || obsParaMostrar.trim().toLowerCase() === 'null') {
+    obsParaMostrar = '';
+  }
 
   const getCol = (f) => {
     const c = (coloresCeldas && coloresCeldas[f]) || {};
@@ -2223,8 +2235,9 @@ function extraeDatosFila(row, idx = null) {
     const el = row.querySelector(selector);
     if (!el) return '';
     if (el.type === 'checkbox') return !!el.checked;
-    if (el.value !== undefined) return el.value;
-    return el.textContent?.trim() || '';
+    let v = el.value !== undefined ? el.value : (el.textContent?.trim() || '');
+    if (typeof v === 'string' && (v.trim().toLowerCase() === 'undefined' || v.trim().toLowerCase() === 'null')) return '';
+    return v;
   };
 
   const inputObs = row.querySelector('[data-field="observaciones"]');
@@ -2240,9 +2253,12 @@ function extraeDatosFila(row, idx = null) {
   }
   const rawTagAsist = tagAsistEnc ? decodeURIComponent(tagAsistEnc) : '';
   const obsRaw = inputObs ? inputObs.value : getVal('[data-field="observaciones"]');
-  const obsBase = (typeof limpiarMetadatosObservaciones === 'function' && obsRaw.includes('<!--'))
-    ? limpiarMetadatosObservaciones(obsRaw)
-    : obsRaw;
+  let obsBase = (typeof limpiarMetadatosObservaciones === 'function')
+    ? limpiarMetadatosObservaciones(obsRaw || '')
+    : String(obsRaw || '').replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
+  if (obsBase.trim().toLowerCase() === 'undefined' || obsBase.trim().toLowerCase() === 'null') {
+    obsBase = '';
+  }
   const obsConAsist = rawTagAsist ? `${rawTagAsist} ${obsBase.trim()}`.trim() : obsBase;
   const coloresFila = extraerColoresDeFilaDom(row);
   const notasFila = extraerNotasDeFilaDom(row);
@@ -2522,7 +2538,10 @@ function decodificarServicioSupabase(s) {
   }
   decoded.observaciones = (typeof limpiarMetadatosObservaciones === 'function')
     ? limpiarMetadatosObservaciones(decoded.observaciones || '')
-    : (decoded.observaciones || '').replace(/<!--.*?-->/g, '').trim();
+    : (decoded.observaciones || '').replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
+  if (decoded.observaciones.trim().toLowerCase() === 'undefined' || decoded.observaciones.trim().toLowerCase() === 'null') {
+    decoded.observaciones = '';
+  }
 
   return decoded;
 }
