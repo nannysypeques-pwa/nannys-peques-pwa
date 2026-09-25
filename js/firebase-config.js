@@ -107,7 +107,7 @@ export async function generarFirebaseCustomToken(userEmail = null) {
   const targetEmail = String(userEmail || (window.SESION && window.SESION.email) || '').trim().toLowerCase();
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const localWorkerUrl = 'http://127.0.0.1:8787';
-  const prodWorkerUrl = 'https://nannys-push-worker.pinedagerardo1.workers.dev';
+  const prodWorkerUrl = 'https://nannys-push-worker.nannysypeques.workers.dev';
   
   // Priorizar endpoint local en desarrollo para evitar bloqueos CORS
   const configuredWorkerUrl = isLocal

@@ -900,7 +900,10 @@ const RHPanel = {
 
     cargarDatos: async function () {
         try {
-            const { db } = await import('./firebase-config.js');
+            const { db, asegurarAutenticacionFirebase } = await import('./firebase-config.js');
+            if (typeof asegurarAutenticacionFirebase === 'function') {
+                await asegurarAutenticacionFirebase(null, window.SESION?.email);
+            }
             const { collection, query, orderBy, onSnapshot } = await import("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js");
 
             // Cancelar listeners previos si existen

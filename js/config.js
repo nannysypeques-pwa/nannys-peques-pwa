@@ -18,11 +18,16 @@ const CONFIG = {
     SUPABASE_ANON_KEY: (window.localStorage.getItem('nyp_supabase_key') || '').trim() || 'sb_publishable_Axs3rWyxt8-RxcyIU6XBVA_LNMDypeS',
 
     // Endpoint del Cloudflare Push & Auth Worker
-    WORKER_URL: (window.localStorage.getItem('nyp_worker_url') || '').trim() || (
-        window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    WORKER_URL: (() => {
+        const stored = (window.localStorage.getItem('nyp_worker_url') || '').trim();
+        if (stored && !stored.includes('pinedagerardo1')) return stored;
+        if (stored && stored.includes('pinedagerardo1')) {
+            window.localStorage.removeItem('nyp_worker_url');
+        }
+        return (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://127.0.0.1:8787'
-            : 'https://nannys-push-worker.pinedagerardo1.workers.dev'
-    ),
+            : 'https://nannys-push-worker.nannysypeques.workers.dev';
+    })(),
 
     // Mostrar aviso de entorno en consola
     init() {
