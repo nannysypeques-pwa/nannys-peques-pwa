@@ -31,6 +31,7 @@ const _nannysFallbackDefault = [];
 // Estado de navegación de semanas y sincronización en tiempo real
 let _currentSemanaMatrizIso = null;
 let _matrizRealtimeChannel = null;
+let _matrizSaveTimeout = null;
 const _pendingRowSaves = new Map();
 
 /**
@@ -6405,6 +6406,7 @@ async function cargarMatrizServiciosSupabase(semanaIso) {
     clearTimeout(_matrizSaveTimeout);
     _matrizSaveTimeout = null;
   }
+  flushPendingRowSaves();
 
   if (!semanaIso) {
     semanaIso = getMondayISO(new Date());
