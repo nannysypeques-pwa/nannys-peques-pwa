@@ -146,13 +146,9 @@ if ('serviceWorker' in navigator) {
   });
 
 
-  // Recargar cuando el nuevo SW tome el control (skipWaiting + clients.claim)
-  let refreshing = false;
+  // Registrar eventos de ciclo de vida del Service Worker sin bucles de recarga
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!refreshing) {
-      refreshing = true;
-      window.location.reload();
-    }
+    console.log('⚡ [Service Worker] Nuevo controlador PWA activado con éxito.');
   });
 }
 
