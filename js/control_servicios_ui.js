@@ -965,7 +965,6 @@ function extraerColoresDeObservaciones(observaciones) {
     }
     obs = obs.replace(/<!--colores:.*?-->/g, '').trim();
   }
-  obs = obs.replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
   return { colores, obsLimpia: obs };
 }
 
@@ -1111,7 +1110,6 @@ function extraerNotasDeObservaciones(observaciones) {
     }
     obs = obs.replace(/<!--notas_celdas:.*?-->/g, '').trim();
   }
-  obs = obs.replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
   return { notas, obsLimpia: obs };
 }
 
@@ -5378,9 +5376,14 @@ async function sincronizarAsistenciaMatrizEnVivo(forceFullRender = false) {
       // Actualizar observaciones y tags
       const inpObs = tr.querySelector('[data-field="observaciones"]');
       if (inpObs && inpObs !== activeEl) {
-        const { textoLimpio } = typeof extraerColoresDeObservaciones === 'function' ? extraerColoresDeObservaciones(rowRecord.observaciones || '') : { textoLimpio: rowRecord.observaciones || '' };
-        if (inpObs.value !== textoLimpio) {
-          inpObs.value = textoLimpio;
+        let obsParaMostrar = (typeof limpiarMetadatosObservaciones === 'function')
+          ? limpiarMetadatosObservaciones(rowRecord.observaciones || '')
+          : String(rowRecord.observaciones || '').replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
+        if (obsParaMostrar.trim().toLowerCase() === 'undefined' || obsParaMostrar.trim().toLowerCase() === 'null') {
+          obsParaMostrar = '';
+        }
+        if (inpObs.value !== obsParaMostrar) {
+          inpObs.value = obsParaMostrar;
         }
       }
 
