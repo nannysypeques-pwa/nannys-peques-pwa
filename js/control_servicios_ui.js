@@ -2419,65 +2419,95 @@ let _supaHasCiudadColumn = null;
  */
 function prepararServicioParaSupabase(s) {
   if (!s) return s;
-  const copia = { ...s };
 
-  // 'colores_celdas', 'notas_celdas' y 'pid' no son columnas físicas en la tabla control_servicios de Supabase.
-  // Van codificados dentro del campo 'observaciones' para compatibilidad total.
-  delete copia.colores_celdas;
-  delete copia.notas_celdas;
-  delete copia.pid;
+  let obs = s.observaciones || '';
 
-  let obs = copia.observaciones || '';
+  // Codificar colores_celdas si existen
+  if (s.colores_celdas && Object.keys(s.colores_celdas).length > 0) {
+    obs = obs.replace(/<!--colores:.*?-->/g, '').trim();
+    obs = '<!--colores:' + JSON.stringify(s.colores_celdas) + '-->' + obs;
+  }
+  // Codificar notas_celdas si existen
+  if (s.notas_celdas && Object.keys(s.notas_celdas).length > 0) {
+    obs = obs.replace(/<!--notas_celdas:.*?-->/g, '').trim();
+    obs = '<!--notas_celdas:' + JSON.stringify(s.notas_celdas) + '-->' + obs;
+  }
+  // Codificar pid si existe
+  const pidVal = s.pid || (typeof extraerPidDeObservaciones === 'function' ? extraerPidDeObservaciones(s.observaciones || '') : null);
+  if (pidVal) {
+    obs = obs.replace(/<!--pid:.*?-->/g, '').trim();
+    obs = '<!--pid:' + pidVal + '-->' + obs;
+  }
+  // Codificar detalles_servicio si existen
+  if (s.detalles_servicio && typeof s.detalles_servicio === 'object' && Object.keys(s.detalles_servicio).length > 0) {
+    obs = obs.replace(/<!--detalles_servicio:.*?-->/g, '').trim();
+    obs = '<!--detalles_servicio:' + JSON.stringify(s.detalles_servicio) + '-->' + obs;
+  }
 
-  // 1. Compatibilidad para columna 'bloque'
+  const bloqueVal = s.bloque || 'servicios_fijos';
+  const saldoVal = (s.saldo_cliente !== undefined && s.saldo_cliente !== null) ? String(s.saldo_cliente).trim() : '';
+  const pagoVal = (s.pago_nanny !== undefined && s.pago_nanny !== null) ? String(s.pago_nanny).trim() : '';
+  const ciudadVal = s.ciudad || _currentCiudadMatriz || 'Puebla';
+
+  // Objeto con STRICTAMENTE las columnas físicas de Supabase
+  const payload = {
+    id: String(s.id),
+    semana_iso: String(s.semana_iso || _currentSemanaMatrizIso || getMondayISO(new Date())),
+    orden: Number(s.orden) || 0,
+    lun_inicio: s.lun_inicio || (s.horarios && s.horarios.lun_inicio) || '',
+    lun_fin: s.lun_fin || (s.horarios && s.horarios.lun_fin) || '',
+    mar_inicio: s.mar_inicio || (s.horarios && s.horarios.mar_inicio) || '',
+    mar_fin: s.mar_fin || (s.horarios && s.horarios.mar_fin) || '',
+    mie_inicio: s.mie_inicio || (s.horarios && s.horarios.mie_inicio) || '',
+    mie_fin: s.mie_fin || (s.horarios && s.horarios.mie_fin) || '',
+    jue_inicio: s.jue_inicio || (s.horarios && s.horarios.jue_inicio) || '',
+    jue_fin: s.jue_fin || (s.horarios && s.horarios.jue_fin) || '',
+    vie_inicio: s.vie_inicio || (s.horarios && s.horarios.vie_inicio) || '',
+    vie_fin: s.vie_fin || (s.horarios && s.horarios.vie_fin) || '',
+    sab_inicio: s.sab_inicio || (s.horarios && s.horarios.sab_inicio) || '',
+    sab_fin: s.sab_fin || (s.horarios && s.horarios.sab_fin) || '',
+    dom_inicio: s.dom_inicio || (s.horarios && s.horarios.dom_inicio) || '',
+    dom_fin: s.dom_fin || (s.horarios && s.horarios.dom_fin) || '',
+    tipo_servicio: s.tipo_servicio || '',
+    cliente_email: s.cliente_email || '',
+    cliente_nombre: s.cliente_nombre || '',
+    ok_cliente: Boolean(s.ok_cliente),
+    zona: s.zona || '',
+    nanny_nombre: s.nanny_nombre || '',
+    ok_nanny: Boolean(s.ok_nanny),
+    tarifa_cliente: s.tarifa_cliente ? String(s.tarifa_cliente) : '',
+    tarifa_nanny: s.tarifa_nanny ? String(s.tarifa_nanny) : '',
+    alerta: s.alerta ? String(s.alerta) : '',
+    observaciones: obs,
+    bloque: bloqueVal,
+    saldo_cliente: saldoVal,
+    pago_nanny: pagoVal,
+    ciudad: ciudadVal,
+    asistencia_nanny: (s.asistencia_nanny && typeof s.asistencia_nanny === 'object') ? s.asistencia_nanny : {}
+  };
+
+  // Compatibilidad hacia atrás si la base de datos no tiene alguna columna física
   if (_supaHasBloqueColumn === false) {
-    const bloqueVal = copia.bloque || 'servicios_fijos';
-    delete copia.bloque;
-    obs = obs.replace(/<!--bloque:.*?-->/g, '').trim();
-    if (bloqueVal !== 'servicios_fijos') {
-      obs = '<!--bloque:' + bloqueVal + '-->' + obs;
-    }
+    delete payload.bloque;
+    if (bloqueVal !== 'servicios_fijos') payload.observaciones = '<!--bloque:' + bloqueVal + '-->' + payload.observaciones;
   }
-
-  // 2. Compatibilidad para columna 'saldo_cliente'
   if (_supaHasSaldoColumn === false) {
-    const saldoVal = (copia.saldo_cliente !== undefined && copia.saldo_cliente !== null) ? String(copia.saldo_cliente).trim() : '';
-    delete copia.saldo_cliente;
-    obs = obs.replace(/<!--saldo_cliente:.*?-->/g, '').trim();
-    if (saldoVal !== '') {
-      obs = '<!--saldo_cliente:' + saldoVal + '-->' + obs;
-    }
+    delete payload.saldo_cliente;
+    if (saldoVal !== '') payload.observaciones = '<!--saldo_cliente:' + saldoVal + '-->' + payload.observaciones;
   }
-
-  // 3. Compatibilidad para columna 'pago_nanny'
   if (_supaHasPagoColumn === false) {
-    const pagoVal = (copia.pago_nanny !== undefined && copia.pago_nanny !== null) ? String(copia.pago_nanny).trim() : '';
-    delete copia.pago_nanny;
-    obs = obs.replace(/<!--pago_nanny:.*?-->/g, '').trim();
-    if (pagoVal !== '') {
-      obs = '<!--pago_nanny:' + pagoVal + '-->' + obs;
-    }
+    delete payload.pago_nanny;
+    if (pagoVal !== '') payload.observaciones = '<!--pago_nanny:' + pagoVal + '-->' + payload.observaciones;
   }
-
-  // 4. Compatibilidad para columna 'asistencia_nanny'
-  if (_supaHasAsistenciaColumn === false) {
-    delete copia.asistencia_nanny;
-  }
-
-  // 5. Compatibilidad para columna 'ciudad'
-  const ciudadVal = copia.ciudad || _currentCiudadMatriz || 'Puebla';
   if (_supaHasCiudadColumn === false) {
-    delete copia.ciudad;
-    obs = obs.replace(/<!--ciudad:.*?-->/g, '').trim();
-    if (ciudadVal && ciudadVal !== 'Puebla') {
-      obs = '<!--ciudad:' + ciudadVal + '-->' + obs;
-    }
-  } else {
-    copia.ciudad = ciudadVal;
+    delete payload.ciudad;
+    if (ciudadVal && ciudadVal !== 'Puebla') payload.observaciones = '<!--ciudad:' + ciudadVal + '-->' + payload.observaciones;
+  }
+  if (_supaHasAsistenciaColumn === false) {
+    delete payload.asistencia_nanny;
   }
 
-  copia.observaciones = obs;
-  return copia;
+  return payload;
 }
 
 /**
