@@ -5696,6 +5696,9 @@ function irVistaVentas(tab) {
         document.documentElement.classList.add('en-control-servicios');
         const el = document.getElementById('adminControlServiciosView') || document.getElementById('adminAgendaCard');
         if (el) el.style.display = 'flex';
+        if (typeof sincronizarAsistenciaMatrizEnVivo === 'function') {
+            sincronizarAsistenciaMatrizEnVivo(true);
+        }
     } else if (tab === 'disponibilidad') {
         document.body.classList.remove('en-control-servicios');
         document.documentElement.classList.remove('en-control-servicios');

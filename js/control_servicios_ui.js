@@ -31,7 +31,23 @@ const _nannysFallbackDefault = [];
 // Estado de navegación de semanas y sincronización en tiempo real
 let _currentSemanaMatrizIso = null;
 let _matrizRealtimeChannel = null;
-let _matrizSaveTimeout = null;
+const _pendingRowSaves = new Map();
+
+/**
+ * Guarda inmediatamente todas las filas que tengan un guardado en debounce pendiente
+ */
+function flushPendingRowSaves() {
+  if (_pendingRowSaves.size > 0) {
+    for (const [row, timer] of _pendingRowSaves.entries()) {
+      clearTimeout(timer);
+      if (row && row.isConnected) {
+        guardarFilaServicioSupabase(row);
+      }
+    }
+    _pendingRowSaves.clear();
+  }
+}
+window.flushPendingRowSaves = flushPendingRowSaves;
 
 // =========================================================================
 // GESTIÓN DE CIUDADES EN LA MATRIZ (Puebla, Xalapa, Querétaro, CDMX)
@@ -54,11 +70,8 @@ function cambiarCiudadMatriz(ciudad) {
 
   actualizarSelectorCiudadUI();
 
-  // Si hay un guardado en debounce pendiente, cancelarlo y vaciarlo
-  if (_matrizSaveTimeout) {
-    clearTimeout(_matrizSaveTimeout);
-    _matrizSaveTimeout = null;
-  }
+  // Si hay cambios pendientes, guardarlos antes de cambiar
+  flushPendingRowSaves();
 
   // Recargar la matriz para la semana actual con la nueva ciudad seleccionada
   const semIso = _currentSemanaMatrizIso || (typeof getMondayISO === 'function' ? getMondayISO(new Date()) : null);
@@ -483,10 +496,7 @@ function actualizarCabecerasSemanaMatriz(lunesIso) {
  * Navega a la semana anterior (-1) o siguiente (+1) y recarga los servicios
  */
 async function cambiarSemanaMatriz(dir) {
-  if (_matrizSaveTimeout) {
-    clearTimeout(_matrizSaveTimeout);
-    _matrizSaveTimeout = null;
-  }
+  flushPendingRowSaves();
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
     document.activeElement.blur();
   }
@@ -546,10 +556,7 @@ function calcularSemanasDelMes(year, month) {
 
 async function seleccionarSemanaDesdeCalendario(mondayIso) {
   cerrarCalendarioSemanas();
-  if (_matrizSaveTimeout) {
-    clearTimeout(_matrizSaveTimeout);
-    _matrizSaveTimeout = null;
-  }
+  flushPendingRowSaves();
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
     document.activeElement.blur();
   }
@@ -563,10 +570,7 @@ async function seleccionarSemanaDesdeCalendario(mondayIso) {
 async function irSemanaActual() {
   const hoyLunes = getMondayISO(new Date());
   cerrarCalendarioSemanas();
-  if (_matrizSaveTimeout) {
-    clearTimeout(_matrizSaveTimeout);
-    _matrizSaveTimeout = null;
-  }
+  flushPendingRowSaves();
   if (document.activeElement && typeof document.activeElement.blur === 'function') {
     document.activeElement.blur();
   }
@@ -2822,7 +2826,8 @@ async function guardarFilaServicioSupabase(row) {
 }
 
 /**
- * Despacha el guardado hacia Supabase con debounce inteligente
+ * Despacha el guardado hacia Supabase con debounce inteligente por fila individual
+ * garantizando que múltiples ediciones rápidas en distintas filas no se cancelen entre sí.
  */
 function notificarCambioFila(elementOrRow, immediate = false) {
   const row = (elementOrRow && elementOrRow.closest) ? elementOrRow.closest('tr') : elementOrRow;
@@ -2831,14 +2836,20 @@ function notificarCambioFila(elementOrRow, immediate = false) {
   guardarMatrizLocal();
   actualizarContadoresSecciones();
 
+  const existingTimer = _pendingRowSaves.get(row);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
+    _pendingRowSaves.delete(row);
+  }
+
   if (immediate) {
-    if (_matrizSaveTimeout) clearTimeout(_matrizSaveTimeout);
     guardarFilaServicioSupabase(row);
   } else {
-    if (_matrizSaveTimeout) clearTimeout(_matrizSaveTimeout);
-    _matrizSaveTimeout = setTimeout(() => {
+    const timer = setTimeout(() => {
+      _pendingRowSaves.delete(row);
       guardarFilaServicioSupabase(row);
-    }, 350);
+    }, 300);
+    _pendingRowSaves.set(row, timer);
   }
 }
 
@@ -5249,8 +5260,301 @@ let _matrizLiveSyncTimer = null;
 let _isMatrizSyncing = false;
 
 /**
- * Consulta Supabase en segundo plano y sincroniza en vivo filas, textos, orden y asistencia
- * para que múltiples administradores vean exactamente la misma información en tiempo real.
+ * Actualiza granularmente todos los campos, celdas, colores, notas, checkboxes
+ * y confirmaciones de una fila del DOM en vivo sin interrumpir el foco del usuario.
+ */
+function actualizarFilaDomConDatos(tr, rowRecord, activeEl = document.activeElement) {
+  if (!tr || !rowRecord) return;
+
+  // 1. Horarios y tiempos
+  const days = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'];
+  days.forEach(d => {
+    ['inicio', 'fin'].forEach(tipo => {
+      const field = `${d}_${tipo}`;
+      const inp = tr.querySelector(`[data-field="${field}"]`);
+      if (inp && inp !== activeEl) {
+        let val = rowRecord[field] || '';
+        val = typeof formatearHora12 === 'function' ? formatearHora12(val) : val;
+        if (inp.value !== val) {
+          inp.value = val;
+          if (typeof handleTimeInput === 'function') handleTimeInput(inp);
+        }
+      }
+    });
+  });
+
+  // Total Horas Badge
+  const horasTotales = typeof calcularHorasTotalesServicio === 'function' ? calcularHorasTotalesServicio(rowRecord) : 0;
+  const horasDisplay = typeof formatearHorasTotalesDisplay === 'function' ? formatearHorasTotalesDisplay(horasTotales) : '';
+  const tdHoras = tr.querySelector('td.col-total-hours');
+  const spanHoras = tr.querySelector('[data-field="total_horas"]');
+  if (spanHoras) {
+    spanHoras.textContent = horasDisplay;
+    spanHoras.className = `cs-hours-badge ${horasTotales > 0 ? 'has-hours' : ''}`;
+  }
+  if (tdHoras) {
+    tdHoras.title = horasTotales > 0 ? `Horas totales semanales: ${horasDisplay}` : 'Sin horas registradas';
+  }
+
+  // Tipo de Servicio
+  const svcSelect = tr.querySelector('[data-field="tipo_servicio"]');
+  if (svcSelect && svcSelect !== activeEl) {
+    const newSvc = rowRecord.tipo_servicio || '';
+    if (svcSelect.value !== newSvc) {
+      svcSelect.value = newSvc;
+      if (typeof getServiceClass === 'function') {
+        svcSelect.className = 'cs-service-select ' + getServiceClass(newSvc);
+      }
+    }
+  }
+
+  // Cliente Email
+  const inpEmail = tr.querySelector('[data-field="cliente_email"]');
+  if (inpEmail && inpEmail !== activeEl) {
+    const valEmail = rowRecord.cliente_email || '';
+    if (inpEmail.value !== valEmail) inpEmail.value = valEmail;
+  }
+
+  // Cliente Nombre
+  const inpCli = tr.querySelector('[data-field="cliente_nombre"]');
+  if (inpCli && inpCli !== activeEl) {
+    const valCli = rowRecord.cliente_nombre || '';
+    if (inpCli.value !== valCli) inpCli.value = valCli;
+  }
+
+  // Checkbox OK Cliente
+  const okCli = tr.querySelector('[data-field="ok_cliente"]');
+  if (okCli && okCli !== activeEl) {
+    okCli.checked = !!rowRecord.ok_cliente;
+  }
+
+  // Zona
+  const inpZona = tr.querySelector('[data-field="zona"]');
+  if (inpZona && inpZona !== activeEl) {
+    const valZona = rowRecord.zona || '';
+    if (inpZona.value !== valZona) inpZona.value = valZona;
+  }
+
+  // Niñera Nombre
+  const inpNanny = tr.querySelector('[data-field="nanny_nombre"]');
+  if (inpNanny && inpNanny !== activeEl) {
+    const valNanny = rowRecord.nanny_nombre || '';
+    if (inpNanny.value !== valNanny) {
+      inpNanny.value = valNanny;
+      inpNanny.setAttribute('data-nanny-asignada', valNanny);
+    }
+  }
+
+  // Checkbox OK Niñera
+  const okNan = tr.querySelector('[data-field="ok_nanny"]');
+  if (okNan && okNan !== activeEl) {
+    okNan.checked = !!rowRecord.ok_nanny;
+  }
+
+  // Tarifas Cliente / Niñera
+  const rateCli = tr.querySelector('[data-field="tarifa_cliente"]');
+  if (rateCli && rateCli !== activeEl) {
+    const valTarCli = rowRecord.tarifa_cliente || '';
+    if (rateCli.tagName === 'INPUT') {
+      if (rateCli.value !== valTarCli) rateCli.value = valTarCli;
+    } else {
+      if (rateCli.textContent !== valTarCli) rateCli.textContent = valTarCli;
+    }
+  }
+
+  const rateNan = tr.querySelector('[data-field="tarifa_nanny"]');
+  if (rateNan && rateNan !== activeEl) {
+    const valTarNan = rowRecord.tarifa_nanny || '';
+    if (rateNan.tagName === 'INPUT') {
+      if (rateNan.value !== valTarNan) rateNan.value = valTarNan;
+    } else {
+      if (rateNan.textContent !== valTarNan) rateNan.textContent = valTarNan;
+    }
+  }
+
+  // Saldo Cliente / Pago Niñera
+  const saldoCli = tr.querySelector('[data-field="saldo_cliente"]');
+  if (saldoCli && saldoCli !== activeEl) {
+    const valSaldo = rowRecord.saldo_cliente || '';
+    if (saldoCli.tagName === 'INPUT') {
+      if (saldoCli.value !== valSaldo) saldoCli.value = valSaldo;
+    } else {
+      if (saldoCli.textContent !== valSaldo) saldoCli.textContent = valSaldo;
+    }
+  }
+
+  const pagoNan = tr.querySelector('[data-field="pago_nanny"]');
+  if (pagoNan && pagoNan !== activeEl) {
+    const valPago = rowRecord.pago_nanny || '';
+    if (pagoNan.tagName === 'INPUT') {
+      if (pagoNan.value !== valPago) pagoNan.value = valPago;
+    } else {
+      if (pagoNan.textContent !== valPago) pagoNan.textContent = valPago;
+    }
+  }
+
+  // Alerta
+  const inpAlerta = tr.querySelector('[data-field="alerta"]');
+  if (inpAlerta && inpAlerta !== activeEl) {
+    const valAlerta = rowRecord.alerta || '';
+    if (inpAlerta.value !== valAlerta) inpAlerta.value = valAlerta;
+    if (valAlerta.trim().length > 0) {
+      inpAlerta.classList.add('has-alert-active');
+      tr.classList.add('has-alert-active');
+    } else {
+      inpAlerta.classList.remove('has-alert-active');
+      tr.classList.remove('has-alert-active');
+    }
+  }
+
+  // Observaciones & Tags
+  const inpObs = tr.querySelector('[data-field="observaciones"]');
+  if (inpObs && inpObs !== activeEl) {
+    let obsParaMostrar = (typeof limpiarMetadatosObservaciones === 'function')
+      ? limpiarMetadatosObservaciones(rowRecord.observaciones || '')
+      : String(rowRecord.observaciones || '').replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
+    if (obsParaMostrar.trim().toLowerCase() === 'undefined' || obsParaMostrar.trim().toLowerCase() === 'null') {
+      obsParaMostrar = '';
+    }
+    if (inpObs.value !== obsParaMostrar) {
+      inpObs.value = obsParaMostrar;
+    }
+  }
+
+  // Sincronizar Asistencia Tags
+  const mAsist = (rowRecord.observaciones || '').match(/<!--asistencia_nanny:.*?-->/);
+  let tagAsistStr = mAsist ? mAsist[0] : '';
+  if (!tagAsistStr && rowRecord.asistencia_nanny && typeof rowRecord.asistencia_nanny === 'object' && Object.keys(rowRecord.asistencia_nanny).length > 0) {
+    tagAsistStr = `<!--asistencia_nanny:${JSON.stringify(rowRecord.asistencia_nanny)}-->`;
+  }
+  if (tagAsistStr) {
+    const encTag = encodeURIComponent(tagAsistStr);
+    if (inpObs) {
+      inpObs.setAttribute('data-asistencia-tag', encTag);
+      inpObs.setAttribute('data-asistencia-backup', encTag);
+    }
+    tr.setAttribute('data-asistencia-tag', encTag);
+    tr.setAttribute('data-asistencia-backup', encTag);
+    const tdNan = tr.querySelector('td.col-nanny');
+    if (tdNan) tdNan.setAttribute('data-asistencia-backup', encTag);
+    if (rowRecord.id) {
+      window._cacheAsistenciaServicios = window._cacheAsistenciaServicios || {};
+      try {
+        const parsed = tagAsistStr.includes('<!--asistencia_nanny:') ? JSON.parse(tagAsistStr.match(/<!--asistencia_nanny:(.*?)-->/)[1]) : rowRecord.asistencia_nanny;
+        window._cacheAsistenciaServicios[rowRecord.id] = parsed;
+      } catch (_) { }
+    }
+  }
+
+  // Colores de Celdas (Crucial para colaboración en tiempo real)
+  const coloresParaAplicar = (rowRecord.colores_celdas && Object.keys(rowRecord.colores_celdas).length > 0)
+    ? rowRecord.colores_celdas
+    : (typeof extraerColoresDeObservaciones === 'function' ? extraerColoresDeObservaciones(rowRecord.observaciones || '').colores : {});
+  if (typeof aplicarColoresCeldasAFila === 'function') {
+    aplicarColoresCeldasAFila(tr, coloresParaAplicar || {});
+  }
+
+  // Notas de Celdas y Horas Extras
+  const notasObj = (rowRecord.notas_celdas && Object.keys(rowRecord.notas_celdas).length > 0)
+    ? rowRecord.notas_celdas
+    : (typeof extraerNotasDeObservaciones === 'function' ? extraerNotasDeObservaciones(rowRecord.observaciones || '').notas : {});
+  if (notasObj) {
+    days.forEach(d => {
+      ['ini', 'fin'].forEach(tipo => {
+        const colKey = `${d}_${tipo}`;
+        const td = tr.querySelector(`td[data-col="${colKey}"]`);
+        if (td) {
+          const nInfo = notasObj[colKey];
+          if (nInfo && (nInfo.nota || nInfo.hora_extra_cliente > 0 || nInfo.hora_extra_nanny > 0)) {
+            td.classList.add('has-cell-note');
+            td.setAttribute('data-note-text', encodeURIComponent(nInfo.nota || ''));
+            td.setAttribute('data-extra-cli', String(nInfo.hora_extra_cliente || 0));
+            td.setAttribute('data-extra-nan', String(nInfo.hora_extra_nanny || 0));
+          } else {
+            td.classList.remove('has-cell-note');
+            td.removeAttribute('data-note-text');
+            td.removeAttribute('data-extra-cli');
+            td.removeAttribute('data-extra-nan');
+          }
+        }
+      });
+    });
+  }
+
+  // Estado visual de Confirmación de Niñera
+  const tdNanny = tr.querySelector('td.col-nanny');
+  if (tdNanny) {
+    const datosFila = typeof extraeDatosFila === 'function' ? (extraeDatosFila(tr) || {}) : {};
+    const servicioCompleto = {
+      ...datosFila,
+      ...rowRecord,
+      nanny_nombre: rowRecord.nanny_nombre || datosFila.nanny_nombre || (inpNanny ? inpNanny.value : '') || '',
+      observaciones: rowRecord.observaciones !== undefined ? rowRecord.observaciones : (datosFila.observaciones || ''),
+      asistencia_nanny: rowRecord.asistencia_nanny !== undefined ? rowRecord.asistencia_nanny : (datosFila.asistencia_nanny || {})
+    };
+
+    const asistCompleta = typeof verificarAsistenciaNannyCompleta === 'function' ? verificarAsistenciaNannyCompleta(servicioCompleto) : false;
+    if (asistCompleta) {
+      tdNanny.classList.add('cs-nanny-confirmed');
+      tdNanny.setAttribute('title', '✓ Asistencia confirmada por la niñera para todos los servicios de la semana');
+      tdNanny.setAttribute('data-nanny-confirmada', servicioCompleto.nanny_nombre || '');
+      tdNanny.style.setProperty('--custom-bg', '#DCFCE7');
+      tdNanny.style.setProperty('--custom-border', '#DCFCE7');
+      tdNanny.style.setProperty('background-color', '#DCFCE7', 'important');
+      tdNanny.style.setProperty('border-color', '#86EFAC', 'important');
+      if (inpNanny && inpNanny !== activeEl) {
+        inpNanny.style.setProperty('--custom-bg', '#DCFCE7');
+        inpNanny.style.setProperty('--custom-border', '#DCFCE7');
+        inpNanny.style.setProperty('background-color', '#DCFCE7', 'important');
+        inpNanny.style.setProperty('border-color', '#DCFCE7', 'important');
+        inpNanny.style.setProperty('color', '#15803D', 'important');
+        inpNanny.setAttribute('data-nanny-asignada', servicioCompleto.nanny_nombre || '');
+      }
+    } else {
+      tdNanny.classList.remove('cs-nanny-confirmed');
+      tdNanny.removeAttribute('title');
+      tdNanny.removeAttribute('data-nanny-confirmada');
+      const customBg = tdNanny.getAttribute('data-custom-bg');
+      if (customBg && customBg !== '#DBEAFE' && customBg !== '#DCFCE7') {
+        tdNanny.style.setProperty('--custom-bg', customBg);
+        tdNanny.style.setProperty('--custom-border', customBg);
+        tdNanny.style.setProperty('background-color', customBg, 'important');
+        tdNanny.style.setProperty('border-color', customBg, 'important');
+        if (inpNanny && inpNanny !== activeEl) {
+          inpNanny.style.setProperty('--custom-bg', customBg);
+          inpNanny.style.setProperty('--custom-border', customBg);
+          inpNanny.style.backgroundColor = customBg;
+          inpNanny.style.borderColor = customBg;
+        }
+      } else {
+        tdNanny.style.removeProperty('--custom-bg');
+        tdNanny.style.removeProperty('--custom-border');
+        tdNanny.style.backgroundColor = '';
+        tdNanny.style.borderColor = '';
+        if (inpNanny && inpNanny !== activeEl) {
+          inpNanny.style.removeProperty('--custom-bg');
+          inpNanny.style.removeProperty('--custom-border');
+          inpNanny.style.backgroundColor = '';
+          inpNanny.style.borderColor = '';
+          inpNanny.style.color = '';
+        }
+      }
+    }
+  }
+
+  // Actualizar atributos de la fila
+  if (rowRecord.id) tr.setAttribute('data-id', rowRecord.id);
+  if (rowRecord.pid) tr.setAttribute('data-pid', rowRecord.pid);
+  if (rowRecord.bloque) tr.setAttribute('data-bloque', rowRecord.bloque);
+  if (rowRecord.ciudad) tr.setAttribute('data-ciudad', rowRecord.ciudad);
+  if (rowRecord.semana_iso) tr.setAttribute('data-semana-iso', rowRecord.semana_iso);
+  if (rowRecord.orden !== undefined) tr.setAttribute('data-orden', String(rowRecord.orden));
+}
+window.actualizarFilaDomConDatos = actualizarFilaDomConDatos;
+
+/**
+ * Consulta Supabase en segundo plano y sincroniza en vivo filas, textos, orden, colores y asistencia
+ * para que múltiples administradores vean exactamente la misma información en tiempo real (Google Sheets style).
  */
 async function sincronizarAsistenciaMatrizEnVivo(forceFullRender = false) {
   if (_isMatrizSyncing || window._isCargandoSemana) return;
@@ -5272,26 +5576,18 @@ async function sincronizarAsistenciaMatrizEnVivo(forceFullRender = false) {
       .order('id', { ascending: true });
 
     if (error || !Array.isArray(rows)) {
-      _isMatrizSyncing = false;
       return;
     }
 
     // Si la semana en pantalla cambió mientras consultábamos, abortar
     if (_currentSemanaMatrizIso && semanaIso !== _currentSemanaMatrizIso) {
-      _isMatrizSyncing = false;
       return;
     }
 
     const rowsDecoded = rows.map(r => decodificarServicioSupabase(r));
     const ciudadActualNorm = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(_currentCiudadMatriz || 'Puebla') : (_currentCiudadMatriz || 'Puebla').toLowerCase();
     const rowsCiudad = rowsDecoded.filter(r => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(r.ciudad || 'Puebla') : (r.ciudad || 'Puebla').toLowerCase()) === ciudadActualNorm);
-    const existingRows = tableBody.querySelectorAll('tr.cs-row-item');
-
-    // PROTECCIÓN CRÍTICA: Si Supabase devuelve 0 filas para la ciudad activa pero en pantalla hay filas (ej. recién renderizadas o en proceso de guardado), NO destruir el DOM
-    if (rowsCiudad.length === 0 && existingRows.length > 0) {
-      _isMatrizSyncing = false;
-      return;
-    }
+    const existingRows = Array.from(tableBody.querySelectorAll('tr.cs-row-item'));
 
     _cacheServiciosSemanaCompleta = rowsDecoded;
     actualizarSelectorCiudadUI();
@@ -5299,149 +5595,78 @@ async function sincronizarAsistenciaMatrizEnVivo(forceFullRender = false) {
     const activeEl = document.activeElement;
     const isUserEditing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'SELECT' || activeEl.tagName === 'TEXTAREA') && activeEl.closest('#csTableBody');
 
-    // Detectar si el conteo de filas o el orden de IDs cambió en la ciudad activa
-    let needsFullRender = forceFullRender || (existingRows.length !== rowsCiudad.length);
-    if (!needsFullRender) {
-      for (let i = 0; i < existingRows.length; i++) {
-        const trId = existingRows[i].getAttribute('data-id');
-        if (trId !== rowsCiudad[i]?.id) {
-          needsFullRender = true;
-          break;
-        }
-      }
-    }
-
-    // Si hubo filas agregadas, eliminadas o reordenadas y el usuario no está tecleando activamente
-    if (needsFullRender && !isUserEditing) {
+    // Si se solicitó renderizado completo forzado y el usuario no está tecleando activamente
+    if (forceFullRender && !isUserEditing) {
       renderizarMatrizServicios(rowsDecoded);
-      _isMatrizSyncing = false;
       return;
     }
 
-    // Actualización granular de celdas existentes en vivo
-    rowsDecoded.forEach(rowRecord => {
-      const tr = tableBody.querySelector(`tr[data-id="${rowRecord.id}"]`);
-      if (!tr) return;
+    const dbRowIds = new Set(rowsCiudad.map(r => r.id));
+    const domRowMap = new Map();
+    existingRows.forEach(tr => {
+      const id = tr.getAttribute('data-id');
+      if (id) domRowMap.set(id, tr);
+    });
 
-      // Actualizar campos de texto si no están bajo edición activa local
-      const textFields = [
-        'cliente_nombre', 'cliente_email', 'zona', 'nanny_nombre',
-        'tarifa_cliente', 'tarifa_nanny', 'saldo_cliente', 'pago_nanny',
-        'alerta',
-        'lun_inicio', 'lun_fin', 'mar_inicio', 'mar_fin', 'mie_inicio', 'mie_fin',
-        'jue_inicio', 'jue_fin', 'vie_inicio', 'vie_fin', 'sab_inicio', 'sab_fin',
-        'dom_inicio', 'dom_fin'
-      ];
-
-      textFields.forEach(f => {
-        const inp = tr.querySelector(`[data-field="${f}"]`);
-        if (inp && inp !== activeEl) {
-          let newVal = rowRecord[f] || '';
-          if (f.endsWith('_inicio') || f.endsWith('_fin')) {
-            newVal = typeof formatearHora12 === 'function' ? formatearHora12(newVal) : newVal;
-            if (inp.value !== newVal) {
-              inp.value = newVal;
-              if (typeof handleTimeInput === 'function') handleTimeInput(inp);
-            }
-          } else {
-            if (inp.value !== newVal) {
-              inp.value = newVal;
-            }
-          }
-        }
-      });
-
-      // Actualizar selector de tipo de servicio
-      const svcSelect = tr.querySelector('[data-field="tipo_servicio"]');
-      if (svcSelect && svcSelect !== activeEl) {
-        const newSvc = rowRecord.tipo_servicio || '';
-        if (svcSelect.value !== newSvc) {
-          svcSelect.value = newSvc;
-          if (typeof getServiceClass === 'function') {
-            svcSelect.className = 'cs-service-select ' + getServiceClass(newSvc);
-          }
-        }
+    // 1. Actualizar o insertar filas provenientes de la base de datos
+    rowsCiudad.forEach(rowRecord => {
+      let tr = domRowMap.get(rowRecord.id);
+      if (!tr && rowRecord.pid) {
+        tr = tableBody.querySelector(`tr[data-pid="${rowRecord.pid}"]`);
       }
 
-      // Actualizar checkboxes de OK cliente y OK niñera
-      const okCli = tr.querySelector('[data-field="ok_cliente"]');
-      if (okCli && okCli !== activeEl) {
-        okCli.checked = !!rowRecord.ok_cliente;
-      }
-      const okNan = tr.querySelector('[data-field="ok_nanny"]');
-      if (okNan && okNan !== activeEl) {
-        okNan.checked = !!rowRecord.ok_nanny;
-      }
+      if (tr) {
+        // Fila existente: sincronizar granularmente todos sus datos y estilos
+        actualizarFilaDomConDatos(tr, rowRecord, activeEl);
+      } else {
+        // Fila nueva creada por otro administrador: insertarla en su bloque
+        const bId = rowRecord.bloque || 'servicios_fijos';
+        const newTr = document.createElement('tr');
+        const alertCls = rowRecord.alerta ? ' has-alert-active' : '';
+        newTr.className = `cs-row-item${alertCls}`;
+        newTr.setAttribute('data-id', rowRecord.id);
+        newTr.setAttribute('data-bloque', bId);
+        newTr.setAttribute('data-ciudad', rowRecord.ciudad || _currentCiudadMatriz || 'Puebla');
+        newTr.setAttribute('data-semana-iso', rowRecord.semana_iso || semanaIso);
+        if (rowRecord.pid) newTr.setAttribute('data-pid', rowRecord.pid);
+        newTr.innerHTML = renderCeldasFilaServicioHtml(rowRecord);
 
-      // Actualizar observaciones y tags
-      const inpObs = tr.querySelector('[data-field="observaciones"]');
-      if (inpObs && inpObs !== activeEl) {
-        let obsParaMostrar = (typeof limpiarMetadatosObservaciones === 'function')
-          ? limpiarMetadatosObservaciones(rowRecord.observaciones || '')
-          : String(rowRecord.observaciones || '').replace(/<!--[\s\S]*?-->/g, '').replace(/\b(undefined|null)\b/gi, '').trim();
-        if (obsParaMostrar.trim().toLowerCase() === 'undefined' || obsParaMostrar.trim().toLowerCase() === 'null') {
-          obsParaMostrar = '';
+        const targetAddTr = tableBody.querySelector(`.cs-section-add-tr[data-add-for="${bId}"]`);
+        if (targetAddTr) {
+          tableBody.insertBefore(newTr, targetAddTr);
+        } else {
+          tableBody.appendChild(newTr);
         }
-        if (inpObs.value !== obsParaMostrar) {
-          inpObs.value = obsParaMostrar;
-        }
-      }
 
-      // Sincronizar estado visual de confirmación de niñera
-      const tdNanny = tr.querySelector('td.col-nanny');
-      const nannyInput = tr.querySelector('[data-field="nanny_nombre"]');
-      if (tdNanny) {
-        const datosFila = typeof extraeDatosFila === 'function' ? (extraeDatosFila(tr) || {}) : {};
-        const servicioCompleto = {
-          ...datosFila,
-          ...rowRecord,
-          nanny_nombre: rowRecord.nanny_nombre || datosFila.nanny_nombre || (nannyInput ? nannyInput.value : '') || '',
-          observaciones: rowRecord.observaciones !== undefined ? rowRecord.observaciones : (datosFila.observaciones || ''),
-          asistencia_nanny: rowRecord.asistencia_nanny !== undefined ? rowRecord.asistencia_nanny : (datosFila.asistencia_nanny || {})
-        };
+        const emptyRow = tableBody.querySelector(`tr.cs-section-empty-row[data-empty-for="${bId}"]`);
+        if (emptyRow) emptyRow.style.display = 'none';
 
-        const asistCompleta = typeof verificarAsistenciaNannyCompleta === 'function' ? verificarAsistenciaNannyCompleta(servicioCompleto) : false;
-        const yaMarcada = tdNanny.classList.contains('cs-nanny-confirmed');
+        newTr.style.transition = 'background-color 0.8s ease';
+        newTr.style.backgroundColor = 'rgba(16, 185, 129, 0.15)';
+        setTimeout(() => { newTr.style.backgroundColor = ''; }, 1200);
 
-        if (asistCompleta && !yaMarcada) {
-          tdNanny.classList.add('cs-nanny-confirmed');
-          tdNanny.setAttribute('title', '✓ Asistencia confirmada por la niñera para todos los servicios de la semana');
-          tdNanny.setAttribute('data-nanny-confirmada', servicioCompleto.nanny_nombre || '');
-          tdNanny.style.setProperty('--custom-bg', '#DCFCE7');
-          tdNanny.style.setProperty('--custom-border', '#DCFCE7');
-          tdNanny.style.setProperty('background-color', '#DCFCE7', 'important');
-          tdNanny.style.setProperty('border-color', '#86EFAC', 'important');
-          if (nannyInput && nannyInput !== activeEl) {
-            nannyInput.style.setProperty('--custom-bg', '#DCFCE7');
-            nannyInput.style.setProperty('--custom-border', '#DCFCE7');
-            nannyInput.style.setProperty('background-color', '#DCFCE7', 'important');
-            nannyInput.style.setProperty('border-color', '#DCFCE7', 'important');
-            nannyInput.style.setProperty('color', '#15803D', 'important');
-          }
-        } else if (!asistCompleta && yaMarcada) {
-          tdNanny.classList.remove('cs-nanny-confirmed');
-          tdNanny.removeAttribute('title');
-          tdNanny.removeAttribute('data-nanny-confirmada');
-          tdNanny.style.removeProperty('--custom-bg');
-          tdNanny.style.removeProperty('--custom-border');
-          tdNanny.style.backgroundColor = '';
-          tdNanny.style.borderColor = '';
-          if (nannyInput && nannyInput !== activeEl) {
-            nannyInput.style.removeProperty('--custom-bg');
-            nannyInput.style.removeProperty('--custom-border');
-            nannyInput.style.backgroundColor = '';
-            nannyInput.style.borderColor = '';
-            nannyInput.style.color = '';
-          }
-        }
+        if (typeof initCheckboxInteractions === 'function') initCheckboxInteractions();
       }
     });
+
+    // 2. Eliminar filas del DOM que fueron eliminadas en la base de datos por otro administrador
+    existingRows.forEach(tr => {
+      const trId = tr.getAttribute('data-id');
+      if (trId && !dbRowIds.has(trId) && (!activeEl || !tr.contains(activeEl))) {
+        tr.remove();
+      }
+    });
+
+    actualizarContadoresSecciones();
+    actualizarContadoresFiltros();
+    actualizarFilasVaciasSecciones();
   } catch (e) {
-    // Silencioso para operaciones en segundo plano
+    console.warn("Aviso sincronización matriz en vivo:", e);
   } finally {
     _isMatrizSyncing = false;
   }
 }
+window.sincronizarAsistenciaMatrizEnVivo = sincronizarAsistenciaMatrizEnVivo;
 
 /**
  * Inicia el temporizador de sondeo en segundo plano (polling cada 3.5 segundos)
@@ -5494,7 +5719,6 @@ function suscribirRealtimeMatrizServicios(semanaIso) {
       table: 'control_servicios'
     }, (payload) => {
       manejarCambioRealtimeServicio(payload);
-      sincronizarAsistenciaMatrizEnVivo();
     })
     .on('broadcast', { event: 'asistencia_nanny_confirmada' }, (payload) => {
       console.log("⚡ [Realtime Control Servicios] Broadcast de asistencia en vivo recibido:", payload);
@@ -5511,12 +5735,28 @@ function suscribirRealtimeMatrizServicios(semanaIso) {
           }
         }
       } else {
-        // Notificación de cambio o guardado masivo en la matriz de servicios
-        sincronizarAsistenciaMatrizEnVivo();
+        if (data && data.servicio) {
+          manejarCambioRealtimeServicio({
+            eventType: data.action === 'delete' ? 'DELETE' : 'UPDATE',
+            new: data.action !== 'delete' ? data.servicio : null,
+            old: data.action === 'delete' ? { id: data.servicio_id, observaciones: data.servicio?.observaciones } : null
+          });
+        } else {
+          sincronizarAsistenciaMatrizEnVivo();
+        }
       }
     })
-    .on('broadcast', { event: 'control_servicios_update' }, () => {
-      sincronizarAsistenciaMatrizEnVivo();
+    .on('broadcast', { event: 'control_servicios_update' }, (payload) => {
+      const data = (payload && payload.payload) ? payload.payload : payload;
+      if (data && data.servicio) {
+        manejarCambioRealtimeServicio({
+          eventType: data.action === 'delete' ? 'DELETE' : 'UPDATE',
+          new: data.action !== 'delete' ? data.servicio : null,
+          old: data.action === 'delete' ? { id: data.servicio_id, observaciones: data.servicio?.observaciones } : null
+        });
+      } else {
+        sincronizarAsistenciaMatrizEnVivo();
+      }
     })
     .subscribe((status) => {
       console.log(`⚡ [Realtime Control Servicios] Canal matriz suscrito: ${status}`);
@@ -5572,6 +5812,11 @@ function emitirCambioMatrizRealtime(client, extraData = {}) {
         _matrizRealtimeChannel.send({
           type: 'broadcast',
           event: 'cambio_servicio_matriz',
+          payload: payloadData
+        }).catch(() => { });
+        _matrizRealtimeChannel.send({
+          type: 'broadcast',
+          event: 'control_servicios_update',
           payload: payloadData
         }).catch(() => { });
       }
@@ -5660,6 +5905,7 @@ if (typeof window !== 'undefined' && !window._storageAsistenciaAttached) {
  * Maneja eventos de Supabase Realtime (INSERT, UPDATE, DELETE) en vivo
  */
 function manejarCambioRealtimeServicio(payload) {
+  if (!payload) return;
   let { eventType, new: rawNewRecord, old: rawOldRecord } = payload;
   const newRecord = rawNewRecord ? decodificarServicioSupabase(rawNewRecord) : null;
   const oldRecord = rawOldRecord ? decodificarServicioSupabase(rawOldRecord) : null;
@@ -5687,19 +5933,22 @@ function manejarCambioRealtimeServicio(payload) {
   if (eventType === 'INSERT' && newRecord) {
     if (recCiudadNorm !== ciudadActualNorm) return;
 
-    const existing = tableBody.querySelector(`tr[data-id="${newRecord.id}"]`);
-    if (existing) return;
-
+    let existing = tableBody.querySelector(`tr[data-id="${newRecord.id}"]`);
     const bId = newRecord.bloque || 'servicios_fijos';
     const recPid = (typeof extraerPidDeObservaciones === 'function' ? extraerPidDeObservaciones(newRecord.observaciones || '') : null) || newRecord.pid;
 
     // Si es un bloque persistente y ya existe una fila con este PID en el bloque, actualizar en vez de duplicar
-    if (recPid && BLOQUES_PERSISTENTES_FUTURO.includes(bId)) {
-      const existingPidRow = tableBody.querySelector(`tr[data-pid="${recPid}"]`);
-      if (existingPidRow) {
-        existingPidRow.setAttribute('data-id', newRecord.id);
-        return;
+    if (!existing && recPid && BLOQUES_PERSISTENTES_FUTURO.includes(bId)) {
+      existing = tableBody.querySelector(`tr[data-pid="${recPid}"]`);
+      if (existing) {
+        existing.setAttribute('data-id', newRecord.id);
       }
+    }
+
+    if (existing) {
+      actualizarFilaDomConDatos(existing, newRecord, document.activeElement);
+      destacarCeldaActualizada(existing);
+      return;
     }
 
     const tr = document.createElement('tr');
@@ -5748,199 +5997,43 @@ function manejarCambioRealtimeServicio(payload) {
       }
       return;
     }
-    if (!row) return;
+    if (!row) {
+      // Si la fila no existe en el DOM para la ciudad actual, insertarla
+      const bId = newRecord.bloque || 'servicios_fijos';
+      const tr = document.createElement('tr');
+      tr.className = 'cs-row-item' + (newRecord.alerta ? ' has-alert-active' : '');
+      tr.setAttribute('data-id', newRecord.id);
+      tr.setAttribute('data-bloque', bId);
+      tr.setAttribute('data-ciudad', newRecord.ciudad || _currentCiudadMatriz || 'Puebla');
+      if (newRecord.semana_iso) tr.setAttribute('data-semana-iso', newRecord.semana_iso);
+      tr.innerHTML = renderCeldasFilaServicioHtml(newRecord);
+
+      const targetAddTr = tableBody.querySelector(`.cs-section-add-tr[data-add-for="${bId}"]`);
+      if (targetAddTr) {
+        tableBody.insertBefore(tr, targetAddTr);
+      } else {
+        tableBody.appendChild(tr);
+      }
+      const emptyRow = tableBody.querySelector(`tr.cs-section-empty-row[data-empty-for="${bId}"]`);
+      if (emptyRow) emptyRow.style.display = 'none';
+
+      actualizarContadoresSecciones();
+      initCheckboxInteractions();
+      initRowContextMenu();
+      restaurarAnchosColumnas();
+      actualizarContadoresFiltros();
+      return;
+    }
 
     const activeEl = document.activeElement;
-
-    // Actualizar horarios
-    const days = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'];
-    days.forEach(d => {
-      const iniInput = row.querySelector(`[data-field="${d}_inicio"]`);
-      const finInput = row.querySelector(`[data-field="${d}_fin"]`);
-      if (iniInput && iniInput !== activeEl) {
-        iniInput.value = formatearHora12(newRecord[`${d}_inicio`] || '');
-        handleTimeInput(iniInput);
-      }
-      if (finInput && finInput !== activeEl) {
-        finInput.value = formatearHora12(newRecord[`${d}_fin`] || '');
-        handleTimeInput(finInput);
-      }
-    });
-
-    const svcSelect = row.querySelector('[data-field="tipo_servicio"]');
-    if (svcSelect && svcSelect !== activeEl) {
-      svcSelect.value = newRecord.tipo_servicio || '';
-      svcSelect.className = 'cs-service-select ' + getServiceClass(newRecord.tipo_servicio);
-    }
-
-    const emailInput = row.querySelector('[data-field="cliente_email"]');
-    if (emailInput && emailInput !== activeEl) {
-      emailInput.value = newRecord.cliente_email || '';
-    }
-
-    const cliInput = row.querySelector('[data-field="cliente_nombre"]');
-    if (cliInput && cliInput !== activeEl) {
-      cliInput.value = newRecord.cliente_nombre || '';
-    }
-
-    const okCli = row.querySelector('[data-field="ok_cliente"]');
-    if (okCli && okCli !== activeEl) {
-      okCli.checked = !!newRecord.ok_cliente;
-    }
-
-    const zonaInput = row.querySelector('[data-field="zona"]');
-    if (zonaInput && zonaInput !== activeEl) {
-      zonaInput.value = newRecord.zona || '';
-    }
-
-    const nannyInput = row.querySelector('[data-field="nanny_nombre"]');
-    if (nannyInput && nannyInput !== activeEl) {
-      nannyInput.value = newRecord.nanny_nombre || '';
-    }
-
-    const tdNanny = row.querySelector('td.col-nanny');
-    if (tdNanny) {
-      const datosFila = typeof extraeDatosFila === 'function' ? (extraeDatosFila(row) || {}) : {};
-      const servicioCompleto = {
-        ...datosFila,
-        ...newRecord,
-        nanny_nombre: newRecord.nanny_nombre || datosFila.nanny_nombre || (nannyInput ? nannyInput.value : '') || '',
-        observaciones: newRecord.observaciones !== undefined ? newRecord.observaciones : (datosFila.observaciones || ''),
-        asistencia_nanny: newRecord.asistencia_nanny !== undefined ? newRecord.asistencia_nanny : (datosFila.asistencia_nanny || {})
-      };
-
-      const asistCompleta = verificarAsistenciaNannyCompleta(servicioCompleto);
-      if (asistCompleta) {
-        tdNanny.classList.add('cs-nanny-confirmed');
-        tdNanny.setAttribute('title', '✓ Asistencia confirmada por la niñera para todos los servicios de la semana');
-        tdNanny.setAttribute('data-nanny-confirmada', servicioCompleto.nanny_nombre || '');
-        tdNanny.style.setProperty('--custom-bg', '#DCFCE7');
-        tdNanny.style.setProperty('--custom-border', '#DCFCE7');
-        tdNanny.style.setProperty('background-color', '#DCFCE7', 'important');
-        tdNanny.style.setProperty('border-color', '#86EFAC', 'important');
-        if (nannyInput) {
-          nannyInput.style.setProperty('--custom-bg', '#DCFCE7');
-          nannyInput.style.setProperty('--custom-border', '#DCFCE7');
-          nannyInput.style.setProperty('background-color', '#DCFCE7', 'important');
-          nannyInput.style.setProperty('border-color', '#DCFCE7', 'important');
-          nannyInput.style.setProperty('color', '#15803D', 'important');
-          nannyInput.setAttribute('data-nanny-asignada', servicioCompleto.nanny_nombre || '');
-        }
-      } else {
-        tdNanny.classList.remove('cs-nanny-confirmed');
-        tdNanny.removeAttribute('title');
-        tdNanny.removeAttribute('data-nanny-confirmada');
-        const customBg = tdNanny.getAttribute('data-custom-bg');
-        if (customBg && customBg !== '#DBEAFE' && customBg !== '#DCFCE7') {
-          tdNanny.style.setProperty('--custom-bg', customBg);
-          tdNanny.style.setProperty('--custom-border', customBg);
-          tdNanny.style.setProperty('background-color', customBg, 'important');
-          tdNanny.style.setProperty('border-color', customBg, 'important');
-          if (nannyInput) {
-            nannyInput.style.setProperty('--custom-bg', customBg);
-            nannyInput.style.setProperty('--custom-border', customBg);
-            nannyInput.style.setProperty('background-color', customBg, 'important');
-            nannyInput.style.setProperty('border-color', customBg, 'important');
-          }
-        } else {
-          tdNanny.style.removeProperty('--custom-bg');
-          tdNanny.style.removeProperty('--custom-border');
-          tdNanny.style.backgroundColor = '';
-          tdNanny.style.borderColor = '';
-          if (nannyInput) {
-            nannyInput.style.removeProperty('--custom-bg');
-            nannyInput.style.removeProperty('--custom-border');
-            nannyInput.style.backgroundColor = '';
-            nannyInput.style.borderColor = '';
-            nannyInput.style.color = '';
-          }
-        }
-      }
-    }
-
-    const okNan = row.querySelector('[data-field="ok_nanny"]');
-    if (okNan && okNan !== activeEl) {
-      okNan.checked = !!newRecord.ok_nanny;
-    }
-
-    const rateCli = row.querySelector('[data-field="tarifa_cliente"]');
-    if (rateCli && rateCli !== activeEl) {
-      if (rateCli.tagName === 'INPUT') rateCli.value = newRecord.tarifa_cliente || '';
-      else rateCli.textContent = newRecord.tarifa_cliente || '';
-    }
-
-    const rateNan = row.querySelector('[data-field="tarifa_nanny"]');
-    if (rateNan && rateNan !== activeEl) {
-      if (rateNan.tagName === 'INPUT') rateNan.value = newRecord.tarifa_nanny || '';
-      else rateNan.textContent = newRecord.tarifa_nanny || '';
-    }
-
-    const saldoCli = row.querySelector('[data-field="saldo_cliente"]');
-    if (saldoCli && saldoCli !== activeEl) {
-      if (saldoCli.tagName === 'INPUT') saldoCli.value = newRecord.saldo_cliente || '';
-      else saldoCli.textContent = newRecord.saldo_cliente || '';
-    }
-
-    const pagoNan = row.querySelector('[data-field="pago_nanny"]');
-    if (pagoNan && pagoNan !== activeEl) {
-      if (pagoNan.tagName === 'INPUT') pagoNan.value = newRecord.pago_nanny || '';
-      else pagoNan.textContent = newRecord.pago_nanny || '';
-    }
-
-    const alertaInput = row.querySelector('[data-field="alerta"]');
-    if (alertaInput && alertaInput !== activeEl) {
-      alertaInput.value = newRecord.alerta || '';
-      if (alertaInput.value.trim().length > 0) {
-        alertaInput.classList.add('has-alert-active');
-      } else {
-        alertaInput.classList.remove('has-alert-active');
-      }
-    }
-
-    const obsInput = row.querySelector('[data-field="observaciones"]');
-    const { colores } = extraerColoresDeObservaciones(newRecord.observaciones || '');
-
-    if (obsInput && obsInput !== activeEl) {
-      obsInput.value = (typeof limpiarMetadatosObservaciones === 'function')
-        ? limpiarMetadatosObservaciones(newRecord.observaciones || '')
-        : (newRecord.observaciones || '').replace(/<!--.*?-->/g, '').trim();
-    }
-
-    const mAsist = (newRecord.observaciones || '').match(/<!--asistencia_nanny:.*?-->/);
-    let tagAsistStr = mAsist ? mAsist[0] : '';
-    if (!tagAsistStr && newRecord.asistencia_nanny && typeof newRecord.asistencia_nanny === 'object' && Object.keys(newRecord.asistencia_nanny).length > 0) {
-      tagAsistStr = `<!--asistencia_nanny:${JSON.stringify(newRecord.asistencia_nanny)}-->`;
-    }
-    if (tagAsistStr) {
-      const encTag = encodeURIComponent(tagAsistStr);
-      if (obsInput) {
-        obsInput.setAttribute('data-asistencia-tag', encTag);
-        obsInput.setAttribute('data-asistencia-backup', encTag);
-      }
-      row.setAttribute('data-asistencia-tag', encTag);
-      row.setAttribute('data-asistencia-backup', encTag);
-      if (tdNanny) {
-        tdNanny.setAttribute('data-asistencia-backup', encTag);
-      }
-      if (newRecord.id) {
-        window._cacheAsistenciaServicios = window._cacheAsistenciaServicios || {};
-        try {
-          const parsed = tagAsistStr.includes('<!--asistencia_nanny:') ? JSON.parse(tagAsistStr.match(/<!--asistencia_nanny:(.*?)-->/)[1]) : newRecord.asistencia_nanny;
-          window._cacheAsistenciaServicios[newRecord.id] = parsed;
-        } catch (_) { }
-      }
-    }
-
-    // SIEMPRE aplicar en tiempo real los colores recibidos (o restablecerlos si fueron removidos)
-    const coloresParaAplicar = (newRecord.colores_celdas && Object.keys(newRecord.colores_celdas).length > 0)
-      ? newRecord.colores_celdas
-      : colores;
-    aplicarColoresCeldasAFila(row, coloresParaAplicar);
-
+    actualizarFilaDomConDatos(row, newRecord, activeEl);
+    destacarCeldaActualizada(row);
     actualizarContadoresFiltros();
-  } else if (eventType === 'DELETE' && oldRecord) {
-    let row = tableBody.querySelector(`tr[data-id="${oldRecord.id}"]`);
-    if (!row && oldRecord.observaciones) {
+    actualizarContadoresSecciones();
+  } else if (eventType === 'DELETE' && (oldRecord || rawOldRecord)) {
+    const targetId = (oldRecord && oldRecord.id) || (rawOldRecord && rawOldRecord.id);
+    let row = targetId ? tableBody.querySelector(`tr[data-id="${targetId}"]`) : null;
+    if (!row && oldRecord && oldRecord.observaciones) {
       const oldPid = typeof extraerPidDeObservaciones === 'function' ? extraerPidDeObservaciones(oldRecord.observaciones) : null;
       if (oldPid) row = tableBody.querySelector(`tr[data-pid="${oldPid}"]`);
     }
@@ -6397,32 +6490,9 @@ async function cargarMatrizServiciosSupabase(semanaIso) {
     // Decodificar metadatos, bloques, colores, saldos y pagos
     rows = rows.map(s => decodificarServicioSupabase(s));
 
-    // Sincronización bidireccional inteligente:
-    // Si LocalStorage tiene filas locales que no existen en Supabase, subirlas automáticamente
+    // Actualizar el caché de LocalStorage con la verdad más reciente de Supabase
     try {
-      const localKey = 'nyp_admin_servicios_matriz_' + semanaIso;
-      const localStr = localStorage.getItem(localKey);
-      if (localStr) {
-        const cachedRows = JSON.parse(localStr);
-        if (Array.isArray(cachedRows) && cachedRows.length > 0) {
-          if (rows.length === 0) {
-            console.log(`🔄 [Respaldo Local] Sincronizando ${cachedRows.length} servicios de LocalStorage hacia Supabase para ${semanaIso}...`);
-            rows = cachedRows.map(s => decodificarServicioSupabase(s));
-            await ejecutarUpsertControlServicios(client, rows);
-          } else {
-            const idsEnSupabase = new Set(rows.map(r => r.id));
-            const filasFaltantes = cachedRows
-              .filter(cr => cr && cr.id && !idsEnSupabase.has(cr.id))
-              .map(cr => decodificarServicioSupabase(cr));
-
-            if (filasFaltantes.length > 0) {
-              console.log(`🔄 [Sincronización Local -> Supabase] Subiendo ${filasFaltantes.length} filas locales faltantes a Supabase para ${semanaIso}...`);
-              filasFaltantes.forEach(f => rows.push(f));
-              await ejecutarUpsertControlServicios(client, filasFaltantes);
-            }
-          }
-        }
-      }
+      localStorage.setItem('nyp_admin_servicios_matriz_' + semanaIso, JSON.stringify(rows));
     } catch (eCache) { }
 
     // Auto-poblado granular por ciudad: para cada ciudad ('Puebla', 'Xalapa', 'Querétaro', 'CDMX')
@@ -7062,6 +7132,16 @@ function initAdminRealtimeSubscriptions() {
               old: event.data.action === 'delete' ? { id: event.data.servicio_id } : null
             });
           }
+        } else if (event.data?.type === 'control_servicios_update' || event.data?.type === 'cambio_servicio_matriz') {
+          if (event.data?.servicio && typeof manejarCambioRealtimeServicio === 'function') {
+            manejarCambioRealtimeServicio({
+              eventType: event.data.action === 'delete' ? 'DELETE' : 'UPDATE',
+              new: event.data.action !== 'delete' ? event.data.servicio : null,
+              old: event.data.action === 'delete' ? { id: event.data.servicio_id, observaciones: event.data.servicio?.observaciones } : null
+            });
+          } else if (typeof sincronizarAsistenciaMatrizEnVivo === 'function') {
+            sincronizarAsistenciaMatrizEnVivo();
+          }
         }
         if (event.data?.type === 'cliente_actualizado') {
           if (event.data.detail) aplicarUpdateClienteEnAdmin(event.data.detail);
@@ -7091,6 +7171,16 @@ function initAdminRealtimeSubscriptions() {
                 new: data.servicio || (data.action !== 'delete' ? { id: data.servicio_id } : null),
                 old: data.action === 'delete' ? { id: data.servicio_id } : null
               });
+            }
+          } else if (data?.type === 'control_servicios_update' || data?.type === 'cambio_servicio_matriz') {
+            if (data?.servicio && typeof manejarCambioRealtimeServicio === 'function') {
+              manejarCambioRealtimeServicio({
+                eventType: data.action === 'delete' ? 'DELETE' : 'UPDATE',
+                new: data.action !== 'delete' ? data.servicio : null,
+                old: data.action === 'delete' ? { id: data.servicio_id, observaciones: data.servicio?.observaciones } : null
+              });
+            } else if (typeof sincronizarAsistenciaMatrizEnVivo === 'function') {
+              sincronizarAsistenciaMatrizEnVivo();
             }
           }
           if (data?.type === 'cliente_actualizado') {
