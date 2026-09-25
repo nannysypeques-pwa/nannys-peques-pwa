@@ -7139,6 +7139,9 @@ async function cargarClientesSupabase(force = false, silent = false) {
     _cacheClientesCS = nuevosClientes;
     window._cacheClientesCS = _cacheClientesCS;
     actualizarDatalistsAutocompletado();
+    if (typeof actualizarDropdownCiudadesClientesUI === 'function') {
+      actualizarDropdownCiudadesClientesUI();
+    }
 
     const hasActiveFilters = (document.getElementById('csSearchClientes')?.value ||
       document.getElementById('csFiltroCiudadClientes')?.value ||
@@ -7579,6 +7582,9 @@ async function cargarClientesEventualesSupabase(force = false, silent = false) {
     _cacheClientesEventualesCS = listaLimpia;
     window._cacheClientesEventualesCS = _cacheClientesEventualesCS;
     actualizarDatalistsAutocompletado();
+    if (typeof actualizarDropdownCiudadesClientesUI === 'function') {
+      actualizarDropdownCiudadesClientesUI();
+    }
 
     if (_subTabClientesActual === 'eventuales') {
       const hasActiveFilters = (document.getElementById('csSearchClientes')?.value ||
@@ -8409,6 +8415,23 @@ function handleModalDetallesOverlayClick(event) {
 window.handleModalDetallesOverlayClick = handleModalDetallesOverlayClick;
 
 /**
+ * Helper de coincidencia inteligente de ciudad (insensible a acentos y abreviaciones)
+ */
+function coincideCiudadFiltroCS(itemCiudad, filterCity) {
+  if (!filterCity) return true;
+  const ic = (itemCiudad || '').trim();
+  if (filterCity === 'sin_ciudad') return !ic;
+  const icNorm = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(ic) : ic.toLowerCase();
+  const fcNorm = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(filterCity) : filterCity.toLowerCase();
+  if (icNorm === fcNorm || icNorm.includes(fcNorm) || fcNorm.includes(icNorm)) return true;
+  if ((fcNorm.includes('quer') || fcNorm.includes('qro')) && (icNorm.includes('quer') || icNorm.includes('qro'))) return true;
+  if (fcNorm.includes('pueb') && icNorm.includes('pueb')) return true;
+  if (fcNorm.includes('xal') && icNorm.includes('xal')) return true;
+  if ((fcNorm.includes('cdmx') || fcNorm.includes('df') || fcNorm.includes('mex')) && (icNorm.includes('cdmx') || icNorm.includes('df') || icNorm.includes('mex'))) return true;
+  return false;
+}
+
+/**
  * Filtrado en tiempo real de Clientes (Texto + Ciudad + Status) para Fijos y Eventuales
  */
 function filtrarClientesSupabase() {
@@ -8426,11 +8449,7 @@ function filtrarClientesSupabase() {
 
     // Filtro por Ciudad
     if (selCity) {
-      if (selCity === 'sin_ciudad') {
-        filtrados = filtrados.filter(cli => !cli.ciudad || cli.ciudad.trim() === '');
-      } else {
-        filtrados = filtrados.filter(cli => cli.ciudad === selCity);
-      }
+      filtrados = filtrados.filter(cli => coincideCiudadFiltroCS(cli.ciudad, selCity));
     }
 
     // Filtro por Texto libre
@@ -8476,11 +8495,7 @@ function filtrarClientesSupabase() {
 
   // Filtro por Ciudad
   if (selCity) {
-    if (selCity === 'sin_ciudad') {
-      filtrados = filtrados.filter(cli => !cli.ciudad || cli.ciudad.trim() === '');
-    } else {
-      filtrados = filtrados.filter(cli => cli.ciudad === selCity);
-    }
+    filtrados = filtrados.filter(cli => coincideCiudadFiltroCS(cli.ciudad, selCity));
   }
 
   // Filtro por Texto libre
@@ -8556,6 +8571,9 @@ async function cargarNannysSupabase(force = false, silent = false) {
     _cacheNannysCS = nuevasNannys;
     window._cacheNannysCS = _cacheNannysCS;
     actualizarDatalistsAutocompletado();
+    if (typeof actualizarDropdownCiudadesNannysUI === 'function') {
+      actualizarDropdownCiudadesNannysUI();
+    }
 
     const hasActiveFilters = (document.getElementById('csSearchNannys')?.value ||
       document.getElementById('csFiltroCiudadNannys')?.value ||
@@ -8815,11 +8833,7 @@ function filtrarNannysSupabase() {
 
   // Filtro por Ciudad
   if (selCity) {
-    if (selCity === 'sin_ciudad') {
-      filtrados = filtrados.filter(nan => !nan.ciudad || nan.ciudad.trim() === '');
-    } else {
-      filtrados = filtrados.filter(nan => nan.ciudad === selCity);
-    }
+    filtrados = filtrados.filter(nan => coincideCiudadFiltroCS(nan.ciudad, selCity));
   }
 
   // Filtro por Texto
@@ -9123,6 +9137,104 @@ document.addEventListener('keydown', function (e) {
 
 window.toggleCsDropdown = toggleCsDropdown;
 window.selectCsDropdownItem = selectCsDropdownItem;
+
+/**
+ * Actualiza los contadores dinámicos por ciudad en el dropdown de Clientes
+ */
+function actualizarDropdownCiudadesClientesUI() {
+  const dd = document.getElementById('ddFiltroCiudadClientes');
+  if (!dd) return;
+  const lista = (_subTabClientesActual === 'eventuales') ? (_cacheClientesEventualesCS || []) : (_cacheClientesCS || []);
+  
+  const conteo = {
+    '': lista.length,
+    'Puebla': 0,
+    'Xalapa': 0,
+    'Querétaro': 0,
+    'CDMX': 0,
+    'sin_ciudad': 0
+  };
+
+  lista.forEach(cli => {
+    const cd = (cli.ciudad || '').trim();
+    if (!cd) {
+      conteo['sin_ciudad']++;
+    } else {
+      const cdLower = cd.toLowerCase();
+      if (cdLower.includes('pueb')) conteo['Puebla']++;
+      else if (cdLower.includes('xal')) conteo['Xalapa']++;
+      else if (cdLower.includes('quer') || cdLower.includes('qro')) conteo['Querétaro']++;
+      else if (cdLower.includes('cdmx') || cdLower.includes('df') || cdLower.includes('mex')) conteo['CDMX']++;
+      else conteo['sin_ciudad']++;
+    }
+  });
+
+  dd.querySelectorAll('.cs-dropdown-item').forEach(item => {
+    const val = item.getAttribute('data-value') || '';
+    const labelSpan = item.querySelector('.cs-item-label');
+    if (labelSpan) {
+      let baseText = 'Todas las ciudades';
+      if (val === 'Puebla') baseText = 'Puebla';
+      else if (val === 'Xalapa') baseText = 'Xalapa';
+      else if (val === 'Querétaro') baseText = 'Querétaro';
+      else if (val === 'CDMX') baseText = 'CDMX';
+      else if (val === 'sin_ciudad') baseText = 'Sin ciudad asignada';
+      
+      const cant = conteo[val] || 0;
+      labelSpan.textContent = `${baseText} (${cant})`;
+    }
+  });
+}
+window.actualizarDropdownCiudadesClientesUI = actualizarDropdownCiudadesClientesUI;
+
+/**
+ * Actualiza los contadores dinámicos por ciudad en el dropdown de Niñeras
+ */
+function actualizarDropdownCiudadesNannysUI() {
+  const dd = document.getElementById('ddFiltroCiudadNannys');
+  if (!dd) return;
+  const lista = _cacheNannysCS || [];
+  
+  const conteo = {
+    '': lista.length,
+    'Puebla': 0,
+    'Xalapa': 0,
+    'Querétaro': 0,
+    'CDMX': 0,
+    'sin_ciudad': 0
+  };
+
+  lista.forEach(nan => {
+    const cd = (nan.ciudad || '').trim();
+    if (!cd) {
+      conteo['sin_ciudad']++;
+    } else {
+      const cdLower = cd.toLowerCase();
+      if (cdLower.includes('pueb')) conteo['Puebla']++;
+      else if (cdLower.includes('xal')) conteo['Xalapa']++;
+      else if (cdLower.includes('quer') || cdLower.includes('qro')) conteo['Querétaro']++;
+      else if (cdLower.includes('cdmx') || cdLower.includes('df') || cdLower.includes('mex')) conteo['CDMX']++;
+      else conteo['sin_ciudad']++;
+    }
+  });
+
+  dd.querySelectorAll('.cs-dropdown-item').forEach(item => {
+    const val = item.getAttribute('data-value') || '';
+    const labelSpan = item.querySelector('.cs-item-label');
+    if (labelSpan) {
+      let baseText = 'Todas las ciudades';
+      if (val === 'Puebla') baseText = 'Puebla';
+      else if (val === 'Xalapa') baseText = 'Xalapa';
+      else if (val === 'Querétaro') baseText = 'Querétaro';
+      else if (val === 'CDMX') baseText = 'CDMX';
+      else if (val === 'sin_ciudad') baseText = 'Sin ciudad asignada';
+      
+      const cant = conteo[val] || 0;
+      labelSpan.textContent = `${baseText} (${cant})`;
+    }
+  });
+}
+window.actualizarDropdownCiudadesNannysUI = actualizarDropdownCiudadesNannysUI;
 
 // =========================================================================
 // GESTIÓN DE NUEVO CLIENTE (ADMIN)
