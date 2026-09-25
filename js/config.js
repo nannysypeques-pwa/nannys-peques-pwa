@@ -38,7 +38,7 @@ const CONFIG = {
 };
 
 // Helper global de escape y sanitización XSS (OWASP ASVS 5.0 V5)
-window.escapeHTML = function(val) {
+window.escapeHTML = function (val) {
     if (val === null || val === undefined) return '';
     if (typeof val === 'number' || typeof val === 'boolean') return String(val);
     if (typeof val === 'object') {
