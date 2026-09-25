@@ -865,36 +865,34 @@ async function enviarOTPSupabase(isResend = false) {
         const client = getSupabaseClient();
         if (!client) throw new Error("No hay conexión con el servidor Supabase.");
 
-        // 1. Validar que la cuenta exista y esté activa en la base de datos correspondiente
-        const { data: usuarioDb, error: dbErr } = await client
-            .from(targetTable)
-            .select('*')
-            .ilike('email', email)
-            .maybeSingle();
-
-        if (dbErr) console.warn("Aviso consultando base de datos:", dbErr.message);
-
-        if (!usuarioDb) {
-            const mensajeNoEncontrado = esNanny
-                ? "Este correo no se encuentra registrado en nuestra base de datos de niñeras. Por favor contacta a administración."
-                : (esStaff
-                    ? "Este correo no se encuentra registrado como personal Staff autorizado."
-                    : "Este correo no se encuentra registrado en nuestra base de datos de clientes.");
-            throw new Error(mensajeNoEncontrado);
+        // 1. Validar cuenta mediante RPC de seguridad o verificación Supabase Auth
+        try {
+            const { data: cuentaValida, error: rpcErr } = await client.rpc('verificar_cuenta_para_recuperacion', {
+                email_param: email,
+                rol_param: esStaff ? 'staff' : (esNanny ? 'nanny' : 'cliente')
+            });
+            if (!rpcErr && cuentaValida === false) {
+                const mensajeNoEncontrado = esNanny
+                    ? "Este correo no se encuentra registrado en nuestra base de datos de niñeras. Por favor contacta a administración."
+                    : (esStaff
+                        ? "Este correo no se encuentra registrado como personal Staff autorizado."
+                        : "Este correo no se encuentra registrado en nuestra base de datos de clientes.");
+                throw new Error(mensajeNoEncontrado);
+            }
+        } catch (checkErr) {
+            if (checkErr.message && checkErr.message.includes('no se encuentra registrado')) {
+                throw checkErr;
+            }
         }
 
-        if (usuarioDb.activo === false) {
-            throw new Error("⛔ Tu cuenta se encuentra inactiva. Por favor comunícate con la administración de Nannys y Peques.");
-        }
-
-        // 2. Solicitar restablecimiento / OTP a Supabase Auth
-        const { data, error } = await client.auth.resetPasswordForEmail(usuarioDb.email);
+        // 2. Solicitar restablecimiento / OTP a Supabase Auth nativo
+        const { data, error } = await client.auth.resetPasswordForEmail(email);
         if (error) {
             throw error;
         }
 
         // 3. Pasar a Fase 2 (Ingresar código + nueva contraseña)
-        if (emailDisplay) emailDisplay.textContent = usuarioDb.email;
+        if (emailDisplay) emailDisplay.textContent = email;
         if (tokenGroup) tokenGroup.style.display = 'block';
         if (fase1) fase1.style.display = 'none';
         if (fase2) fase2.style.display = 'block';

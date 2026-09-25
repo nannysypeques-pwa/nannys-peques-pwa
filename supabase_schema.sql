@@ -1269,7 +1269,57 @@ CREATE INDEX IF NOT EXISTS idx_nannys_nombre ON public.nannys(nombre);
 CREATE INDEX IF NOT EXISTS idx_nannys_ciudad ON public.nannys(ciudad);
 
 -- =========================================================================
--- 11. RECARGAR CACHÉ DE ESQUEMA POSTGREST
+-- 11. FUNCIÓN RPC PARA RECUPERACIÓN SEGURA DE CONTRASEÑA
+-- =========================================================================
+CREATE OR REPLACE FUNCTION public.verificar_cuenta_para_recuperacion(email_param TEXT, rol_param TEXT DEFAULT 'staff')
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+DECLARE
+    clean_email TEXT := LOWER(TRIM(email_param));
+    clean_rol TEXT := LOWER(TRIM(rol_param));
+    existe BOOLEAN := FALSE;
+BEGIN
+    IF clean_email IS NULL OR clean_email = '' THEN
+        RETURN FALSE;
+    END IF;
+
+    IF clean_rol = 'staff' THEN
+        SELECT EXISTS (
+            SELECT 1 FROM public.staff 
+            WHERE LOWER(email) = clean_email AND (activo IS NOT FALSE)
+        ) INTO existe;
+    ELSIF clean_rol = 'nanny' THEN
+        SELECT EXISTS (
+            SELECT 1 FROM public.nannys 
+            WHERE LOWER(email) = clean_email AND (activo IS NOT FALSE)
+        ) INTO existe;
+    ELSE
+        SELECT EXISTS (
+            SELECT 1 FROM public.clientes 
+            WHERE LOWER(email) = clean_email AND (activo IS NOT FALSE)
+        ) INTO existe;
+    END IF;
+
+    -- Si no existe en la tabla de perfil pero existe en auth.users, validar también
+    IF NOT existe THEN
+        SELECT EXISTS (
+            SELECT 1 FROM auth.users 
+            WHERE LOWER(email) = clean_email
+        ) INTO existe;
+    END IF;
+
+    RETURN existe;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.verificar_cuenta_para_recuperacion(TEXT, TEXT) TO anon, authenticated;
+
+-- =========================================================================
+-- 12. RECARGAR CACHÉ DE ESQUEMA POSTGREST
 -- =========================================================================
 NOTIFY pgrst, 'reload schema';
+
 
