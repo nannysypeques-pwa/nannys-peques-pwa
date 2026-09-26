@@ -1273,16 +1273,38 @@ function transformarFilasControlServicios(filas, tipoUsuario, sesionUsuario, map
             const isOkNan = row.ok_nanny === true || row.ok_nanny === 'true' || row.ok_nanny === 1;
             if (!isOkNan) return;
 
+            const rowNannyEmail = (row.nanny_email || '').trim().toLowerCase();
             const rowNanny = (row.nanny_nombre || '').trim().toLowerCase();
-            if (!rowNanny || !nombreUsuario) return;
 
-            const normRowNanny = typeof normalizarTexto === 'function' ? normalizarTexto(rowNanny) : rowNanny;
-            const normSesionNanny = typeof normalizarTexto === 'function' ? normalizarTexto(nombreUsuario) : nombreUsuario;
-            const primerNombreNanny = normSesionNanny.split(' ')[0];
+            let coincideNanny = false;
 
-            const coincideNanny = normRowNanny.includes(normSesionNanny) ||
-                normSesionNanny.includes(normRowNanny) ||
-                (primerNombreNanny.length >= 3 && normRowNanny.includes(primerNombreNanny));
+            // 1. Coincidencia directa por nanny_email
+            if (emailUsuario && rowNannyEmail && emailUsuario === rowNannyEmail) {
+                coincideNanny = true;
+            }
+
+            // 2. Coincidencia por asistencia_nanny o email en observaciones
+            if (!coincideNanny && emailUsuario) {
+                if (row.asistencia_nanny && typeof row.asistencia_nanny === 'object') {
+                    const aEmail = (row.asistencia_nanny.nanny_email || row.asistencia_nanny.email || '').trim().toLowerCase();
+                    if (aEmail && aEmail === emailUsuario) {
+                        coincideNanny = true;
+                    }
+                }
+                if (!coincideNanny && row.observaciones && typeof row.observaciones === 'string' && row.observaciones.toLowerCase().includes(emailUsuario)) {
+                    coincideNanny = true;
+                }
+            }
+
+            // 3. Respaldo estricto por nombre completo normalizado
+            if (!coincideNanny && rowNanny && nombreUsuario) {
+                const normRowNanny = typeof normalizarTexto === 'function' ? normalizarTexto(rowNanny) : rowNanny;
+                const normSesionNanny = typeof normalizarTexto === 'function' ? normalizarTexto(nombreUsuario) : nombreUsuario;
+
+                if (normRowNanny === normSesionNanny || normRowNanny.includes(normSesionNanny) || normSesionNanny.includes(normRowNanny)) {
+                    coincideNanny = true;
+                }
+            }
 
             if (!coincideNanny) return;
         }
@@ -1552,6 +1574,9 @@ function transformarFilasControlServicios(filas, tipoUsuario, sesionUsuario, map
                 Horario: horarioTexto,
                 nombre_ninera: row.nanny_nombre || 'Por asignar',
                 'Nombre de la niñera': row.nanny_nombre || 'Por asignar',
+                nanny_nombre: row.nanny_nombre || 'Por asignar',
+                nanny_email: row.nanny_email || (row.asistencia_nanny && row.asistencia_nanny.nanny_email) || '',
+                email_ninera: row.nanny_email || (row.asistencia_nanny && row.asistencia_nanny.nanny_email) || '',
                 cliente: row.cliente_nombre || infoCliente.nombre || 'Cliente',
                 cliente_nombre: row.cliente_nombre || infoCliente.nombre || 'Cliente',
                 cliente_email: correoClienteFinal,
@@ -2335,12 +2360,16 @@ async function actualizarVisibilidadPestanasNinera(serviciosParam = null) {
     if (filas.length === 0) {
         try {
             const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
-            if (client && SESION && SESION.nombre) {
+            if (client && SESION && (SESION.nombre || SESION.email)) {
                 const nannyNom = (SESION.nombre || '').trim();
-                const primerNom = nannyNom.split(' ')[0];
+                const nannyEmail = (SESION.email || '').trim().toLowerCase();
                 let q = client.from('control_servicios').select('*').in('semana_iso', semanasPermitidas);
-                if (primerNom.length >= 3) {
-                    q = q.or(`nanny_nombre.ilike.%${nannyNom}%,nanny_nombre.ilike.%${primerNom}%`);
+                if (nannyEmail && nannyNom) {
+                    q = q.or(`nanny_email.eq.${nannyEmail},nanny_nombre.ilike.%${nannyNom}%`);
+                } else if (nannyEmail) {
+                    q = q.eq('nanny_email', nannyEmail);
+                } else if (nannyNom) {
+                    q = q.ilike('nanny_nombre', `%${nannyNom}%`);
                 }
                 const { data, error } = await q;
                 if (!error && Array.isArray(data)) {
@@ -2581,15 +2610,20 @@ async function cargarServicios(force = false) {
     const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
 
     // 🚀 PASO 1: Consultar directamente en Supabase (control_servicios)
-    if (client && SESION && SESION.nombre) {
+    if (client && SESION && (SESION.nombre || SESION.email)) {
         try {
             const lunesActual = getMondayISO_Safe(new Date());
             const semanasConsultarNan = [-2, -1, 0, 1, 2, 3].map(w => addWeeksToISO_Safe(lunesActual, w));
             let qNan = client.from('control_servicios').select('*');
             const nannyNom = (SESION.nombre || '').trim();
-            const primerNom = nannyNom.split(' ')[0];
-            if (primerNom.length >= 3) {
-                qNan = qNan.or(`nanny_nombre.ilike.%${nannyNom}%,nanny_nombre.ilike.%${primerNom}%`);
+            const nannyEmail = (SESION.email || '').trim().toLowerCase();
+
+            if (nannyEmail && nannyNom) {
+                qNan = qNan.or(`nanny_email.eq.${nannyEmail},nanny_nombre.ilike.%${nannyNom}%`);
+            } else if (nannyEmail) {
+                qNan = qNan.eq('nanny_email', nannyEmail);
+            } else if (nannyNom) {
+                qNan = qNan.ilike('nanny_nombre', `%${nannyNom}%`);
             } else {
                 qNan = qNan.in('semana_iso', semanasConsultarNan);
             }
@@ -2758,15 +2792,15 @@ function renderCalendario2Semanas() {
         const servicios = (map[iso] || []).slice().sort(compararServicios);
 
         const serviciosVisibles = servicios.filter(s => {
-            const nineraServicio = typeof normalizarTexto === 'function' ? normalizarTexto(s?.nombre_ninera || '') : (s?.nombre_ninera || '').toLowerCase();
+            const nineraServicio = typeof normalizarTexto === 'function' ? normalizarTexto(s?.nombre_ninera || s?.nanny_nombre || '') : (s?.nombre_ninera || s?.nanny_nombre || '').toLowerCase();
             const nineraSesion = typeof normalizarTexto === 'function' ? normalizarTexto(SESION.nombre || '') : (SESION.nombre || '').toLowerCase();
-            if (nineraSesion && nineraServicio) {
-                const primerNombreSesion = nineraSesion.split(' ')[0];
-                const primerNombreServicio = nineraServicio.split(' ')[0];
-                const coincide = nineraServicio.includes(nineraSesion) ||
-                    nineraSesion.includes(nineraServicio) ||
-                    (primerNombreSesion.length >= 3 && nineraServicio.includes(primerNombreSesion)) ||
-                    (primerNombreServicio.length >= 3 && nineraSesion.includes(primerNombreServicio));
+            const emailSesion = (SESION?.email || '').trim().toLowerCase();
+            const emailServicio = (s?.email_ninera || s?.nanny_email || '').trim().toLowerCase();
+
+            if (emailSesion && emailServicio && emailSesion === emailServicio) {
+                // Coincidencia por correo único
+            } else if (nineraSesion && nineraServicio) {
+                const coincide = (nineraServicio === nineraSesion || nineraServicio.includes(nineraSesion) || nineraSesion.includes(nineraServicio));
                 if (!coincide) return false;
             }
 

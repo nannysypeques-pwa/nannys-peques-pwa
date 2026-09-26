@@ -1687,7 +1687,7 @@ function renderCeldasFilaServicioHtml(servicio) {
       <input type="text" class="cs-cell-input cs-zone-input" value="${_csEscapeHTML(servicio.zona)}" placeholder="" data-field="zona"${colZona.styleAttr} oninput="notificarCambioFila(this, false)" onchange="notificarCambioFila(this, true)" onclick="handleZonaCellClick(this, event)" title="Clic para ver o editar datos de contacto y ubicación de este servicio">
     </td>
     <td class="col-nanny${nanConfirmed ? ' cs-nanny-confirmed' : ''}" data-col="nanny"${nanConfirmed ? ' title="✓ Asistencia confirmada por la niñera para todos los servicios de la semana"' : ''}${nanConfirmed ? ` data-nanny-confirmada="${_csEscapeHTML(nannyConfirmadaVal)}"` : ''}${tagAsist ? ` data-asistencia-backup="${encodeURIComponent(tagAsist)}"` : ''}${colNan.attrs}${colNanStyleFinal}>
-      <input type="text" class="cs-cell-input cs-nanny-input" autocomplete="off" value="${_csEscapeHTML(servicio.nanny_nombre)}" placeholder="" data-field="nanny_nombre" data-nanny-asignada="${_csEscapeHTML(servicio.nanny_nombre)}"${colNanStyleFinal} oninput="handleNannyInputChange(this)" onchange="handleNannyInputChange(this)">
+      <input type="text" class="cs-cell-input cs-nanny-input" autocomplete="off" value="${_csEscapeHTML(servicio.nanny_nombre)}" placeholder="" data-field="nanny_nombre" data-nanny-asignada="${_csEscapeHTML(servicio.nanny_nombre)}" data-nanny-email="${_csEscapeHTML(servicio.nanny_email || '')}"${colNanStyleFinal} oninput="handleNannyInputChange(this)" onchange="handleNannyInputChange(this)">
     </td>
     <td class="col-compact-check" data-col="ok_nan"${colOkNan.attrs}${colOkNan.styleAttr}>
       <input type="checkbox" class="custom-checkbox" ${servicio.ok_nanny ? 'checked' : ''} data-field="ok_nanny" onchange="notificarCambioFila(this, true)" title="Niñera Confirmada">
@@ -1844,7 +1844,7 @@ function renderizarMatrizServicios(servicios) {
       const obsRawAttr = servicio.observaciones_raw ? ` data-observaciones-raw="${_csEscapeHTML(servicio.observaciones_raw)}"` : '';
       const cdFila = servicio.ciudad || _currentCiudadMatriz || 'Puebla';
       fullHtml += `
-        <tr class="cs-row-item${alertCls}" data-id="${servicio.id || ''}" data-bloque="${b.id}" data-semana-iso="${semIsoFila}" data-ciudad="${cdFila}" data-pid="${pidVal}" data-orden="${ordVal}"${detallesAttr}${obsRawAttr}>
+        <tr class="cs-row-item${alertCls}" data-id="${servicio.id || ''}" data-bloque="${b.id}" data-semana-iso="${semIsoFila}" data-ciudad="${cdFila}" data-pid="${pidVal}" data-orden="${ordVal}" data-nanny-email="${_csEscapeHTML(servicio.nanny_email || '')}"${detallesAttr}${obsRawAttr}>
           ${renderCeldasFilaServicioHtml(servicio)}
         </tr>
       `;
@@ -2249,8 +2249,21 @@ function extraeDatosFila(row, idx = null) {
   };
 
   const inputObs = row.querySelector('[data-field="observaciones"]');
+  const inputNanny = row.querySelector('[data-field="nanny_nombre"]');
   let tagAsistEnc = inputObs?.getAttribute('data-asistencia-tag') || row.getAttribute('data-asistencia-tag') || '';
   const nomActual = (getVal('[data-field="nanny_nombre"]') || '').trim();
+  let nannyEmailVal = row.getAttribute('data-nanny-email') || inputNanny?.getAttribute('data-nanny-email') || '';
+  if (!nannyEmailVal && nomActual) {
+    const normNomActual = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(nomActual) : nomActual.toLowerCase();
+    const fuente = (_cacheNannysCS && _cacheNannysCS.length > 0) ? _cacheNannysCS : _nannysFallbackDefault;
+    const found = fuente.find(n => n && n.nombre && (
+      n.nombre.trim().toLowerCase() === nomActual.toLowerCase() ||
+      (typeof normalizarTextoCS === 'function' && normalizarTextoCS(n.nombre) === normNomActual)
+    ));
+    if (found && found.email) {
+      nannyEmailVal = found.email.trim();
+    }
+  }
   if (!tagAsistEnc && nomActual) {
     const backup = row.getAttribute('data-asistencia-backup') ||
       row.querySelector('td.col-nanny')?.getAttribute('data-asistencia-backup') ||
@@ -2392,6 +2405,7 @@ function extraeDatosFila(row, idx = null) {
     ok_cliente: getVal('[data-field="ok_cliente"]'),
     zona: getVal('[data-field="zona"]'),
     nanny_nombre: getVal('[data-field="nanny_nombre"]'),
+    nanny_email: nannyEmailVal || '',
     ok_nanny: getVal('[data-field="ok_nanny"]'),
     tarifa_cliente: getVal('[data-field="tarifa_cliente"]'),
     tarifa_nanny: getVal('[data-field="tarifa_nanny"]'),
@@ -2412,6 +2426,7 @@ let _supaHasSaldoColumn = null;
 let _supaHasPagoColumn = null;
 let _supaHasAsistenciaColumn = null;
 let _supaHasCiudadColumn = null;
+let _supaHasNannyEmailColumn = null;
 
 /**
  * Prepara el objeto de servicio para guardarlo en Supabase,
@@ -2474,6 +2489,7 @@ function prepararServicioParaSupabase(s) {
     ok_cliente: Boolean(s.ok_cliente),
     zona: s.zona || '',
     nanny_nombre: s.nanny_nombre || '',
+    nanny_email: (s.nanny_email || '').trim().toLowerCase(),
     ok_nanny: Boolean(s.ok_nanny),
     tarifa_cliente: s.tarifa_cliente ? String(s.tarifa_cliente) : '',
     tarifa_nanny: s.tarifa_nanny ? String(s.tarifa_nanny) : '',
@@ -2487,6 +2503,9 @@ function prepararServicioParaSupabase(s) {
   };
 
   // Compatibilidad hacia atrás si la base de datos no tiene alguna columna física
+  if (_supaHasNannyEmailColumn === false) {
+    delete payload.nanny_email;
+  }
   if (_supaHasBloqueColumn === false) {
     delete payload.bloque;
     if (bloqueVal !== 'servicios_fijos') payload.observaciones = '<!--bloque:' + bloqueVal + '-->' + payload.observaciones;
@@ -2621,6 +2640,10 @@ async function ejecutarUpsertControlServicios(client, items) {
       _supaHasCiudadColumn = false;
       schemaAdjusted = true;
     }
+    if (msg.includes('nanny_email') && _supaHasNannyEmailColumn !== false) {
+      _supaHasNannyEmailColumn = false;
+      schemaAdjusted = true;
+    }
 
     if (!schemaAdjusted) break;
 
@@ -2634,6 +2657,7 @@ async function ejecutarUpsertControlServicios(client, items) {
     if (_supaHasSaldoColumn === null) _supaHasSaldoColumn = true;
     if (_supaHasPagoColumn === null) _supaHasPagoColumn = true;
     if (_supaHasCiudadColumn === null) _supaHasCiudadColumn = true;
+    if (_supaHasNannyEmailColumn === null) _supaHasNannyEmailColumn = true;
   }
   return res;
 }
@@ -2772,7 +2796,7 @@ async function eliminarFilaDeSemanasPosteriores(pid, bloque, clienteNombre, sema
  * Persiste una fila individual en la base de datos Supabase con reintento automático
  */
 async function guardarFilaServicioSupabase(row) {
-  if (!row) return;
+  if (!row || !row.isConnected) return;
   const servicio = extraeDatosFila(row);
   if (!servicio) return;
 
@@ -2883,7 +2907,9 @@ function notificarCambioFila(elementOrRow, immediate = false) {
   } else {
     const timer = setTimeout(() => {
       _pendingRowSaves.delete(row);
-      guardarFilaServicioSupabase(row);
+      if (row && row.isConnected) {
+        guardarFilaServicioSupabase(row);
+      }
     }, 300);
     _pendingRowSaves.set(row, timer);
   }
@@ -4785,15 +4811,33 @@ function eliminarFilaServicio(btnOrRow) {
 
   const ejecutarEliminacion = async () => {
     capturarEstadoPrevioAntesDeAccion('Eliminar fila');
+
+    // Cancelar inmediatamente cualquier guardado pendiente para esta fila
+    if (_pendingRowSaves.has(row)) {
+      clearTimeout(_pendingRowSaves.get(row));
+      _pendingRowSaves.delete(row);
+    }
+
     row.style.transition = 'all 0.2s ease';
     row.style.opacity = '0';
     row.style.transform = 'translateX(20px)';
     setTimeout(async () => {
+      // Re-verificar cancelación
+      if (_pendingRowSaves.has(row)) {
+        clearTimeout(_pendingRowSaves.get(row));
+        _pendingRowSaves.delete(row);
+      }
+
       row.remove();
       actualizarFilasVaciasSecciones();
       actualizarContadoresSecciones();
       actualizarContadoresFiltros();
       guardarMatrizLocal();
+
+      // Purgar inmediatamente de la memoria activa
+      if (Array.isArray(_cacheServiciosSemanaCompleta) && id) {
+        _cacheServiciosSemanaCompleta = _cacheServiciosSemanaCompleta.filter(s => s.id !== id);
+      }
 
       const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
       if (client && id) {
@@ -4814,11 +4858,10 @@ function eliminarFilaServicio(btnOrRow) {
             await eliminarFilaDeSemanasPosteriores(pid, bloque, clienteNombre, semanaIso, client);
           }
 
-          // Sincronizar el nuevo orden secuencial de las filas restantes y purgar réplicas
-          await guardarMatrizSupabase();
-
           // ⚡ Notificar eliminación en tiempo real a portales de niñeras y clientes
           emitirCambioMatrizRealtime(client, {
+            action: 'delete',
+            servicio_id: id,
             eliminado_id: id,
             semana_iso: semanaIso,
             accion: 'eliminar_fila'
@@ -4826,11 +4869,7 @@ function eliminarFilaServicio(btnOrRow) {
         } catch (err) {
           console.warn("⚠️ Error al eliminar fila en Supabase:", err);
         }
-      } else {
-        await guardarMatrizSupabase();
       }
-
-
     }, 200);
   };
 
@@ -5033,6 +5072,27 @@ function handleNannyInputChange(input) {
 
   // Actualizar niñera asignada en el input
   input.setAttribute('data-nanny-asignada', rawVal);
+
+  // Auto-vincular nanny_email desde la base de datos/caché de niñeras
+  let resolvedEmail = '';
+  if (rawVal) {
+    const normVal = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(rawVal) : rawVal.toLowerCase();
+    const fuente = (_cacheNannysCS && _cacheNannysCS.length > 0) ? _cacheNannysCS : _nannysFallbackDefault;
+    const found = fuente.find(n => n && n.nombre && (
+      n.nombre.trim().toLowerCase() === rawVal.toLowerCase() ||
+      (typeof normalizarTextoCS === 'function' && normalizarTextoCS(n.nombre) === normVal)
+    ));
+    if (found && found.email) {
+      resolvedEmail = found.email.trim();
+    }
+  }
+  if (resolvedEmail) {
+    input.setAttribute('data-nanny-email', resolvedEmail);
+    row.setAttribute('data-nanny-email', resolvedEmail);
+  } else if (!rawVal) {
+    input.removeAttribute('data-nanny-email');
+    row.removeAttribute('data-nanny-email');
+  }
 
   // Actualizar estado de confirmación automática (misma niñera + mismo cliente + mismos horarios)
   if (typeof actualizarEstadoConfirmacionFila === 'function') {
@@ -5692,17 +5752,14 @@ async function sincronizarAsistenciaMatrizEnVivo(forceFullRender = false) {
     });
 
     // 2. Eliminar filas del DOM que fueron eliminadas en la base de datos por otro administrador
-    // Solo proceder si Supabase devolvió registros para esta ciudad y la fila no está en proceso de guardado local
-    if (rowsCiudad.length > 0) {
-      existingRows.forEach(tr => {
-        const trId = tr.getAttribute('data-id');
-        if (trId && !dbRowIds.has(trId) && (!activeEl || !tr.contains(activeEl))) {
-          if (!_pendingRowSaves.has(tr)) {
-            tr.remove();
-          }
+    existingRows.forEach(tr => {
+      const trId = tr.getAttribute('data-id');
+      if (trId && !dbRowIds.has(trId) && (!activeEl || !tr.contains(activeEl))) {
+        if (!_pendingRowSaves.has(tr)) {
+          tr.remove();
         }
-      });
-    }
+      }
+    });
 
     actualizarContadoresSecciones();
     actualizarContadoresFiltros();

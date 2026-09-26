@@ -624,13 +624,14 @@
 
           let qNan = client.from('control_servicios').select('*');
           const nannyNom = (window.SESION.nombre || '').trim();
-          if (nannyNom) {
-            const primerNom = nannyNom.split(' ')[0];
-            if (primerNom.length >= 3) {
-              qNan = qNan.or(`nanny_nombre.ilike.%${nannyNom}%,nanny_nombre.ilike.%${primerNom}%`);
-            } else {
-              qNan = qNan.in('semana_iso', semanasConsultar);
-            }
+          const nannyEmail = (window.SESION.email || '').trim().toLowerCase();
+
+          if (nannyEmail && nannyNom) {
+            qNan = qNan.or(`nanny_email.eq.${nannyEmail},nanny_nombre.ilike.%${nannyNom}%`);
+          } else if (nannyEmail) {
+            qNan = qNan.eq('nanny_email', nannyEmail);
+          } else if (nannyNom) {
+            qNan = qNan.ilike('nanny_nombre', `%${nannyNom}%`);
           } else {
             qNan = qNan.in('semana_iso', semanasConsultar);
           }

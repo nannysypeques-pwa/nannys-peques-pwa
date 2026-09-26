@@ -209,8 +209,8 @@
                         rowsCs = rList.filter(r => {
                             const rCli = _normTexto(r.cliente_nombre || '');
                             const rNan = _normTexto(r.nanny_nombre || '');
-                            const matchCli = !cNorm || rCli.includes(cNorm) || cNorm.includes(rCli) || (cNorm.split(' ')[0].length >= 3 && rCli.includes(cNorm.split(' ')[0]));
-                            const matchNan = !nNorm || rNan.includes(nNorm) || nNorm.includes(rNan) || (nNorm.split(' ')[0].length >= 3 && rNan.includes(nNorm.split(' ')[0]));
+                            const matchCli = !cNorm || rCli.includes(cNorm) || cNorm.includes(rCli);
+                            const matchNan = !nNorm || rNan === nNorm || rNan.includes(nNorm) || nNorm.includes(rNan);
                             return matchCli && matchNan;
                         });
                         if (rowsCs.length === 0) {
@@ -1116,11 +1116,16 @@
             if (BLOQUES_SOLO_ADMIN.includes(bId)) return false;
 
             if (filtroNanny) {
-                const nomFiltro = _normTexto(filtroNanny);
-                const nomRow = _normTexto(r.nanny_nombre || '');
-                const primerNom = nomFiltro.split(' ')[0];
-                const coincide = nomRow.includes(nomFiltro) || nomFiltro.includes(nomRow) || (primerNom.length >= 3 && nomRow.includes(primerNom));
-                if (!coincide) return false;
+                const rNanEmail = (r.nanny_email || '').trim().toLowerCase();
+                const sesEmail = (typeof SESION !== 'undefined' && SESION?.email ? SESION.email : (window.SESION?.email || '')).trim().toLowerCase();
+                if (sesEmail && rNanEmail && sesEmail === rNanEmail) {
+                    // Match por correo directo
+                } else {
+                    const nomFiltro = _normTexto(filtroNanny);
+                    const nomRow = _normTexto(r.nanny_nombre || '');
+                    const coincide = nomRow && nomFiltro && (nomRow === nomFiltro || nomRow.includes(nomFiltro) || nomFiltro.includes(nomRow));
+                    if (!coincide) return false;
+                }
             }
             return true;
         });

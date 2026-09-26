@@ -191,11 +191,16 @@ BEGIN
 END;
 $$;
 
--- Valida si el usuario autenticado es la niñera asignada a una fila de servicio (por nombre verificado, email o evidencia de asistencia)
+-- Eliminar firmas anteriores para evitar error de ambigüedad (42725)
+DROP FUNCTION IF EXISTS public.is_nanny_of_service_row(TEXT, JSONB, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.is_nanny_of_service_row(TEXT, JSONB, TEXT, TEXT) CASCADE;
+
+-- Valida si el usuario autenticado es la niñera asignada a una fila de servicio (por email, asistencia o nombre verificado)
 CREATE OR REPLACE FUNCTION public.is_nanny_of_service_row(
     row_nanny_nom TEXT,
     row_asistencia JSONB DEFAULT NULL,
-    row_obs TEXT DEFAULT NULL
+    row_obs TEXT DEFAULT NULL,
+    row_nanny_email TEXT DEFAULT NULL
 )
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -208,9 +213,8 @@ DECLARE
     user_email TEXT;
     db_nanny_nom TEXT;
     clean_row_nom TEXT;
+    clean_row_email TEXT;
     asist_nanny_email TEXT;
-    first_word_user TEXT;
-    first_word_row TEXT;
 BEGIN
     user_uid := auth.uid();
     IF user_uid IS NULL THEN
@@ -218,23 +222,31 @@ BEGIN
     END IF;
 
     user_email := LOWER(COALESCE(auth.jwt()->>'email', ''));
-    clean_row_nom := LOWER(TRIM(COALESCE(row_nanny_nom, '')));
+    IF user_email = '' THEN
+        RETURN FALSE;
+    END IF;
 
-    -- 1. Validar por email dentro del objeto JSONB asistencia_nanny
+    -- 1. Validar por coincidencia directa de nanny_email
+    clean_row_email := LOWER(TRIM(COALESCE(row_nanny_email, '')));
+    IF clean_row_email <> '' AND clean_row_email = user_email THEN
+        RETURN TRUE;
+    END IF;
+
+    -- 2. Validar por email dentro del objeto JSONB asistencia_nanny
     IF row_asistencia IS NOT NULL AND jsonb_typeof(row_asistencia) = 'object' THEN
         asist_nanny_email := LOWER(TRIM(COALESCE(row_asistencia->>'nanny_email', row_asistencia->>'email', '')));
         
-        IF user_email <> '' AND asist_nanny_email <> '' AND user_email = asist_nanny_email THEN
+        IF asist_nanny_email <> '' AND user_email = asist_nanny_email THEN
             RETURN TRUE;
         END IF;
     END IF;
 
-    -- 2. Validar si el email de la niñera está contenido en el tag de observaciones
-    IF row_obs IS NOT NULL AND user_email <> '' AND row_obs LIKE '%' || user_email || '%' THEN
+    -- 3. Validar si el email de la niñera está contenido en el tag de observaciones
+    IF row_obs IS NOT NULL AND row_obs LIKE '%' || user_email || '%' THEN
         RETURN TRUE;
     END IF;
 
-    -- 3. Obtener nombre oficial verificado desde la tabla nannys
+    -- 4. Obtener nombre oficial verificado desde la tabla nannys
     IF EXISTS (
         SELECT 1 FROM information_schema.tables 
         WHERE table_schema = 'public' AND table_name = 'nannys'
@@ -245,20 +257,13 @@ BEGIN
         LIMIT 1;
     END IF;
 
-    -- 4. Coincidencia estricta con nombre oficial verificado (Cero suplantación)
+    -- 5. Coincidencia estricta con nombre oficial verificado (Cero suplantación ni colisión de homónimos)
+    clean_row_nom := LOWER(TRIM(COALESCE(row_nanny_nom, '')));
     IF clean_row_nom <> '' AND db_nanny_nom IS NOT NULL AND db_nanny_nom <> '' THEN
         IF clean_row_nom = db_nanny_nom 
            OR clean_row_nom LIKE '%' || db_nanny_nom || '%' 
            OR db_nanny_nom LIKE '%' || clean_row_nom || '%' THEN
             RETURN TRUE;
-        END IF;
-
-        -- Si el nombre contiene al menos 2 palabras (ej: "Ana Laura"), verificar que ambas coincidan para evitar colisiones
-        IF position(' ' IN clean_row_nom) > 0 AND position(' ' IN db_nanny_nom) > 0 THEN
-            IF split_part(db_nanny_nom, ' ', 1) = split_part(clean_row_nom, ' ', 1)
-               AND split_part(db_nanny_nom, ' ', 2) = split_part(clean_row_nom, ' ', 2) THEN
-                RETURN TRUE;
-            END IF;
         END IF;
     END IF;
 
@@ -347,7 +352,7 @@ BEGIN
             OR (clean_cli_nom <> '' AND LOWER(TRIM(cs.cliente_nombre)) = clean_cli_nom)
             OR (clean_cli_nom <> '' AND LOWER(cs.cliente_nombre) LIKE '%' || clean_cli_nom || '%')
         )
-        AND public.is_nanny_of_service_row(cs.nanny_nombre, cs.asistencia_nanny, cs.observaciones)
+        AND public.is_nanny_of_service_row(cs.nanny_nombre, cs.asistencia_nanny, cs.observaciones, cs.nanny_email)
     ) THEN
         RETURN TRUE;
     END IF;
@@ -654,6 +659,7 @@ CREATE TABLE IF NOT EXISTS public.control_servicios (
     ok_cliente BOOLEAN DEFAULT FALSE,
     zona TEXT DEFAULT '',
     nanny_nombre TEXT DEFAULT '',
+    nanny_email TEXT DEFAULT '',
     ok_nanny BOOLEAN DEFAULT FALSE,
     tarifa_cliente TEXT DEFAULT '',
     tarifa_nanny TEXT DEFAULT '',
@@ -668,6 +674,7 @@ CREATE TABLE IF NOT EXISTS public.control_servicios (
     actualizado_en TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
+ALTER TABLE public.control_servicios ADD COLUMN IF NOT EXISTS nanny_email TEXT DEFAULT '';
 ALTER TABLE public.control_servicios ADD COLUMN IF NOT EXISTS bloque TEXT DEFAULT 'servicios_fijos';
 ALTER TABLE public.control_servicios ADD COLUMN IF NOT EXISTS saldo_cliente TEXT DEFAULT '';
 ALTER TABLE public.control_servicios ADD COLUMN IF NOT EXISTS pago_nanny TEXT DEFAULT '';
@@ -680,6 +687,7 @@ CREATE INDEX IF NOT EXISTS idx_control_servicios_ciudad ON public.control_servic
 CREATE INDEX IF NOT EXISTS idx_control_servicios_bloque ON public.control_servicios (semana_iso, bloque, orden);
 CREATE INDEX IF NOT EXISTS idx_control_servicios_cli_email ON public.control_servicios (cliente_email, semana_iso);
 CREATE INDEX IF NOT EXISTS idx_control_servicios_nanny_nom ON public.control_servicios (nanny_nombre, semana_iso);
+CREATE INDEX IF NOT EXISTS idx_control_servicios_nanny_email ON public.control_servicios (nanny_email, semana_iso);
 
 -- REPLICA IDENTITY FULL requerido para Realtime con RLS
 ALTER TABLE public.control_servicios REPLICA IDENTITY FULL;
@@ -700,7 +708,7 @@ CREATE POLICY "RLS_SELECT_control_servicios" ON public.control_servicios
     USING (
         public.is_staff_or_admin()
         OR public.is_client_of_service_row(cliente_email, cliente_nombre)
-        OR public.is_nanny_of_service_row(nanny_nombre, asistencia_nanny, observaciones)
+        OR public.is_nanny_of_service_row(nanny_nombre, asistencia_nanny, observaciones, nanny_email)
     );
 
 CREATE POLICY "RLS_INSERT_control_servicios" ON public.control_servicios 
@@ -712,12 +720,12 @@ CREATE POLICY "RLS_UPDATE_control_servicios" ON public.control_servicios
     USING (
         public.is_staff_or_admin()
         OR public.is_client_of_service_row(cliente_email, cliente_nombre)
-        OR public.is_nanny_of_service_row(nanny_nombre, asistencia_nanny, observaciones)
+        OR public.is_nanny_of_service_row(nanny_nombre, asistencia_nanny, observaciones, nanny_email)
     )
     WITH CHECK (
         public.is_staff_or_admin()
         OR public.is_client_of_service_row(cliente_email, cliente_nombre)
-        OR public.is_nanny_of_service_row(nanny_nombre, asistencia_nanny, observaciones)
+        OR public.is_nanny_of_service_row(nanny_nombre, asistencia_nanny, observaciones, nanny_email)
     );
 
 CREATE POLICY "RLS_DELETE_control_servicios" ON public.control_servicios 
@@ -750,6 +758,7 @@ BEGIN
        OR (NEW.cliente_email IS DISTINCT FROM OLD.cliente_email)
        OR (NEW.cliente_nombre IS DISTINCT FROM OLD.cliente_nombre)
        OR (NEW.nanny_nombre IS DISTINCT FROM OLD.nanny_nombre)
+       OR (NEW.nanny_email IS DISTINCT FROM OLD.nanny_email)
        OR (NEW.lun_inicio IS DISTINCT FROM OLD.lun_inicio)
        OR (NEW.lun_fin IS DISTINCT FROM OLD.lun_fin)
        OR (NEW.mar_inicio IS DISTINCT FROM OLD.mar_inicio)
@@ -769,7 +778,7 @@ BEGIN
 
     -- Si el usuario autenticado actúa como cliente: prohibir alterar la confirmación de la niñera
     IF public.is_client_of_service_row(OLD.cliente_email, OLD.cliente_nombre)
-       AND NOT public.is_nanny_of_service_row(OLD.nanny_nombre, OLD.asistencia_nanny, OLD.observaciones) THEN
+       AND NOT public.is_nanny_of_service_row(OLD.nanny_nombre, OLD.asistencia_nanny, OLD.observaciones, OLD.nanny_email) THEN
         IF (NEW.ok_nanny IS DISTINCT FROM OLD.ok_nanny)
            OR (NEW.asistencia_nanny IS DISTINCT FROM OLD.asistencia_nanny) THEN
             RAISE EXCEPTION 'Acceso denegado: El cliente no puede modificar la confirmación o asistencia de la niñera.';
@@ -777,7 +786,7 @@ BEGIN
     END IF;
 
     -- Si el usuario autenticado actúa como niñera: prohibir alterar la confirmación del cliente
-    IF public.is_nanny_of_service_row(OLD.nanny_nombre, OLD.asistencia_nanny, OLD.observaciones)
+    IF public.is_nanny_of_service_row(OLD.nanny_nombre, OLD.asistencia_nanny, OLD.observaciones, OLD.nanny_email)
        AND NOT public.is_client_of_service_row(OLD.cliente_email, OLD.cliente_nombre) THEN
         IF (NEW.ok_cliente IS DISTINCT FROM OLD.ok_cliente) THEN
             RAISE EXCEPTION 'Acceso denegado: La niñera no puede modificar la confirmación de la familia.';
@@ -859,7 +868,7 @@ CREATE POLICY "RLS_SELECT_bitacoras" ON public.bitacoras
         OR LOWER(cliente_email) = public.get_auth_email()
         OR LOWER(ninera_email) = public.get_auth_email()
         OR public.is_client_of_service_row(cliente_email, cliente_nombre)
-        OR public.is_nanny_of_service_row(ninera_nombre, NULL, NULL)
+        OR public.is_nanny_of_service_row(ninera_nombre, NULL::jsonb, NULL::text, ninera_email)
     );
 
 CREATE POLICY "RLS_INSERT_bitacoras" ON public.bitacoras 
@@ -867,7 +876,7 @@ CREATE POLICY "RLS_INSERT_bitacoras" ON public.bitacoras
     WITH CHECK (
         public.is_staff_or_admin()
         OR LOWER(ninera_email) = public.get_auth_email()
-        OR public.is_nanny_of_service_row(ninera_nombre, NULL, NULL)
+        OR public.is_nanny_of_service_row(ninera_nombre, NULL::jsonb, NULL::text, ninera_email)
     );
 
 CREATE POLICY "RLS_UPDATE_bitacoras" ON public.bitacoras 
@@ -877,14 +886,14 @@ CREATE POLICY "RLS_UPDATE_bitacoras" ON public.bitacoras
         OR LOWER(cliente_email) = public.get_auth_email()
         OR LOWER(ninera_email) = public.get_auth_email()
         OR public.is_client_of_service_row(cliente_email, cliente_nombre)
-        OR public.is_nanny_of_service_row(ninera_nombre, NULL, NULL)
+        OR public.is_nanny_of_service_row(ninera_nombre, NULL::jsonb, NULL::text, ninera_email)
     )
     WITH CHECK (
         public.is_staff_or_admin()
         OR LOWER(cliente_email) = public.get_auth_email()
         OR LOWER(ninera_email) = public.get_auth_email()
         OR public.is_client_of_service_row(cliente_email, cliente_nombre)
-        OR public.is_nanny_of_service_row(ninera_nombre, NULL, NULL)
+        OR public.is_nanny_of_service_row(ninera_nombre, NULL::jsonb, NULL::text, ninera_email)
     );
 
 CREATE POLICY "RLS_DELETE_bitacoras" ON public.bitacoras 
@@ -1034,7 +1043,7 @@ CREATE POLICY "RLS_SELECT_confirmaciones_asistencia" ON public.confirmaciones_as
     USING (
         public.is_staff_or_admin()
         OR LOWER(nanny_email) = public.get_auth_email()
-        OR public.is_nanny_of_service_row(nanny_nombre, NULL, NULL)
+        OR public.is_nanny_of_service_row(nanny_nombre, NULL::jsonb, NULL::text, nanny_email)
     );
 
 CREATE POLICY "RLS_INSERT_confirmaciones_asistencia" ON public.confirmaciones_asistencia 
@@ -1042,7 +1051,7 @@ CREATE POLICY "RLS_INSERT_confirmaciones_asistencia" ON public.confirmaciones_as
     WITH CHECK (
         public.is_staff_or_admin()
         OR LOWER(nanny_email) = public.get_auth_email()
-        OR public.is_nanny_of_service_row(nanny_nombre, NULL, NULL)
+        OR public.is_nanny_of_service_row(nanny_nombre, NULL::jsonb, NULL::text, nanny_email)
     );
 
 CREATE POLICY "RLS_UPDATE_confirmaciones_asistencia" ON public.confirmaciones_asistencia 
@@ -1050,12 +1059,12 @@ CREATE POLICY "RLS_UPDATE_confirmaciones_asistencia" ON public.confirmaciones_as
     USING (
         public.is_staff_or_admin()
         OR LOWER(nanny_email) = public.get_auth_email()
-        OR public.is_nanny_of_service_row(nanny_nombre, NULL, NULL)
+        OR public.is_nanny_of_service_row(nanny_nombre, NULL::jsonb, NULL::text, nanny_email)
     )
     WITH CHECK (
         public.is_staff_or_admin()
         OR LOWER(nanny_email) = public.get_auth_email()
-        OR public.is_nanny_of_service_row(nanny_nombre, NULL, NULL)
+        OR public.is_nanny_of_service_row(nanny_nombre, NULL::jsonb, NULL::text, nanny_email)
     );
 
 DO $$

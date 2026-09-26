@@ -224,15 +224,16 @@
             qFilas = qFilas.in('semana_iso', semanasConsultar);
           }
         } else {
-          // Niñera: consultar por nombre o rango de semanas del calendario
+          // Niñera: consultar por email/nombre o rango de semanas del calendario
           const nannyNom = (window.SESION?.nombre || '').trim();
-          if (nannyNom) {
-            const primerNom = nannyNom.split(' ')[0];
-            if (primerNom.length >= 3) {
-              qFilas = qFilas.or(`nanny_nombre.ilike.%${nannyNom}%,nanny_nombre.ilike.%${primerNom}%`);
-            } else {
-              qFilas = qFilas.in('semana_iso', semanasConsultar);
-            }
+          const nannyEmail = (window.SESION?.email || '').trim().toLowerCase();
+
+          if (nannyEmail && nannyNom) {
+            qFilas = qFilas.or(`nanny_email.eq.${nannyEmail},nanny_nombre.ilike.%${nannyNom}%`);
+          } else if (nannyEmail) {
+            qFilas = qFilas.eq('nanny_email', nannyEmail);
+          } else if (nannyNom) {
+            qFilas = qFilas.ilike('nanny_nombre', `%${nannyNom}%`);
           } else {
             qFilas = qFilas.in('semana_iso', semanasConsultar);
           }
@@ -1407,9 +1408,10 @@
         const historial = [];
 
         if (prevEvidence) {
-          const normPrev = typeof normalizarTexto === 'function' ? normalizarTexto(prevEvidence.nanny_nombre || '') : (prevEvidence.nanny_nombre || '').toLowerCase();
-          const normCur = typeof normalizarTexto === 'function' ? normalizarTexto(nannyNombre || '') : (nannyNombre || '').toLowerCase();
-          const esMismaNanny = !normPrev || normPrev === normCur || normPrev.includes(normCur.split(' ')[0]) || normCur.includes(normPrev.split(' ')[0]);
+          const prevEmail = (prevEvidence.nanny_email || '').trim().toLowerCase();
+          const curEmail = (nannyEmail || '').trim().toLowerCase();
+          const esMismaNanny = (prevEmail && curEmail && prevEmail === curEmail) ||
+            (!normPrev || normPrev === normCur || normPrev.includes(normCur) || normCur.includes(normPrev));
 
           if (esMismaNanny) {
             if (prevEvidence.dias_confirmados && typeof prevEvidence.dias_confirmados === 'object') {

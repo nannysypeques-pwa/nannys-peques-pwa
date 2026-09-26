@@ -240,14 +240,7 @@ async function initEstimulacion(force = false, silent = false) {
             const sN = _cleanStr(sesNom);
             const rN = _cleanStr(rowNom);
             if (!sN || !rN) return false;
-            if (sN === rN || sN.includes(rN) || rN.includes(sN)) return true;
-
-            const sWords = sN.split(/\s+/).filter(w => w.length >= 3 && !['las', 'los', 'del', 'san', 'sta', 'nanny', 'miss'].includes(w));
-            const rWords = rN.split(/\s+/).filter(w => w.length >= 3 && !['las', 'los', 'del', 'san', 'sta', 'nanny', 'miss'].includes(w));
-            if (sWords.length > 0 && rWords.length > 0) {
-                return sWords.some(sw => rWords.some(rw => rw === sw || rw.includes(sw) || sw.includes(rw)));
-            }
-            return false;
+            return (sN === rN || sN.includes(rN) || rN.includes(sN));
         };
 
         const _esOkNanny = (val) => {

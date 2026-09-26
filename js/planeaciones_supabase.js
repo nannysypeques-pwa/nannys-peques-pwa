@@ -416,10 +416,15 @@ async function obtenerResumenPlaneacionesSemanaSupabase(fechaBaseISO, filtroNann
         if (filtroNanny) {
             if (r.ok_nanny !== true) return false;
 
+            const rNanEmail = (r.nanny_email || '').trim().toLowerCase();
+            const sesEmail = (typeof SESION !== 'undefined' && SESION?.email ? SESION.email : (window.SESION?.email || '')).trim().toLowerCase();
+            if (sesEmail && rNanEmail && sesEmail === rNanEmail) {
+                return true;
+            }
+
             const nomFiltro = _normTextoPlaneacion(filtroNanny);
             const nomRow = _normTextoPlaneacion(r.nanny_nombre || '');
-            const primerNom = nomFiltro.split(' ')[0];
-            const coincide = nomRow.includes(nomFiltro) || nomFiltro.includes(nomRow) || (primerNom.length >= 3 && nomRow.includes(primerNom));
+            const coincide = nomRow && nomFiltro && (nomRow === nomFiltro || nomRow.includes(nomFiltro) || nomFiltro.includes(nomRow));
             if (!coincide) return false;
         }
         return true;
