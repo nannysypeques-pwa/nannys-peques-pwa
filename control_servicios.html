@@ -42,19 +42,23 @@
 
       <!-- Selector de Ciudad Matriz -->
       <div class="cs-city-selector-pills" id="csCitySelectorPills" role="tablist" aria-label="Selector de Ciudad">
-        <button type="button" class="cs-city-pill active" id="btnCiudadPuebla" data-ciudad="Puebla" onclick="cambiarCiudadMatriz('Puebla')" title="Servicios de Puebla">
+        <button type="button" class="cs-city-pill active" id="btnCiudadPuebla" data-ciudad="Puebla"
+          onclick="cambiarCiudadMatriz('Puebla')" title="Servicios de Puebla">
           <span class="cs-city-icon">📍</span>
           <span class="cs-city-name">Puebla</span>
         </button>
-        <button type="button" class="cs-city-pill" id="btnCiudadXalapa" data-ciudad="Xalapa" onclick="cambiarCiudadMatriz('Xalapa')" title="Servicios de Xalapa">
+        <button type="button" class="cs-city-pill" id="btnCiudadXalapa" data-ciudad="Xalapa"
+          onclick="cambiarCiudadMatriz('Xalapa')" title="Servicios de Xalapa">
           <span class="cs-city-icon">📍</span>
           <span class="cs-city-name">Xalapa</span>
         </button>
-        <button type="button" class="cs-city-pill" id="btnCiudadQueretaro" data-ciudad="Querétaro" onclick="cambiarCiudadMatriz('Querétaro')" title="Servicios de Querétaro">
+        <button type="button" class="cs-city-pill" id="btnCiudadQueretaro" data-ciudad="Querétaro"
+          onclick="cambiarCiudadMatriz('Querétaro')" title="Servicios de Querétaro">
           <span class="cs-city-icon">📍</span>
           <span class="cs-city-name">Querétaro</span>
         </button>
-        <button type="button" class="cs-city-pill" id="btnCiudadCDMX" data-ciudad="CDMX" onclick="cambiarCiudadMatriz('CDMX')" title="Servicios de CDMX">
+        <button type="button" class="cs-city-pill" id="btnCiudadCDMX" data-ciudad="CDMX"
+          onclick="cambiarCiudadMatriz('CDMX')" title="Servicios de CDMX">
           <span class="cs-city-icon">🏛️</span>
           <span class="cs-city-name">CDMX</span>
         </button>
@@ -132,10 +136,12 @@
 
       <!-- Servicios Base Dropdown Button -->
       <div class="cs-dropdown-servicios-base" id="csDropdownServiciosBase">
-        <button type="button" class="cs-btn-servicios-base" id="csBtnServiciosBase" onclick="toggleMenuServiciosBase(event)" title="Servicios base (Plantilla fija)">
+        <button type="button" class="cs-btn-servicios-base" id="csBtnServiciosBase"
+          onclick="toggleMenuServiciosBase(event)" title="Servicios base (Plantilla fija)">
           📋 <span>Servicios base</span> <span class="cs-arrow-down">▾</span>
         </button>
-        <div class="cs-servicios-base-menu" id="csMenuServiciosBase" style="display:none;" onclick="event.stopPropagation()">
+        <div class="cs-servicios-base-menu" id="csMenuServiciosBase" style="display:none;"
+          onclick="event.stopPropagation()">
           <button type="button" class="cs-sb-menu-item" onclick="insertarServiciosBaseEnSemanaActual()">
             📥 <span>Insertar</span>
           </button>
@@ -146,7 +152,8 @@
       </div>
 
       <!-- Botón Saldos Semanales -->
-      <button type="button" class="cs-btn-saldos" id="csBtnSaldos" onclick="abrirModalSaldosSemana()" title="Cálculo y visibilidad de saldos semanales (Clientes y Niñeras)">
+      <button type="button" class="cs-btn-saldos" id="csBtnSaldos" onclick="abrirModalSaldosSemana()"
+        title="Cálculo y visibilidad de saldos semanales (Clientes y Niñeras)">
         💰 <span>Saldos</span>
       </button>
 
@@ -168,7 +175,8 @@
       <thead>
         <!-- Day Headers (Upper Group Row) -->
         <tr id="csHeaderDaysRow">
-          <th rowspan="2" class="col-total-hours" data-col="total_horas" style="top: 0;" title="Sumatoria de horas semanales">Horas</th>
+          <th rowspan="2" class="col-total-hours" data-col="total_horas" style="top: 0;"
+            title="Sumatoria de horas semanales">Horas</th>
           <th colspan="2" class="header-day-group" id="csThDay0" data-col="lun" data-day-col="lun">Lunes</th>
           <th colspan="2" class="header-day-group" id="csThDay1" data-col="mar" data-day-col="mar">Martes</th>
           <th colspan="2" class="header-day-group" id="csThDay2" data-col="mie" data-day-col="mie">Miércoles</th>
@@ -220,64 +228,77 @@
       <div class="cs-subpanel-left">
         <!-- Switcher Fijos / Eventuales -->
         <div class="cs-client-type-switcher">
-          <button type="button" class="cs-client-type-btn active" id="btnSubTabClientesFijos" onclick="switchClientesSubTab('fijos')" title="Clientes con servicios fijos recurrentes">
+          <button type="button" class="cs-client-type-btn active" id="btnSubTabClientesFijos"
+            onclick="switchClientesSubTab('fijos')" title="Clientes con servicios fijos recurrentes">
             <span>📌</span> Fijos
           </button>
-          <button type="button" class="cs-client-type-btn" id="btnSubTabClientesEventuales" onclick="switchClientesSubTab('eventuales')" title="Clientes de servicios temporales y eventuales">
+          <button type="button" class="cs-client-type-btn" id="btnSubTabClientesEventuales"
+            onclick="switchClientesSubTab('eventuales')" title="Clientes de servicios temporales y eventuales">
             <span>🎈</span> Eventuales
           </button>
         </div>
 
         <div class="cs-subpanel-search">
           <span>🔍</span>
-          <input type="text" id="csSearchClientes" placeholder="Buscar cliente por nombre, email, teléfono, zona o peque..." oninput="filtrarClientesSupabase()">
+          <input type="text" id="csSearchClientes"
+            placeholder="Buscar cliente por nombre, email, teléfono, zona o peque..."
+            oninput="filtrarClientesSupabase()">
         </div>
         <!-- Dropdown Ciudad Clientes -->
         <div class="cs-custom-dropdown" id="ddFiltroCiudadClientes">
-          <button type="button" class="cs-dropdown-trigger" onclick="toggleCsDropdown('ddFiltroCiudadClientes', event)" title="Filtrar por ciudad">
+          <button type="button" class="cs-dropdown-trigger" onclick="toggleCsDropdown('ddFiltroCiudadClientes', event)"
+            title="Filtrar por ciudad">
             <span class="cs-dd-icon">📍</span>
             <span class="cs-dd-label">Todas las ciudades</span>
             <svg class="cs-dd-arrow" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              <path fill-rule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clip-rule="evenodd" />
             </svg>
           </button>
           <div class="cs-dropdown-menu">
-            <div class="cs-dropdown-item active" data-value="" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', '', 'Todas las ciudades', '📍', 'clientes')">
+            <div class="cs-dropdown-item active" data-value=""
+              onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', '', 'Todas las ciudades', '📍', 'clientes')">
               <div class="cs-item-main">
                 <span class="cs-item-icon">🏢</span>
                 <span class="cs-item-label">Todas las ciudades</span>
               </div>
               <span class="cs-item-check">✓</span>
             </div>
-            <div class="cs-dropdown-item" data-value="Puebla" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'Puebla', 'Puebla', '📍', 'clientes')">
+            <div class="cs-dropdown-item" data-value="Puebla"
+              onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'Puebla', 'Puebla', '📍', 'clientes')">
               <div class="cs-item-main">
                 <span class="cs-item-icon">📍</span>
                 <span class="cs-item-label">Puebla</span>
               </div>
               <span class="cs-item-check">✓</span>
             </div>
-            <div class="cs-dropdown-item" data-value="Xalapa" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'Xalapa', 'Xalapa', '📍', 'clientes')">
+            <div class="cs-dropdown-item" data-value="Xalapa"
+              onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'Xalapa', 'Xalapa', '📍', 'clientes')">
               <div class="cs-item-main">
                 <span class="cs-item-icon">📍</span>
                 <span class="cs-item-label">Xalapa</span>
               </div>
               <span class="cs-item-check">✓</span>
             </div>
-            <div class="cs-dropdown-item" data-value="Querétaro" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'Querétaro', 'Querétaro', '📍', 'clientes')">
+            <div class="cs-dropdown-item" data-value="Querétaro"
+              onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'Querétaro', 'Querétaro', '📍', 'clientes')">
               <div class="cs-item-main">
                 <span class="cs-item-icon">📍</span>
                 <span class="cs-item-label">Querétaro</span>
               </div>
               <span class="cs-item-check">✓</span>
             </div>
-            <div class="cs-dropdown-item" data-value="CDMX" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'CDMX', 'CDMX', '🏛️', 'clientes')">
+            <div class="cs-dropdown-item" data-value="CDMX"
+              onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'CDMX', 'CDMX', '🏛️', 'clientes')">
               <div class="cs-item-main">
                 <span class="cs-item-icon">🏛️</span>
                 <span class="cs-item-label">CDMX</span>
               </div>
               <span class="cs-item-check">✓</span>
             </div>
-            <div class="cs-dropdown-item" data-value="sin_ciudad" onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'sin_ciudad', 'Sin ciudad asignada', '❓', 'clientes')">
+            <div class="cs-dropdown-item" data-value="sin_ciudad"
+              onclick="selectCsDropdownItem('ddFiltroCiudadClientes', 'csFiltroCiudadClientes', 'sin_ciudad', 'Sin ciudad asignada', '❓', 'clientes')">
               <div class="cs-item-main">
                 <span class="cs-item-icon">❓</span>
                 <span class="cs-item-label">Sin ciudad asignada</span>
@@ -297,29 +318,35 @@
 
         <!-- Dropdown Status Clientes -->
         <div class="cs-custom-dropdown" id="ddFiltroStatusClientes">
-          <button type="button" class="cs-dropdown-trigger" onclick="toggleCsDropdown('ddFiltroStatusClientes', event)" title="Filtrar por status">
+          <button type="button" class="cs-dropdown-trigger" onclick="toggleCsDropdown('ddFiltroStatusClientes', event)"
+            title="Filtrar por status">
             <span class="cs-dd-icon">⚡</span>
             <span class="cs-dd-label">Todos los status</span>
             <svg class="cs-dd-arrow" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              <path fill-rule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clip-rule="evenodd" />
             </svg>
           </button>
           <div class="cs-dropdown-menu">
-            <div class="cs-dropdown-item active" data-value="" onclick="selectCsDropdownItem('ddFiltroStatusClientes', 'csFiltroStatusClientes', '', 'Todos los status', '⚡', 'clientes')">
+            <div class="cs-dropdown-item active" data-value=""
+              onclick="selectCsDropdownItem('ddFiltroStatusClientes', 'csFiltroStatusClientes', '', 'Todos los status', '⚡', 'clientes')">
               <div class="cs-item-main">
                 <span class="cs-item-icon">⚡</span>
                 <span class="cs-item-label">Todos los status</span>
               </div>
               <span class="cs-item-check">✓</span>
             </div>
-            <div class="cs-dropdown-item" data-value="activo" onclick="selectCsDropdownItem('ddFiltroStatusClientes', 'csFiltroStatusClientes', 'activo', 'Solo activos', '🟢', 'clientes')">
+            <div class="cs-dropdown-item" data-value="activo"
+              onclick="selectCsDropdownItem('ddFiltroStatusClientes', 'csFiltroStatusClientes', 'activo', 'Solo activos', '🟢', 'clientes')">
               <div class="cs-item-main">
                 <span class="cs-item-icon">🟢</span>
                 <span class="cs-item-label">Solo activos</span>
               </div>
               <span class="cs-item-check">✓</span>
             </div>
-            <div class="cs-dropdown-item" data-value="inactivo" onclick="selectCsDropdownItem('ddFiltroStatusClientes', 'csFiltroStatusClientes', 'inactivo', 'Inactivos', '⚪', 'clientes')">
+            <div class="cs-dropdown-item" data-value="inactivo"
+              onclick="selectCsDropdownItem('ddFiltroStatusClientes', 'csFiltroStatusClientes', 'inactivo', 'Inactivos', '⚪', 'clientes')">
               <div class="cs-item-main">
                 <span class="cs-item-icon">⚪</span>
                 <span class="cs-item-label">Inactivos</span>
@@ -336,10 +363,14 @@
         <span id="csClientesCount" class="cs-subpanel-count">0 clientes</span>
       </div>
       <div class="cs-subpanel-right">
-        <button type="button" class="cs-subpanel-btn" onclick="if(_subTabClientesActual === 'eventuales'){ cargarClientesEventualesSupabase(true); } else { cargarClientesSupabase(true); }" title="Recargar lista de clientes">
+        <button type="button" class="cs-subpanel-btn"
+          onclick="if(_subTabClientesActual === 'eventuales'){ cargarClientesEventualesSupabase(true); } else { cargarClientesSupabase(true); }"
+          title="Recargar lista de clientes">
           <span style="font-size: 14px;">🔄</span> <span>Actualizar</span>
         </button>
-        <button type="button" class="cs-subpanel-btn cs-btn-new-client" onclick="abrirModalNuevoClienteAdmin()" title="Registrar nuevo cliente" style="background: #3BB6C4 !important; color: #ffffff !important; font-weight: 700 !important; box-shadow: 0 3px 10px rgba(59, 182, 196, 0.35) !important; border: none !important;">
+        <button type="button" class="cs-subpanel-btn cs-btn-new-client" onclick="abrirModalNuevoClienteAdmin()"
+          title="Registrar nuevo cliente"
+          style="background: #3BB6C4 !important; color: #ffffff !important; font-weight: 700 !important; box-shadow: 0 3px 10px rgba(59, 182, 196, 0.35) !important; border: none !important;">
           <span style="font-size: 14px;">➕</span> <span style="font-weight: 700;">Nuevo cliente</span>
         </button>
       </div>
@@ -403,13 +434,12 @@
         <div class="cs-subpanel-search">
           <span>🔍</span>
           <input type="text" id="csSearchNannys"
-            placeholder="Buscar niñera por nombre, email, teléfono, ciudad o zona..."
-            oninput="filtrarNannysSupabase()">
+            placeholder="Buscar niñera por nombre, email, teléfono, ciudad o zona..." oninput="filtrarNannysSupabase()">
         </div>
         <!-- Dropdown Ciudad Niñeras -->
         <div class="cs-custom-dropdown" id="ddFiltroCiudadNannys">
-          <button type="button" class="cs-dropdown-trigger"
-            onclick="toggleCsDropdown('ddFiltroCiudadNannys', event)" title="Filtrar por ciudad">
+          <button type="button" class="cs-dropdown-trigger" onclick="toggleCsDropdown('ddFiltroCiudadNannys', event)"
+            title="Filtrar por ciudad">
             <span class="cs-dd-icon">📍</span>
             <span class="cs-dd-label">Todas las ciudades</span>
             <svg class="cs-dd-arrow" viewBox="0 0 20 20" fill="currentColor">
@@ -480,8 +510,8 @@
 
         <!-- Dropdown Status Niñeras -->
         <div class="cs-custom-dropdown" id="ddFiltroStatusNannys">
-          <button type="button" class="cs-dropdown-trigger"
-            onclick="toggleCsDropdown('ddFiltroStatusNannys', event)" title="Filtrar por status">
+          <button type="button" class="cs-dropdown-trigger" onclick="toggleCsDropdown('ddFiltroStatusNannys', event)"
+            title="Filtrar por status">
             <span class="cs-dd-icon">⚡</span>
             <span class="cs-dd-label">Todos los status</span>
             <svg class="cs-dd-arrow" viewBox="0 0 20 20" fill="currentColor">
@@ -525,11 +555,13 @@
         <span id="csNannysCount" class="cs-subpanel-count">0 niñeras</span>
       </div>
       <div class="cs-subpanel-right">
-        <button type="button" class="cs-subpanel-btn" onclick="cargarNannysSupabase(true)" title="Recargar lista de niñeras">
+        <button type="button" class="cs-subpanel-btn" onclick="cargarNannysSupabase(true)"
+          title="Recargar lista de niñeras">
           <span style="font-size: 14px;">🔄</span> <span>Actualizar</span>
         </button>
         <button type="button" class="cs-subpanel-btn cs-btn-new-nanny" onclick="abrirModalNuevaNannyAdmin()"
-          title="Registrar nueva niñera" style="background: #3BB6C4 !important; color: #ffffff !important; font-weight: 700 !important; box-shadow: 0 3px 10px rgba(59, 182, 196, 0.35) !important; border: none !important;">
+          title="Registrar nueva niñera"
+          style="background: #3BB6C4 !important; color: #ffffff !important; font-weight: 700 !important; box-shadow: 0 3px 10px rgba(59, 182, 196, 0.35) !important; border: none !important;">
           <span style="font-size: 14px;">➕</span> <span style="font-weight: 700;">Nueva nanny</span>
         </button>
       </div>
@@ -579,7 +611,8 @@
   <datalist id="csListaNannys"></datalist>
 
   <!-- MODAL FULLSCREEN: PLANTILLA DE SERVICIOS BASE (SERVICIOS FIJOS) -->
-  <div id="modalServiciosBase" class="cs-sb-modal-overlay" style="display: none;" onclick="if(event.target === this) cerrarModalServiciosBase()">
+  <div id="modalServiciosBase" class="cs-sb-modal-overlay" style="display: none;"
+    onclick="if(event.target === this) cerrarModalServiciosBase()">
     <div class="cs-sb-modal-container" onclick="event.stopPropagation()">
       <!-- Header del Modal -->
       <div class="cs-sb-modal-header">
@@ -588,22 +621,30 @@
             <h2>
               <span>✨ Servicios Base</span>
               <span class="cs-sb-badge">Servicios Fijos</span>
-              <span class="cs-sb-badge" style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; padding:2px 8px; border-radius:999px; display:inline-flex; align-items:center; gap:5px;"><span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981;"></span> Multiusuario en vivo</span>
+              <span class="cs-sb-badge"
+                style="background:#ecfdf5; color:#059669; border:1px solid #a7f3d0; font-size:11px; padding:2px 8px; border-radius:999px; display:inline-flex; align-items:center; gap:5px;"><span
+                  style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10b981; box-shadow:0 0 6px #10b981;"></span>
+                Multiusuario en vivo</span>
             </h2>
-            <p class="cs-sb-modal-subtitle">Plantilla de servicios fijos que se repiten semana a semana. Al hacer clic en "Insertar", se copiarán a la semana activa.</p>
+            <p class="cs-sb-modal-subtitle">Plantilla de servicios fijos que se repiten semana a semana. Al hacer clic
+              en "Insertar", se copiarán a la semana activa.</p>
           </div>
         </div>
         <div class="cs-sb-modal-toolbar" id="csSbNormalToolbar">
-          <button type="button" class="cs-sb-btn cs-sb-btn-nuevo-cliente" onclick="agregarFilaServiciosBase()" title="Agregar nuevo servicio en la plantilla">
+          <button type="button" class="cs-sb-btn cs-sb-btn-nuevo-cliente" onclick="agregarFilaServiciosBase()"
+            title="Agregar nuevo servicio en la plantilla">
             <span>➕</span> <span>Nuevo cliente</span>
           </button>
-          <button type="button" class="cs-sb-btn cs-sb-btn-cliente-perdido" onclick="abrirClientePerdidoServiciosBase()" title="Gestionar cliente perdido">
+          <button type="button" class="cs-sb-btn cs-sb-btn-cliente-perdido" onclick="abrirClientePerdidoServiciosBase()"
+            title="Gestionar cliente perdido">
             <span>📉</span> <span>Cliente perdido</span>
           </button>
-          <button type="button" class="cs-sb-btn cs-sb-btn-guardar" onclick="guardarPlantillaServiciosBase()" title="Guardar plantilla de servicios base">
+          <button type="button" class="cs-sb-btn cs-sb-btn-guardar" onclick="guardarPlantillaServiciosBase()"
+            title="Guardar plantilla de servicios base">
             <span>💾</span> <span>Guardar</span>
           </button>
-          <button type="button" class="cs-sb-btn cs-sb-btn-cerrar" onclick="cerrarModalServiciosBase()" title="Cerrar ventana">
+          <button type="button" class="cs-sb-btn cs-sb-btn-cerrar" onclick="cerrarModalServiciosBase()"
+            title="Cerrar ventana">
             <span>✕</span> <span>Cerrar</span>
           </button>
         </div>
@@ -630,7 +671,8 @@
           <thead>
             <!-- Fila superior: Días de la semana agrupados -->
             <tr>
-              <th rowspan="2" class="col-total-hours" data-col="total_horas" style="top: 0;" title="Sumatoria de horas semanales">Horas</th>
+              <th rowspan="2" class="col-total-hours" data-col="total_horas" style="top: 0;"
+                title="Sumatoria de horas semanales">Horas</th>
               <th colspan="2" class="header-day-group" data-col="lun" data-day-col="lun">Lunes</th>
               <th colspan="2" class="header-day-group" data-col="mar" data-day-col="mar">Martes</th>
               <th colspan="2" class="header-day-group" data-col="mie" data-day-col="mie">Miércoles</th>
@@ -651,7 +693,8 @@
               <th rowspan="2" class="col-compact-rate" data-col="pago_nan" style="top: 0;">Pago</th>
               <th rowspan="2" class="col-alerts" data-col="alertas" style="top: 0;">Alertas</th>
               <th rowspan="2" class="col-obs" data-col="obs" style="top: 0;">Observaciones</th>
-              <th rowspan="2" style="top: 0; width: 44px; min-width: 44px; text-align: center;" data-col="actions" title="Eliminar fila">✕</th>
+              <th rowspan="2" style="top: 0; width: 44px; min-width: 44px; text-align: center;" data-col="actions"
+                title="Eliminar fila">✕</th>
             </tr>
             <!-- Sub-Headers: Inicio y Fin -->
             <tr>
@@ -681,15 +724,18 @@
       <div class="cs-sb-modal-footer">
         <div id="csSbTotalFilas">0 servicios base configurados</div>
         <div style="display: flex; gap: 8px;">
-          <button type="button" class="cs-sb-btn cs-sb-btn-cerrar" onclick="cerrarModalServiciosBase()">Cancelar</button>
-          <button type="button" class="cs-sb-btn cs-sb-btn-guardar" onclick="guardarPlantillaServiciosBase(true)">💾 Guardar y Salir</button>
+          <button type="button" class="cs-sb-btn cs-sb-btn-cerrar"
+            onclick="cerrarModalServiciosBase()">Cancelar</button>
+          <button type="button" class="cs-sb-btn cs-sb-btn-guardar" onclick="guardarPlantillaServiciosBase(true)">💾
+            Guardar y Salir</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- MODAL: SELECCIÓN INDIVIDUAL DE SERVICIOS BASE A INSERTAR -->
-  <div id="modalSeleccionServiciosBase" class="cs-sel-sb-modal-overlay" style="display: none;" onclick="if(event.target === this) cerrarModalSeleccionServiciosBase()">
+  <div id="modalSeleccionServiciosBase" class="cs-sel-sb-modal-overlay" style="display: none;"
+    onclick="if(event.target === this) cerrarModalSeleccionServiciosBase()">
     <div class="cs-sel-sb-modal-container" onclick="event.stopPropagation()">
       <!-- Header -->
       <div class="cs-sel-sb-header">
@@ -697,21 +743,26 @@
           <div class="cs-sel-sb-icon-box">📋</div>
           <div>
             <h3 class="cs-sel-sb-title">Insertar Servicios Base</h3>
-            <p class="cs-sel-sb-subtitle">Selecciona los clientes que deseas ingresar al bloque de Servicios Fijos de esta semana.</p>
+            <p class="cs-sel-sb-subtitle">Selecciona los clientes que deseas ingresar al bloque de Servicios Fijos de
+              esta semana.</p>
           </div>
         </div>
-        <button type="button" class="cs-sel-sb-close-btn" onclick="cerrarModalSeleccionServiciosBase()" title="Cerrar ventana">✕</button>
+        <button type="button" class="cs-sel-sb-close-btn" onclick="cerrarModalSeleccionServiciosBase()"
+          title="Cerrar ventana">✕</button>
       </div>
 
       <!-- Toolbar de búsqueda y acciones rápidas -->
       <div class="cs-sel-sb-toolbar">
         <div class="cs-sel-sb-search-wrap">
           <span class="cs-sel-sb-search-icon">🔍</span>
-          <input type="text" id="csSelSbSearchInput" class="cs-sel-sb-search-input" placeholder="Buscar por cliente, niñera o zona..." oninput="filtrarListaSeleccionServiciosBase(this.value)">
+          <input type="text" id="csSelSbSearchInput" class="cs-sel-sb-search-input"
+            placeholder="Buscar por cliente, niñera o zona..." oninput="filtrarListaSeleccionServiciosBase(this.value)">
         </div>
         <div class="cs-sel-sb-actions">
-          <button type="button" class="cs-sel-sb-btn-quick" onclick="toggleSeleccionarTodosServiciosBase(true)">☑️ Todos</button>
-          <button type="button" class="cs-sel-sb-btn-quick" onclick="toggleSeleccionarTodosServiciosBase(false)">⬜ Ninguno</button>
+          <button type="button" class="cs-sel-sb-btn-quick" onclick="toggleSeleccionarTodosServiciosBase(true)">☑️
+            Todos</button>
+          <button type="button" class="cs-sel-sb-btn-quick" onclick="toggleSeleccionarTodosServiciosBase(false)">⬜
+            Ninguno</button>
           <span id="csSelSbCounterBadge" class="cs-sel-sb-counter-badge">0 seleccionados</span>
         </div>
       </div>
@@ -723,8 +774,10 @@
 
       <!-- Footer -->
       <div class="cs-sel-sb-footer">
-        <button type="button" class="cs-sel-sb-btn-cancel" onclick="cerrarModalSeleccionServiciosBase()">Cancelar</button>
-        <button type="button" id="csSelSbBtnInsertar" class="cs-sel-sb-btn-insert" onclick="confirmarInsercionServiciosBaseSeleccionados()">
+        <button type="button" class="cs-sel-sb-btn-cancel"
+          onclick="cerrarModalSeleccionServiciosBase()">Cancelar</button>
+        <button type="button" id="csSelSbBtnInsertar" class="cs-sel-sb-btn-insert"
+          onclick="confirmarInsercionServiciosBaseSeleccionados()">
           <span>📥</span> <span>Insertar seleccionados</span>
         </button>
       </div>
@@ -732,7 +785,8 @@
   </div>
 
   <!-- MODAL: DETALLES DE CONTACTO Y UBICACIÓN DEL SERVICIO (ZONA) -->
-  <div id="modalDetallesServicioAdmin" class="cs-details-modal-overlay" style="display:none;" onclick="handleModalDetallesOverlayClick(event)">
+  <div id="modalDetallesServicioAdmin" class="cs-details-modal-overlay" style="display:none;"
+    onclick="handleModalDetallesOverlayClick(event)">
     <div class="cs-details-modal-card" role="dialog" aria-modal="true" aria-labelledby="csModalDetallesTitulo">
       <!-- Header -->
       <div class="cs-details-modal-header">
@@ -743,14 +797,16 @@
             <span id="csModalDetallesSubtitulo" class="cs-details-modal-subtitle">Contacto y Ubicación</span>
           </div>
         </div>
-        <button type="button" class="cs-details-modal-close" onclick="cerrarModalDetallesServicio()" title="Cerrar">✕</button>
+        <button type="button" class="cs-details-modal-close" onclick="cerrarModalDetallesServicio()"
+          title="Cerrar">✕</button>
       </div>
 
       <!-- Info Banner -->
       <div class="cs-details-modal-banner">
         <span class="cs-details-modal-banner-icon">💡</span>
         <div class="cs-details-modal-banner-text">
-          Esta información se sincroniza automáticamente con la ficha del cliente en <strong>Clientes &gt; Eventuales</strong> y la verá la niñera en su agenda.
+          Esta información se sincroniza automáticamente con la ficha del cliente en <strong>Clientes &gt;
+            Eventuales</strong> y la verá la niñera en su agenda.
         </div>
       </div>
 
@@ -760,42 +816,49 @@
           <label for="csDetalleNumeroContacto" class="cs-details-label">
             <span>📞</span> Número de Contacto
           </label>
-          <input type="tel" id="csDetalleNumeroContacto" class="cs-details-input" placeholder="Ej: 222 123 4567" maxlength="12" autocomplete="off" oninput="this.value = formatearTelefono10Digitos(this.value)">
+          <input type="tel" id="csDetalleNumeroContacto" class="cs-details-input" placeholder="Ej: 222 123 4567"
+            maxlength="12" autocomplete="off" oninput="this.value = formatearTelefono10Digitos(this.value)">
         </div>
 
         <div class="cs-details-field-group">
           <label for="csDetalleDireccion" class="cs-details-label">
             <span>📍</span> Dirección
           </label>
-          <input type="text" id="csDetalleDireccion" class="cs-details-input" placeholder="Ej: Lomas de Angelópolis, Cluster 444, Calle 2 #15" autocomplete="off">
+          <input type="text" id="csDetalleDireccion" class="cs-details-input"
+            placeholder="Ej: Lomas de Angelópolis, Cluster 444, Calle 2 #15" autocomplete="off">
         </div>
 
         <div class="cs-details-field-group">
           <label for="csDetalleUbicacion" class="cs-details-label">
             <span>🗺️</span> Ubicación (Link de Google Maps o referencia)
           </label>
-          <input type="text" id="csDetalleUbicacion" class="cs-details-input" placeholder="Ej: https://maps.app.goo.gl/... o referencia" autocomplete="off">
+          <input type="text" id="csDetalleUbicacion" class="cs-details-input"
+            placeholder="Ej: https://maps.app.goo.gl/... o referencia" autocomplete="off">
         </div>
 
         <div class="cs-details-field-group">
           <label for="csDetalleEdadPeque" class="cs-details-label">
             <span>👶</span> Edad del Peque
           </label>
-          <input type="text" id="csDetalleEdadPeque" class="cs-details-input" placeholder="Ej: 2 años 3 meses" autocomplete="off">
+          <input type="text" id="csDetalleEdadPeque" class="cs-details-input" placeholder="Ej: 2 años 3 meses"
+            autocomplete="off">
         </div>
 
         <div class="cs-details-field-group">
           <label for="csDetalleNotas" class="cs-details-label">
             <span>📝</span> Notas
           </label>
-          <textarea id="csDetalleNotas" class="cs-details-textarea" rows="3" placeholder="Instrucciones especiales para la niñera, rutinas, especificaciones, etc."></textarea>
+          <textarea id="csDetalleNotas" class="cs-details-textarea" rows="3"
+            placeholder="Instrucciones especiales para la niñera, rutinas, especificaciones, etc."></textarea>
         </div>
       </div>
 
       <!-- Footer -->
       <div class="cs-details-modal-footer">
-        <button type="button" class="cs-details-btn cs-details-btn-cancel" onclick="cerrarModalDetallesServicio()">Cancelar</button>
-        <button type="button" class="cs-details-btn cs-details-btn-save" onclick="guardarModalDetallesServicio()">💾 Guardar datos</button>
+        <button type="button" class="cs-details-btn cs-details-btn-cancel"
+          onclick="cerrarModalDetallesServicio()">Cancelar</button>
+        <button type="button" class="cs-details-btn cs-details-btn-save" onclick="guardarModalDetallesServicio()">💾
+          Guardar datos</button>
       </div>
     </div>
   </div>
@@ -826,7 +889,8 @@
             <h3
               style="margin: 0; color: #ffffff; font-family: 'DM Serif Display', 'Quicksand', sans-serif; font-size: 1.35rem; font-weight: 700; letter-spacing: 0.3px;">
               Nueva Nanny</h3>
-            <span style="font-size: 0.84rem; color: rgba(255, 255, 255, 0.95); font-weight: 500;">Registra y autoriza a la niñera para acceder a la app</span>
+            <span style="font-size: 0.84rem; color: rgba(255, 255, 255, 0.95); font-weight: 500;">Registra y autoriza a
+              la niñera para acceder a la app</span>
           </div>
         </div>
 
@@ -905,23 +969,19 @@
 
             <!-- Botones rápidos de selección de edad -->
             <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
-              <button type="button" class="admin-age-chip"
-                onclick="seleccionarRangoEdadesNanny(0, 2, this)"
+              <button type="button" class="admin-age-chip" onclick="seleccionarRangoEdadesNanny(0, 2, this)"
                 style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #475569; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;">
                 👶 0 a 2 años (Bebés)
               </button>
-              <button type="button" class="admin-age-chip"
-                onclick="seleccionarRangoEdadesNanny(2, 5, this)"
+              <button type="button" class="admin-age-chip" onclick="seleccionarRangoEdadesNanny(2, 5, this)"
                 style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #475569; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;">
                 🎨 2 a 5 años (Maternal/Preescolar)
               </button>
-              <button type="button" class="admin-age-chip"
-                onclick="seleccionarRangoEdadesNanny(6, 12, this)"
+              <button type="button" class="admin-age-chip" onclick="seleccionarRangoEdadesNanny(6, 12, this)"
                 style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; color: #475569; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;">
                 🎒 6 a 12 años (Escolares)
               </button>
-              <button type="button" class="admin-age-chip"
-                onclick="seleccionarRangoEdadesNanny(0, 12, this)"
+              <button type="button" class="admin-age-chip" onclick="seleccionarRangoEdadesNanny(0, 12, this)"
                 style="padding: 6px 12px; border-radius: 8px; border: 1px solid #3bb6c4; background: #e0f7fa; color: #00838f; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s;">
                 ⭐ Todas las edades (0 a 12+ años)
               </button>

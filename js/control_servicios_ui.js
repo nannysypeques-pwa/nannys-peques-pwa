@@ -219,25 +219,7 @@ async function sincronizarMatrizRestauradaSupabase(datosRestaurados, semanaIso) 
   if (!client || !semanaIso) return;
 
   try {
-    // 1. Consultar registros actuales en Supabase para identificar eliminados
-    const { data: rowsDb, error: errDb } = await client
-      .from('control_servicios')
-      .select('id')
-      .eq('semana_iso', semanaIso);
-
-    if (!errDb && Array.isArray(rowsDb)) {
-      const idsRestaurados = new Set((datosRestaurados || []).map(d => d.id).filter(Boolean));
-      const idsAEliminar = rowsDb.map(r => r.id).filter(id => !idsRestaurados.has(id));
-
-      if (idsAEliminar.length > 0) {
-        await client
-          .from('control_servicios')
-          .delete()
-          .in('id', idsAEliminar);
-      }
-    }
-
-    // 2. Guardar masivamente los registros restaurados
+    // 1. Guardar masivamente los registros restaurados mediante Upsert seguro (sin borrados automáticos)
     if (Array.isArray(datosRestaurados) && datosRestaurados.length > 0) {
       await ejecutarUpsertControlServicios(client, datosRestaurados);
     }
@@ -2857,7 +2839,7 @@ async function guardarFilaServicioSupabase(row) {
     if (BLOQUES_PERSISTENTES_FUTURO.includes(servicio.bloque) && servicio.pid && servicioTieneDatos(servicio)) {
       await propagarFilaASemanasPosteriores(servicio, client);
     } else if (servicio.pid && (!BLOQUES_PERSISTENTES_FUTURO.includes(servicio.bloque) || !servicioTieneDatos(servicio))) {
-      await eliminarFilaDeSemanasPosteriores(servicio.pid, servicio.bloque, servicio.cliente_nombre, servicio.semana_iso, client);
+      await eliminarFilaDeSemanasPosteriores(servicio.pid, servicio.bloque, servicio.cliente_nombre, servicio.semana_iso, client, servicio.ciudad || _currentCiudadMatriz || 'Puebla');
     }
 
     // Auto-registrar o actualizar cliente eventual si aplica (bloques temporales y eventuales)
@@ -4853,9 +4835,10 @@ function eliminarFilaServicio(btnOrRow) {
             console.log("🗑️ [Supabase control_servicios] Fila eliminada:", id);
           }
 
-          // Si es un bloque persistente o tiene PID, eliminar réplicas en semanas posteriores
+          // Si es un bloque persistente o tiene PID, eliminar réplicas en semanas posteriores exclusivamente para esta ciudad
+          const cdFila = row.getAttribute('data-ciudad') || _currentCiudadMatriz || 'Puebla';
           if (BLOQUES_PERSISTENTES_FUTURO.includes(bloque) || pid) {
-            await eliminarFilaDeSemanasPosteriores(pid, bloque, clienteNombre, semanaIso, client);
+            await eliminarFilaDeSemanasPosteriores(pid, bloque, clienteNombre, semanaIso, client, cdFila);
           }
 
           // ⚡ Notificar eliminación en tiempo real a portales de niñeras y clientes
@@ -5252,9 +5235,7 @@ async function propagarMatrizBloquesPosteriores(datosMatriz, semanaIsoActual, cl
 
     const currentCiudadNorm = normalizarTextoCS(_currentCiudadMatriz || 'Puebla');
     const distinctPosteriorWeeks = [...new Set(posteriorRecords.map(r => r.semana_iso))].sort();
-    const idsToDelete = [];
     const updates = [];
-
     for (const postSemana of distinctPosteriorWeeks) {
       const recordsSemana = posteriorRecords.filter(r => r.semana_iso === postSemana);
       const persistentRecordsSemana = recordsSemana.filter(r => {
@@ -5263,18 +5244,7 @@ async function propagarMatrizBloquesPosteriores(datosMatriz, semanaIsoActual, cl
         return BLOQUES_PERSISTENTES_FUTURO.includes(b) && rCiudadNorm === currentCiudadNorm;
       });
 
-      // 1. Identificar registros persistentes en el futuro que ya NO existen en la semana activa (borrados o movidos a otro bloque)
-      for (const r of persistentRecordsSemana) {
-        const rPid = r.pid || extraerPidDeObservaciones(r.observaciones);
-        const rNom = (r.cliente_nombre || '').trim().toLowerCase();
-        const sigueActivo = (rPid && activePids.has(rPid)) || (rNom && activeClientNames.has(rNom));
-
-        if (!sigueActivo) {
-          idsToDelete.push(r.id);
-        }
-      }
-
-      // 2. Propagar/actualizar las filas activas en esa semana posterior
+      // Propagar/actualizar las filas activas en esa semana posterior (Upsert seguro)
       for (const s of persistentRows) {
         const sCiudadNorm = normalizarTextoCS(s.ciudad || _currentCiudadMatriz || 'Puebla');
         const match = persistentRecordsSemana.find(r => {
@@ -5304,28 +5274,6 @@ async function propagarMatrizBloquesPosteriores(datosMatriz, semanaIsoActual, cl
         }
         updates.push(prepararServicioParaSupabase(clone));
       }
-    }
-
-    // Ejecutar eliminación en Supabase y limpiar localStorage de semanas futuras
-    if (idsToDelete.length > 0) {
-      await client.from('control_servicios').delete().in('id', idsToDelete);
-      console.log(`🗑️ [Persistencia] Eliminadas ${idsToDelete.length} réplicas obsoletas en semanas posteriores`);
-
-      posteriorRecords.forEach(r => {
-        if (idsToDelete.includes(r.id)) {
-          try {
-            const key = 'nyp_admin_servicios_matriz_' + r.semana_iso;
-            const str = localStorage.getItem(key);
-            if (str) {
-              const list = JSON.parse(str);
-              if (Array.isArray(list)) {
-                const filtered = list.filter(item => item.id !== r.id);
-                localStorage.setItem(key, JSON.stringify(filtered));
-              }
-            }
-          } catch (e) { }
-        }
-      });
     }
 
     // Ejecutar actualización de filas activas en Supabase y sincronizar localStorage
@@ -10662,24 +10610,75 @@ async function procesarBajaDefinitivaClientesPerdidos(clientes) {
       console.warn("⚠️ Error registrando evento analítico de métrica:", e);
     }
 
-    // 5. Remover la fila de la vista del modal de servicios base
+    // 5. Eliminar permanentemente de Supabase en la plantilla base (__PLANTILLA_BASE__)
+    const rowId = item.id;
+    if (client) {
+      if (rowId) {
+        try {
+          await client.from('control_servicios').delete().eq('id', rowId);
+          emitirCambioMatrizRealtime(client, {
+            action: 'delete',
+            servicio_id: rowId,
+            semana_iso: '__PLANTILLA_BASE__'
+          });
+        } catch (e) {
+          console.warn('⚠️ Error al eliminar cliente perdido de Supabase:', e);
+        }
+      } else if (cliNombre && cliNombre !== 'Cliente sin nombre') {
+        try {
+          const cNorm = _currentCiudadMatriz || 'Puebla';
+          await client.from('control_servicios')
+            .delete()
+            .eq('semana_iso', '__PLANTILLA_BASE__')
+            .ilike('cliente_nombre', cliNombre)
+            .ilike('ciudad', cNorm);
+        } catch (e) {
+          console.warn('⚠️ Error al eliminar cliente perdido por nombre de Supabase:', e);
+        }
+      }
+    }
+
+    // 6. Actualizar LocalStorage de respaldo eliminando el registro
+    try {
+      let base = JSON.parse(localStorage.getItem('nyp_servicios_base_plantilla') || '[]');
+      if (Array.isArray(base)) {
+        base = base.filter(s => {
+          if (rowId && s.id === rowId) return false;
+          if (cliNombre && (s.cliente_nombre || '').trim().toLowerCase() === cliNombre.toLowerCase()) {
+            const cNorm = normalizarTextoCS(_currentCiudadMatriz || 'Puebla');
+            const sCiudad = normalizarTextoCS(s.ciudad || 'Puebla');
+            if (sCiudad === cNorm) return false;
+          }
+          return true;
+        });
+        localStorage.setItem('nyp_servicios_base_plantilla', JSON.stringify(base));
+      }
+    } catch (e) { }
+
+    // 7. Remover la fila de la vista del modal de servicios base
     if (item.row) {
       item.row.remove();
     }
   }
 
-  // 6. Guardar la plantilla de servicios base actualizada (sin los clientes perdidos)
+  // Si la tabla quedó vacía, mostrar el empty state
+  const tbody = document.getElementById('csSbTableBody');
+  if (tbody && tbody.querySelectorAll('tr.cs-row-item').length === 0) {
+    renderizarTablaServiciosBase([]);
+  }
+
+  // 8. Guardar la plantilla de servicios base actualizada (sin los clientes perdidos)
   await guardarPlantillaServiciosBase(false);
 
-  // 7. Salir del modo de selección y actualizar contador
+  // 9. Salir del modo de selección y actualizar contador
   cancelarModoClientePerdido();
   actualizarContadorPlantillaServiciosBase();
 
-  // 8. Mensaje de confirmación final
+  // 10. Mensaje de confirmación final
   if (typeof Swal !== 'undefined') {
     Swal.fire({
       title: 'Bajas registradas con éxito',
-      text: `Se procesaron ${clientes.length} baja(s) de clientes fijos (-${clientes.length}). Su última semana quedó marcada en rojo y se eliminaron de Servicios Base.`,
+      text: `Se procesaron ${clientes.length} baja(s) de clientes fijos (-${clientes.length}). Su última semana quedó marcada en rojo y se eliminaron permanentemente de Servicios Base.`,
       icon: 'success',
       confirmButtonColor: '#4f46e5',
       confirmButtonText: 'Entendido'
