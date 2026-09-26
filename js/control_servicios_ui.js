@@ -6538,178 +6538,10 @@ async function cargarMatrizServiciosSupabase(semanaIso) {
     // Decodificar metadatos, bloques, colores, saldos y pagos
     rows = rows.map(s => decodificarServicioSupabase(s));
 
-    // Actualizar el caché de LocalStorage con la verdad más reciente de Supabase
-    try {
-      localStorage.setItem('nyp_admin_servicios_matriz_' + semanaIso, JSON.stringify(rows));
-    } catch (eCache) { }
-
-    // Auto-poblado granular por ciudad: para cada ciudad ('Puebla', 'Xalapa', 'Querétaro', 'CDMX')
-    // si no tiene servicios fijos en esta semana, se cargan de Plantilla Base o se heredan de la semana anterior.
-    const ciudadesList = ['Puebla', 'Xalapa', 'Querétaro', 'CDMX'];
-    const nuevasFilasMasivas = [];
-    let prevWeekRowsCache = null;
-
-    for (const ciudadNombre of ciudadesList) {
-      const cNorm = typeof normalizarTextoCS === 'function' ? normalizarTextoCS(ciudadNombre) : ciudadNombre.toLowerCase();
-      const filasDeEstaCiudad = rows.filter(r => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(r.ciudad || 'Puebla') : (r.ciudad || 'Puebla').toLowerCase()) === cNorm);
-      const fijosDeEstaCiudad = filasDeEstaCiudad.filter(r => (r.bloque || 'servicios_fijos') === 'servicios_fijos' && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(r)));
-      const persDeEstaCiudad = filasDeEstaCiudad.filter(r => BLOQUES_PERSISTENTES_FUTURO.includes(r.bloque) && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(r)));
-
-      // 1. Si la ciudad no tiene servicios fijos en esta semana:
-      if (fijosDeEstaCiudad.length === 0) {
-        let baseRows = [];
-        try {
-          if (typeof obtenerPlantillaServiciosBase === 'function') {
-            baseRows = await obtenerPlantillaServiciosBase();
-          }
-        } catch (eBase) { }
-
-        const baseCiudad = (Array.isArray(baseRows) ? baseRows : []).filter(b => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(b.ciudad || 'Puebla') : (b.ciudad || 'Puebla').toLowerCase()) === cNorm && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(b)));
-
-        if (baseCiudad.length > 0) {
-          // Poblar desde plantilla base
-          baseCiudad.forEach((orig, hIdx) => {
-            const rowId = `srv_${Date.now()}_${hIdx}_${Math.random().toString(36).substr(2, 5)}`;
-            let obsBase = orig.observaciones || '';
-            let celdasCol = orig.colores_celdas;
-            if (!celdasCol && obsBase.includes('<!--colores:')) {
-              const { colores } = typeof extraerColoresDeObservaciones === 'function' ? extraerColoresDeObservaciones(obsBase) : { colores: {} };
-              celdasCol = colores;
-            }
-            const clon = {
-              ...orig,
-              id: rowId,
-              semana_iso: semanaIso,
-              ciudad: ciudadNombre,
-              bloque: 'servicios_fijos',
-              observaciones: obsBase,
-              colores_celdas: celdasCol || {},
-              ok_cliente: false,
-              ok_nanny: false,
-              asistencia_nanny: {}
-            };
-            rows.push(clon);
-            nuevasFilasMasivas.push(clon);
-          });
-          console.log(`✨ [Plantilla Base] ${baseCiudad.length} servicios fijos cargados desde Plantilla Base para ${ciudadNombre} en semana ${semanaIso}`);
-        } else {
-          // Si no hay plantilla base para esta ciudad, heredar servicios fijos de la semana inmediatamente anterior
-          if (prevWeekRowsCache === null) {
-            const lunesAnterior = addWeeksToISO(semanaIso, -1);
-            try {
-              const { data: prevData, error: errPrev } = await client
-                .from('control_servicios')
-                .select('*')
-                .eq('semana_iso', lunesAnterior)
-                .order('orden', { ascending: true })
-                .order('id', { ascending: true });
-              if (!errPrev && Array.isArray(prevData)) {
-                prevWeekRowsCache = prevData.map(r => decodificarServicioSupabase(r));
-              } else {
-                prevWeekRowsCache = [];
-              }
-            } catch (ePrev) {
-              prevWeekRowsCache = [];
-            }
-          }
-
-          const fijosPrevCiudad = prevWeekRowsCache.filter(r => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(r.ciudad || 'Puebla') : (r.ciudad || 'Puebla').toLowerCase()) === cNorm && (r.bloque || 'servicios_fijos') === 'servicios_fijos' && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(r)));
-
-          if (fijosPrevCiudad.length > 0) {
-            fijosPrevCiudad.forEach((orig, hIdx) => {
-              const rowId = `srv_${Date.now()}_${hIdx}_${Math.random().toString(36).substr(2, 5)}`;
-              let obsHeredada = orig.observaciones || '';
-              obsHeredada = obsHeredada.replace(/<!--asistencia_nanny:.*?-->/g, '').trim();
-              let celdasCol = orig.colores_celdas;
-              if (!celdasCol && obsHeredada.includes('<!--colores:')) {
-                const { colores } = typeof extraerColoresDeObservaciones === 'function' ? extraerColoresDeObservaciones(obsHeredada) : { colores: {} };
-                celdasCol = colores;
-              }
-              const clon = {
-                ...orig,
-                id: rowId,
-                semana_iso: semanaIso,
-                ciudad: ciudadNombre,
-                bloque: 'servicios_fijos',
-                observaciones: obsHeredada,
-                colores_celdas: celdasCol || {},
-                ok_cliente: false,
-                ok_nanny: false,
-                asistencia_nanny: {}
-              };
-              rows.push(clon);
-              nuevasFilasMasivas.push(clon);
-            });
-            console.log(`✨ [Herencia Semanal] ${fijosPrevCiudad.length} servicios fijos heredados de la semana previa para ${ciudadNombre} en semana ${semanaIso}`);
-          }
-        }
-      }
-
-      // 2. Heredar bloques internos persistentes si la ciudad no los tiene en esta semana
-      if (persDeEstaCiudad.length === 0) {
-        if (prevWeekRowsCache === null) {
-          const lunesAnterior = addWeeksToISO(semanaIso, -1);
-          try {
-            const { data: prevData, error: errPrev } = await client
-              .from('control_servicios')
-              .select('*')
-              .eq('semana_iso', lunesAnterior)
-              .order('orden', { ascending: true })
-              .order('id', { ascending: true });
-            if (!errPrev && Array.isArray(prevData)) {
-              prevWeekRowsCache = prevData.map(r => decodificarServicioSupabase(r));
-            } else {
-              prevWeekRowsCache = [];
-            }
-          } catch (ePrev) {
-            prevWeekRowsCache = [];
-          }
-        }
-
-        const persPrevCiudad = prevWeekRowsCache.filter(r => (typeof normalizarTextoCS === 'function' ? normalizarTextoCS(r.ciudad || 'Puebla') : (r.ciudad || 'Puebla').toLowerCase()) === cNorm && BLOQUES_PERSISTENTES_FUTURO.includes(r.bloque) && (typeof servicioTieneDatos !== 'function' || servicioTieneDatos(r)));
-
-        if (persPrevCiudad.length > 0) {
-          persPrevCiudad.forEach((orig, hIdx) => {
-            const hPid = orig.pid || (typeof extraerPidDeObservaciones === 'function' ? extraerPidDeObservaciones(orig.observaciones) : null) || `pid_${orig.id ? String(orig.id).replace(/^srv_/, '') : Math.random().toString(36).substr(2, 6)}`;
-            let obsHeredada = orig.observaciones || '';
-            obsHeredada = obsHeredada.replace(/<!--asistencia_nanny:.*?-->/g, '').trim();
-            if (!obsHeredada.includes('<!--pid:') && typeof inyectarPidEnObservaciones === 'function') {
-              obsHeredada = inyectarPidEnObservaciones(obsHeredada, hPid);
-            }
-            let celdasCol = orig.colores_celdas;
-            if (!celdasCol && obsHeredada.includes('<!--colores:')) {
-              const { colores } = typeof extraerColoresDeObservaciones === 'function' ? extraerColoresDeObservaciones(obsHeredada) : { colores: {} };
-              celdasCol = colores;
-            }
-            const clon = {
-              ...orig,
-              id: `srv_${Date.now()}_pers_${hIdx}_${Math.random().toString(36).substr(2, 5)}`,
-              semana_iso: semanaIso,
-              ciudad: ciudadNombre,
-              pid: hPid,
-              observaciones: obsHeredada,
-              colores_celdas: celdasCol || {},
-              ok_cliente: false,
-              ok_nanny: false,
-              asistencia_nanny: {}
-            };
-            rows.push(clon);
-            nuevasFilasMasivas.push(clon);
-          });
-          console.log(`✨ [Persistencia Interna] ${persPrevCiudad.length} filas persistentes heredadas para ${ciudadNombre} hacia ${semanaIso}`);
-        }
-      }
-    }
-
-    // Si se generaron o heredaron filas nuevas, guardarlas en Supabase
-    if (nuevasFilasMasivas.length > 0) {
-      await ejecutarUpsertControlServicios(client, nuevasFilasMasivas);
-    }
-
     // Guardar en localStorage para respaldo offline estrictamente para esta semana
     try {
       localStorage.setItem('nyp_admin_servicios_matriz_' + semanaIso, JSON.stringify(rows));
-    } catch (e) { }
+    } catch (eCache) { }
 
     _cacheServiciosSemanaCompleta = rows;
     actualizarSelectorCiudadUI();
@@ -6734,6 +6566,41 @@ async function cargarMatrizServiciosSupabase(semanaIso) {
 window.cargarMatrizServiciosSupabase = cargarMatrizServiciosSupabase;
 
 /**
+ * Purga preventiva de semanas futuras generadas erróneamente por auto-poblado (>= 2026-10-12)
+ */
+async function purgarSemanasFuturasAutoPobladas() {
+  // 1. Limpiar claves en localStorage para semanas >= 2026-10-12
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('nyp_admin_servicios_matriz_')) {
+        const semPart = key.replace('nyp_admin_servicios_matriz_', '');
+        if (semPart >= '2026-10-12') {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+  } catch (e) { }
+
+  // 2. Ejecutar eliminación en Supabase para rol Staff/Admin
+  const client = typeof getSupabaseClient === 'function' ? getSupabaseClient() : null;
+  if (!client) return;
+
+  try {
+    const { error } = await client
+      .from('control_servicios')
+      .delete()
+      .gte('semana_iso', '2026-10-12');
+    if (!error) {
+      console.log('🧹 [Control Servicios] Semanas futuras (>= 2026-10-12) purgadas con éxito en Supabase.');
+    }
+  } catch (e) {
+    console.warn('ℹ️ [Control Servicios] Detalle de purga en Supabase:', e.message);
+  }
+}
+window.purgarSemanasFuturasAutoPobladas = purgarSemanasFuturasAutoPobladas;
+
+/**
  * Inicializa la matriz de servicios 100% vinculada a Supabase
  */
 function initMatrizServicios() {
@@ -6743,6 +6610,7 @@ function initMatrizServicios() {
     _currentSemanaMatrizIso = getMondayISO(new Date());
   }
 
+  purgarSemanasFuturasAutoPobladas();
   actualizarCabecerasSemanaMatriz(_currentSemanaMatrizIso);
   cargarMatrizServiciosSupabase(_currentSemanaMatrizIso);
 }
